@@ -1,0 +1,48 @@
+# Compiled binaries
+*.o
+*.a
+*.so
+*.dylib
+hermitian_3d_matrix_mpi
+hermitian_3d_matrix_mpi_debug
+hermitian_3d_matrix_mpi_double
+
+# Build directories
+build/
+obj/
+
+# Output files
+rank_*/
+*.bin
+*.dat
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Timing and profiling
+*.prof
+*.log
+
+# SLURM output
+slurm-*.out
+*.err
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Documentation build
+docs/_build/
+
+hermitian_3d_matrix
+
+# Sensitive documentation (moved to private repo)
+*.private.md
+docs/internal/
+docs/*.internal.md
+config/secrets/
+docs/INTERNAL_DOCS.md

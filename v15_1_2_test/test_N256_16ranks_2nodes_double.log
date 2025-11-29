@@ -1,0 +1,262 @@
+[INFO] num_ranks=16 < total_pairs=129: Each rank will process 8-9 pairs
+====================================================================================
+VERSION 14: PERIODIC BOUNDARY CONDITIONS FOR PADDING
+====================================================================================
+Precision: Double (16 bytes per complex number)
+Matrix size: N = 256³, Total elements: 16777216
+MPI ranks: 16 (total_pairs: 129 for N=256)
+Multi-batch processing: Each rank processes multiple Y-slice pairs
+Grid decomposition: Core grid only (no padding, X_PADDING=0)
+            Each rank owns non-overlapping X-region
+            No periodic boundary wrapping - standard decomposition
+V12 feature: Z-slab streaming (Zeldovich-compatible output)
+            Output format: [Z][Array][Y][X] matches Zeldovich AZYX
+            Each file contains all (X,Y) for one Z-slab
+V11 feature: Direct receive into persistent source-grouped buffer
+Communication method: MPI_Ialltoallv (Phase A)
+====================================================================================
+
+[INIT] Rank 0: Assigned 9 pairs:
+  Pair 0: Y=0 (self-conjugate)
+  Pair 1: Y=1 and Y=255 (conjugate)
+  Pair 2: Y=2 and Y=254 (conjugate)
+  ... (6 more pairs)
+
+[DISTRIBUTION] Multi-batch slice distribution:
+  Total Y-slice pairs: 129
+  Active ranks: 16
+  Pairs per rank: 8 base + 1 ranks with +1
+  Rank 0 processes: 9 pairs (Y indices 0-8)
+  Estimated total Y-slices: ~256
+
+[SETUP] narray = 4 (arrays per Y-slice)
+[SETUP] Creating FFT plans with dummy memory...
+[SETUP] FFT plans created successfully (2D and 1D)
+[MEMORY] Allocated local_y_slices: 0 bytes (0.00 GB) for 0 slices, 4 arrays
+[OK] Rank 0: Macro indexing verified (slices=0, arrays=4)
+
+[V14-DEBUG] Grid decomposition verification (PERIODIC BOUNDARIES):
+  Rank 0:
+    Core:   X=[0,64), Z=[0,64), Pencils=4096
+    Padded: X=[0,64), Z=[0,64), Pencils=4096
+  Rank 1:
+    Core:   X=[0,64), Z=[64,128), Pencils=4096
+    Padded: X=[0,64), Z=[64,128), Pencils=4096
+  Rank 2:
+    Core:   X=[0,64), Z=[128,192), Pencils=4096
+    Padded: X=[0,64), Z=[128,192), Pencils=4096
+  Rank 3:
+    Core:   X=[0,64), Z=[192,256), Pencils=4096
+    Padded: X=[0,64), Z=[192,256), Pencils=4096
+  ... (showing first 4 ranks only)
+  Note: Negative X-start or X-end > N indicates periodic wrap-around
+[Stage 2] Complete.
+
+[MULTI-BATCH] Starting batch processing...
+              Ranks will process 9 pairs each (approx)
+[GRID] Rank 0 (NO PADDING - CORE GRID ONLY):
+  Core region:   X=[0,64), Z=[0,64), pencils=4096
+[BATCHES] Total batches to process: 9
+
+[V11-SETUP] Computing per-source Y-slice totals...
+[V11-SETUP] Rank 0: Source totals: src0=17 src1=16 src2=16 src3=16 ...
+[V11-SETUP] Persistent recv_buffer size: 67108864 bytes (0.06 GB)
+            Total elements: 4194304 = sum of (src_total_slices[src] * my_pencils * narray)
+[V11-MEMORY] Allocated recv_buffer: 0.06 GB (source-grouped layout)
+[V11-SETUP] Rank 0: Write cursors initialized to 0
+[V11-SETUP] Phase 1 pre-computation complete.
+
+[V11-SETUP] Building Y-value ownership mapping...
+[V11-SETUP] Rank 0: Y-mapping complete. Sample: Y=0→src0[0], Y=128→src15[14]
+[V11-SETUP] Phase 2 Y-mapping complete.
+
+[MEMORY] Allocated local_y_slices (reusable): 8388608 bytes (0.01 GB)
+
+[MULTI-BATCH] Processing 9 batches...
+[BATCH 0] Rank 0: Processing 1 Y-slices (Y=0)
+[DEBUG Y=0] Before 2D FFT (Fourier space) - PRIMARY slice - Max real/imag per array: A0: re=1.000e+00 im=4.033e-01 A1: re=0.000e+00 im=8.625e-01 A2: re=0.000e+00 im=4.033e-01 A3: re=0.000e+00 im=8.625e-01 (NOTE: Non-zero imag expected in Fourier space)
+[DEBUG Y=0] After 2D FFT (Real space) - PRIMARY slice - Max real/imag per array: A0: re=3.288e+04 im=4.958e-14 (ratio=1.508e-18) A1: re=1.821e+02 im=1.100e-14 (ratio=6.041e-17) A2: re=1.825e+02 im=8.026e-15 (ratio=4.399e-17) A3: re=1.821e+02 im=1.100e-14 (ratio=6.041e-17) (NOTE: Imag should be ~0 in real space!)
+[PACK] Rank 0: Packed 262144 total elements to send_buffer
+       Sending to ranks: 16384 elements to rank 0, 16384 elements to rank 1, 16384 elements to rank 2, 16384 elements to rank 3, ...
+[V11-BATCH 0] Cursors advanced. Sample: src0=16384, src1=32768
+         ... Completed 1/9 batches (11.1%)
+[BATCH 1] Rank 0: Processing 2 Y-slices (Y=1, Y=255)
+[DEBUG Y=1] Before 2D FFT (Fourier space) - PRIMARY slice - Max real/imag per array: A0: re=1.000e+00 im=2.500e-01 A1: re=7.933e-01 im=4.351e-01 A2: re=0.000e+00 im=2.500e-01 A3: re=7.933e-01 im=4.351e-01 (NOTE: Non-zero imag expected in Fourier space)
+[DEBUG Y=1] Before 2D FFT (Fourier space) - CONJUGATE slice - Max real/imag per array: A0: re=1.000e+00 im=2.500e-01 A1: re=7.933e-01 im=4.351e-01 A2: re=0.000e+00 im=2.500e-01 A3: re=7.933e-01 im=4.351e-01 (NOTE: Should be conjugate of primary!)
+[DEBUG Y=1] Sample conjugate check (first 3 points): A0[0,0]: prim=(4.453e-01,0.000e+00) conj[0,0]=(4.453e-01,-0.000e+00) A0[0,1]: prim=(2.093e-01,0.000e+00) conj[0,255]=(2.093e-01,-0.000e+00) A0[1,0]: prim=(3.985e-01,-2.017e-01) conj[255,0]=(3.985e-01,2.017e-01) A0[1,1]: prim=(7.451e-01,-1.378e-01) conj[255,255]=(7.451e-01,1.378e-01) A1[0,0]: prim=(-7.933e-01,0.000e+00) conj[0,0]=(-7.933e-01,-0.000e+00) A1[0,1]: prim=(-4.351e-01,-4.351e-01) conj[0,255]=(-4.351e-01,4.351e-01) A1[1,0]: prim=(-2.017e-01,0.000e+00) conj[255,0]=(-2.017e-01,-0.000e+00) A1[1,1]: prim=(-1.378e-01,-1.378e-01) conj[255,255]=(-1.378e-01,1.378e-01) 
+[DEBUG Y=1] Before 2D FFT - Buffer addresses: prim=0x14dbde579000 conj=0x14dbde979000 (diff=262144)
+[DEBUG Y=1] Before 2D FFT - Sample values: prim[0,0]=(4.453e-01,0.000e+00) conj[0,0]=(4.453e-01,-0.000e+00)
+[DEBUG Y=1] Right before conjugate FFT - conj[0,0]=(4.453e-01,-0.000e+00) prim[0,0]=(3.274e+04,-6.642e-01)
+[DEBUG Y=1] Right after conjugate FFT - conj[0,0]=(3.274e+04,6.642e-01) prim[0,0]=(3.274e+04,-6.642e-01)
+[DEBUG Y=1] After 2D FFT (Real space) - PRIMARY slice - Max real/imag per array: A0: re=3.274e+04 im=2.209e+02 (ratio=6.748e-03) A1: re=1.943e+02 im=3.803e+00 (ratio=1.957e-02) A2: re=1.822e+02 im=3.495e+00 (ratio=1.918e-02) A3: re=1.943e+02 im=3.803e+00 (ratio=1.957e-02) (NOTE: Imag should be ~0 in real space!)
+[DEBUG Y=1] After 2D FFT (Real space) - CONJUGATE slice - Max real/imag per array: A0: re=3.274e+04 im=2.209e+02 (ratio=6.748e-03) A1: re=1.943e+02 im=3.803e+00 (ratio=1.957e-02) A2: re=1.822e+02 im=3.495e+00 (ratio=1.918e-02) A3: re=1.943e+02 im=3.803e+00 (ratio=1.957e-02) (NOTE: Imag should be ~0 in real space!)
+[DEBUG Y=1] Array comparison: 0 identical, 262144 different (total=262144)
+[DEBUG Y=1] Sample differences (first 3 non-identical): A0[0,0]: prim=(3.274e+04,-6.642e-01) conj=(3.274e+04,6.642e-01) diff=(0.000e+00,1.328e+00) A0[0,1]: prim=(-1.051e+02,6.904e+01) conj=(-1.051e+02,-6.904e+01) diff=(0.000e+00,1.381e+02) A0[0,2]: prim=(-1.168e+01,-2.820e+01) conj=(-1.168e+01,2.820e+01) diff=(3.553e-15,5.641e+01) 
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 32768 elements to rank 0, 32768 elements to rank 1, 32768 elements to rank 2, 32768 elements to rank 3, ...
+[V11-BATCH 1] Cursors advanced. Sample: src0=49152, src1=65536
+         ... Completed 2/9 batches (22.2%)
+[DEBUG Y=2] Before 2D FFT (Fourier space) - PRIMARY slice - Max real/imag per array: A0: re=1.000e+00 im=1.667e-01 A1: re=3.967e-01 im=2.193e-01 A2: re=0.000e+00 im=1.667e-01 A3: re=3.967e-01 im=2.193e-01 (NOTE: Non-zero imag expected in Fourier space)
+[DEBUG Y=2] Before 2D FFT (Fourier space) - CONJUGATE slice - Max real/imag per array: A0: re=1.000e+00 im=1.667e-01 A1: re=3.967e-01 im=2.193e-01 A2: re=0.000e+00 im=1.667e-01 A3: re=3.967e-01 im=2.193e-01 (NOTE: Should be conjugate of primary!)
+[DEBUG Y=2] Sample conjugate check (first 3 points): A0[0,0]: prim=(4.453e-01,0.000e+00) conj[0,0]=(4.453e-01,-0.000e+00) A0[0,1]: prim=(2.093e-01,0.000e+00) conj[0,255]=(2.093e-01,-0.000e+00) A0[1,0]: prim=(3.985e-01,-8.067e-02) conj[255,0]=(3.985e-01,8.067e-02) A0[1,1]: prim=(7.451e-01,-6.890e-02) conj[255,255]=(7.451e-01,6.890e-02) A1[0,0]: prim=(-3.967e-01,0.000e+00) conj[0,0]=(-3.967e-01,-0.000e+00) A1[0,1]: prim=(-3.481e-01,-1.740e-01) conj[0,255]=(-3.481e-01,1.740e-01) A1[1,0]: prim=(-1.613e-01,0.000e+00) conj[255,0]=(-1.613e-01,-0.000e+00) A1[1,1]: prim=(-1.378e-01,-6.890e-02) conj[255,255]=(-1.378e-01,6.890e-02) 
+[DEBUG Y=2] Before 2D FFT - Buffer addresses: prim=0x14dbde579000 conj=0x14dbde979000 (diff=262144)
+[DEBUG Y=2] Before 2D FFT - Sample values: prim[0,0]=(4.453e-01,0.000e+00) conj[0,0]=(4.453e-01,-0.000e+00)
+[DEBUG Y=2] Right before conjugate FFT - conj[0,0]=(4.453e-01,-0.000e+00) prim[0,0]=(3.274e+04,-6.264e-01)
+[DEBUG Y=2] Right after conjugate FFT - conj[0,0]=(3.274e+04,6.264e-01) prim[0,0]=(3.274e+04,-6.264e-01)
+[DEBUG Y=2] After 2D FFT (Real space) - PRIMARY slice - Max real/imag per array: A0: re=3.274e+04 im=2.209e+02 (ratio=6.747e-03) A1: re=2.013e+02 im=3.809e+00 (ratio=1.892e-02) A2: re=1.818e+02 im=3.481e+00 (ratio=1.915e-02) A3: re=2.013e+02 im=3.809e+00 (ratio=1.892e-02) (NOTE: Imag should be ~0 in real space!)
+[DEBUG Y=2] After 2D FFT (Real space) - CONJUGATE slice - Max real/imag per array: A0: re=3.274e+04 im=2.209e+02 (ratio=6.747e-03) A1: re=2.013e+02 im=3.809e+00 (ratio=1.892e-02) A2: re=1.818e+02 im=3.481e+00 (ratio=1.915e-02) A3: re=2.013e+02 im=3.809e+00 (ratio=1.892e-02) (NOTE: Imag should be ~0 in real space!)
+[DEBUG Y=2] Array comparison: 0 identical, 262144 different (total=262144)
+[DEBUG Y=2] Sample differences (first 3 non-identical): A0[0,0]: prim=(3.274e+04,-6.264e-01) conj=(3.274e+04,6.264e-01) diff=(0.000e+00,1.253e+00) A0[0,1]: prim=(-1.051e+02,6.908e+01) conj=(-1.051e+02,-6.908e+01) diff=(1.421e-14,1.382e+02) A0[0,2]: prim=(-1.170e+01,-2.817e+01) conj=(-1.170e+01,2.817e+01) diff=(7.105e-15,5.633e+01) 
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 32768 elements to rank 0, 32768 elements to rank 1, 32768 elements to rank 2, 32768 elements to rank 3, ...
+         ... Completed 3/9 batches (33.3%)
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 32768 elements to rank 0, 32768 elements to rank 1, 32768 elements to rank 2, 32768 elements to rank 3, ...
+         ... Completed 4/9 batches (44.4%)
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 32768 elements to rank 0, 32768 elements to rank 1, 32768 elements to rank 2, 32768 elements to rank 3, ...
+         ... Completed 5/9 batches (55.6%)
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 32768 elements to rank 0, 32768 elements to rank 1, 32768 elements to rank 2, 32768 elements to rank 3, ...
+         ... Completed 6/9 batches (66.7%)
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 32768 elements to rank 0, 32768 elements to rank 1, 32768 elements to rank 2, 32768 elements to rank 3, ...
+         ... Completed 7/9 batches (77.8%)
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 32768 elements to rank 0, 32768 elements to rank 1, 32768 elements to rank 2, 32768 elements to rank 3, ...
+         ... Completed 8/9 batches (88.9%)
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 32768 elements to rank 0, 32768 elements to rank 1, 32768 elements to rank 2, 32768 elements to rank 3, ...
+         ... Completed 9/9 batches (100.0%)
+[MULTI-BATCH] All batches complete.
+              Generation time: 0.248303 s
+              Communication time: 0.057226 s
+[V11-VERIFY] Rank 0: All cursors match expected totals ✓
+
+[V11-Stage 3] Streaming X-row processing from recv_buffer...
+
+[Stage 3] Z-slab streaming: Unpack → FFT → Write (Zeldovich format)...
+[MEMORY] Allocated local_z_slab (one Z-slab, core grid): 1048576 bytes (0.00 GB)
+         Processing 64 Z-slabs sequentially (Z=[0,64))
+         Each Z-slab: 64 X-values (CORE) × 4 arrays × 256 Y-values
+         Output format: [Z][Array][Y][X] (Zeldovich-compatible)
+[DEBUG Z=0] Before 1D FFT (after unpack) - Max imag per array: A0=1.237e+02 A1=2.096e+00 A2=2.172e+00 A3=2.096e+00 
+[DEBUG Z=0] After 1D FFT - Max imag per array: A0=3.129e-12 A1=4.728e-13 A2=1.044e-12 A3=4.728e-13 
+[DEBUG] Rank 0: Wrote rank_0/z0_slab_N256.bin (64 X × 4 arrays × 256 Y, 1.00 MB)
+[INIT] Rank 4: Assigned 8 pairs:
+  Pair 0: Y=33 and Y=223 (conjugate)
+  Pair 1: Y=34 and Y=222 (conjugate)
+  Pair 2: Y=35 and Y=221 (conjugate)
+  ... (5 more pairs)
+[INIT] Rank 2: Assigned 8 pairs:
+  Pair 0: Y=17 and Y=239 (conjugate)
+  Pair 1: Y=18 and Y=238 (conjugate)
+  Pair 2: Y=19 and Y=237 (conjugate)
+  ... (5 more pairs)
+[OK] Rank 2: Macro indexing verified (slices=0, arrays=4)
+[PACK] Rank 2: Packed 524288 total elements to send_buffer
+       Sending to ranks: 32768 elements to rank 0, 32768 elements to rank 1, 32768 elements to rank 2, 32768 elements to rank 3, ...
+[PACK] Rank 2: Packed 524288 total elements to send_buffer
+       Sending to ranks: 32768 elements to rank 0, 32768 elements to rank 1, 32768 elements to rank 2, 32768 elements to rank 3, ...
+[PACK] Rank 2: Packed 524288 total elements to send_buffer
+       Sending to ranks: 32768 elements to rank 0, 32768 elements to rank 1, 32768 elements to rank 2, 32768 elements to rank 3, ...
+[PACK] Rank 2: Packed 524288 total elements to send_buffer
+       Sending to ranks: 32768 elements to rank 0, 32768 elements to rank 1, 32768 elements to rank 2, 32768 elements to rank 3, ...
+[PACK] Rank 2: Packed 524288 total elements to send_buffer
+       Sending to ranks: 32768 elements to rank 0, 32768 elements to rank 1, 32768 elements to rank 2, 32768 elements to rank 3, ...
+[PACK] Rank 2: Packed 524288 total elements to send_buffer
+       Sending to ranks: 32768 elements to rank 0, 32768 elements to rank 1, 32768 elements to rank 2, 32768 elements to rank 3, ...
+[PACK] Rank 2: Packed 524288 total elements to send_buffer
+       Sending to ranks: 32768 elements to rank 0, 32768 elements to rank 1, 32768 elements to rank 2, 32768 elements to rank 3, ...
+[PACK] Rank 2: Packed 524288 total elements to send_buffer
+       Sending to ranks: 32768 elements to rank 0, 32768 elements to rank 1, 32768 elements to rank 2, 32768 elements to rank 3, ...
+        Layout: [Array][Y][X] (Zeldovich AZYX compatible)
+[DEBUG] Rank 0: Wrote rank_0/z1_slab_N256.bin (64 X × 4 arrays × 256 Y, 1.00 MB)
+        Layout: [Array][Y][X] (Zeldovich AZYX compatible)
+[DEBUG] Rank 0: Wrote rank_0/z2_slab_N256.bin (64 X × 4 arrays × 256 Y, 1.00 MB)
+        Layout: [Array][Y][X] (Zeldovich AZYX compatible)
+         ... Processed 6/64 Z-slabs (9.4%)
+         ... Processed 12/64 Z-slabs (18.8%)
+         ... Processed 18/64 Z-slabs (28.1%)
+         ... Processed 24/64 Z-slabs (37.5%)
+         ... Processed 30/64 Z-slabs (46.9%)
+         ... Processed 36/64 Z-slabs (56.2%)
+         ... Processed 42/64 Z-slabs (65.6%)
+         ... Processed 48/64 Z-slabs (75.0%)
+         ... Processed 54/64 Z-slabs (84.4%)
+         ... Processed 60/64 Z-slabs (93.8%)
+         ... Processed 64/64 Z-slabs (100.0%)
+
+========== VERIFICATION: REAL-SPACE AFTER 3D FFT ==========
+Array 0: Max real=8.380519e+06, Max imag=6.528365e-12, Ratio=7.789930e-19 [REAL ✓]
+Array 1: Max real=3.967967e+04, Max imag=9.769748e-13, Ratio=2.462154e-17 [REAL ✓]
+Array 2: Max real=2.723967e+04, Max imag=1.158048e-12, Ratio=4.251330e-17 [REAL ✓]
+Array 3: Max real=3.967967e+04, Max imag=9.769748e-13, Ratio=2.462154e-17 [REAL ✓]
+RESULT: All 4 arrays are PURELY REAL after forward 3D FFT! ✓
+============================================================
+
+[Stage 3] Streaming complete. Time: 0.305651 s
+          (Includes unpacking, FFT, and I/O for all X-rows)
+          Total files written: 1024 (across all ranks)
+          Total data written: 1.000 GB
+          Files per rank: ~64 (x_count per rank, for 16 ranks)
+          Each file contains one X-row: z_count Z × 4 arrays × 256 Y-values
+          Typical file size: ~1.00 MB (varies by rank's Z-extent)
+          File naming: rank_X/xY_all_yz_N256.bin
+          File format: Binary [Z][Array][Y] (Y varies fastest, fftw_complex = 2×double)
+          3D FFT COMPLETE (2D XZ + 1D Y)
+
+
+====================================================================================
+TIMING SUMMARY (v11 - Persistent Recv Buffer + Streaming)
+====================================================================================
+Stage 1 (Y-slice generation + 2D FFT): 0.248303 s
+Stage 2 (Metadata exchange):            0.000000 s
+Stage 3 (Communication: Alltoallv):    0.057226 s
+Stage 3 (Streaming: Unpack+FFT+Write):  0.305651 s
+------------------------------------------------------------------------------------
+Total 3D FFT time (Gen + Comm + FFT):   0.305529 s
+Total time (including all stages):      0.305529 s
+
+Note: In v11, persistent recv_buffer eliminates per-batch allocation
+      Unpacking, 1D FFT, and I/O are combined in streaming stage
+====================================================================================
+
+====================================================================================
+ALL STAGES COMPLETE!
+====================================================================================
+[INIT] Rank 1: Assigned 8 pairs:
+  Pair 0: Y=9 and Y=247 (conjugate)
+  Pair 1: Y=10 and Y=246 (conjugate)
+  Pair 2: Y=11 and Y=245 (conjugate)
+  ... (5 more pairs)
+[OK] Rank 1: Macro indexing verified (slices=0, arrays=4)
+[GRID] Rank 1 (NO PADDING - CORE GRID ONLY):
+  Core region:   X=[0,64), Z=[64,128), pencils=4096
+[V11-SETUP] Rank 1: Source totals: src0=17 src1=16 src2=16 src3=16 ...
+[V11-SETUP] Rank 1: Write cursors initialized to 0
+[V11-SETUP] Rank 1: Y-mapping complete. Sample: Y=0→src0[0], Y=128→src15[14]
+[BATCH 0] Rank 1: Processing 2 Y-slices (Y=9, Y=247)
+[PACK] Rank 1: Packed 524288 total elements to send_buffer
+       Sending to ranks: 32768 elements to rank 0, 32768 elements to rank 1, 32768 elements to rank 2, 32768 elements to rank 3, ...
+[BATCH 1] Rank 1: Processing 2 Y-slices (Y=10, Y=246)
+[PACK] Rank 1: Packed 524288 total elements to send_buffer
+       Sending to ranks: 32768 elements to rank 0, 32768 elements to rank 1, 32768 elements to rank 2, 32768 elements to rank 3, ...
+[PACK] Rank 1: Packed 524288 total elements to send_buffer
+       Sending to ranks: 32768 elements to rank 0, 32768 elements to rank 1, 32768 elements to rank 2, 32768 elements to rank 3, ...
+[PACK] Rank 1: Packed 524288 total elements to send_buffer
+       Sending to ranks: 32768 elements to rank 0, 32768 elements to rank 1, 32768 elements to rank 2, 32768 elements to rank 3, ...
+[PACK] Rank 1: Packed 524288 total elements to send_buffer
+       Sending to ranks: 32768 elements to rank 0, 32768 elements to rank 1, 32768 elements to rank 2, 32768 elements to rank 3, ...
+[PACK] Rank 1: Packed 524288 total elements to send_buffer
+       Sending to ranks: 32768 elements to rank 0, 32768 elements to rank 1, 32768 elements to rank 2, 32768 elements to rank 3, ...
+[PACK] Rank 1: Packed 524288 total elements to send_buffer
+       Sending to ranks: 32768 elements to rank 0, 32768 elements to rank 1, 32768 elements to rank 2, 32768 elements to rank 3, ...
+[PACK] Rank 1: Packed 524288 total elements to send_buffer
+       Sending to ranks: 32768 elements to rank 0, 32768 elements to rank 1, 32768 elements to rank 2, 32768 elements to rank 3, ...
+[V11-VERIFY] Rank 1: All cursors match expected totals ✓
+[INIT] Rank 3: Assigned 8 pairs:
+  Pair 0: Y=25 and Y=231 (conjugate)
+  Pair 1: Y=26 and Y=230 (conjugate)
+  Pair 2: Y=27 and Y=229 (conjugate)
+  ... (5 more pairs)

@@ -1,0 +1,24 @@
+Module environment:
+FFTW paths:
+  FFTW_INCLUDE: not set
+  PKG_CONFIG_PATH: /usr/local/fftw/gcc/3.3.10/lib64/pkgconfig:/usr/local/fftw/gcc/3.3.10/lib64/pkgconfig:/usr/local/fftw/gcc/3.3.10/lib64/pkgconfig:/usr/local/fftw/gcc/3.3.10/lib64/pkgconfig:/usr/local/fftw/gcc/3.3.10/lib64/pkgconfig:/usr/local/fftw/gcc/3.3.10/lib64/pkgconfig:
+==========================================
+Test: v15.2 Power Spectrum Mode - DOUBLE PRECISION
+N=256, ranks=14
+Parameter file: examples/param_template.par
+Should use zeldovich-PLT PowerSpectrum
+==========================================
+
+Rebuilding with double precision...
+rm -f hermitian_3d_matrix *.o
+   24 | #include <fftw3.h>
+      |          ^~~~~~~~~
+compilation terminated.
+In file included from src/streaming/z_streaming.h:15,
+                 from src/streaming/z_streaming.c:5:
+src/streaming/../precision.h:24:10: fatal error: fftw3.h: No such file or directory
+   24 | #include <fftw3.h>
+      |          ^~~~~~~~~
+compilation terminated.
+make: *** [Makefile:110: hermitian_3d_matrix] Error 1
+ERROR: Binary not found after build!

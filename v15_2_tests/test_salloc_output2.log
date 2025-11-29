@@ -1,0 +1,778 @@
+Generating ICs for ppd = 256
+Generating ICs for ppd = 256
+Generating ICs for ppd = 256
+Generating ICs for ppd = 256
+Initializing power spectrum with power law index -2
+Generating ICs for ppd = 256
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 256
+Initializing power spectrum with power law index -2
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 256
+Generating ICs for ppd = 256
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 256
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 256
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 256
+Initializing power spectrum with power law index -2
+Generating ICs for ppd = 256
+Initializing power spectrum with power law index -2
+Generating ICs for ppd = 256
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 256
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 256
+Generating ICs for ppd = 256
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 256
+Generating ICs for ppd = 256
+Generating ICs for ppd = 256
+Initializing power spectrum with power law index -2
+Initializing power spectrum with power law index -2
+Generating ICs for ppd = 256
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Initializing power spectrum with power law index -2
+Generating ICs for ppd = 256
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Initializing power spectrum with power law index -2
+Generating ICs for ppd = 256
+Initializing power spectrum with power law index -2
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 256
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 256
+Initializing power spectrum with power law index -2
+Generating ICs for ppd = 256
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 256
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 256
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 256
+WARNING: Parameter file ppd=256 != N=1024
+         Using N=1024 from command line
+Initializing power spectrum with power law index -2
+Generating ICs for ppd = 256
+Generating ICs for ppd = 256
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 256
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 256
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+[Rank 18] ENTER generate_hermitian_slice_pair_local: Y_primary=289, Y_mirror=735, ps_handle=(nil), params_handle=(nil)
+[Rank 19] ENTER generate_hermitian_slice_pair_local: Y_primary=305, Y_mirror=719, ps_handle=(nil), params_handle=(nil)
+[Rank 5] ENTER generate_hermitian_slice_pair_local: Y_primary=81, Y_mirror=943, ps_handle=(nil), params_handle=(nil)
+[Rank 2] ENTER generate_hermitian_slice_pair_local: Y_primary=33, Y_mirror=991, ps_handle=(nil), params_handle=(nil)
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=0, Y_mirror=0, ps_handle=(nil), params_handle=(nil)
+[Rank 1] ENTER generate_hermitian_slice_pair_local: Y_primary=17, Y_mirror=1007, ps_handle=(nil), params_handle=(nil)
+[Rank 4] ENTER generate_hermitian_slice_pair_local: Y_primary=65, Y_mirror=959, ps_handle=(nil), params_handle=(nil)
+[Rank 3] ENTER generate_hermitian_slice_pair_local: Y_primary=49, Y_mirror=975, ps_handle=(nil), params_handle=(nil)
+[Rank 14] ENTER generate_hermitian_slice_pair_local: Y_primary=225, Y_mirror=799, ps_handle=(nil), params_handle=(nil)
+[Rank 12] ENTER generate_hermitian_slice_pair_local: Y_primary=193, Y_mirror=831, ps_handle=(nil), params_handle=(nil)
+[Rank 11] ENTER generate_hermitian_slice_pair_local: Y_primary=177, Y_mirror=847, ps_handle=(nil), params_handle=(nil)
+[Rank 13] ENTER generate_hermitian_slice_pair_local: Y_primary=209, Y_mirror=815, ps_handle=(nil), params_handle=(nil)
+[Rank 30] ENTER generate_hermitian_slice_pair_local: Y_primary=481, Y_mirror=543, ps_handle=(nil), params_handle=(nil)
+[Rank 8] ENTER generate_hermitian_slice_pair_local: Y_primary=129, Y_mirror=895, ps_handle=(nil), params_handle=(nil)
+[Rank 28] ENTER generate_hermitian_slice_pair_local: Y_primary=449, Y_mirror=575, ps_handle=(nil), params_handle=(nil)
+[Rank 31] ENTER generate_hermitian_slice_pair_local: Y_primary=497, Y_mirror=527, ps_handle=(nil), params_handle=(nil)
+[Rank 21] ENTER generate_hermitian_slice_pair_local: Y_primary=337, Y_mirror=687, ps_handle=(nil), params_handle=(nil)
+[Rank 24] ENTER generate_hermitian_slice_pair_local: Y_primary=385, Y_mirror=639, ps_handle=(nil), params_handle=(nil)
+[Rank 10] ENTER generate_hermitian_slice_pair_local: Y_primary=161, Y_mirror=863, ps_handle=(nil), params_handle=(nil)
+[Rank 27] ENTER generate_hermitian_slice_pair_local: Y_primary=433, Y_mirror=591, ps_handle=(nil), params_handle=(nil)
+[Rank 22] ENTER generate_hermitian_slice_pair_local: Y_primary=353, Y_mirror=671, ps_handle=(nil), params_handle=(nil)
+[Rank 25] ENTER generate_hermitian_slice_pair_local: Y_primary=401, Y_mirror=623, ps_handle=(nil), params_handle=(nil)
+[Rank 23] ENTER generate_hermitian_slice_pair_local: Y_primary=369, Y_mirror=655, ps_handle=(nil), params_handle=(nil)
+[Rank 9] ENTER generate_hermitian_slice_pair_local: Y_primary=145, Y_mirror=879, ps_handle=(nil), params_handle=(nil)
+[Rank 29] ENTER generate_hermitian_slice_pair_local: Y_primary=465, Y_mirror=559, ps_handle=(nil), params_handle=(nil)
+[Rank 20] ENTER generate_hermitian_slice_pair_local: Y_primary=321, Y_mirror=703, ps_handle=(nil), params_handle=(nil)
+[Rank 26] ENTER generate_hermitian_slice_pair_local: Y_primary=417, Y_mirror=607, ps_handle=(nil), params_handle=(nil)
+[Rank 17] ENTER generate_hermitian_slice_pair_local: Y_primary=273, Y_mirror=751, ps_handle=(nil), params_handle=(nil)
+[Rank 6] ENTER generate_hermitian_slice_pair_local: Y_primary=97, Y_mirror=927, ps_handle=(nil), params_handle=(nil)
+[Rank 7] ENTER generate_hermitian_slice_pair_local: Y_primary=113, Y_mirror=911, ps_handle=(nil), params_handle=(nil)
+[Rank 15] ENTER generate_hermitian_slice_pair_local: Y_primary=241, Y_mirror=783, ps_handle=(nil), params_handle=(nil)
+[Rank 16] ENTER generate_hermitian_slice_pair_local: Y_primary=257, Y_mirror=767, ps_handle=(nil), params_handle=(nil)
+[Rank 0] After primary FFT (array 0, Y=0): buffer OK (checksum=-124)
+[Rank 0] After primary FFT (array 1, Y=0): buffer OK (checksum=-104)
+[Rank 0] After primary FFT (array 2, Y=0): buffer OK (checksum=-78)
+[Rank 0] After primary FFT (array 3, Y=0): buffer OK (checksum=-104)
+[INFO] num_ranks=32 < total_pairs=513: Each rank will process 16-17 pairs
+====================================================================================
+VERSION 14: PERIODIC BOUNDARY CONDITIONS FOR PADDING
+====================================================================================
+Precision: Double (16 bytes per complex number)
+Matrix size: N = 1024³, Total elements: 1073741824
+MPI ranks: 32 (total_pairs: 513 for N=1024)
+Multi-batch processing: Each rank processes multiple Y-slice pairs
+Grid decomposition: Core grid only (no padding, X_PADDING=0)
+            Each rank owns non-overlapping X-region
+            No periodic boundary wrapping - standard decomposition
+V12 feature: Z-slab streaming (Zeldovich-compatible output)
+            Output format: [Z][Array][Y][X] matches Zeldovich AZYX
+            Each file contains all (X,Y) for one Z-slab
+V11 feature: Direct receive into persistent source-grouped buffer
+Communication method: MPI_Ialltoallv (Phase A)
+====================================================================================
+
+[INIT] Rank 0: Assigned 17 pairs:
+  Pair 0: Y=0 (self-conjugate)
+  Pair 1: Y=1 and Y=1023 (conjugate)
+  Pair 2: Y=2 and Y=1022 (conjugate)
+  ... (14 more pairs)
+
+[DISTRIBUTION] Multi-batch slice distribution:
+  Total Y-slice pairs: 513
+  Active ranks: 32
+  Pairs per rank: 16 base + 1 ranks with +1
+  Rank 0 processes: 17 pairs (Y indices 0-16)
+  Estimated total Y-slices: ~1024
+
+[INIT] Loading zeldovich-PLT parameters from: examples/param_template.par
+[INIT] PowerSpectrum initialized:
+       Power law index: -2.00
+       Box size: 100.00
+       Fundamental wavenumber: 6.283185e-02
+       Seed: 4
+       Power spectrum mode: ENABLED
+[DEBUG] Power spectrum mode DISABLED for debugging (ps_handle=NULL, params_handle=NULL, ps_params_ptr=NULL)
+[SETUP] narray = 4 (arrays per Y-slice)
+[SETUP] Creating FFT plans with dummy memory...
+[SETUP] FFT plans created successfully (2D and 1D)
+[MEMORY] Allocated local_y_slices: 0 bytes (0.00 GB) for 0 slices, 4 arrays
+[OK] Rank 0: Macro indexing verified (slices=0, arrays=4)
+
+[V14-DEBUG] Grid decomposition verification (PERIODIC BOUNDARIES):
+  Rank 0:
+    Core:   X=[0,256), Z=[0,128), Pencils=32768
+    Padded: X=[0,256), Z=[0,128), Pencils=32768
+  Rank 1:
+    Core:   X=[0,256), Z=[128,256), Pencils=32768
+    Padded: X=[0,256), Z=[128,256), Pencils=32768
+  Rank 2:
+    Core:   X=[0,256), Z=[256,384), Pencils=32768
+    Padded: X=[0,256), Z=[256,384), Pencils=32768
+  Rank 3:
+    Core:   X=[0,256), Z=[384,512), Pencils=32768
+    Padded: X=[0,256), Z=[384,512), Pencils=32768
+  ... (showing first 4 ranks only)
+  Note: Negative X-start or X-end > N indicates periodic wrap-around
+[Stage 2] Complete.
+
+[MULTI-BATCH] Starting batch processing...
+              Ranks will process 17 pairs each (approx)
+[GRID] Rank 0 (NO PADDING - CORE GRID ONLY):
+  Core region:   X=[0,256), Z=[0,128), pencils=32768
+[BATCHES] Total batches to process: 17
+
+[V11-SETUP] Computing per-source Y-slice totals...
+[V11-SETUP] Rank 0: Source totals: src0=33 src1=32 src2=32 src3=32 ...
+[V11-SETUP] Persistent recv_buffer size: 2147483648 bytes (2.00 GB)
+            Total elements: 134217728 = sum of (src_total_slices[src] * my_pencils * narray)
+[V11-MEMORY] Allocated recv_buffer: 2.00 GB (source-grouped layout)
+[V11-SETUP] Rank 0: Write cursors initialized to 0
+[V11-SETUP] Phase 1 pre-computation complete.
+
+[V11-SETUP] Building Y-value ownership mapping...
+[V11-SETUP] Rank 0: Y-mapping complete. Sample: Y=0→src0[0], Y=512→src31[30]
+[V11-SETUP] Phase 2 Y-mapping complete.
+
+[MEMORY] Allocated local_y_slices (reusable): 134217728 bytes (0.12 GB)
+
+[MULTI-BATCH] Processing 17 batches...
+[BATCH 0] Rank 0: Processing 1 Y-slices (Y=0)
+[DEBUG Y=0] Before 2D FFT (Fourier space) - PRIMARY slice - Max real/imag per array: A0: re=1.000e+00 im=7.933e-01 A1: re=0.000e+00 im=4.935e-01 A2: re=0.000e+00 im=7.933e-01 A3: re=0.000e+00 im=4.935e-01 (NOTE: Non-zero imag expected in Fourier space)
+[Rank 0] After generate_hermitian_slice_pair_local (Y=0): Verifying local_y_slices buffer...
+[Rank 0] local_y_slices buffer OK (size=134217728 bytes, checksum=-124)
+[Rank 0] Verifying buffers before MPI_Ialltoallv...
+[Rank 0] Send buffer: 67108864 bytes (4194304 elements)
+[Rank 0] Send buffer OK (checksum=8)
+[Rank 0] Recv buffer: 132120576 bytes (8257536 elements) for this batch
+[Rank 0] Recv buffer bounds OK
+[Rank 0] Max displacements: send=4194304, recv=130416640
+[Rank 0] CRITICAL CHECK:
+  recv_total_elems = 134217728
+  total_send_batch = 4194304
+  src 0: rdispls=0 + recvcounts=131072 = 131072 (end=131072)
+  src 1: rdispls=4325376 + recvcounts=262144 = 4587520 (end=4587520)
+  src 2: rdispls=8519680 + recvcounts=262144 = 8781824 (end=8781824)
+  src 3: rdispls=12713984 + recvcounts=262144 = 12976128 (end=12976128)
+[Rank 0] All buffer checks passed, calling MPI_Ialltoallv...
+[Rank 19] After generate_hermitian_slice_pair_local (Y=305): Verifying local_y_slices buffer...
+[Rank 19] local_y_slices buffer OK (size=134217728 bytes, checksum=95)
+[Rank 19] Verifying buffers before MPI_Ialltoallv...
+[Rank 19] Send buffer: 134217728 bytes (8388608 elements)
+[Rank 19] Send buffer OK (checksum=-97)
+[Rank 19] Recv buffer: 132120576 bytes (8257536 elements) for this batch
+[Rank 19] Recv buffer bounds OK
+[Rank 19] Max displacements: send=8388608, recv=130416640
+[Rank 19] CRITICAL CHECK:
+  recv_total_elems = 134217728
+  total_send_batch = 8388608
+  src 0: rdispls=0 + recvcounts=131072 = 131072 (end=131072)
+  src 1: rdispls=4325376 + recvcounts=262144 = 4587520 (end=4587520)
+  src 2: rdispls=8519680 + recvcounts=262144 = 8781824 (end=8781824)
+  src 3: rdispls=12713984 + recvcounts=262144 = 12976128 (end=12976128)
+[Rank 19] All buffer checks passed, calling MPI_Ialltoallv...
+[Rank 2] After generate_hermitian_slice_pair_local (Y=33): Verifying local_y_slices buffer...
+[Rank 2] local_y_slices buffer OK (size=134217728 bytes, checksum=-95)
+[Rank 18] After generate_hermitian_slice_pair_local (Y=289): Verifying local_y_slices buffer...
+[Rank 18] local_y_slices buffer OK (size=134217728 bytes, checksum=-54)
+[Rank 3] After generate_hermitian_slice_pair_local (Y=49): Verifying local_y_slices buffer...
+[Rank 3] local_y_slices buffer OK (size=134217728 bytes, checksum=28)
+[Rank 2] Verifying buffers before MPI_Ialltoallv...
+[Rank 2] Send buffer: 134217728 bytes (8388608 elements)
+[Rank 2] Send buffer OK (checksum=2)
+[Rank 2] Recv buffer: 132120576 bytes (8257536 elements) for this batch
+[Rank 2] Recv buffer bounds OK
+[Rank 2] Max displacements: send=8388608, recv=130416640
+[Rank 2] CRITICAL CHECK:
+  recv_total_elems = 134217728
+  total_send_batch = 8388608
+  src 0: rdispls=0 + recvcounts=131072 = 131072 (end=131072)
+  src 1: rdispls=4325376 + recvcounts=262144 = 4587520 (end=4587520)
+  src 2: rdispls=8519680 + recvcounts=262144 = 8781824 (end=8781824)
+  src 3: rdispls=12713984 + recvcounts=262144 = 12976128 (end=12976128)
+[Rank 2] All buffer checks passed, calling MPI_Ialltoallv...
+[Rank 4] After generate_hermitian_slice_pair_local (Y=65): Verifying local_y_slices buffer...
+[Rank 4] local_y_slices buffer OK (size=134217728 bytes, checksum=79)
+[Rank 18] Verifying buffers before MPI_Ialltoallv...
+[Rank 18] Send buffer: 134217728 bytes (8388608 elements)
+[Rank 18] Send buffer OK (checksum=86)
+[Rank 18] Recv buffer: 132120576 bytes (8257536 elements) for this batch
+[Rank 18] Recv buffer bounds OK
+[Rank 18] Max displacements: send=8388608, recv=130416640
+[Rank 18] CRITICAL CHECK:
+  recv_total_elems = 134217728
+  total_send_batch = 8388608
+  src 0: rdispls=0 + recvcounts=131072 = 131072 (end=131072)
+  src 1: rdispls=4325376 + recvcounts=262144 = 4587520 (end=4587520)
+  src 2: rdispls=8519680 + recvcounts=262144 = 8781824 (end=8781824)
+  src 3: rdispls=12713984 + recvcounts=262144 = 12976128 (end=12976128)
+[Rank 18] All buffer checks passed, calling MPI_Ialltoallv...
+[Rank 13] After generate_hermitian_slice_pair_local (Y=209): Verifying local_y_slices buffer...
+[Rank 13] local_y_slices buffer OK (size=134217728 bytes, checksum=-54)
+[Rank 1] After generate_hermitian_slice_pair_local (Y=17): Verifying local_y_slices buffer...
+[Rank 1] local_y_slices buffer OK (size=134217728 bytes, checksum=-109)
+[Rank 21] After generate_hermitian_slice_pair_local (Y=337): Verifying local_y_slices buffer...
+[Rank 21] local_y_slices buffer OK (size=134217728 bytes, checksum=-50)
+[Rank 22] After generate_hermitian_slice_pair_local (Y=353): Verifying local_y_slices buffer...
+[Rank 22] local_y_slices buffer OK (size=134217728 bytes, checksum=-19)
+[Rank 20] After generate_hermitian_slice_pair_local (Y=321): Verifying local_y_slices buffer...
+[Rank 20] local_y_slices buffer OK (size=134217728 bytes, checksum=43)
+[Rank 26] After generate_hermitian_slice_pair_local (Y=417): Verifying local_y_slices buffer...
+[Rank 26] local_y_slices buffer OK (size=134217728 bytes, checksum=-10)
+[Rank 5] After generate_hermitian_slice_pair_local (Y=81): Verifying local_y_slices buffer...
+[Rank 5] local_y_slices buffer OK (size=134217728 bytes, checksum=91)
+[Rank 13] Verifying buffers before MPI_Ialltoallv...
+[Rank 13] Send buffer: 134217728 bytes (8388608 elements)
+[Rank 13] Send buffer OK (checksum=-87)
+[Rank 13] Recv buffer: 132120576 bytes (8257536 elements) for this batch
+[Rank 13] Recv buffer bounds OK
+[Rank 13] Max displacements: send=8388608, recv=130416640
+[Rank 13] CRITICAL CHECK:
+  recv_total_elems = 134217728
+  total_send_batch = 8388608
+  src 0: rdispls=0 + recvcounts=131072 = 131072 (end=131072)
+  src 1: rdispls=4325376 + recvcounts=262144 = 4587520 (end=4587520)
+  src 2: rdispls=8519680 + recvcounts=262144 = 8781824 (end=8781824)
+  src 3: rdispls=12713984 + recvcounts=262144 = 12976128 (end=12976128)
+[Rank 13] All buffer checks passed, calling MPI_Ialltoallv...
+[Rank 24] After generate_hermitian_slice_pair_local (Y=385): Verifying local_y_slices buffer...
+[Rank 24] local_y_slices buffer OK (size=134217728 bytes, checksum=-107)
+[Rank 14] After generate_hermitian_slice_pair_local (Y=225): Verifying local_y_slices buffer...
+[Rank 14] local_y_slices buffer OK (size=134217728 bytes, checksum=-78)
+[Rank 21] Verifying buffers before MPI_Ialltoallv...
+[Rank 21] Send buffer: 134217728 bytes (8388608 elements)
+[Rank 21] Send buffer OK (checksum=37)
+[Rank 21] Recv buffer: 132120576 bytes (8257536 elements) for this batch
+[Rank 21] Recv buffer bounds OK
+[Rank 21] Max displacements: send=8388608, recv=130416640
+[Rank 21] CRITICAL CHECK:
+  recv_total_elems = 134217728
+  total_send_batch = 8388608
+  src 0: rdispls=0 + recvcounts=131072 = 131072 (end=131072)
+  src 1: rdispls=4325376 + recvcounts=262144 = 4587520 (end=4587520)
+  src 2: rdispls=8519680 + recvcounts=262144 = 8781824 (end=8781824)
+  src 3: rdispls=12713984 + recvcounts=262144 = 12976128 (end=12976128)
+[Rank 21] All buffer checks passed, calling MPI_Ialltoallv...
+[Rank 17] After generate_hermitian_slice_pair_local (Y=273): Verifying local_y_slices buffer...
+[Rank 17] local_y_slices buffer OK (size=134217728 bytes, checksum=-72)
+[Rank 22] Verifying buffers before MPI_Ialltoallv...
+[Rank 22] Send buffer: 134217728 bytes (8388608 elements)
+[Rank 22] Send buffer OK (checksum=-6)
+[Rank 22] Recv buffer: 132120576 bytes (8257536 elements) for this batch
+[Rank 22] Recv buffer bounds OK
+[Rank 22] Max displacements: send=8388608, recv=130416640
+[Rank 22] CRITICAL CHECK:
+  recv_total_elems = 134217728
+  total_send_batch = 8388608
+  src 0: rdispls=0 + recvcounts=131072 = 131072 (end=131072)
+  src 1: rdispls=4325376 + recvcounts=262144 = 4587520 (end=4587520)
+  src 2: rdispls=8519680 + recvcounts=262144 = 8781824 (end=8781824)
+  src 3: rdispls=12713984 + recvcounts=262144 = 12976128 (end=12976128)
+[Rank 22] All buffer checks passed, calling MPI_Ialltoallv...
+[Rank 8] After generate_hermitian_slice_pair_local (Y=129): Verifying local_y_slices buffer...
+[Rank 8] local_y_slices buffer OK (size=134217728 bytes, checksum=21)
+[Rank 12] After generate_hermitian_slice_pair_local (Y=193): Verifying local_y_slices buffer...
+[Rank 12] local_y_slices buffer OK (size=134217728 bytes, checksum=73)
+[Rank 16] After generate_hermitian_slice_pair_local (Y=257): Verifying local_y_slices buffer...
+[Rank 16] local_y_slices buffer OK (size=134217728 bytes, checksum=-15)
+[Rank 30] After generate_hermitian_slice_pair_local (Y=481): Verifying local_y_slices buffer...
+[Rank 20] Verifying buffers before MPI_Ialltoallv...
+[Rank 20] Send buffer: 134217728 bytes (8388608 elements)
+[Rank 20] Send buffer OK (checksum=-126)
+[Rank 20] Recv buffer: 132120576 bytes (8257536 elements) for this batch
+[Rank 20] Recv buffer bounds OK
+[Rank 20] Max displacements: send=8388608, recv=130416640
+[Rank 20] CRITICAL CHECK:
+  recv_total_elems = 134217728
+  total_send_batch = 8388608
+  src 0: rdispls=0 + recvcounts=131072 = 131072 (end=131072)
+  src 1: rdispls=4325376 + recvcounts=262144 = 4587520 (end=4587520)
+  src 2: rdispls=8519680 + recvcounts=262144 = 8781824 (end=8781824)
+  src 3: rdispls=12713984 + recvcounts=262144 = 12976128 (end=12976128)
+[Rank 20] All buffer checks passed, calling MPI_Ialltoallv...
+[Rank 30] local_y_slices buffer OK (size=134217728 bytes, checksum=-101)
+[Rank 26] Verifying buffers before MPI_Ialltoallv...
+[Rank 26] Send buffer: 134217728 bytes (8388608 elements)
+[Rank 26] Send buffer OK (checksum=90)
+[Rank 26] Recv buffer: 132120576 bytes (8257536 elements) for this batch
+[Rank 26] Recv buffer bounds OK
+[Rank 26] Max displacements: send=8388608, recv=130416640
+[Rank 26] CRITICAL CHECK:
+  recv_total_elems = 134217728
+  total_send_batch = 8388608
+  src 0: rdispls=0 + recvcounts=131072 = 131072 (end=131072)
+  src 1: rdispls=4325376 + recvcounts=262144 = 4587520 (end=4587520)
+  src 2: rdispls=8519680 + recvcounts=262144 = 8781824 (end=8781824)
+  src 3: rdispls=12713984 + recvcounts=262144 = 12976128 (end=12976128)
+[Rank 26] All buffer checks passed, calling MPI_Ialltoallv...
+[Rank 9] After generate_hermitian_slice_pair_local (Y=145): Verifying local_y_slices buffer...
+[Rank 9] local_y_slices buffer OK (size=134217728 bytes, checksum=63)
+[Rank 15] After generate_hermitian_slice_pair_local (Y=241): Verifying local_y_slices buffer...
+[Rank 15] local_y_slices buffer OK (size=134217728 bytes, checksum=-128)
+[Rank 4] Verifying buffers before MPI_Ialltoallv...
+[Rank 4] Send buffer: 134217728 bytes (8388608 elements)
+[Rank 4] Send buffer OK (checksum=50)
+[Rank 4] Recv buffer: 132120576 bytes (8257536 elements) for this batch
+[Rank 4] Recv buffer bounds OK
+[Rank 4] Max displacements: send=8388608, recv=130416640
+[Rank 4] CRITICAL CHECK:
+  recv_total_elems = 134217728
+  total_send_batch = 8388608
+  src 0: rdispls=0 + recvcounts=131072 = 131072 (end=131072)
+  src 1: rdispls=4325376 + recvcounts=262144 = 4587520 (end=4587520)
+  src 2: rdispls=8519680 + recvcounts=262144 = 8781824 (end=8781824)
+  src 3: rdispls=12713984 + recvcounts=262144 = 12976128 (end=12976128)
+[Rank 4] All buffer checks passed, calling MPI_Ialltoallv...
+[Rank 11] After generate_hermitian_slice_pair_local (Y=177): Verifying local_y_slices buffer...
+[Rank 11] local_y_slices buffer OK (size=134217728 bytes, checksum=-25)
+[Rank 24] Verifying buffers before MPI_Ialltoallv...
+[Rank 24] Send buffer: 134217728 bytes (8388608 elements)
+[Rank 24] Send buffer OK (checksum=-54)
+[Rank 24] Recv buffer: 132120576 bytes (8257536 elements) for this batch
+[Rank 24] Recv buffer bounds OK
+[Rank 24] Max displacements: send=8388608, recv=130416640
+[Rank 24] CRITICAL CHECK:
+  recv_total_elems = 134217728
+  total_send_batch = 8388608
+  src 0: rdispls=0 + recvcounts=131072 = 131072 (end=131072)
+  src 1: rdispls=4325376 + recvcounts=262144 = 4587520 (end=4587520)
+  src 2: rdispls=8519680 + recvcounts=262144 = 8781824 (end=8781824)
+  src 3: rdispls=12713984 + recvcounts=262144 = 12976128 (end=12976128)
+[Rank 24] All buffer checks passed, calling MPI_Ialltoallv...
+[Rank 28] After generate_hermitian_slice_pair_local (Y=449): Verifying local_y_slices buffer...
+[Rank 28] local_y_slices buffer OK (size=134217728 bytes, checksum=43)
+[Rank 17] Verifying buffers before MPI_Ialltoallv...
+[Rank 17] Send buffer: 134217728 bytes (8388608 elements)
+[Rank 17] Send buffer OK (checksum=107)
+[Rank 17] Recv buffer: 132120576 bytes (8257536 elements) for this batch
+[Rank 17] Recv buffer bounds OK
+[Rank 17] Max displacements: send=8388608, recv=130416640
+[Rank 17] CRITICAL CHECK:
+  recv_total_elems = 134217728
+  total_send_batch = 8388608
+  src 0: rdispls=0 + recvcounts=131072 = 131072 (end=131072)
+  src 1: rdispls=4325376 + recvcounts=262144 = 4587520 (end=4587520)
+  src 2: rdispls=8519680 + recvcounts=262144 = 8781824 (end=8781824)
+  src 3: rdispls=12713984 + recvcounts=262144 = 12976128 (end=12976128)
+[Rank 17] All buffer checks passed, calling MPI_Ialltoallv...
+[Rank 8] Verifying buffers before MPI_Ialltoallv...
+[Rank 8] Send buffer: 134217728 bytes (8388608 elements)
+[Rank 8] Send buffer OK (checksum=-42)
+[Rank 8] Recv buffer: 132120576 bytes (8257536 elements) for this batch
+[Rank 8] Recv buffer bounds OK
+[Rank 8] Max displacements: send=8388608, recv=130416640
+[Rank 8] CRITICAL CHECK:
+  recv_total_elems = 134217728
+  total_send_batch = 8388608
+  src 0: rdispls=0 + recvcounts=131072 = 131072 (end=131072)
+  src 1: rdispls=4325376 + recvcounts=262144 = 4587520 (end=4587520)
+  src 2: rdispls=8519680 + recvcounts=262144 = 8781824 (end=8781824)
+  src 3: rdispls=12713984 + recvcounts=262144 = 12976128 (end=12976128)
+[Rank 8] All buffer checks passed, calling MPI_Ialltoallv...
+[Rank 12] Verifying buffers before MPI_Ialltoallv...
+[Rank 12] Send buffer: 134217728 bytes (8388608 elements)
+[Rank 12] Send buffer OK (checksum=-125)
+[Rank 12] Recv buffer: 132120576 bytes (8257536 elements) for this batch
+[Rank 12] Recv buffer bounds OK
+[Rank 12] Max displacements: send=8388608, recv=130416640
+[Rank 12] CRITICAL CHECK:
+  recv_total_elems = 134217728
+  total_send_batch = 8388608
+  src 0: rdispls=0 + recvcounts=131072 = 131072 (end=131072)
+  src 1: rdispls=4325376 + recvcounts=262144 = 4587520 (end=4587520)
+  src 2: rdispls=8519680 + recvcounts=262144 = 8781824 (end=8781824)
+  src 3: rdispls=12713984 + recvcounts=262144 = 12976128 (end=12976128)
+[Rank 12] All buffer checks passed, calling MPI_Ialltoallv...
+[Rank 10] After generate_hermitian_slice_pair_local (Y=161): Verifying local_y_slices buffer...
+[Rank 10] local_y_slices buffer OK (size=134217728 bytes, checksum=-54)
+[Rank 14] Verifying buffers before MPI_Ialltoallv...
+[Rank 14] Send buffer: 134217728 bytes (8388608 elements)
+[Rank 14] Send buffer OK (checksum=-44)
+[Rank 14] Recv buffer: 132120576 bytes (8257536 elements) for this batch
+[Rank 14] Recv buffer bounds OK
+[Rank 14] Max displacements: send=8388608, recv=130416640
+[Rank 14] CRITICAL CHECK:
+  recv_total_elems = 134217728
+  total_send_batch = 8388608
+  src 0: rdispls=0 + recvcounts=131072 = 131072 (end=131072)
+  src 1: rdispls=4325376 + recvcounts=262144 = 4587520 (end=4587520)
+  src 2: rdispls=8519680 + recvcounts=262144 = 8781824 (end=8781824)
+  src 3: rdispls=12713984 + recvcounts=262144 = 12976128 (end=12976128)
+[Rank 14] All buffer checks passed, calling MPI_Ialltoallv...
+[Rank 30] Verifying buffers before MPI_Ialltoallv...
+[Rank 30] Send buffer: 134217728 bytes (8388608 elements)
+[Rank 30] Send buffer OK (checksum=-106)
+[Rank 30] Recv buffer: 132120576 bytes (8257536 elements) for this batch
+[Rank 30] Recv buffer bounds OK
+[Rank 30] Max displacements: send=8388608, recv=130416640
+[Rank 30] CRITICAL CHECK:
+  recv_total_elems = 134217728
+  total_send_batch = 8388608
+  src 0: rdispls=0 + recvcounts=131072 = 131072 (end=131072)
+  src 1: rdispls=4325376 + recvcounts=262144 = 4587520 (end=4587520)
+  src 2: rdispls=8519680 + recvcounts=262144 = 8781824 (end=8781824)
+  src 3: rdispls=12713984 + recvcounts=262144 = 12976128 (end=12976128)
+[Rank 30] All buffer checks passed, calling MPI_Ialltoallv...
+[Rank 23] After generate_hermitian_slice_pair_local (Y=369): Verifying local_y_slices buffer...
+[Rank 23] local_y_slices buffer OK (size=134217728 bytes, checksum=61)
+[Rank 31] After generate_hermitian_slice_pair_local (Y=497): Verifying local_y_slices buffer...
+[Rank 31] local_y_slices buffer OK (size=134217728 bytes, checksum=-4)
+[Rank 3] Verifying buffers before MPI_Ialltoallv...
+[Rank 3] Send buffer: 134217728 bytes (8388608 elements)
+[Rank 3] Send buffer OK (checksum=34)
+[Rank 3] Recv buffer: 132120576 bytes (8257536 elements) for this batch
+[Rank 3] Recv buffer bounds OK
+[Rank 3] Max displacements: send=8388608, recv=130416640
+[Rank 3] CRITICAL CHECK:
+  recv_total_elems = 134217728
+  total_send_batch = 8388608
+  src 0: rdispls=0 + recvcounts=131072 = 131072 (end=131072)
+  src 1: rdispls=4325376 + recvcounts=262144 = 4587520 (end=4587520)
+  src 2: rdispls=8519680 + recvcounts=262144 = 8781824 (end=8781824)
+  src 3: rdispls=12713984 + recvcounts=262144 = 12976128 (end=12976128)
+[Rank 3] All buffer checks passed, calling MPI_Ialltoallv...
+[Rank 28] Verifying buffers before MPI_Ialltoallv...
+[Rank 28] Send buffer: 134217728 bytes (8388608 elements)
+[Rank 28] Send buffer OK (checksum=-121)
+[Rank 28] Recv buffer: 132120576 bytes (8257536 elements) for this batch
+[Rank 28] Recv buffer bounds OK
+[Rank 28] Max displacements: send=8388608, recv=130416640
+[Rank 28] CRITICAL CHECK:
+  recv_total_elems = 134217728
+  total_send_batch = 8388608
+  src 0: rdispls=0 + recvcounts=131072 = 131072 (end=131072)
+  src 1: rdispls=4325376 + recvcounts=262144 = 4587520 (end=4587520)
+  src 2: rdispls=8519680 + recvcounts=262144 = 8781824 (end=8781824)
+  src 3: rdispls=12713984 + recvcounts=262144 = 12976128 (end=12976128)
+[Rank 28] All buffer checks passed, calling MPI_Ialltoallv...
+[Rank 29] After generate_hermitian_slice_pair_local (Y=465): Verifying local_y_slices buffer...
+[Rank 29] local_y_slices buffer OK (size=134217728 bytes, checksum=-80)
+[Rank 15] Verifying buffers before MPI_Ialltoallv...
+[Rank 15] Send buffer: 134217728 bytes (8388608 elements)
+[Rank 15] Send buffer OK (checksum=-12)
+[Rank 15] Recv buffer: 132120576 bytes (8257536 elements) for this batch
+[Rank 15] Recv buffer bounds OK
+[Rank 15] Max displacements: send=8388608, recv=130416640
+[Rank 15] CRITICAL CHECK:
+  recv_total_elems = 134217728
+  total_send_batch = 8388608
+  src 0: rdispls=0 + recvcounts=131072 = 131072 (end=131072)
+  src 1: rdispls=4325376 + recvcounts=262144 = 4587520 (end=4587520)
+  src 2: rdispls=8519680 + recvcounts=262144 = 8781824 (end=8781824)
+  src 3: rdispls=12713984 + recvcounts=262144 = 12976128 (end=12976128)
+[Rank 15] All buffer checks passed, calling MPI_Ialltoallv...
+[Rank 27] After generate_hermitian_slice_pair_local (Y=433): Verifying local_y_slices buffer...
+[Rank 27] local_y_slices buffer OK (size=134217728 bytes, checksum=-34)
+[Rank 25] After generate_hermitian_slice_pair_local (Y=401): Verifying local_y_slices buffer...
+[Rank 25] local_y_slices buffer OK (size=134217728 bytes, checksum=109)
+[Rank 23] Verifying buffers before MPI_Ialltoallv...
+[Rank 23] Send buffer: 134217728 bytes (8388608 elements)
+[Rank 23] Send buffer OK (checksum=45)
+[Rank 23] Recv buffer: 132120576 bytes (8257536 elements) for this batch
+[Rank 23] Recv buffer bounds OK
+[Rank 23] Max displacements: send=8388608, recv=130416640
+[Rank 23] CRITICAL CHECK:
+  recv_total_elems = 134217728
+  total_send_batch = 8388608
+  src 0: rdispls=0 + recvcounts=131072 = 131072 (end=131072)
+  src 1: rdispls=4325376 + recvcounts=262144 = 4587520 (end=4587520)
+  src 2: rdispls=8519680 + recvcounts=262144 = 8781824 (end=8781824)
+  src 3: rdispls=12713984 + recvcounts=262144 = 12976128 (end=12976128)
+[Rank 23] All buffer checks passed, calling MPI_Ialltoallv...
+[Rank 31] Verifying buffers before MPI_Ialltoallv...
+[Rank 31] Send buffer: 134217728 bytes (8388608 elements)
+[Rank 31] Send buffer OK (checksum=-92)
+[Rank 31] Recv buffer: 132120576 bytes (8257536 elements) for this batch
+[Rank 31] Recv buffer bounds OK
+[Rank 31] Max displacements: send=8388608, recv=130416640
+[Rank 31] CRITICAL CHECK:
+  recv_total_elems = 134217728
+  total_send_batch = 8388608
+  src 0: rdispls=0 + recvcounts=131072 = 131072 (end=131072)
+  src 1: rdispls=4325376 + recvcounts=262144 = 4587520 (end=4587520)
+  src 2: rdispls=8519680 + recvcounts=262144 = 8781824 (end=8781824)
+  src 3: rdispls=12713984 + recvcounts=262144 = 12976128 (end=12976128)
+[Rank 31] All buffer checks passed, calling MPI_Ialltoallv...
+[Rank 7] After generate_hermitian_slice_pair_local (Y=113): Verifying local_y_slices buffer...
+[Rank 7] local_y_slices buffer OK (size=134217728 bytes, checksum=21)
+[Rank 6] After generate_hermitian_slice_pair_local (Y=97): Verifying local_y_slices buffer...
+[Rank 6] local_y_slices buffer OK (size=134217728 bytes, checksum=80)
+[Rank 5] Verifying buffers before MPI_Ialltoallv...
+[Rank 5] Send buffer: 134217728 bytes (8388608 elements)
+[Rank 5] Send buffer OK (checksum=93)
+[Rank 5] Recv buffer: 132120576 bytes (8257536 elements) for this batch
+[Rank 5] Recv buffer bounds OK
+[Rank 5] Max displacements: send=8388608, recv=130416640
+[Rank 5] CRITICAL CHECK:
+  recv_total_elems = 134217728
+  total_send_batch = 8388608
+  src 0: rdispls=0 + recvcounts=131072 = 131072 (end=131072)
+  src 1: rdispls=4325376 + recvcounts=262144 = 4587520 (end=4587520)
+  src 2: rdispls=8519680 + recvcounts=262144 = 8781824 (end=8781824)
+  src 3: rdispls=12713984 + recvcounts=262144 = 12976128 (end=12976128)
+[Rank 5] All buffer checks passed, calling MPI_Ialltoallv...
+[Rank 27] Verifying buffers before MPI_Ialltoallv...
+[Rank 27] Send buffer: 134217728 bytes (8388608 elements)
+[Rank 27] Send buffer OK (checksum=-96)
+[Rank 27] Recv buffer: 132120576 bytes (8257536 elements) for this batch
+[Rank 27] Recv buffer bounds OK
+[Rank 27] Max displacements: send=8388608, recv=130416640
+[Rank 27] CRITICAL CHECK:
+  recv_total_elems = 134217728
+  total_send_batch = 8388608
+  src 0: rdispls=0 + recvcounts=131072 = 131072 (end=131072)
+  src 1: rdispls=4325376 + recvcounts=262144 = 4587520 (end=4587520)
+  src 2: rdispls=8519680 + recvcounts=262144 = 8781824 (end=8781824)
+  src 3: rdispls=12713984 + recvcounts=262144 = 12976128 (end=12976128)
+[Rank 27] All buffer checks passed, calling MPI_Ialltoallv...
+[Rank 29] Verifying buffers before MPI_Ialltoallv...
+[Rank 29] Send buffer: 134217728 bytes (8388608 elements)
+[Rank 29] Send buffer OK (checksum=-23)
+[Rank 29] Recv buffer: 132120576 bytes (8257536 elements) for this batch
+[Rank 29] Recv buffer bounds OK
+[Rank 29] Max displacements: send=8388608, recv=130416640
+[Rank 29] CRITICAL CHECK:
+  recv_total_elems = 134217728
+  total_send_batch = 8388608
+  src 0: rdispls=0 + recvcounts=131072 = 131072 (end=131072)
+  src 1: rdispls=4325376 + recvcounts=262144 = 4587520 (end=4587520)
+  src 2: rdispls=8519680 + recvcounts=262144 = 8781824 (end=8781824)
+  src 3: rdispls=12713984 + recvcounts=262144 = 12976128 (end=12976128)
+[Rank 29] All buffer checks passed, calling MPI_Ialltoallv...
+[Rank 25] Verifying buffers before MPI_Ialltoallv...
+[Rank 25] Send buffer: 134217728 bytes (8388608 elements)
+[Rank 25] Send buffer OK (checksum=49)
+[Rank 25] Recv buffer: 132120576 bytes (8257536 elements) for this batch
+[Rank 25] Recv buffer bounds OK
+[Rank 25] Max displacements: send=8388608, recv=130416640
+[Rank 25] CRITICAL CHECK:
+  recv_total_elems = 134217728
+  total_send_batch = 8388608
+  src 0: rdispls=0 + recvcounts=131072 = 131072 (end=131072)
+  src 1: rdispls=4325376 + recvcounts=262144 = 4587520 (end=4587520)
+  src 2: rdispls=8519680 + recvcounts=262144 = 8781824 (end=8781824)
+  src 3: rdispls=12713984 + recvcounts=262144 = 12976128 (end=12976128)
+[Rank 25] All buffer checks passed, calling MPI_Ialltoallv...
+[Rank 10] Verifying buffers before MPI_Ialltoallv...
+[Rank 10] Send buffer: 134217728 bytes (8388608 elements)
+[Rank 10] Send buffer OK (checksum=42)
+[Rank 10] Recv buffer: 132120576 bytes (8257536 elements) for this batch
+[Rank 10] Recv buffer bounds OK
+[Rank 10] Max displacements: send=8388608, recv=130416640
+[Rank 10] CRITICAL CHECK:
+  recv_total_elems = 134217728
+  total_send_batch = 8388608
+  src 0: rdispls=0 + recvcounts=131072 = 131072 (end=131072)
+  src 1: rdispls=4325376 + recvcounts=262144 = 4587520 (end=4587520)
+  src 2: rdispls=8519680 + recvcounts=262144 = 8781824 (end=8781824)
+  src 3: rdispls=12713984 + recvcounts=262144 = 12976128 (end=12976128)
+[Rank 10] All buffer checks passed, calling MPI_Ialltoallv...
+[Rank 7] Verifying buffers before MPI_Ialltoallv...
+[Rank 7] Send buffer: 134217728 bytes (8388608 elements)
+[Rank 7] Send buffer OK (checksum=-62)
+[Rank 7] Recv buffer: 132120576 bytes (8257536 elements) for this batch
+[Rank 7] Recv buffer bounds OK
+[Rank 7] Max displacements: send=8388608, recv=130416640
+[Rank 7] CRITICAL CHECK:
+  recv_total_elems = 134217728
+  total_send_batch = 8388608
+  src 0: rdispls=0 + recvcounts=131072 = 131072 (end=131072)
+  src 1: rdispls=4325376 + recvcounts=262144 = 4587520 (end=4587520)
+  src 2: rdispls=8519680 + recvcounts=262144 = 8781824 (end=8781824)
+  src 3: rdispls=12713984 + recvcounts=262144 = 12976128 (end=12976128)
+[Rank 7] All buffer checks passed, calling MPI_Ialltoallv...
+[Rank 16] Verifying buffers before MPI_Ialltoallv...
+[Rank 16] Send buffer: 134217728 bytes (8388608 elements)
+[Rank 16] Send buffer OK (checksum=-8)
+[Rank 16] Recv buffer: 132120576 bytes (8257536 elements) for this batch
+[Rank 16] Recv buffer bounds OK
+[Rank 16] Max displacements: send=8388608, recv=130416640
+[Rank 16] CRITICAL CHECK:
+  recv_total_elems = 134217728
+  total_send_batch = 8388608
+  src 0: rdispls=0 + recvcounts=131072 = 131072 (end=131072)
+  src 1: rdispls=4325376 + recvcounts=262144 = 4587520 (end=4587520)
+  src 2: rdispls=8519680 + recvcounts=262144 = 8781824 (end=8781824)
+  src 3: rdispls=12713984 + recvcounts=262144 = 12976128 (end=12976128)
+[Rank 16] All buffer checks passed, calling MPI_Ialltoallv...
+[Rank 11] Verifying buffers before MPI_Ialltoallv...
+[Rank 11] Send buffer: 134217728 bytes (8388608 elements)
+[Rank 11] Send buffer OK (checksum=-52)
+[Rank 11] Recv buffer: 132120576 bytes (8257536 elements) for this batch
+[Rank 11] Recv buffer bounds OK
+[Rank 11] Max displacements: send=8388608, recv=130416640
+[Rank 11] CRITICAL CHECK:
+  recv_total_elems = 134217728
+  total_send_batch = 8388608
+  src 0: rdispls=0 + recvcounts=131072 = 131072 (end=131072)
+  src 1: rdispls=4325376 + recvcounts=262144 = 4587520 (end=4587520)
+  src 2: rdispls=8519680 + recvcounts=262144 = 8781824 (end=8781824)
+  src 3: rdispls=12713984 + recvcounts=262144 = 12976128 (end=12976128)
+[Rank 11] All buffer checks passed, calling MPI_Ialltoallv...
+double free or corruption (out)
+[della-h17n6:2525722] *** Process received signal ***
+[della-h17n6:2525722] Signal: Aborted (6)
+[della-h17n6:2525722] Signal code:  (-6)
+[della-h17n6:2525722] [ 0] /lib64/libc.so.6(+0x3ebf0)[0x14e57e43ebf0]
+[della-h17n6:2525722] [ 1] /lib64/libc.so.6(+0x8bedc)[0x14e57e48bedc]
+[della-h17n6:2525722] [ 2] /lib64/libc.so.6(raise+0x16)[0x14e57e43eb46]
+[della-h17n6:2525722] [ 3] /lib64/libc.so.6(abort+0xd3)[0x14e57e428833]
+[della-h17n6:2525722] [ 4] /lib64/libc.so.6(+0x29172)[0x14e57e429172]
+[della-h17n6:2525722] [ 5] /lib64/libc.so.6(+0x95f87)[0x14e57e495f87]
+[della-h17n6:2525722] [ 6] /lib64/libc.so.6(+0x97c70)[0x14e57e497c70]
+[della-h17n6:2525722] [ 7] /lib64/libc.so.6(free+0x55)[0x14e57e49a2c5]
+[della-h17n6:2525722] [ 8] /lib64/libucp.so.0(ucp_wireup_eps_progress+0x12b)[0x14e57d57173b]
+[della-h17n6:2525722] [ 9] /lib64/libucs.so.0(+0x2d687)[0x14e57d435687]
+[della-h17n6:2525722] [10] /lib64/libucp.so.0(ucp_worker_progress+0x5a)[0x14e57d51685a]
+[della-h17n6:2525722] [11] /usr/local/openmpi/4.1.6/gcc/lib64/libopen-pal.so.40(opal_progress+0x2c)[0x14e57eacd86c]
+[della-h17n6:2525722] [12] /usr/local/openmpi/4.1.6/gcc/lib64/libmpi.so.40(ompi_request_default_wait+0x45)[0x14e57f1c8f25]
+[della-h17n6:2525722] [13] /usr/local/openmpi/4.1.6/gcc/lib64/libmpi.so.40(PMPI_Wait+0x54)[0x14e57f201854]
+[della-h17n6:2525722] [14] /scratch/gpfs/hshao/C_Bible/InitialConditions/hermitian_3d_matrix_production/./hermitian_3d_matrix(main+0xfa9)[0x407f49]
+[della-h17n6:2525722] [15] /lib64/libc.so.6(+0x295d0)[0x14e57e4295d0]
+[della-h17n6:2525722] [16] /lib64/libc.so.6(__libc_start_main+0x80)[0x14e57e429680]
+[della-h17n6:2525722] [17] /scratch/gpfs/hshao/C_Bible/InitialConditions/hermitian_3d_matrix_production/./hermitian_3d_matrix[0x40a465]
+[della-h17n6:2525722] *** End of error message ***
+[Rank 1] Verifying buffers before MPI_Ialltoallv...
+[Rank 1] Send buffer: 134217728 bytes (8388608 elements)
+[Rank 1] Send buffer OK (checksum=80)
+[Rank 1] Recv buffer: 132120576 bytes (8257536 elements) for this batch
+[Rank 1] Recv buffer bounds OK
+[Rank 1] Max displacements: send=8388608, recv=130416640
+[Rank 1] CRITICAL CHECK:
+  recv_total_elems = 134217728
+  total_send_batch = 8388608
+  src 0: rdispls=0 + recvcounts=131072 = 131072 (end=131072)
+  src 1: rdispls=4325376 + recvcounts=262144 = 4587520 (end=4587520)
+  src 2: rdispls=8519680 + recvcounts=262144 = 8781824 (end=8781824)
+  src 3: rdispls=12713984 + recvcounts=262144 = 12976128 (end=12976128)
+[Rank 1] All buffer checks passed, calling MPI_Ialltoallv...
+[Rank 9] Verifying buffers before MPI_Ialltoallv...
+[Rank 9] Send buffer: 134217728 bytes (8388608 elements)
+[Rank 9] Send buffer OK (checksum=80)
+[Rank 9] Recv buffer: 132120576 bytes (8257536 elements) for this batch
+[Rank 9] Recv buffer bounds OK
+[Rank 9] Max displacements: send=8388608, recv=130416640
+[Rank 9] CRITICAL CHECK:
+  recv_total_elems = 134217728
+  total_send_batch = 8388608
+  src 0: rdispls=0 + recvcounts=131072 = 131072 (end=131072)
+  src 1: rdispls=4325376 + recvcounts=262144 = 4587520 (end=4587520)
+  src 2: rdispls=8519680 + recvcounts=262144 = 8781824 (end=8781824)
+  src 3: rdispls=12713984 + recvcounts=262144 = 12976128 (end=12976128)
+[Rank 9] All buffer checks passed, calling MPI_Ialltoallv...
+srun: error: della-h17n6: task 28: Aborted (core dumped)
+srun: Terminating StepId=2610465.6
+[2025-11-29T08:34:11.119] error: *** STEP 2610465.6 ON della-h17n5 CANCELLED AT 2025-11-29T08:34:11 DUE TO TASK FAILURE ***
+[DEBUG Y=0] After 2D FFT (Real space) - PRIMARY slice - Max real/imag per array: A0: re=5.242e+05 im=3.237e-13srun: error: della-h17n6: tasks 18-27,29-31: Terminated
+srun: error: della-h17n5: tasks 0-17: Terminated
+srun: Force Terminated StepId=2610465.6

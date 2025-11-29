@@ -1,0 +1,16 @@
+[2025-11-28T20:04:23.106] error: execve(): /scratch/gpfs/hshao/C_Bible/InitialConditions/hermitian_3d_matrix_production/./hermitian_3d_matrix: No such file or directory
+[2025-11-28T20:04:23.106] error: execve(): /scratch/gpfs/hshao/C_Bible/InitialConditions/hermitian_3d_matrix_production/./hermitian_3d_matrix: No such file or directory
+[2025-11-28T20:04:23.106] error: execve(): /scratch/gpfs/hshao/C_Bible/InitialConditions/hermitian_3d_matrix_production/./hermitian_3d_matrix: No such file or directory
+[2025-11-28T20:04:23.106] error: execve(): /scratch/gpfs/hshao/C_Bible/InitialConditions/hermitian_3d_matrix_production/./hermitian_3d_matrix: No such file or directory
+[2025-11-28T20:04:23.106] error: execve(): /scratch/gpfs/hshao/C_Bible/InitialConditions/hermitian_3d_matrix_production/./hermitian_3d_matrix: No such file or directory
+[2025-11-28T20:04:23.106] error: execve(): /scratch/gpfs/hshao/C_Bible/InitialConditions/hermitian_3d_matrix_production/./hermitian_3d_matrix: No such file or directory
+[2025-11-28T20:04:23.106] error: execve(): /scratch/gpfs/hshao/C_Bible/InitialConditions/hermitian_3d_matrix_production/./hermitian_3d_matrix: No such file or directory
+[2025-11-28T20:04:23.106] error: execve(): /scratch/gpfs/hshao/C_Bible/InitialConditions/hermitian_3d_matrix_production/./hermitian_3d_matrix: No such file or directory
+[2025-11-28T20:04:23.106] error: execve(): /scratch/gpfs/hshao/C_Bible/InitialConditions/hermitian_3d_matrix_production/./hermitian_3d_matrix: No such file or directory
+[2025-11-28T20:04:23.106] error: execve(): /scratch/gpfs/hshao/C_Bible/InitialConditions/hermitian_3d_matrix_production/./hermitian_3d_matrix: No such file or directory
+[2025-11-28T20:04:23.106] error: execve(): /scratch/gpfs/hshao/C_Bible/InitialConditions/hermitian_3d_matrix_production/./hermitian_3d_matrix: No such file or directory
+[2025-11-28T20:04:23.106] error: execve(): /scratch/gpfs/hshao/C_Bible/InitialConditions/hermitian_3d_matrix_production/./hermitian_3d_matrix: No such file or directory
+[2025-11-28T20:04:23.106] error: execve(): /scratch/gpfs/hshao/C_Bible/InitialConditions/hermitian_3d_matrix_production/./hermitian_3d_matrix: No such file or directory
+[2025-11-28T20:04:23.106] error: execve(): /scratch/gpfs/hshao/C_Bible/InitialConditions/hermitian_3d_matrix_production/./hermitian_3d_matrix: No such file or directory
+srun: error: della-r3c2n15: tasks 0-13: Exited with exit code 2
+srun: Terminating StepId=2606786.0

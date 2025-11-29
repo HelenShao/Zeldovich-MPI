@@ -1,0 +1,207 @@
+// ====================================================================================
+// ZELDOVICH-PLT C WRAPPER - IMPLEMENTATION
+// ====================================================================================
+// C++ implementation of C interface for zeldovich-PLT PowerSpectrum class
+// ====================================================================================
+
+#include "zeldovich_wrapper.h"
+
+// Include zeldovich-PLT headers
+// Note: Use angle brackets to search include paths first (avoiding local src/utils/power_spectrum.h)
+// zeldovich-PLT include path comes first in Makefile
+#include <power_spectrum.h>
+#include <parameters.h>
+#include <zeldovich.h>
+
+extern "C" {
+
+// ====================================================================================
+// PARAMETERS INTERFACE
+// ====================================================================================
+
+ParametersHandle zeldovich_params_create(const char* param_file) {
+    try {
+        Parameters* params = new Parameters(fs::path(param_file));
+        return static_cast<ParametersHandle>(params);
+    } catch (...) {
+        return NULL;
+    }
+}
+
+void zeldovich_params_destroy(ParametersHandle params) {
+    if (params) {
+        delete static_cast<Parameters*>(params);
+    }
+}
+
+double zeldovich_params_get_fundamental(ParametersHandle params) {
+    if (!params) return 0.0;
+    Parameters* p = static_cast<Parameters*>(params);
+    return p->fundamental;
+}
+
+double zeldovich_params_get_boxsize(ParametersHandle params) {
+    if (!params) return 0.0;
+    Parameters* p = static_cast<Parameters*>(params);
+    return p->boxsize;
+}
+
+double zeldovich_params_get_Pk_scale(ParametersHandle params) {
+    if (!params) return 0.0;
+    Parameters* p = static_cast<Parameters*>(params);
+    return p->Pk_scale;
+}
+
+int64_t zeldovich_params_get_ppd(ParametersHandle params) {
+    if (!params) return 0;
+    Parameters* p = static_cast<Parameters*>(params);
+    return p->ppd;
+}
+
+int zeldovich_params_get_seed(ParametersHandle params) {
+    if (!params) return 0;
+    Parameters* p = static_cast<Parameters*>(params);
+    return p->seed;
+}
+
+double zeldovich_params_get_Pk_powerlaw_index(ParametersHandle params) {
+    if (!params) return 1000.0;  // Default invalid value
+    Parameters* p = static_cast<Parameters*>(params);
+    return p->Pk_powerlaw_index;
+}
+
+// ====================================================================================
+// POWER SPECTRUM INTERFACE
+// ====================================================================================
+
+// Track destroyed objects to prevent double-free
+// Use a simple set-like structure: store pointers in a static array
+// For MPI, each rank has its own static variables, so this is safe
+static const int MAX_TRACKED_OBJECTS = 1024;
+static PowerSpectrum* destroyed_objects[MAX_TRACKED_OBJECTS];
+static int num_destroyed = 0;
+
+PowerSpectrumHandle zeldovich_ps_create(int n, ParametersHandle params) {
+    if (!params) return NULL;
+    try {
+        Parameters* p = static_cast<Parameters*>(params);
+        PowerSpectrum* ps = new PowerSpectrum(n, *p);
+        return static_cast<PowerSpectrumHandle>(ps);
+    } catch (...) {
+        return NULL;
+    }
+}
+
+void zeldovich_ps_destroy(PowerSpectrumHandle ps) {
+    if (!ps) return;
+    
+    PowerSpectrum* p = static_cast<PowerSpectrum*>(ps);
+    
+    // Check if this object was already destroyed
+    for (int i = 0; i < num_destroyed; i++) {
+        if (destroyed_objects[i] == p) {
+            // Already destroyed, skip (prevent double-free)
+            fprintf(stderr, "[DEBUG] zeldovich_ps_destroy: Object %p already destroyed, skipping\n", (void*)p);
+            return;
+        }
+    }
+    
+    // Mark as destroyed BEFORE deletion (critical for preventing double-free)
+    if (num_destroyed < MAX_TRACKED_OBJECTS) {
+        destroyed_objects[num_destroyed++] = p;
+    } else {
+        fprintf(stderr, "[WARNING] zeldovich_ps_destroy: Tracking array full, cannot prevent double-free\n");
+        // Even if tracking is full, still try to delete (better than leaking memory)
+    }
+    
+    fprintf(stderr, "[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object %p (tracked: %d/%d)\n", 
+            (void*)p, num_destroyed, MAX_TRACKED_OBJECTS);
+    
+    try {
+        // Delete the PowerSpectrum object
+        // The destructor will delete[] v2rng array
+        // NOTE: After deletion, p becomes a dangling pointer - do not dereference
+        delete p;
+        // Set pointer to NULL after deletion to prevent accidental reuse
+        // (Note: p is local, but this documents intent)
+        p = NULL;
+        fprintf(stderr, "[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object\n");
+    } catch (const std::exception& e) {
+        fprintf(stderr, "[ERROR] zeldovich_ps_destroy: Exception during deletion: %s\n", e.what());
+    } catch (...) {
+        // Ignore other exceptions during destruction (shouldn't happen, but be safe)
+        fprintf(stderr, "[ERROR] zeldovich_ps_destroy: Unknown exception during deletion\n");
+    }
+}
+
+int zeldovich_ps_init_powerlaw(PowerSpectrumHandle ps, double powerlaw_index, ParametersHandle params) {
+    if (!ps || !params) return -1;
+    try {
+        PowerSpectrum* p = static_cast<PowerSpectrum*>(ps);
+        Parameters* par = static_cast<Parameters*>(params);
+        return p->InitFromPowerLaw(powerlaw_index, *par);
+    } catch (...) {
+        return -1;
+    }
+}
+
+int zeldovich_ps_init_file(PowerSpectrumHandle ps, const char* filename, ParametersHandle params) {
+    if (!ps || !params) return -1;
+    try {
+        PowerSpectrum* p = static_cast<PowerSpectrum*>(ps);
+        Parameters* par = static_cast<Parameters*>(params);
+        return p->InitFromFile(fs::path(filename), *par);
+    } catch (...) {
+        return -1;
+    }
+}
+
+double zeldovich_ps_power(PowerSpectrumHandle ps, double wavenumber) {
+    if (!ps) return 0.0;
+    PowerSpectrum* p = static_cast<PowerSpectrum*>(ps);
+    return p->power(wavenumber);
+}
+
+double zeldovich_ps_one_rand(PowerSpectrumHandle ps, int64_t rng_index) {
+    if (!ps) {
+        fprintf(stderr, "ERROR: zeldovich_ps_one_rand called with NULL PowerSpectrum!\n");
+        return 0.0;
+    }
+    PowerSpectrum* p = static_cast<PowerSpectrum*>(ps);
+    return p->one_rand<2>(rng_index);
+}
+
+void zeldovich_ps_cgauss(PowerSpectrumHandle ps, double wavenumber, int64_t rng_index, double* real, double* imag) {
+    if (!ps || !real || !imag) return;
+    PowerSpectrum* p = static_cast<PowerSpectrum*>(ps);
+    Complx result = p->cgauss<2>(wavenumber, rng_index);
+    *real = result.real();
+    *imag = result.imag();
+}
+
+double zeldovich_ps_get_normalization(PowerSpectrumHandle ps) {
+    if (!ps) return 0.0;
+    PowerSpectrum* p = static_cast<PowerSpectrum*>(ps);
+    return p->normalization;
+}
+
+double zeldovich_ps_get_powerlaw_index(PowerSpectrumHandle ps) {
+    if (!ps) return 0.0;
+    PowerSpectrum* p = static_cast<PowerSpectrum*>(ps);
+    return p->powerlaw_index;
+}
+
+double zeldovich_ps_get_Pk_smooth2(PowerSpectrumHandle ps) {
+    if (!ps) return 0.0;
+    PowerSpectrum* p = static_cast<PowerSpectrum*>(ps);
+    return p->Pk_smooth2;
+}
+
+int zeldovich_ps_get_fixed_power(PowerSpectrumHandle ps) {
+    if (!ps) return 0;
+    PowerSpectrum* p = static_cast<PowerSpectrum*>(ps);
+    return p->fixed_power;
+}
+
+} // extern "C"
+

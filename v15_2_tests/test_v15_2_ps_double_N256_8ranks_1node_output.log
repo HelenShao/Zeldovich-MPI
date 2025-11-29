@@ -1,0 +1,261 @@
+--------------------------------------------------------------------------
+Although some coll components are available on your system, none of
+them said that they could be used for iallgather on a new communicator.
+
+This is extremely unusual -- either the "basic", "libnbc" or "self" components
+should be able to be chosen for any communicator.  As such, this
+likely means that something else is wrong (although you should double
+check that the "basic", "libnbc" and "self" coll components are available on
+your system -- check the output of the "ompi_info" command).
+A coll module failed to finalize properly when a communicator that was
+using it was destroyed.
+
+This is somewhat unusual: the module itself may be at fault, or this
+may be a symptom of another issue (e.g., a memory problem).
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+Although some coll components are available on your system, none of
+them said that they could be used for iallgather on a new communicator.
+
+This is extremely unusual -- either the "basic", "libnbc" or "self" components
+should be able to be chosen for any communicator.  As such, this
+likely means that something else is wrong (although you should double
+check that the "basic", "libnbc" and "self" coll components are available on
+your system -- check the output of the "ompi_info" command).
+A coll module failed to finalize properly when a communicator that was
+using it was destroyed.
+
+This is somewhat unusual: the module itself may be at fault, or this
+may be a symptom of another issue (e.g., a memory problem).
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+It looks like MPI_INIT failed for some reason; your parallel process is
+likely to abort.  There are many reasons that a parallel process can
+fail during MPI_INIT; some of which are due to configuration or environment
+problems.  This failure appears to be an internal failure; here's some
+additional information (which may only be relevant to an Open MPI
+developer):
+
+  mca_coll_base_comm_select(MPI_COMM_WORLD) failed
+  --> Returned "Not found" (-13) instead of "Success" (0)
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+It looks like MPI_INIT failed for some reason; your parallel process is
+likely to abort.  There are many reasons that a parallel process can
+fail during MPI_INIT; some of which are due to configuration or environment
+problems.  This failure appears to be an internal failure; here's some
+additional information (which may only be relevant to an Open MPI
+developer):
+
+  mca_coll_base_comm_select(MPI_COMM_WORLD) failed
+  --> Returned "Not found" (-13) instead of "Success" (0)
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+Although some coll components are available on your system, none of
+them said that they could be used for iallgather on a new communicator.
+
+This is extremely unusual -- either the "basic", "libnbc" or "self" components
+should be able to be chosen for any communicator.  As such, this
+likely means that something else is wrong (although you should double
+check that the "basic", "libnbc" and "self" coll components are available on
+your system -- check the output of the "ompi_info" command).
+A coll module failed to finalize properly when a communicator that was
+using it was destroyed.
+
+This is somewhat unusual: the module itself may be at fault, or this
+may be a symptom of another issue (e.g., a memory problem).
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+It looks like MPI_INIT failed for some reason; your parallel process is
+likely to abort.  There are many reasons that a parallel process can
+fail during MPI_INIT; some of which are due to configuration or environment
+problems.  This failure appears to be an internal failure; here's some
+additional information (which may only be relevant to an Open MPI
+developer):
+
+  mca_coll_base_comm_select(MPI_COMM_WORLD) failed
+  --> Returned "Not found" (-13) instead of "Success" (0)
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+Although some coll components are available on your system, none of
+them said that they could be used for iallgather on a new communicator.
+
+This is extremely unusual -- either the "basic", "libnbc" or "self" components
+should be able to be chosen for any communicator.  As such, this
+likely means that something else is wrong (although you should double
+check that the "basic", "libnbc" and "self" coll components are available on
+your system -- check the output of the "ompi_info" command).
+A coll module failed to finalize properly when a communicator that was
+using it was destroyed.
+
+This is somewhat unusual: the module itself may be at fault, or this
+may be a symptom of another issue (e.g., a memory problem).
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+Although some coll components are available on your system, none of
+them said that they could be used for iallgather on a new communicator.
+
+This is extremely unusual -- either the "basic", "libnbc" or "self" components
+should be able to be chosen for any communicator.  As such, this
+likely means that something else is wrong (although you should double
+check that the "basic", "libnbc" and "self" coll components are available on
+your system -- check the output of the "ompi_info" command).
+A coll module failed to finalize properly when a communicator that was
+using it was destroyed.
+
+This is somewhat unusual: the module itself may be at fault, or this
+may be a symptom of another issue (e.g., a memory problem).
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+It looks like MPI_INIT failed for some reason; your parallel process is
+likely to abort.  There are many reasons that a parallel process can
+fail during MPI_INIT; some of which are due to configuration or environment
+problems.  This failure appears to be an internal failure; here's some
+additional information (which may only be relevant to an Open MPI
+developer):
+
+  mca_coll_base_comm_select(MPI_COMM_WORLD) failed
+  --> Returned "Not found" (-13) instead of "Success" (0)
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+Although some coll components are available on your system, none of
+them said that they could be used for iallgather on a new communicator.
+
+This is extremely unusual -- either the "basic", "libnbc" or "self" components
+should be able to be chosen for any communicator.  As such, this
+likely means that something else is wrong (although you should double
+check that the "basic", "libnbc" and "self" coll components are available on
+your system -- check the output of the "ompi_info" command).
+A coll module failed to finalize properly when a communicator that was
+using it was destroyed.
+
+This is somewhat unusual: the module itself may be at fault, or this
+may be a symptom of another issue (e.g., a memory problem).
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+It looks like MPI_INIT failed for some reason; your parallel process is
+likely to abort.  There are many reasons that a parallel process can
+fail during MPI_INIT; some of which are due to configuration or environment
+problems.  This failure appears to be an internal failure; here's some
+additional information (which may only be relevant to an Open MPI
+developer):
+
+  mca_coll_base_comm_select(MPI_COMM_WORLD) failed
+  --> Returned "Not found" (-13) instead of "Success" (0)
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+It looks like MPI_INIT failed for some reason; your parallel process is
+likely to abort.  There are many reasons that a parallel process can
+fail during MPI_INIT; some of which are due to configuration or environment
+problems.  This failure appears to be an internal failure; here's some
+additional information (which may only be relevant to an Open MPI
+developer):
+
+  mca_coll_base_comm_select(MPI_COMM_WORLD) failed
+  --> Returned "Not found" (-13) instead of "Success" (0)
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+Although some coll components are available on your system, none of
+them said that they could be used for iallgather on a new communicator.
+
+This is extremely unusual -- either the "basic", "libnbc" or "self" components
+should be able to be chosen for any communicator.  As such, this
+likely means that something else is wrong (although you should double
+check that the "basic", "libnbc" and "self" coll components are available on
+your system -- check the output of the "ompi_info" command).
+A coll module failed to finalize properly when a communicator that was
+using it was destroyed.
+
+This is somewhat unusual: the module itself may be at fault, or this
+may be a symptom of another issue (e.g., a memory problem).
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+It looks like MPI_INIT failed for some reason; your parallel process is
+likely to abort.  There are many reasons that a parallel process can
+fail during MPI_INIT; some of which are due to configuration or environment
+problems.  This failure appears to be an internal failure; here's some
+additional information (which may only be relevant to an Open MPI
+developer):
+
+  mca_coll_base_comm_select(MPI_COMM_WORLD) failed
+  --> Returned "Not found" (-13) instead of "Success" (0)
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+Although some coll components are available on your system, none of
+them said that they could be used for iallgather on a new communicator.
+
+This is extremely unusual -- either the "basic", "libnbc" or "self" components
+should be able to be chosen for any communicator.  As such, this
+likely means that something else is wrong (although you should double
+check that the "basic", "libnbc" and "self" coll components are available on
+your system -- check the output of the "ompi_info" command).
+A coll module failed to finalize properly when a communicator that was
+using it was destroyed.
+
+This is somewhat unusual: the module itself may be at fault, or this
+may be a symptom of another issue (e.g., a memory problem).
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+It looks like MPI_INIT failed for some reason; your parallel process is
+likely to abort.  There are many reasons that a parallel process can
+fail during MPI_INIT; some of which are due to configuration or environment
+problems.  This failure appears to be an internal failure; here's some
+additional information (which may only be relevant to an Open MPI
+developer):
+
+  mca_coll_base_comm_select(MPI_COMM_WORLD) failed
+  --> Returned "Not found" (-13) instead of "Success" (0)
+--------------------------------------------------------------------------
+[della-r3c2n13:1994640] *** An error occurred in MPI_Init
+[della-r3c2n13:1994640] *** reported by process [3644150203,0]
+[della-r3c2n13:1994640] *** on a NULL communicator
+[della-r3c2n13:1994640] *** Unknown error
+[della-r3c2n13:1994640] *** MPI_ERRORS_ARE_FATAL (processes in this communicator will now abort,
+[della-r3c2n13:1994640] ***    and potentially your MPI job)
+[della-r3c2n13:1994641] *** An error occurred in MPI_Init
+[della-r3c2n13:1994641] *** reported by process [3644150203,1]
+[della-r3c2n13:1994641] *** on a NULL communicator
+[della-r3c2n13:1994641] *** Unknown error
+[della-r3c2n13:1994641] *** MPI_ERRORS_ARE_FATAL (processes in this communicator will now abort,
+[della-r3c2n13:1994641] ***    and potentially your MPI job)
+[della-r3c2n13:1994642] *** An error occurred in MPI_Init
+[della-r3c2n13:1994642] *** reported by process [3644150203,2]
+[della-r3c2n13:1994642] *** on a NULL communicator
+[della-r3c2n13:1994642] *** Unknown error
+[della-r3c2n13:1994642] *** MPI_ERRORS_ARE_FATAL (processes in this communicator will now abort,
+[della-r3c2n13:1994642] ***    and potentially your MPI job)
+[della-r3c2n13:1994643] *** An error occurred in MPI_Init
+[della-r3c2n13:1994643] *** reported by process [3644150203,3]
+[della-r3c2n13:1994643] *** on a NULL communicator
+[della-r3c2n13:1994643] *** Unknown error
+[della-r3c2n13:1994643] *** MPI_ERRORS_ARE_FATAL (processes in this communicator will now abort,
+[della-r3c2n13:1994643] ***    and potentially your MPI job)
+[della-r3c2n13:1994644] *** An error occurred in MPI_Init
+[della-r3c2n13:1994644] *** reported by process [3644150203,4]
+[della-r3c2n13:1994644] *** on a NULL communicator
+[della-r3c2n13:1994644] *** Unknown error
+[della-r3c2n13:1994644] *** MPI_ERRORS_ARE_FATAL (processes in this communicator will now abort,
+[della-r3c2n13:1994644] ***    and potentially your MPI job)
+[della-r3c2n13:1994646] *** An error occurred in MPI_Init
+[della-r3c2n13:1994646] *** reported by process [3644150203,6]
+[della-r3c2n13:1994646] *** on a NULL communicator
+[della-r3c2n13:1994646] *** Unknown error
+[della-r3c2n13:1994646] *** MPI_ERRORS_ARE_FATAL (processes in this communicator will now abort,
+[della-r3c2n13:1994646] ***    and potentially your MPI job)
+[della-r3c2n13:1994647] *** An error occurred in MPI_Init
+[della-r3c2n13:1994647] *** reported by process [3644150203,7]
+[della-r3c2n13:1994647] *** on a NULL communicator
+[della-r3c2n13:1994647] *** Unknown error
+[della-r3c2n13:1994647] *** MPI_ERRORS_ARE_FATAL (processes in this communicator will now abort,
+[della-r3c2n13:1994647] ***    and potentially your MPI job)
+[della-r3c2n13:1994645] *** An error occurred in MPI_Init
+[della-r3c2n13:1994645] *** reported by process [3644150203,5]
+[della-r3c2n13:1994645] *** on a NULL communicator
+[della-r3c2n13:1994645] *** Unknown error
+[della-r3c2n13:1994645] *** MPI_ERRORS_ARE_FATAL (processes in this communicator will now abort,
+[della-r3c2n13:1994645] ***    and potentially your MPI job)
+srun: Job step aborted: Waiting up to 47 seconds for job step to finish.
+[2025-11-28T23:41:17.537] error: *** STEP 2608523.0 ON della-r3c2n13 CANCELLED AT 2025-11-28T23:41:17 DUE to SIGNAL Killed ***
+srun: error: della-r3c2n13: tasks 0-6: Killed
+srun: Terminating StepId=2608523.0
+srun: error: della-r3c2n13: task 7: Exited with exit code 1
