@@ -207,8 +207,30 @@ void generate_hermitian_slice_pair_local(
                 // For N=512: (N/2)-1 = 255 > 128, so tests coordinates ≤ 128 (includes (127,127,127))
                 int effective_boundary = (boundary_coord <= MAX_DEBUG_BOUNDARY_COORD) ? boundary_coord : MAX_DEBUG_BOUNDARY_COORD;
                 int max_test_coord = (MAX_DEBUG_COORD > effective_boundary) ? MAX_DEBUG_COORD : effective_boundary;
-                if ((x <= max_test_coord && global_y <= max_test_coord && z <= max_test_coord) ||
-                    test_boundary) {
+                // Check if coordinate is in test range
+                int in_test_range = (x <= max_test_coord && global_y <= max_test_coord && z <= max_test_coord);
+                // For large N, use sampling to reduce output volume
+                // Always print boundary coordinates and coordinates in small N range
+                int should_print = 0;
+                if (test_boundary) {
+                    // Always print boundary coordinate (N/2)-1, (N/2)-1, (N/2)-1
+                    should_print = 1;
+                } else if (N <= DEBUG_FULL_PRINT_MAX_N) {
+                    // For small N, print all coordinates in test range
+                    should_print = in_test_range;
+                } else {
+                    // For large N, print only sampled coordinates (multiples of stride)
+                    // Also always print coordinates ≤ MAX_DEBUG_COORD (small coordinate cube)
+                    if (x <= MAX_DEBUG_COORD && global_y <= MAX_DEBUG_COORD && z <= MAX_DEBUG_COORD) {
+                        should_print = 1;  // Always print small coordinate cube
+                    } else if (in_test_range) {
+                        // Sample: only print if x, y, z are multiples of stride
+                        should_print = (x % DEBUG_SAMPLE_STRIDE == 0 &&
+                                       global_y % DEBUG_SAMPLE_STRIDE == 0 &&
+                                       z % DEBUG_SAMPLE_STRIDE == 0);
+                    }
+                }
+                if (should_print) {
                     fprintf(stderr, "[RNG-DEBUG] N=%d Y=%d (x,z)=(%d,%d): k=(%d,%d,%d) k2=%.6f | "
                             "D=(%.10e,%.10e) F=(%.10e,%.10e) G=(%.10e,%.10e) H=(%.10e,%.10e)\n",
                             N, global_y, x, z, kx, ky, kz, k2,
@@ -466,8 +488,30 @@ void generate_hermitian_slice_pair_local(
                 // For N=512: (N/2)-1 = 255 > 128, so tests coordinates ≤ 128 (includes (127,127,127))
                 int effective_boundary = (boundary_coord <= MAX_DEBUG_BOUNDARY_COORD) ? boundary_coord : MAX_DEBUG_BOUNDARY_COORD;
                 int max_test_coord = (MAX_DEBUG_COORD > effective_boundary) ? MAX_DEBUG_COORD : effective_boundary;
-                if ((x <= max_test_coord && global_y <= max_test_coord && z <= max_test_coord) ||
-                    test_boundary) {
+                // Check if coordinate is in test range
+                int in_test_range = (x <= max_test_coord && global_y <= max_test_coord && z <= max_test_coord);
+                // For large N, use sampling to reduce output volume
+                // Always print boundary coordinates and coordinates in small N range
+                int should_print = 0;
+                if (test_boundary) {
+                    // Always print boundary coordinate (N/2)-1, (N/2)-1, (N/2)-1
+                    should_print = 1;
+                } else if (N <= DEBUG_FULL_PRINT_MAX_N) {
+                    // For small N, print all coordinates in test range
+                    should_print = in_test_range;
+                } else {
+                    // For large N, print only sampled coordinates (multiples of stride)
+                    // Also always print coordinates ≤ MAX_DEBUG_COORD (small coordinate cube)
+                    if (x <= MAX_DEBUG_COORD && global_y <= MAX_DEBUG_COORD && z <= MAX_DEBUG_COORD) {
+                        should_print = 1;  // Always print small coordinate cube
+                    } else if (in_test_range) {
+                        // Sample: only print if x, y, z are multiples of stride
+                        should_print = (x % DEBUG_SAMPLE_STRIDE == 0 &&
+                                       global_y % DEBUG_SAMPLE_STRIDE == 0 &&
+                                       z % DEBUG_SAMPLE_STRIDE == 0);
+                    }
+                }
+                if (should_print) {
                     fprintf(stderr, "[RNG-DEBUG] N=%d Y=%d (x,z)=(%d,%d): k=(%d,%d,%d) k2=%.6f | "
                             "D=(%.10e,%.10e) F=(%.10e,%.10e) G=(%.10e,%.10e) H=(%.10e,%.10e)\n",
                             N, global_y, x, z, kx, ky, kz, k2,
