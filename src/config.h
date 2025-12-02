@@ -96,9 +96,28 @@
 // Debug RNG consistency: Print raw D, F, G, H values for test coordinates
 // This allows comparing overlapping grid points across different N values
 // 0 = Disabled
-// 1 = Print D, F, G, H for test coordinates (x,y,z) = (0,0,0), (1,0,0), (2,0,0), (3,0,0)
+// 1 = Print D, F, G, H for test coordinates up to MAX_DEBUG_COORD
 #ifndef DEBUG_RNG_CONSISTENCY
-#define DEBUG_RNG_CONSISTENCY 0
+#define DEBUG_RNG_CONSISTENCY 1
+#endif
+
+// Maximum coordinate value to test for RNG consistency debugging
+// Tests all coordinates (x,y,z) where x,y,z <= MAX_DEBUG_COORD
+// This ensures overlapping regions are tested for any pair of N values
+// where min(N1, N2) >= 2*MAX_DEBUG_COORD
+// Recommended: 10-20 for small N testing, can be increased for larger N
+#ifndef MAX_DEBUG_COORD
+#define MAX_DEBUG_COORD 10
+#endif
+
+// Maximum boundary coordinate to test for large N
+// When (N/2)-1 <= MAX_DEBUG_BOUNDARY_COORD, test all coordinates ≤ (N/2)-1
+// This ensures overlapping region boundary is tested for large N comparisons
+// For N=256 and N=512: overlapping region is x,y,z <= 128 (Nhalf for N=256)
+//   If MAX_DEBUG_BOUNDARY_COORD >= 127, both N=256 and N=512 will test coordinates ≤ 127
+// Recommended: 128-256 for testing large N comparisons
+#ifndef MAX_DEBUG_BOUNDARY_COORD
+#define MAX_DEBUG_BOUNDARY_COORD 128
 #endif
 
 // Verbose output for MPI buffer verification (send/recv buffer bounds, displacements, etc.)

@@ -184,22 +184,31 @@ void generate_hermitian_slice_pair_local(
                 // ========== DEBUG: Print RNG values for consistency checking ==========
                 #if DEBUG_RNG_CONSISTENCY
                 // Print D, F, G, H for test coordinates to verify RNG consistency across N
-                // Test coordinates cover:
-                // - DC mode: (0,0,0)
-                // - Low k: (1,0,0), (2,0,0), (3,0,0)
-                // - Non-zero z: (1,0,1), (1,1,1)
-                // - Nyquist boundaries: (0,2,0), (0,0,2), (2,2,0), (2,0,2), (0,2,2), (2,2,2)
-                // - Mixed Nyquist: (2,1,0), (1,2,0), (2,1,1), (1,2,1), (1,1,2)
-                // - Boundary cases: (2,0,1), (0,2,1), (1,0,2), (0,1,2)
-                if ((global_y == 0 && z == 0 && (x == 0 || x == 1 || x == 2 || x == 3)) ||
-                    (global_y == 0 && z == 1 && (x == 0 || x == 1 || x == 2)) ||
-                    (global_y == 1 && z == 0 && (x == 0 || x == 1 || x == 2)) ||
-                    (global_y == 1 && z == 1 && (x == 0 || x == 1 || x == 2)) ||
-                    (global_y == 2 && z == 0 && (x == 0 || x == 1 || x == 2)) ||
-                    (global_y == 2 && z == 1 && (x == 0 || x == 1 || x == 2)) ||
-                    (global_y == 0 && z == 2 && (x == 0 || x == 1 || x == 2)) ||
-                    (global_y == 1 && z == 2 && (x == 0 || x == 1 || x == 2)) ||
-                    (global_y == 2 && z == 2 && (x == 0 || x == 1 || x == 2))) {
+                // Tests all coordinates (x,y,z) where x,y,z <= MAX_DEBUG_COORD
+                // Also tests coordinates at (N/2)-1 to ensure boundary of overlapping region is tested
+                // This ensures overlapping regions are tested for any pair of N values
+                // where min(N1, N2) >= 2*MAX_DEBUG_COORD
+                // For N=4 and N=6: overlapping region is x,y,z <= 2 (Nhalf for N=4)
+                //   (N/2)-1 = 1 for N=4, so (1,1,1) should match between N=4 and N=6
+                // For N=8 and N=10: overlapping region is x,y,z <= 4 (Nhalf for N=8)
+                //   (N/2)-1 = 3 for N=8, so (3,3,3) should match between N=8 and N=10
+                int boundary_coord = Nhalf - 1;  // (N/2)-1 for current N
+                // Test coordinate (N/2)-1, (N/2)-1, (N/2)-1) to verify boundary of overlapping region
+                // This ensures that when comparing N1 and N2, the boundary coordinate of the
+                // smaller N (which is in the overlapping region) is tested for both N values
+                // For N=256 and N=512: overlapping region is x,y,z <= 128 (Nhalf for N=256)
+                //   N=256 tests (127,127,127) which is in overlapping region
+                //   N=512 should also test (127,127,127) to verify it matches N=256
+                int test_boundary = (boundary_coord >= 0 && 
+                                     x == boundary_coord && global_y == boundary_coord && z == boundary_coord);
+                // Test coordinates up to max(MAX_DEBUG_COORD, min((N/2)-1, MAX_DEBUG_BOUNDARY_COORD))
+                // This ensures overlapping region boundary is tested for large N comparisons
+                // For N=256: (N/2)-1 = 127 ≤ 128, so tests coordinates ≤ 127 (includes (127,127,127))
+                // For N=512: (N/2)-1 = 255 > 128, so tests coordinates ≤ 128 (includes (127,127,127))
+                int effective_boundary = (boundary_coord <= MAX_DEBUG_BOUNDARY_COORD) ? boundary_coord : MAX_DEBUG_BOUNDARY_COORD;
+                int max_test_coord = (MAX_DEBUG_COORD > effective_boundary) ? MAX_DEBUG_COORD : effective_boundary;
+                if ((x <= max_test_coord && global_y <= max_test_coord && z <= max_test_coord) ||
+                    test_boundary) {
                     fprintf(stderr, "[RNG-DEBUG] N=%d Y=%d (x,z)=(%d,%d): k=(%d,%d,%d) k2=%.6f | "
                             "D=(%.10e,%.10e) F=(%.10e,%.10e) G=(%.10e,%.10e) H=(%.10e,%.10e)\n",
                             N, global_y, x, z, kx, ky, kz, k2,
@@ -434,22 +443,31 @@ void generate_hermitian_slice_pair_local(
                 // ========== DEBUG: Print RNG values for consistency checking ==========
                 #if DEBUG_RNG_CONSISTENCY
                 // Print D, F, G, H for test coordinates to verify RNG consistency across N
-                // Test coordinates cover:
-                // - DC mode: (0,0,0)
-                // - Low k: (1,0,0), (2,0,0), (3,0,0)
-                // - Non-zero z: (1,0,1), (1,1,1)
-                // - Nyquist boundaries: (0,2,0), (0,0,2), (2,2,0), (2,0,2), (0,2,2), (2,2,2)
-                // - Mixed Nyquist: (2,1,0), (1,2,0), (2,1,1), (1,2,1), (1,1,2)
-                // - Boundary cases: (2,0,1), (0,2,1), (1,0,2), (0,1,2)
-                if ((global_y == 0 && z == 0 && (x == 0 || x == 1 || x == 2 || x == 3)) ||
-                    (global_y == 0 && z == 1 && (x == 0 || x == 1 || x == 2)) ||
-                    (global_y == 1 && z == 0 && (x == 0 || x == 1 || x == 2)) ||
-                    (global_y == 1 && z == 1 && (x == 0 || x == 1 || x == 2)) ||
-                    (global_y == 2 && z == 0 && (x == 0 || x == 1 || x == 2)) ||
-                    (global_y == 2 && z == 1 && (x == 0 || x == 1 || x == 2)) ||
-                    (global_y == 0 && z == 2 && (x == 0 || x == 1 || x == 2)) ||
-                    (global_y == 1 && z == 2 && (x == 0 || x == 1 || x == 2)) ||
-                    (global_y == 2 && z == 2 && (x == 0 || x == 1 || x == 2))) {
+                // Tests all coordinates (x,y,z) where x,y,z <= MAX_DEBUG_COORD
+                // Also tests coordinates at (N/2)-1 to ensure boundary of overlapping region is tested
+                // This ensures overlapping regions are tested for any pair of N values
+                // where min(N1, N2) >= 2*MAX_DEBUG_COORD
+                // For N=4 and N=6: overlapping region is x,y,z <= 2 (Nhalf for N=4)
+                //   (N/2)-1 = 1 for N=4, so (1,1,1) should match between N=4 and N=6
+                // For N=8 and N=10: overlapping region is x,y,z <= 4 (Nhalf for N=8)
+                //   (N/2)-1 = 3 for N=8, so (3,3,3) should match between N=8 and N=10
+                int boundary_coord = Nhalf - 1;  // (N/2)-1 for current N
+                // Test coordinate (N/2)-1, (N/2)-1, (N/2)-1) to verify boundary of overlapping region
+                // This ensures that when comparing N1 and N2, the boundary coordinate of the
+                // smaller N (which is in the overlapping region) is tested for both N values
+                // For N=256 and N=512: overlapping region is x,y,z <= 128 (Nhalf for N=256)
+                //   N=256 tests (127,127,127) which is in overlapping region
+                //   N=512 should also test (127,127,127) to verify it matches N=256
+                int test_boundary = (boundary_coord >= 0 && 
+                                     x == boundary_coord && global_y == boundary_coord && z == boundary_coord);
+                // Test coordinates up to max(MAX_DEBUG_COORD, min((N/2)-1, MAX_DEBUG_BOUNDARY_COORD))
+                // This ensures overlapping region boundary is tested for large N comparisons
+                // For N=256: (N/2)-1 = 127 ≤ 128, so tests coordinates ≤ 127 (includes (127,127,127))
+                // For N=512: (N/2)-1 = 255 > 128, so tests coordinates ≤ 128 (includes (127,127,127))
+                int effective_boundary = (boundary_coord <= MAX_DEBUG_BOUNDARY_COORD) ? boundary_coord : MAX_DEBUG_BOUNDARY_COORD;
+                int max_test_coord = (MAX_DEBUG_COORD > effective_boundary) ? MAX_DEBUG_COORD : effective_boundary;
+                if ((x <= max_test_coord && global_y <= max_test_coord && z <= max_test_coord) ||
+                    test_boundary) {
                     fprintf(stderr, "[RNG-DEBUG] N=%d Y=%d (x,z)=(%d,%d): k=(%d,%d,%d) k2=%.6f | "
                             "D=(%.10e,%.10e) F=(%.10e,%.10e) G=(%.10e,%.10e) H=(%.10e,%.10e)\n",
                             N, global_y, x, z, kx, ky, kz, k2,
