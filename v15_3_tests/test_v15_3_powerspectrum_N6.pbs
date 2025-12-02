@@ -31,11 +31,12 @@ mpicxx --version || echo "mpicxx not found or error"
 # Go to hermitian_3d_matrix_production directory
 cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production
 
-# Compile with double precision and RNG consistency debug
+# Compile with double precision, RNG consistency debug, and RNG skip debug
 # Makefile auto selects correct FFTW libs based on CFLAGS
-echo "Compiling hermitian_3d_matrix with double precision and RNG debug..."
+echo "Compiling hermitian_3d_matrix with double precision, RNG debug, and RNG skip debug..."
+echo "FIX: Skip logic now matches zeldovich.cpp (skip at Nyquist boundary instead of end of row)"
 make clean
-make CFLAGS="-DUSE_DOUBLE_PRECISION -DDEBUG_RNG_CONSISTENCY=1"
+make CFLAGS="-DUSE_DOUBLE_PRECISION -DDEBUG_RNG_CONSISTENCY=1 -DDEBUG_RNG_SKIP=1"
 
 # Job parameters
 NNODES=$(sort -u $PBS_NODEFILE | wc -l)
@@ -60,7 +61,9 @@ fi
 
 echo "=========================================="
 echo "Test: v15.3 Power Spectrum Mode"
-echo "Double Precision Build"
+echo "Double Precision Build with RNG Debugging"
+echo "RNG Skip Debugging: ENABLED (DEBUG_RNG_SKIP=1)"
+echo "FIX: Skip at Nyquist boundary (x/z == Nhalf+1) instead of end of row"
 echo "N=$N, ranks=$NTOTRANKS"
 echo "Parameter file: $PARAM_FILE"
 echo "Should use zeldovich-PLT PowerSpectrum and RNG"

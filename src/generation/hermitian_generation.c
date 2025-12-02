@@ -116,10 +116,16 @@ void generate_hermitian_slice_pair_local(
         #endif
         for (int z = 0; z < N; z++) {
             // RNG consistency: When crossing Nyquist boundary (z == Nhalf + 1),
-            // skip missing z-rows (z = N to MAX_PPD-1, each containing MAX_PPD x-values)
+            // skip ALL missing z-rows (z = N to MAX_PPD-1, each containing MAX_PPD x-values)
             // This matches zeldovich.cpp: skip at Nyquist boundary before processing negative kz region
+            // The missing frequencies are in the MIDDLE of the MAX_PPD array (high positive and negative k),
+            // due to FFT ordering: [0, 1, ..., N/2, -N/2+1, ..., -1]
+            // High frequencies (both positive and negative) are physically located in the middle,
+            // so we skip them all at once when we first enter the mirrored region
             #if !PARALLELIZE_XZ_WITHIN_SLICE
             if (z == Nhalf + 1 && N < MAX_PPD) {
+                // Skip ALL missing z-rows: from z=N to z=MAX_PPD-1
+                // This accounts for the "gap" in frequency space (high frequencies in the middle of array)
                 int64_t skip_amount = (MAX_PPD - N) * MAX_PPD;
                 nskip += skip_amount; // skip missing z-rows
                 
@@ -141,10 +147,16 @@ void generate_hermitian_slice_pair_local(
                 
                 // ========== STEP 1: Calculate k-vector components ==========
                 // RNG consistency: When crossing Nyquist boundary (x == Nhalf + 1),
-                // skip missing x-values (x = N to MAX_PPD-1) in current z-row
+                // skip ALL missing x-values (x = N to MAX_PPD-1) in current z-row
                 // This matches zeldovich.cpp: skip at Nyquist boundary before processing negative kx region
+                // The missing frequencies are in the MIDDLE of the MAX_PPD array (high positive and negative k),
+                // due to FFT ordering: [0, 1, ..., N/2, -N/2+1, ..., -1]
+                // High frequencies (both positive and negative) are physically located in the middle,
+                // so we skip them all at once when we first enter the mirrored region
                 #if !PARALLELIZE_XZ_WITHIN_SLICE
                 if (x == Nhalf + 1 && N < MAX_PPD) {
+                    // Skip ALL missing x-values: from x=N to x=MAX_PPD-1
+                    // This accounts for the "gap" in frequency space (high frequencies in the middle of array)
                     int64_t skip_amount = MAX_PPD - N;
                     nskip += skip_amount; // skip missing x-values in this z-row
                     
@@ -167,8 +179,76 @@ void generate_hermitian_slice_pair_local(
                 double k2 = (double)(kx*kx + ky*ky + kz*kz);
                 
                 // ========== STEP 2: Generate D using RNG or cgauss() ==========
+                // Nyquist frequency zeroing: Force Nyquist elements to zero for all three axes
+                // This matches zeldovich.cpp line 354: abs(kx)==kmax || abs(kz)==kmax || abs(ky)==kmax
+                // The Nyquist frequency (k = N/2) is self-conjugate and doesn't have a separate partner.
+                // Due to the Y-shift in the reflected shell, we need to zero these to align mirroring expectations.
+                int abs_kx = (kx < 0) ? -kx : kx;
+                int abs_ky = (ky < 0) ? -ky : ky;
+                int abs_kz = (kz < 0) ? -kz : kz;
+                int is_nyquist = (abs_kx == Nhalf || abs_ky == Nhalf || abs_kz == Nhalf);
+                
                 fftw_complex D;
-                if (ps_handle != NULL && params_handle != NULL) {
+                if (k2 == 0.0) {
+                    // DC mode: set to zero
+                    D[0] = D[1] = 0.0;
+                    // RNG consistency: When D=0, we skip the RNG call, so advance immediately
+                    // This matches zeldovich.cpp line 361: advance when D is forced to zero
+                    #if !PARALLELIZE_XZ_WITHIN_SLICE
+                    #if DEBUG_RNG_SKIP
+                    int log_d0 = (x <= MAX_DEBUG_COORD && global_y <= MAX_DEBUG_COORD && z <= MAX_DEBUG_COORD) ||
+                                  (x == Nhalf - 1 && global_y == Nhalf - 1 && z == Nhalf - 1);
+                    if (log_d0) {
+                        fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d (x,z)=(%d,%d): D=0 (DC mode), ADVANCE RNG by 1\n",
+                                N, global_y, x, z);
+                        fflush(stderr);
+                    }
+                    #endif
+                    if (ps_handle != NULL && params_handle != NULL) {
+                        int64_t rng_index = global_y;
+                        zeldovich_ps_advance_rng(ps_handle, params_handle, rng_index, 1);
+                        #if VERIFY_RNG_CALLS
+                        total_d_zero_skips++;
+                        #endif
+                    } else if (ps_params != NULL || params_handle == NULL) {
+                        // Local PCG: advance by 2 (each complex number uses 2 random numbers)
+                        advance_pcg_global(global_y, 2);
+                        #if VERIFY_RNG_CALLS
+                        total_d_zero_skips++;
+                        #endif
+                    }
+                    #endif
+                } else if (is_nyquist) {
+                    // Nyquist frequency: set to zero (self-conjugate, no separate partner)
+                    // This ensures proper mirroring alignment between first and second halves
+                    D[0] = D[1] = 0.0;
+                    // RNG consistency: When D=0, we skip the RNG call, so advance immediately
+                    // This matches zeldovich.cpp line 361: advance when D is forced to zero
+                    #if !PARALLELIZE_XZ_WITHIN_SLICE
+                    #if DEBUG_RNG_SKIP
+                    int log_nyq = (x <= MAX_DEBUG_COORD && global_y <= MAX_DEBUG_COORD && z <= MAX_DEBUG_COORD) ||
+                                  (x == Nhalf - 1 && global_y == Nhalf - 1 && z == Nhalf - 1);
+                    if (log_nyq) {
+                        fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d (x,z)=(%d,%d): D=0 (Nyquist: kx=%d ky=%d kz=%d), ADVANCE RNG by 1\n",
+                                N, global_y, x, z, kx, ky, kz);
+                        fflush(stderr);
+                    }
+                    #endif
+                    if (ps_handle != NULL && params_handle != NULL) {
+                        int64_t rng_index = global_y;
+                        zeldovich_ps_advance_rng(ps_handle, params_handle, rng_index, 1);
+                        #if VERIFY_RNG_CALLS
+                        total_d_zero_skips++;
+                        #endif
+                    } else if (ps_params != NULL || params_handle == NULL) {
+                        // Local PCG: advance by 2 (each complex number uses 2 random numbers)
+                        advance_pcg_global(global_y, 2);
+                        #if VERIFY_RNG_CALLS
+                        total_d_zero_skips++;
+                        #endif
+                    }
+                    #endif
+                } else if (ps_handle != NULL && params_handle != NULL) {
                     // v15.2: Use zeldovich-PLT power spectrum-weighted Gaussian
                     // If ps_handle is available, we ALWAYS use power spectrum mode (cgauss)
                     
@@ -439,12 +519,19 @@ void generate_hermitian_slice_pair_local(
             int x_max = (z == 0 ? Nhalf + 1 : N);
             for (int x = 0; x < x_max; x++) {
                 // RNG consistency: When crossing Nyquist boundary (x == Nhalf + 1),
-                // skip missing x-values (x = x_max to MAX_PPD-1) in current z-row
+                // skip ALL missing x-values (x = N to MAX_PPD-1) in current z-row
                 // This matches zeldovich.cpp: skip at Nyquist boundary before processing negative kx region
-                // Only applies when x_max > Nhalf + 1 (i.e., when z > 0, since x_max = N for z > 0)
+                // The missing frequencies are in the MIDDLE of the MAX_PPD array (high positive and negative k),
+                // due to FFT ordering: [0, 1, ..., N/2, -N/2+1, ..., -1]
+                // High frequencies (both positive and negative) are physically located in the middle,
+                // so we skip them all at once when we first enter the mirrored region
+                // Note: We skip MAX_PPD - N (all missing x-values), not MAX_PPD - x_max,
+                // because the missing frequencies are determined by the full grid size N, not x_max
                 #if !PARALLELIZE_XZ_WITHIN_SLICE
-                if (x == Nhalf + 1 && x_max > Nhalf + 1 && N < MAX_PPD) {
-                    int64_t skip_amount = MAX_PPD - x_max;
+                if (x == Nhalf + 1 && N < MAX_PPD) {
+                    // Skip ALL missing x-values: from x=N to x=MAX_PPD-1
+                    // This accounts for the "gap" in frequency space (high frequencies in the middle of array)
+                    int64_t skip_amount = MAX_PPD - N;
                     nskip += skip_amount; // skip missing x-values in this z-row
                     
                     #if DEBUG_RNG_SKIP
@@ -468,6 +555,15 @@ void generate_hermitian_slice_pair_local(
                 int ky = (global_y > Nhalf) ? global_y - N : global_y;
                 int kz = (z > Nhalf) ? z - N : z;
                 double k2 = (double)(kx*kx + ky*ky + kz*kz);
+                
+                // Nyquist frequency zeroing: Force Nyquist elements to zero for all three axes
+                // This matches zeldovich.cpp line 354: abs(kx)==kmax || abs(kz)==kmax || abs(ky)==kmax
+                // The Nyquist frequency (k = N/2) is self-conjugate and doesn't have a separate partner.
+                // Due to the Y-shift in the reflected shell, we need to zero these to align mirroring expectations.
+                int abs_kx = (kx < 0) ? -kx : kx;
+                int abs_ky = (ky < 0) ? -ky : ky;
+                int abs_kz = (kz < 0) ? -kz : kz;
+                int is_nyquist = (abs_kx == Nhalf || abs_ky == Nhalf || abs_kz == Nhalf);
                 
                 // Generate D using RNG or cgauss()
                 // For self-conjugate slices, we still need to check for power spectrum mode
@@ -501,28 +597,39 @@ void generate_hermitian_slice_pair_local(
                         #endif
                     }
                     #endif
-                } else if (ps_handle != NULL && params_handle != NULL) {
-                    // v15.2: Use zeldovich-PLT power spectrum-weighted Gaussian
-                    // If ps_handle is available, we ALWAYS use power spectrum mode (cgauss)
-                    
-                    // TEMPORARY: Set Nyquist axis (Y = N/2) to zero
-                    // TODO: Understand the "shifted by one location" issue in zeldovich-PLT
-                    // (see zeldovich.cpp line 646-648). For now, matching zeldovich-PLT behavior
-                    // which sets the Nyquist plane to zero after data reorganization.
-                    // This should be reviewed and potentially changed after understanding the
-                    // data shift operation in LoadBlock() and its relationship to Nyquist handling.
-                    if (global_y == Nhalf) {
-                        D[0] = D[1] = 0.0; // temporary fix to set Nyquist axis to zero
-                        // RNG consistency: When D=0, we skip the RNG call, so advance immediately
-                        // This matches zeldovich.cpp line 361: advance when D is forced to zero
-                        #if !PARALLELIZE_XZ_WITHIN_SLICE
+                } else if (is_nyquist) {
+                    // Nyquist frequency: set to zero (self-conjugate, no separate partner)
+                    // This ensures proper mirroring alignment between first and second halves
+                    D[0] = D[1] = 0.0;
+                    // RNG consistency: When D=0, we skip the RNG call, so advance immediately
+                    // This matches zeldovich.cpp line 361: advance when D is forced to zero
+                    #if !PARALLELIZE_XZ_WITHIN_SLICE
+                    #if DEBUG_RNG_SKIP
+                    int log_nyq = (x <= MAX_DEBUG_COORD && global_y <= MAX_DEBUG_COORD && z <= MAX_DEBUG_COORD) ||
+                                  (x == Nhalf - 1 && global_y == Nhalf - 1 && z == Nhalf - 1);
+                    if (log_nyq) {
+                        fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d (x,z)=(%d,%d): D=0 (Nyquist: kx=%d ky=%d kz=%d), ADVANCE RNG by 1\n",
+                                N, global_y, x, z, kx, ky, kz);
+                        fflush(stderr);
+                    }
+                    #endif
+                    if (ps_handle != NULL && params_handle != NULL) {
                         int64_t rng_index = global_y;
                         zeldovich_ps_advance_rng(ps_handle, params_handle, rng_index, 1);
                         #if VERIFY_RNG_CALLS
                         total_d_zero_skips++;
                         #endif
+                    } else if (ps_params != NULL || params_handle == NULL) {
+                        // Local PCG: advance by 2 (each complex number uses 2 random numbers)
+                        advance_pcg_global(global_y, 2);
+                        #if VERIFY_RNG_CALLS
+                        total_d_zero_skips++;
                         #endif
-                    } else {
+                    }
+                    #endif
+                } else if (ps_handle != NULL && params_handle != NULL) {
+                    // v15.2: Use zeldovich-PLT power spectrum-weighted Gaussian
+                    // If ps_handle is available, we ALWAYS use power spectrum mode (cgauss)
                         // Convert k indices to physical wavenumber: k_phys = k_index * fundamental
                         double fundamental = zeldovich_params_get_fundamental(params_handle);
                         double k2_phys = k2 * fundamental * fundamental;
@@ -699,11 +806,24 @@ void generate_hermitian_slice_pair_local(
             }
             
             // RNG consistency: After processing last z-row (z == Nhalf),
-            // skip missing z-rows (z = Nhalf+1 to MAX_PPD-1, each containing MAX_PPD x-values)
-            // Advance immediately since we've finished all RNG calls for this z-row
+            // skip missing z-rows (z = N to MAX_PPD-1, each containing MAX_PPD x-values)
+            // This matches zeldovich.cpp: conceptually skip at Nyquist boundary (z == Nhalf + 1)
+            // The missing frequencies are in the MIDDLE of the MAX_PPD array (high positive and negative k),
+            // due to FFT ordering: [0, 1, ..., N/2, -N/2+1, ..., -1]
+            // High frequencies (both positive and negative) are physically located in the middle,
+            // so we skip them all at once when we would cross the boundary
+            // Note: We process z = 0 to z = Nhalf, so we never reach z == Nhalf + 1 in the loop,
+            // but we need to account for missing z-rows. The missing z-rows are determined by
+            // the grid size N (z = N to MAX_PPD-1), same as conjugate branch, not by how many we process.
             #if !PARALLELIZE_XZ_WITHIN_SLICE
             if (z == Nhalf && N < MAX_PPD) {
-                nskip += (MAX_PPD - Nhalf - 1) * MAX_PPD; // skip missing z-rows
+                // Skip ALL missing z-rows: from z=N to z=MAX_PPD-1
+                // Number of missing z-rows: (MAX_PPD - 1) - N + 1 = MAX_PPD - N
+                // Each row has MAX_PPD x-values
+                // This accounts for the "gap" in frequency space (high frequencies in the middle of array)
+                // Same skip amount as conjugate branch, because missing z-rows are determined by N, not by processing range
+                int64_t skip_amount = (MAX_PPD - N) * MAX_PPD;
+                nskip += skip_amount; // skip missing z-rows
                 
                 // Advance immediately since we've finished all RNG calls for this z-row
                 // nskip may include missing x-values from last x-loop + missing z-rows
@@ -761,6 +881,15 @@ void generate_hermitian_slice_pair_local(
                 int kz = (z > Nhalf) ? z - N : z;
                 double k2 = (double)(kx*kx + ky*ky + kz*kz);
                 
+                // Nyquist frequency zeroing: Force Nyquist elements to zero for all three axes
+                // This matches zeldovich.cpp line 354: abs(kx)==kmax || abs(kz)==kmax || abs(ky)==kmax
+                // The Nyquist frequency (k = N/2) is self-conjugate and doesn't have a separate partner.
+                // Due to the Y-shift in the reflected shell, we need to zero these to align mirroring expectations.
+                int abs_kx = (kx < 0) ? -kx : kx;
+                int abs_ky = (ky < 0) ? -ky : ky;
+                int abs_kz = (kz < 0) ? -kz : kz;
+                int is_nyquist = (abs_kx == Nhalf || abs_ky == Nhalf || abs_kz == Nhalf);
+                
                 // Generate D using RNG or cgauss()
                 fftw_complex D;
                 if (k2 == 0.0) {
@@ -791,35 +920,39 @@ void generate_hermitian_slice_pair_local(
                         #endif
                     }
                     #endif
-                } else if (ps_handle != NULL && params_handle != NULL) {
-                    // v15.2: Use zeldovich-PLT power spectrum-weighted Gaussian
-                    // If ps_handle is available, we ALWAYS use power spectrum mode (cgauss)
-                    // Convert k indices to physical wavenumber: k_phys = k_index * fundamental
-                    // TEMPORARY: Set Nyquist axis (Y = N/2) to zero
-                    // TODO: Understand the "shifted by one location" issue in zeldovich-PLT
-                    // (see zeldovich.cpp line 646-648). For now, matching zeldovich-PLT behavior
-                    // which sets the Nyquist plane to zero after data reorganization.
-                    // This should be reviewed and potentially changed after understanding the
-                    // data shift operation in LoadBlock() and its relationship to Nyquist handling.
-                    if (global_y == Nhalf) {
-                        D[0] = D[1] = 0.0;
-                        // RNG consistency: When D=0, we skip the RNG call, so advance immediately
-                        #if !PARALLELIZE_XZ_WITHIN_SLICE
-                        #if DEBUG_RNG_SKIP
-                        int log_nyq = (x <= MAX_DEBUG_COORD && z <= MAX_DEBUG_COORD);
-                        if (log_nyq) {
-                            fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d (x,z)=(%d,%d): D=0 (Nyquist axis, self-conj), ADVANCE RNG by 1\n",
-                                    N, global_y, x, z);
-                            fflush(stderr);
-                        }
-                        #endif
+                } else if (is_nyquist) {
+                    // Nyquist frequency: set to zero (self-conjugate, no separate partner)
+                    // This ensures proper mirroring alignment between first and second halves
+                    D[0] = D[1] = 0.0;
+                    // RNG consistency: When D=0, we skip the RNG call, so advance immediately
+                    #if !PARALLELIZE_XZ_WITHIN_SLICE
+                    #if DEBUG_RNG_SKIP
+                    int log_nyq = (x <= MAX_DEBUG_COORD && global_y <= MAX_DEBUG_COORD && z <= MAX_DEBUG_COORD) ||
+                                  (x == Nhalf - 1 && global_y == Nhalf - 1 && z == Nhalf - 1);
+                    if (log_nyq) {
+                        fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d (x,z)=(%d,%d): D=0 (Nyquist: kx=%d ky=%d kz=%d, self-conj), ADVANCE RNG by 1\n",
+                                N, global_y, x, z, kx, ky, kz);
+                        fflush(stderr);
+                    }
+                    #endif
+                    if (ps_handle != NULL && params_handle != NULL) {
                         int64_t rng_index = global_y;
                         zeldovich_ps_advance_rng(ps_handle, params_handle, rng_index, 1);
                         #if VERIFY_RNG_CALLS
                         total_d_zero_skips++;
                         #endif
+                    } else if (params_handle == NULL) {
+                        // Local PCG: advance by 2 (each complex number uses 2 random numbers)
+                        advance_pcg_global(global_y, 2);
+                        #if VERIFY_RNG_CALLS
+                        total_d_zero_skips++;
                         #endif
-                    } else {
+                    }
+                    #endif
+                } else if (ps_handle != NULL && params_handle != NULL) {
+                    // v15.2: Use zeldovich-PLT power spectrum-weighted Gaussian
+                    // If ps_handle is available, we ALWAYS use power spectrum mode (cgauss)
+                    // Convert k indices to physical wavenumber: k_phys = k_index * fundamental
                         double fundamental = zeldovich_params_get_fundamental(params_handle);
                         double k2_phys = k2 * fundamental * fundamental;
                         double kmag = sqrt(k2_phys);
