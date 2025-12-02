@@ -137,6 +137,14 @@
 #define DEBUG_FULL_PRINT_MAX_N 16
 #endif
 
+// Debug RNG skip logic: Print detailed skip information to trace RNG state
+// This helps identify where skip logic diverges between different N values
+// 0 = Disabled
+// 1 = Print skip accumulation and application for test coordinates
+#ifndef DEBUG_RNG_SKIP
+#define DEBUG_RNG_SKIP 1
+#endif
+
 // Verbose output for MPI buffer verification (send/recv buffer bounds, displacements, etc.)
 // 1 = Print detailed buffer checks before MPI_Ialltoallv (verbose, useful for debugging)
 // 0 = Silent checks (only print errors, reduces log spam)
@@ -194,6 +202,13 @@
 #define RECONSTRUCT_GLOBAL_FOR_VERIFICATION 1
 #endif
 
+// Verify RNG call counts match expected (similar to zeldovich.cpp assertion)
+// 0 = Skip RNG verification (production mode)
+// 1 = Verify total RNG calls = 2 * MAX_PPD * MAX_PPD (testing mode)
+#ifndef VERIFY_RNG_CALLS
+#define VERIFY_RNG_CALLS 0
+#endif
+
 // ====================================================================================
 // I/O CONFIGURATION
 // ====================================================================================
@@ -228,12 +243,12 @@
 // ====================================================================================
 
 // Maximum grid size for RNG consistency across different N values
-// Used for skip tracking when N < MAX_PPD (similar to zeldovich.cpp)
+// Used for skip tracking when N < MAX_PPD
 // Set this to be >= maximum N you plan to use
 // When N < MAX_PPD, we skip RNG calls for missing grid points to maintain
 // consistency with what a full MAX_PPD × MAX_PPD grid would generate
 #ifndef MAX_PPD
-#define MAX_PPD 65536  // Adjust based on maximum expected N
+#define MAX_PPD 4096  // Adjust based on maximum expected N
 #endif
 
 // Memory alignment for FFTW (bytes)

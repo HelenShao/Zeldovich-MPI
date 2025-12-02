@@ -32,11 +32,11 @@ mpicxx --version || echo "mpicxx not found or error"
 # Go to hermitian_3d_matrix_production directory
 cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production
 
-# Compile with double precision and RNG consistency debugging
+# Compile with double precision, RNG consistency debugging, and RNG verification
 # Makefile auto selects correct FFTW libs based on CFLAGS
-echo "Compiling hermitian_3d_matrix with double precision and RNG consistency debugging..."
+echo "Compiling hermitian_3d_matrix with double precision, RNG consistency debugging, and RNG verification..."
 make clean
-make CFLAGS="-DUSE_DOUBLE_PRECISION -DDEBUG_RNG_CONSISTENCY=1"
+make CFLAGS="-DUSE_DOUBLE_PRECISION -DDEBUG_RNG_CONSISTENCY=1 -DVERIFY_RNG_CALLS=1"
 
 # Job parameters
 NNODES=$(sort -u $PBS_NODEFILE | wc -l)
@@ -62,10 +62,12 @@ fi
 echo "=========================================="
 echo "Test: v15.3 Power Spectrum Mode"
 echo "Double Precision Build with RNG Consistency Debugging"
+echo "RNG Verification: ENABLED (VERIFY_RNG_CALLS=1)"
 echo "N=$N, ranks=$NTOTRANKS"
 echo "Parameter file: $PARAM_FILE"
 echo "Should use zeldovich-PLT PowerSpectrum and RNG"
 echo "RNG debug: Tests coordinates <= 127 (overlapping region boundary)"
+echo "RNG verify: Checks total RNG calls = 2 * MAX_PPD * MAX_PPD per Y-slice"
 echo "=========================================="
 echo ""
 
@@ -76,6 +78,27 @@ mpiexec -n $NTOTRANKS \
         --cpu-bind depth \
         ./hermitian_3d_matrix $N $PARAM_FILE 2>&1 | tee v15_3_tests/test_v15_3_powerspectrum_N256_double_aurora.log
 
+echo ""
+echo "=========================================="
+echo "Checking RNG Verification Results..."
+echo "=========================================="
+grep -i "RNG-VERIFY" v15_3_tests/test_v15_3_powerspectrum_N256_double_aurora.log | head -20
+
+echo ""
+echo "Checking for RNG verification errors..."
+RNG_ERRORS=$(grep -i "RNG-VERIFY ERROR" v15_3_tests/test_v15_3_powerspectrum_N256_double_aurora.log | wc -l)
+if [ "$RNG_ERRORS" -gt 0 ]; then
+    echo "WARNING: Found $RNG_ERRORS RNG verification errors!"
+    grep -i "RNG-VERIFY ERROR" v15_3_tests/test_v15_3_powerspectrum_N256_double_aurora.log | head -10
+else
+    echo "SUCCESS: No RNG verification errors found!"
+fi
+
+echo ""
+echo "Checking RNG verification OK messages..."
+RNG_OK=$(grep -i "RNG-VERIFY OK" v15_3_tests/test_v15_3_powerspectrum_N256_double_aurora.log | wc -l)
+echo "Found $RNG_OK RNG verification OK messages (should see messages for first few Y-slices)"
+
 # echo ""
 # echo "Checking if output is purely real..."
 # grep -i "imaginary\|complex\|real" v15_3_tests/test_v15_3_powerspectrum_N256_double_aurora.log | tail -5
@@ -84,6 +107,6 @@ mpiexec -n $NTOTRANKS \
 # echo "Checking power spectrum initialization..."
 # grep -i "power.*spectrum\|PowerSpectrum\|powerlaw\|fundamental\|boxsize" v15_3_tests/test_v15_3_powerspectrum_N256_double_aurora.log | head -10
 
-# echo ""
-# echo "Job completed!"
+echo ""
+echo "Job completed!"
 

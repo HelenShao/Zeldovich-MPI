@@ -54,6 +54,14 @@ void generate_hermitian_slice_pair_local(
     #define CONJ_SLICE(array_idx, x, z) \
         conjugate_slices[(int64_t)(x) + (N) * ((z) + (N) * (array_idx))]
     
+    // RNG verification: Track total RNG calls and skips to verify consistency
+    // Similar to zeldovich.cpp assertion: assert(Pk.v2rng[y] - checkpoint == 2 * MAX_PPD * MAX_PPD)
+    #if VERIFY_RNG_CALLS
+    int64_t total_rng_calls = 0;  // Count of cgauss() calls (each uses 2 random numbers)
+    int64_t total_rng_skips = 0;  // Count of skipped random numbers (from nskip advances)
+    int64_t total_d_zero_skips = 0;  // Count of D=0 skips (immediate advances)
+    #endif
+    
     // RNG consistency: Skip random numbers for missing grid points when N < MAX_PPD
     // so we can reproduce sim boxes w/ up to MAX_PPD x MAX_PPD grid generators
     int64_t nskip = 0;
@@ -74,6 +82,26 @@ void generate_hermitian_slice_pair_local(
         #endif
     }
     
+    // In parallel mode, advance upfront skip before starting parallel loops
+    #if PARALLELIZE_XZ_WITHIN_SLICE
+    if (N < MAX_PPD && nskip > 0) {
+        // Advance upfront skip before parallel loops to maintain RNG consistency
+        if (ps_handle != NULL && params_handle != NULL) {
+            int64_t rng_index = global_y;
+            zeldovich_ps_advance_rng(ps_handle, params_handle, rng_index, nskip);
+            #if VERIFY_RNG_CALLS
+            total_rng_skips += nskip;
+            #endif
+        } else if (params_handle == NULL) {
+            advance_pcg_global(global_y, 2 * nskip);
+            #if VERIFY_RNG_CALLS
+            total_rng_skips += nskip;
+            #endif
+        }
+        nskip = 0;  // Reset after advancing
+    }
+    #endif
+    
     if (y_mirror != global_y) {
         // ========== CONJUGATE PAIR: Y=i and Y=N-i ==========
         // PARALLELIZATION STRATEGY:
@@ -87,11 +115,52 @@ void generate_hermitian_slice_pair_local(
         // Sequential (x,z) loops: no locks needed, each thread processes different Y-slice
         #endif
         for (int z = 0; z < N; z++) {
+            // RNG consistency: When crossing Nyquist boundary (z == Nhalf + 1),
+            // skip missing z-rows (z = N to MAX_PPD-1, each containing MAX_PPD x-values)
+            // This matches zeldovich.cpp: skip at Nyquist boundary before processing negative kz region
+            #if !PARALLELIZE_XZ_WITHIN_SLICE
+            if (z == Nhalf + 1 && N < MAX_PPD) {
+                int64_t skip_amount = (MAX_PPD - N) * MAX_PPD;
+                nskip += skip_amount; // skip missing z-rows
+                
+                #if DEBUG_RNG_SKIP
+                // Debug: Log skip accumulation for test coordinates
+                int log_skip = (global_y <= MAX_DEBUG_COORD) || (global_y == Nhalf - 1);
+                if (log_skip) {
+                    fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d z=%d: ACCUMULATE skip at Nyquist boundary: +%lld (missing z-rows), total nskip=%lld\n",
+                            N, global_y, z, (long long)skip_amount, (long long)nskip);
+                    fflush(stderr);
+                }
+                #endif
+            }
+            #endif
+            
             for (int x = 0; x < N; x++) {
                 int x_mirror = (x == 0) ? 0 : N - x;
                 int z_mirror = (z == 0) ? 0 : N - z;
                 
                 // ========== STEP 1: Calculate k-vector components ==========
+                // RNG consistency: When crossing Nyquist boundary (x == Nhalf + 1),
+                // skip missing x-values (x = N to MAX_PPD-1) in current z-row
+                // This matches zeldovich.cpp: skip at Nyquist boundary before processing negative kx region
+                #if !PARALLELIZE_XZ_WITHIN_SLICE
+                if (x == Nhalf + 1 && N < MAX_PPD) {
+                    int64_t skip_amount = MAX_PPD - N;
+                    nskip += skip_amount; // skip missing x-values in this z-row
+                    
+                    #if DEBUG_RNG_SKIP
+                    // Debug: Log skip accumulation for test coordinates
+                    int log_skip = (z <= MAX_DEBUG_COORD && global_y <= MAX_DEBUG_COORD) ||
+                                   (z == Nhalf - 1 && global_y == Nhalf - 1);
+                    if (log_skip) {
+                        fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d z=%d x=%d: ACCUMULATE skip at Nyquist boundary: +%lld (missing x-values), total nskip=%lld\n",
+                                N, global_y, z, x, (long long)skip_amount, (long long)nskip);
+                        fflush(stderr);
+                    }
+                    #endif
+                }
+                #endif
+                
                 int kx = (x > Nhalf) ? x - N : x;
                 int ky = (global_y > Nhalf) ? global_y - N : global_y;
                 int kz = (z > Nhalf) ? z - N : z;
@@ -116,14 +185,46 @@ void generate_hermitian_slice_pair_local(
                     // RNG consistency: Advance zeldovich-PLT's RNG when crossing Nyquist boundaries
                     // This matches zeldovich.cpp behavior: advance before calling cgauss
                     #if !PARALLELIZE_XZ_WITHIN_SLICE
+                    #if DEBUG_RNG_SKIP
+                    // Debug: Log skip application for test coordinates
+                    int log_skip = (x <= MAX_DEBUG_COORD && global_y <= MAX_DEBUG_COORD && z <= MAX_DEBUG_COORD) ||
+                                   (x == Nhalf - 1 && global_y == Nhalf - 1 && z == Nhalf - 1);
+                    if (log_skip && nskip > 0) {
+                        fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d (x,z)=(%d,%d): APPLYING skip=%lld BEFORE cgauss\n",
+                                N, global_y, x, z, (long long)nskip);
+                        fflush(stderr);
+                    }
+                    #endif
                     if (nskip > 0) {
                         zeldovich_ps_advance_rng(ps_handle, params_handle, rng_index, nskip);
+                        #if VERIFY_RNG_CALLS
+                        total_rng_skips += nskip;  // Track accumulated skip value
+                        #endif
+                        #if DEBUG_RNG_SKIP
+                        if (log_skip) {
+                            fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d (x,z)=(%d,%d): RNG advanced, nskip reset to 0\n",
+                                    N, global_y, x, z);
+                            fflush(stderr);
+                        }
+                        #endif
                         nskip = 0;  // Reset after advancing
                     }
                     #endif
                     
                     double D_real, D_imag;
+                    #if DEBUG_RNG_SKIP
+                    int log_cgauss = (x <= MAX_DEBUG_COORD && global_y <= MAX_DEBUG_COORD && z <= MAX_DEBUG_COORD) ||
+                                     (x == Nhalf - 1 && global_y == Nhalf - 1 && z == Nhalf - 1);
+                    if (log_cgauss) {
+                        fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d (x,z)=(%d,%d): CALLING cgauss (nskip=%lld, kmag=%.6e)\n",
+                                N, global_y, x, z, (long long)nskip, kmag);
+                        fflush(stderr);
+                    }
+                    #endif
                     zeldovich_ps_cgauss(ps_handle, kmag, rng_index, &D_real, &D_imag);
+                    #if VERIFY_RNG_CALLS
+                    total_rng_calls++;  // Each cgauss() call uses 2 random numbers
+                    #endif
                     D[0] = (real_t)D_real;
                     D[1] = (real_t)D_imag;
                 } else if (ps_params != NULL) {
@@ -138,12 +239,18 @@ void generate_hermitian_slice_pair_local(
                     // This matches the zeldovich-PLT branch behavior
                     #if !PARALLELIZE_XZ_WITHIN_SLICE
                     if (nskip > 0 && N < MAX_PPD) {
-                        advance_pcg_global(global_y, 2 * nskip);  // Each complex number uses 2 random numbers
+                        advance_pcg_global(global_y, 2 * nskip);
+                        #if VERIFY_RNG_CALLS
+                        total_rng_skips += nskip;  // Track accumulated skip value
+                        #endif
                         nskip = 0;  // Reset after advancing
                     }
                     #endif
                     
                     cgauss(ps_params, kmag, global_y, &D);
+                    #if VERIFY_RNG_CALLS
+                    total_rng_calls++;  // Each cgauss() call uses 2 random numbers
+                    #endif
                 } else {
                     // Fallback: use uniform random numbers (white noise mode, no power spectrum)
                     // This should only happen when ps_handle is NULL (no parameter file provided)
@@ -154,13 +261,19 @@ void generate_hermitian_slice_pair_local(
                     // This matches the other branches' behavior
                     #if !PARALLELIZE_XZ_WITHIN_SLICE
                     if (nskip > 0 && N < MAX_PPD) {
-                        advance_pcg_global(global_y, 2 * nskip);  // Each complex number uses 2 random numbers
+                        advance_pcg_global(global_y, 2 * nskip);
+                        #if VERIFY_RNG_CALLS
+                        total_rng_skips += nskip;  // Track accumulated skip value
+                        #endif
                         nskip = 0;  // Reset after advancing
                     }
                     #endif
                     
                     double D_re = random_real_pcg_global(global_y);
                     double D_im = random_real_pcg_global(global_y);
+                    #if VERIFY_RNG_CALLS
+                    total_rng_calls++;  // Two random_real calls = 1 complex number = 2 random numbers
+                    #endif
                     D[0] = D_re;
                     D[1] = D_im;
                 }
@@ -270,48 +383,8 @@ void generate_hermitian_slice_pair_local(
                     CONJ_SLICE(a, x_mirror, z_mirror)[1] = -im;
                 }
                 
-                // RNG consistency: After processing last x-value in this z-row (x == N-1),
-                // skip missing x-values (x = N to MAX_PPD-1) in current z-row
-                // Advance immediately since we've finished all x-values for this z-row
-                #if !PARALLELIZE_XZ_WITHIN_SLICE
-                if (x == N - 1 && N < MAX_PPD) {
-                    nskip += MAX_PPD - N; // skip missing x-values in this z-row
-                    
-                    // Advance immediately since we've finished all x-values for this z-row
-                    // nskip may include D=0 skips from earlier in this z-row + missing x-values
-                    if (ps_handle != NULL && params_handle != NULL) {
-                        int64_t rng_index = global_y;
-                        zeldovich_ps_advance_rng(ps_handle, params_handle, rng_index, nskip);
-                    } else if (params_handle == NULL) {
-                        // Local PCG: advance by 2 * nskip (each complex number uses 2 random numbers)
-                        advance_pcg_global(global_y, 2 * nskip);
-                    }
-                    nskip = 0;  // Reset after advancing
-                }
-                #endif
             }
             
-            // RNG consistency: After processing last z-row (z == N-1),
-            // skip missing z-rows (z = N to MAX_PPD-1, each containing MAX_PPD x-values)
-            // Advance immediately since we've finished all RNG calls for this z-row
-            #if !PARALLELIZE_XZ_WITHIN_SLICE
-            if (z == N - 1 && N < MAX_PPD) {
-                nskip += (MAX_PPD - N) * MAX_PPD; // skip missing z-rows
-                
-                // Advance immediately since we've finished all RNG calls for this z-row
-                // nskip may include missing x-values from last x-loop + missing z-rows
-                if (nskip > 0) {
-                    if (ps_handle != NULL && params_handle != NULL) {
-                        int64_t rng_index = global_y;
-                        zeldovich_ps_advance_rng(ps_handle, params_handle, rng_index, nskip);
-                    } else if (params_handle == NULL) {
-                        // Local PCG: advance by 2 * nskip (each complex number uses 2 random numbers)
-                        advance_pcg_global(global_y, 2 * nskip);
-                    }
-                    nskip = 0;  // Reset after advancing
-                }
-            }
-            #endif
         }
     } else {
         // ========== SELF-CONJUGATE: Y=0 or Y=N/2 ==========
@@ -332,6 +405,27 @@ void generate_hermitian_slice_pair_local(
         } else {
             nskip = 0;
         }
+        
+        // In parallel mode, advance upfront skip before starting parallel loops
+        #if PARALLELIZE_XZ_WITHIN_SLICE
+        if (N < MAX_PPD && nskip > 0) {
+            // Advance upfront skip before parallel loops to maintain RNG consistency
+            if (ps_handle != NULL && params_handle != NULL) {
+                int64_t rng_index = global_y;
+                zeldovich_ps_advance_rng(ps_handle, params_handle, rng_index, nskip);
+                #if VERIFY_RNG_CALLS
+                total_rng_skips += nskip;
+                #endif
+            } else if (params_handle == NULL) {
+                advance_pcg_global(global_y, 2 * nskip);
+                #if VERIFY_RNG_CALLS
+                total_rng_skips += nskip;
+                #endif
+            }
+            nskip = 0;  // Reset after advancing
+        }
+        #endif
+        
         #if USE_ZELDOVICH_METHOD
         // Zeldovich method: Fill half the plane, mirror the rest
         // PARALLELIZATION: Conditional based on PARALLELIZE_XZ_WITHIN_SLICE flag
@@ -344,6 +438,28 @@ void generate_hermitian_slice_pair_local(
         for (int z = 0; z <= Nhalf; z++) {
             int x_max = (z == 0 ? Nhalf + 1 : N);
             for (int x = 0; x < x_max; x++) {
+                // RNG consistency: When crossing Nyquist boundary (x == Nhalf + 1),
+                // skip missing x-values (x = x_max to MAX_PPD-1) in current z-row
+                // This matches zeldovich.cpp: skip at Nyquist boundary before processing negative kx region
+                // Only applies when x_max > Nhalf + 1 (i.e., when z > 0, since x_max = N for z > 0)
+                #if !PARALLELIZE_XZ_WITHIN_SLICE
+                if (x == Nhalf + 1 && x_max > Nhalf + 1 && N < MAX_PPD) {
+                    int64_t skip_amount = MAX_PPD - x_max;
+                    nskip += skip_amount; // skip missing x-values in this z-row
+                    
+                    #if DEBUG_RNG_SKIP
+                    // Debug: Log skip accumulation for test coordinates
+                    int log_skip = (z <= MAX_DEBUG_COORD && global_y <= MAX_DEBUG_COORD) ||
+                                   (z == Nhalf && global_y == Nhalf);
+                    if (log_skip) {
+                        fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d z=%d x=%d: ACCUMULATE skip at Nyquist boundary (self-conj): +%lld (missing x-values), total nskip=%lld\n",
+                                N, global_y, z, x, (long long)skip_amount, (long long)nskip);
+                        fflush(stderr);
+                    }
+                    #endif
+                }
+                #endif
+                
                 int x_mirror = (x == 0) ? 0 : N - x;
                 int z_mirror = (z == 0) ? 0 : N - z;
                 
@@ -362,12 +478,27 @@ void generate_hermitian_slice_pair_local(
                     // RNG consistency: When D=0, we skip the RNG call, so advance immediately
                     // This matches zeldovich.cpp line 361: advance when D is forced to zero
                     #if !PARALLELIZE_XZ_WITHIN_SLICE
+                    #if DEBUG_RNG_SKIP
+                    int log_d0 = (x <= MAX_DEBUG_COORD && global_y <= MAX_DEBUG_COORD && z <= MAX_DEBUG_COORD) ||
+                                  (x == Nhalf - 1 && global_y == Nhalf - 1 && z == Nhalf - 1);
+                    if (log_d0) {
+                        fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d (x,z)=(%d,%d): D=0 (DC mode), ADVANCE RNG by 1\n",
+                                N, global_y, x, z);
+                        fflush(stderr);
+                    }
+                    #endif
                     if (ps_handle != NULL && params_handle != NULL) {
                         int64_t rng_index = global_y;
                         zeldovich_ps_advance_rng(ps_handle, params_handle, rng_index, 1);
+                        #if VERIFY_RNG_CALLS
+                        total_d_zero_skips++;
+                        #endif
                     } else if (ps_params != NULL || params_handle == NULL) {
                         // Local PCG: advance by 2 (each complex number uses 2 random numbers)
                         advance_pcg_global(global_y, 2);
+                        #if VERIFY_RNG_CALLS
+                        total_d_zero_skips++;
+                        #endif
                     }
                     #endif
                 } else if (ps_handle != NULL && params_handle != NULL) {
@@ -387,6 +518,9 @@ void generate_hermitian_slice_pair_local(
                         #if !PARALLELIZE_XZ_WITHIN_SLICE
                         int64_t rng_index = global_y;
                         zeldovich_ps_advance_rng(ps_handle, params_handle, rng_index, 1);
+                        #if VERIFY_RNG_CALLS
+                        total_d_zero_skips++;
+                        #endif
                         #endif
                     } else {
                         // Convert k indices to physical wavenumber: k_phys = k_index * fundamental
@@ -403,12 +537,18 @@ void generate_hermitian_slice_pair_local(
                         #if !PARALLELIZE_XZ_WITHIN_SLICE
                         if (nskip > 0) {
                             zeldovich_ps_advance_rng(ps_handle, params_handle, rng_index, nskip);
+                        #if VERIFY_RNG_CALLS
+                        total_rng_skips += nskip;
+                        #endif
                             nskip = 0;  // Reset after advancing
                         }
                         #endif
                         
                         double D_real, D_imag;
                         zeldovich_ps_cgauss(ps_handle, kmag, rng_index, &D_real, &D_imag);
+                        #if VERIFY_RNG_CALLS
+                        total_rng_calls++;  // Each cgauss() call uses 2 random numbers
+                        #endif
                         D[0] = (real_t)D_real;
                         D[1] = (real_t)D_imag;
                     }
@@ -422,12 +562,18 @@ void generate_hermitian_slice_pair_local(
                     // This matches the zeldovich-PLT branch behavior
                     #if !PARALLELIZE_XZ_WITHIN_SLICE
                     if (nskip > 0 && N < MAX_PPD) {
-                        advance_pcg_global(global_y, 2 * nskip);  // Each complex number uses 2 random numbers
+                        advance_pcg_global(global_y, 2 * nskip);
+                        #if VERIFY_RNG_CALLS
+                        total_rng_skips += nskip;
+                        #endif  // Each complex number uses 2 random numbers
                         nskip = 0;  // Reset after advancing
                     }
                     #endif
                     
                     cgauss(ps_params, kmag, global_y, &D);
+                    #if VERIFY_RNG_CALLS
+                    total_rng_calls++;  // Each cgauss() call uses 2 random numbers
+                    #endif
                 } else {
                     // Fallback: use uniform random numbers (white noise mode, no power spectrum)
                     // This should only happen when ps_handle is NULL (no parameter file provided)
@@ -437,13 +583,19 @@ void generate_hermitian_slice_pair_local(
                     // This matches the other branches' behavior
                     #if !PARALLELIZE_XZ_WITHIN_SLICE
                     if (nskip > 0 && N < MAX_PPD) {
-                        advance_pcg_global(global_y, 2 * nskip);  // Each complex number uses 2 random numbers
+                        advance_pcg_global(global_y, 2 * nskip);
+                        #if VERIFY_RNG_CALLS
+                        total_rng_skips += nskip;
+                        #endif  // Each complex number uses 2 random numbers
                         nskip = 0;  // Reset after advancing
                     }
                     #endif
                     
                     double D_re = random_real_pcg_global(global_y);
                     double D_im = random_real_pcg_global(global_y);
+                    #if VERIFY_RNG_CALLS
+                    total_rng_calls++;  // Two random_real calls = 1 complex number = 2 random numbers
+                    #endif
                     D[0] = D_re;
                     D[1] = D_im;
                 }
@@ -544,25 +696,6 @@ void generate_hermitian_slice_pair_local(
                     }
                 }
                 
-                // RNG consistency: After processing last x-value in this z-row (x == x_max - 1),
-                // skip missing x-values (x = x_max to MAX_PPD-1) in current z-row
-                // Advance immediately since we've finished all x-values for this z-row
-                #if !PARALLELIZE_XZ_WITHIN_SLICE
-                if (x == x_max - 1 && N < MAX_PPD) {
-                    nskip += MAX_PPD - x_max; // skip missing x-values in this z-row
-                    
-                    // Advance immediately since we've finished all x-values for this z-row
-                    // nskip may include D=0 skips from earlier in this z-row + missing x-values
-                    if (ps_handle != NULL && params_handle != NULL) {
-                        int64_t rng_index = global_y;
-                        zeldovich_ps_advance_rng(ps_handle, params_handle, rng_index, nskip);
-                    } else if (params_handle == NULL) {
-                        // Local PCG: advance by 2 * nskip (each complex number uses 2 random numbers)
-                        advance_pcg_global(global_y, 2 * nskip);
-                    }
-                    nskip = 0;  // Reset after advancing
-                }
-                #endif
             }
             
             // RNG consistency: After processing last z-row (z == Nhalf),
@@ -578,9 +711,15 @@ void generate_hermitian_slice_pair_local(
                     if (ps_handle != NULL && params_handle != NULL) {
                         int64_t rng_index = global_y;
                         zeldovich_ps_advance_rng(ps_handle, params_handle, rng_index, nskip);
+                        #if VERIFY_RNG_CALLS
+                        total_rng_skips += nskip;
+                        #endif
                     } else if (params_handle == NULL) {
                         // Local PCG: advance by 2 * nskip (each complex number uses 2 random numbers)
                         advance_pcg_global(global_y, 2 * nskip);
+                        #if VERIFY_RNG_CALLS
+                        total_rng_skips += nskip;
+                        #endif
                     }
                     nskip = 0;  // Reset after advancing
                 }
@@ -629,12 +768,27 @@ void generate_hermitian_slice_pair_local(
                     D[0] = D[1] = 0.0;
                     // RNG consistency: When D=0, we skip the RNG call, so advance immediately
                     #if !PARALLELIZE_XZ_WITHIN_SLICE
+                    #if DEBUG_RNG_SKIP
+                    int log_d0 = (x <= MAX_DEBUG_COORD && global_y <= MAX_DEBUG_COORD && z <= MAX_DEBUG_COORD) ||
+                                  (x == Nhalf - 1 && global_y == Nhalf - 1 && z == Nhalf - 1);
+                    if (log_d0) {
+                        fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d (x,z)=(%d,%d): D=0 (DC mode, self-conj), ADVANCE RNG by 1\n",
+                                N, global_y, x, z);
+                        fflush(stderr);
+                    }
+                    #endif
                     if (ps_handle != NULL && params_handle != NULL) {
                         int64_t rng_index = global_y;
                         zeldovich_ps_advance_rng(ps_handle, params_handle, rng_index, 1);
+                        #if VERIFY_RNG_CALLS
+                        total_d_zero_skips++;
+                        #endif
                     } else if (params_handle == NULL) {
                         // Local PCG: advance by 2 (each complex number uses 2 random numbers)
                         advance_pcg_global(global_y, 2);
+                        #if VERIFY_RNG_CALLS
+                        total_d_zero_skips++;
+                        #endif
                     }
                     #endif
                 } else if (ps_handle != NULL && params_handle != NULL) {
@@ -651,8 +805,19 @@ void generate_hermitian_slice_pair_local(
                         D[0] = D[1] = 0.0;
                         // RNG consistency: When D=0, we skip the RNG call, so advance immediately
                         #if !PARALLELIZE_XZ_WITHIN_SLICE
+                        #if DEBUG_RNG_SKIP
+                        int log_nyq = (x <= MAX_DEBUG_COORD && z <= MAX_DEBUG_COORD);
+                        if (log_nyq) {
+                            fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d (x,z)=(%d,%d): D=0 (Nyquist axis, self-conj), ADVANCE RNG by 1\n",
+                                    N, global_y, x, z);
+                            fflush(stderr);
+                        }
+                        #endif
                         int64_t rng_index = global_y;
                         zeldovich_ps_advance_rng(ps_handle, params_handle, rng_index, 1);
+                        #if VERIFY_RNG_CALLS
+                        total_d_zero_skips++;
+                        #endif
                         #endif
                     } else {
                         double fundamental = zeldovich_params_get_fundamental(params_handle);
@@ -664,12 +829,24 @@ void generate_hermitian_slice_pair_local(
                         // Since we've already handled global_y == N/2 above, global_y is now < N/2
                         int64_t rng_index = global_y;
                         double D_real, D_imag;
+                        #if DEBUG_RNG_SKIP
+                        int log_cgauss_sc = (x <= MAX_DEBUG_COORD && global_y <= MAX_DEBUG_COORD && z <= MAX_DEBUG_COORD) ||
+                                            (x == Nhalf - 1 && global_y == Nhalf - 1 && z == Nhalf - 1);
+                        if (log_cgauss_sc) {
+                            fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d (x,z)=(%d,%d): CALLING cgauss (self-conj, nskip=%lld, kmag=%.6e)\n",
+                                    N, global_y, x, z, (long long)nskip, kmag);
+                            fflush(stderr);
+                        }
+                        #endif
                         #if PARALLELIZE_XZ_WITHIN_SLICE
                         // Lock protects generator access
                         #else
                         // Sequential access: no locks needed
                         #endif
                         zeldovich_ps_cgauss(ps_handle, kmag, rng_index, &D_real, &D_imag);
+                        #if VERIFY_RNG_CALLS
+                        total_rng_calls++;  // Each cgauss() call uses 2 random numbers
+                        #endif
                         D[0] = (real_t)D_real;
                         D[1] = (real_t)D_imag;
                     }
@@ -700,6 +877,9 @@ void generate_hermitian_slice_pair_local(
                     // This branch is only for backward compatibility (no power spectrum mode)
                     double D_re = random_real_pcg_global(global_y);
                     double D_im = random_real_pcg_global(global_y);
+                    #if VERIFY_RNG_CALLS
+                    total_rng_calls++;  // Two random_real calls = 1 complex number = 2 random numbers
+                    #endif
                     D[0] = D_re;
                     D[1] = D_im;
                 }
@@ -1013,6 +1193,53 @@ void generate_hermitian_slice_pair_local(
                 }
                 printf("\n");
             }
+        }
+    }
+    #endif
+    
+    // ========== RNG VERIFICATION: Verify total RNG calls match expected ==========
+    // Similar to zeldovich.cpp assertion: assert(Pk.v2rng[y] - checkpoint == 2 * MAX_PPD * MAX_PPD)
+    // 
+    // Why 2 * MAX_PPD * MAX_PPD?
+    // - zeldovich.cpp processes ppd * ppd points per Y-slice (where ppd <= MAX_PPD)
+    // - For each point: either call cgauss() (uses 2 random numbers) or skip (advance by 2 later)
+    // - When ppd < MAX_PPD, missing (MAX_PPD-ppd) * MAX_PPD points are skipped
+    // - Total = 2 * (actual points processed) + 2 * (missing points skipped)
+    //         = 2 * ppd * ppd + 2 * (MAX_PPD * MAX_PPD - ppd * ppd)
+    //         = 2 * MAX_PPD * MAX_PPD
+    // This ensures RNG consistency: same Y-slice always consumes same number of random numbers
+    // regardless of actual grid size, so overlapping regions match across different N values.
+    #if VERIFY_RNG_CALLS
+    {
+        // Expected: 2 * MAX_PPD * MAX_PPD random numbers total (always, regardless of N)
+        // - Each cgauss() call consumes 2 random numbers (tracked in total_rng_calls)
+        // - Each skip advances by 2 * nskip random numbers (tracked in total_rng_skips, already accounts for the 2x)
+        // - Each D=0 skip advances by 2 random numbers (tracked in total_d_zero_skips, already accounts for the 2x)
+        // Note: Cast to int64_t to avoid potential overflow issues
+        int64_t max_ppd_val = (int64_t)MAX_PPD;
+        int64_t expected_total = 2LL * max_ppd_val * max_ppd_val;
+        int64_t actual_total = 2LL * total_rng_calls + 2LL * total_rng_skips + 2LL * total_d_zero_skips;
+        
+        if (actual_total != expected_total) {
+            fprintf(stderr, 
+                    "[RNG-VERIFY ERROR] Rank %d, Y=%d: Expected %ld random numbers (MAX_PPD=%ld), got %ld "
+                    "(calls=%ld * 2 = %ld, skips=%ld * 2 = %ld, d_zero=%ld * 2 = %ld)\n",
+                    rank, global_y, (long)expected_total, (long)max_ppd_val, (long)actual_total,
+                    (long)total_rng_calls, (long)(2LL * total_rng_calls),
+                    (long)total_rng_skips, (long)(2LL * total_rng_skips),
+                    (long)total_d_zero_skips, (long)(2LL * total_d_zero_skips));
+            fflush(stderr);
+            // Don't abort in production, but warn
+            #ifdef DEBUG
+            assert(actual_total == expected_total);
+            #endif
+        } else if (rank == 0 && global_y <= 2) {
+            // Print verification for first few slices in debug mode
+            fprintf(stderr,
+                    "[RNG-VERIFY OK] Rank %d, Y=%d: Total=%ld (calls=%ld, skips=%ld, d_zero=%ld)\n",
+                    rank, global_y, (long)actual_total,
+                    (long)total_rng_calls, (long)total_rng_skips, (long)total_d_zero_skips);
+            fflush(stderr);
         }
     }
     #endif

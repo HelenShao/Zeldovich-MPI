@@ -16,10 +16,42 @@ from collections import defaultdict
 def parse_rng_debug_line(line):
     """Parse a [RNG-DEBUG] line and extract values."""
     # Format: [RNG-DEBUG] N=4 Y=0 (x,z)=(0,0): k=(0,0,0) k2=0.000000 | D=(...,...) F=(...,...) G=(...,...) H=(...,...)
-    pattern = r'\[RNG-DEBUG\] N=(\d+) Y=(\d+) \(x,z\)=\((\d+),(\d+)\): k=\((-?\d+),(-?\d+),(-?\d+)\) k2=([\d.]+) \| D=\(([\d.e+-]+),([\d.e+-]+)\) F=\(([\d.e+-]+),([\d.e+-]+)\) G=\(([\d.e+-]+),([\d.e+-]+)\) H=\(([\d.e+-]+),([\d.e+-]+)\)'
+    # Use non-greedy matching by extracting values between parentheses
+    # This avoids issues with greedy regex patterns matching across boundaries
     
-    match = re.match(pattern, line)
-    if not match:
+    # First extract the header part
+    header_match = re.match(r'\[RNG-DEBUG\] N=(\d+) Y=(\d+) \(x,z\)=\((\d+),(\d+)\): k=\((-?\d+),(-?\d+),(-?\d+)\) k2=([\d.]+) \|', line)
+    if not header_match:
+        return None
+    
+    # Extract D, F, G, H values using more precise pattern
+    # Match scientific notation: -?\d+\.\d+[eE][+-]?\d+
+    float_pattern = r'-?\d+\.\d+[eE][+-]?\d+'
+    d_match = re.search(rf'D=\(({float_pattern}),({float_pattern})\)', line)
+    f_match = re.search(rf'F=\(({float_pattern}),({float_pattern})\)', line)
+    g_match = re.search(rf'G=\(({float_pattern}),({float_pattern})\)', line)
+    h_match = re.search(rf'H=\(({float_pattern}),({float_pattern})\)', line)
+    
+    if not all([d_match, f_match, g_match, h_match]):
+        return None
+    
+    try:
+        return {
+            'N': int(header_match.group(1)),
+            'Y': int(header_match.group(2)),
+            'x': int(header_match.group(3)),
+            'z': int(header_match.group(4)),
+            'kx': int(header_match.group(5)),
+            'ky': int(header_match.group(6)),
+            'kz': int(header_match.group(7)),
+            'k2': float(header_match.group(8)),
+            'D': (float(d_match.group(1)), float(d_match.group(2))),
+            'F': (float(f_match.group(1)), float(f_match.group(2))),
+            'G': (float(g_match.group(1)), float(g_match.group(2))),
+            'H': (float(h_match.group(1)), float(h_match.group(2))),
+        }
+    except ValueError:
+        # If parsing fails, return None (will be handled by extract_rng_debug)
         return None
     
     return {
@@ -40,17 +72,37 @@ def parse_rng_debug_line(line):
 def extract_rng_debug(filepath):
     """Extract all [RNG-DEBUG] lines from a file."""
     results = {}
+    skipped = 0
     try:
         with open(filepath, 'r') as f:
-            for line in f:
+            for line_num, line in enumerate(f, 1):
                 if '[RNG-DEBUG]' in line:
-                    parsed = parse_rng_debug_line(line.strip())
+                    # Clean up the line: remove any embedded [RNG-DEBUG] markers from line wrapping
+                    # This handles cases where lines got concatenated
+                    cleaned_line = line.strip()
+                    # If line contains multiple [RNG-DEBUG] markers, take only the first complete one
+                    if cleaned_line.count('[RNG-DEBUG]') > 1:
+                        # Find the first complete entry (ends with H=(...,...))
+                        first_end = cleaned_line.find('H=(')
+                        if first_end > 0:
+                            h_end = cleaned_line.find(')', first_end)
+                            if h_end > 0:
+                                cleaned_line = cleaned_line[:h_end+1]
+                    
+                    parsed = parse_rng_debug_line(cleaned_line)
                     if parsed:
                         key = (parsed['x'], parsed['Y'], parsed['z'])
                         results[key] = parsed
+                    else:
+                        skipped += 1
+                        if skipped <= 10:  # Only print first 10 warnings
+                            print(f"Warning: Skipped unparseable line {line_num}: {cleaned_line[:80]}...", file=sys.stderr)
     except FileNotFoundError:
         print(f"Error: File not found: {filepath}", file=sys.stderr)
         sys.exit(1)
+    
+    if skipped > 10:
+        print(f"Warning: Skipped {skipped} unparseable lines total", file=sys.stderr)
     
     return results
 
