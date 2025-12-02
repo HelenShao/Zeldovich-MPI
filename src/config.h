@@ -120,6 +120,23 @@
 #define MAX_DEBUG_BOUNDARY_COORD 128
 #endif
 
+// Sampling stride for RNG consistency debugging when N > 16
+// For N > 16, only print coordinates where x, y, z are multiples of DEBUG_SAMPLE_STRIDE
+// This reduces output volume while still testing representative coordinates
+// For N=256 with stride=10: prints ~(128/10)^3 ≈ 2,000 coordinates instead of ~2.1 million
+// Set to 1 to print all coordinates (no sampling)
+// Recommended: 5-20 for large N testing
+#ifndef DEBUG_SAMPLE_STRIDE
+#define DEBUG_SAMPLE_STRIDE 10
+#endif
+
+// Maximum N for full coordinate printing (no sampling)
+// For N <= DEBUG_FULL_PRINT_MAX_N, print all coordinates in test range
+// For N > DEBUG_FULL_PRINT_MAX_N, use sampling with DEBUG_SAMPLE_STRIDE
+#ifndef DEBUG_FULL_PRINT_MAX_N
+#define DEBUG_FULL_PRINT_MAX_N 16
+#endif
+
 // Verbose output for MPI buffer verification (send/recv buffer bounds, displacements, etc.)
 // 1 = Print detailed buffer checks before MPI_Ialltoallv (verbose, useful for debugging)
 // 0 = Silent checks (only print errors, reduces log spam)

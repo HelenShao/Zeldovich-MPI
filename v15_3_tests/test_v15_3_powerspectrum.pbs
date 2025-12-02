@@ -32,11 +32,11 @@ mpicxx --version || echo "mpicxx not found or error"
 # Go to hermitian_3d_matrix_production directory
 cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production
 
-# Compile with double precision
+# Compile with double precision and RNG consistency debugging
 # Makefile auto selects correct FFTW libs based on CFLAGS
-echo "Compiling hermitian_3d_matrix with double precision..."
+echo "Compiling hermitian_3d_matrix with double precision and RNG consistency debugging..."
 make clean
-make CFLAGS="-DUSE_DOUBLE_PRECISION"
+make CFLAGS="-DUSE_DOUBLE_PRECISION -DDEBUG_RNG_CONSISTENCY=1"
 
 # Job parameters
 NNODES=$(sort -u $PBS_NODEFILE | wc -l)
@@ -61,10 +61,11 @@ fi
 
 echo "=========================================="
 echo "Test: v15.3 Power Spectrum Mode"
-echo "Double Precision Build"
+echo "Double Precision Build with RNG Consistency Debugging"
 echo "N=$N, ranks=$NTOTRANKS"
 echo "Parameter file: $PARAM_FILE"
 echo "Should use zeldovich-PLT PowerSpectrum and RNG"
+echo "RNG debug: Tests coordinates <= 127 (overlapping region boundary)"
 echo "=========================================="
 echo ""
 
