@@ -1,0 +1,77 @@
+#!/bin/bash
+#PBS -N v15_3_ps_dbl_N1024
+#PBS -A AbacusAurora
+#PBS -l select=2:ncpus=64:mpiprocs=32:ompthreads=2
+#PBS -l walltime=00:30:00
+#PBS -l filesystems=home
+#PBS -q debug
+#PBS -M helenshao0904@gmail.com
+#PBS -m abe
+#PBS -j oe
+#PBS -o /home/helenshao/InitialConditions/hermitian_3d_matrix_production/v15_3_tests/test_v15_3_powerspectrum_N1024_double_aurora.out
+
+cd $PBS_O_WORKDIR
+
+# Load modules
+echo "Loading frameworks module..."
+module load frameworks
+echo "Loading FFTW module..."
+module load fftw/3.3.10
+
+# Go to hermitian_3d_matrix_production directory
+cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production
+
+# Compile with double precision
+echo "Compiling hermitian_3d_matrix with double precision..."
+make clean
+make CFLAGS="-DUSE_DOUBLE_PRECISION"
+
+# Job parameters
+NNODES=$(sort -u $PBS_NODEFILE | wc -l)
+NRANKS_PER_NODE=32
+NTHREADS_PER_RANK=2
+NTOTRANKS=$((NNODES * NRANKS_PER_NODE))
+
+# OpenMP settings
+export OMP_NUM_THREADS=$NTHREADS_PER_RANK
+export OMP_PLACES=cores
+export OMP_PROC_BIND=close
+
+# Test parameters
+N=1024
+PARAM_FILE="examples/param_N1024.par"
+
+# Check if parameter file exists
+if [ ! -f "$PARAM_FILE" ]; then
+    echo "ERROR: Parameter file not found: $PARAM_FILE"
+    exit 1
+fi
+
+echo "=========================================="
+echo "Test: v15.3 Power Spectrum Mode - N=1024"
+echo "Double Precision Build"
+echo "N=$N, ranks=$NTOTRANKS (2 nodes, 32 ranks/node)"
+echo "Parameter file: $PARAM_FILE"
+echo "Expected output: ~64 GB (64x N=256)"
+echo "WARNING: Large output size - ensure sufficient disk space"
+echo "=========================================="
+echo ""
+
+# Run the program with parameter file
+mpiexec -n $NTOTRANKS \
+        -ppn $NRANKS_PER_NODE \
+        --depth=$NTHREADS_PER_RANK \
+        --cpu-bind depth \
+        ./hermitian_3d_matrix $N $PARAM_FILE 2>&1 | tee v15_3_tests/test_v15_3_powerspectrum_N1024_double_aurora.log
+
+echo ""
+echo "Checking if output is purely real..."
+grep -i "imaginary\|complex\|real" v15_3_tests/test_v15_3_powerspectrum_N1024_double_aurora.log | tail -5
+
+echo ""
+echo "Checking power spectrum initialization..."
+grep -i "power.*spectrum\|PowerSpectrum\|powerlaw\|fundamental\|boxsize" v15_3_tests/test_v15_3_powerspectrum_N1024_double_aurora.log | head -10
+
+echo ""
+echo "Job completed!"
+

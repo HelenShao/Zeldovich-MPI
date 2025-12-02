@@ -1,0 +1,334 @@
+Loading frameworks module...
+Loading FFTW module...
+Checking MPI compiler...
+/opt/aurora/25.190.0/spack/unified/0.10.1/install/linux-sles15-x86_64/oneapi-2025.2.0/mpich-develop-git.6037a7a-cym6jg6/bin/mpicc
+Intel(R) oneAPI DPC++/C++ Compiler 2025.2.0 (2025.2.0.20250605)
+Target: x86_64-unknown-linux-gnu
+Thread model: posix
+InstalledDir: /opt/aurora/25.190.0/oneapi/compiler/2025.2/bin/compiler
+Configuration file: /opt/aurora/25.190.0/oneapi/compiler/2025.2/bin/compiler/../icx.cfg
+Checking C++ compiler...
+/opt/aurora/25.190.0/spack/unified/0.10.1/install/linux-sles15-x86_64/oneapi-2025.2.0/mpich-develop-git.6037a7a-cym6jg6/bin/mpicxx
+Intel(R) oneAPI DPC++/C++ Compiler 2025.2.0 (2025.2.0.20250605)
+Target: x86_64-unknown-linux-gnu
+Thread model: posix
+InstalledDir: /opt/aurora/25.190.0/oneapi/compiler/2025.2/bin/compiler
+Configuration file: /opt/aurora/25.190.0/oneapi/compiler/2025.2/bin/compiler/../icpx.cfg
+Compiling hermitian_3d_matrix with double precision and RNG debug...
+rm -f hermitian_3d_matrix *.o
+mpicxx -Wall -Wextra -Wno-cast-function-type -std=c++17 -O3 -fopenmp -DUSE_DOUBLE_PRECISION -DDEBUG_RNG_CONSISTENCY=1 -I../zeldovich-PLT/include -I../zeldovich-PLT/subprojects/ParseHeader/include -I../zeldovich-PLT/build/subprojects/ParseHeader -I../zeldovich-PLT/subprojects/fmt-11.2.0/include -Isrc -Isrc/utils -Isrc/fft -Isrc/generation -Isrc/communication -Isrc/streaming -Ideps -I../.. -I../../../..  -I/opt/aurora/25.190.0/spack/unified/0.10.1/install/linux-sles15-x86_64/oneapi-2025.2.0/fftw-3.3.10-bs6lijg/include -o hermitian_3d_matrix src/main.cpp src/utils/printing.c src/utils/verification.c src/utils/decomposition.c src/utils/batch_helpers.c src/utils/rng.c src/utils/power_spectrum.c src/fft/fft_setup.c src/generation/hermitian_generation.c src/communication/mpi_exchange.c src/streaming/z_streaming.c src/STimer.cc src/utils/zeldovich_wrapper.cpp  -L/opt/aurora/25.190.0/spack/unified/0.10.1/install/linux-sles15-x86_64/oneapi-2025.2.0/fftw-3.3.10-bs6lijg/lib -lfftw3 -lfftw3_omp -L../zeldovich-PLT/build -L../zeldovich-PLT/build/subprojects/ParseHeader -L../zeldovich-PLT/build/subprojects/fmt-11.2.0 -lzeldovich -lparseheader -lfmt  -lm -lstdc++ -Wl,-rpath,/home/helenshao/InitialConditions/zeldovich-PLT/build:/home/helenshao/InitialConditions/zeldovich-PLT/build/subprojects/ParseHeader:/home/helenshao/InitialConditions/zeldovich-PLT/build/subprojects/fmt-11.2.0
+icpx: warning: use of '-qopenmp' recommended over '-fopenmp' [-Wrecommended-option]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+src/utils/decomposition.c:139:46: warning: unused parameter 'num_ranks' [-Wunused-parameter]
+  139 | int validate_abacus_compatibility(int N, int num_ranks, int grid_x, int grid_z)
+      |                                              ^
+1 warning generated.
+src/utils/rng.c:49:39: warning: unused parameter 'M' [-Wunused-parameter]
+   49 | void initialize_global_pcg(int L, int M, int N, uint64_t seed) {
+      |                                       ^
+src/utils/rng.c:49:46: warning: unused parameter 'N' [-Wunused-parameter]
+   49 | void initialize_global_pcg(int L, int M, int N, uint64_t seed) {
+      |                                              ^
+2 warnings generated.
+
+Build successful!
+Binary: hermitian_3d_matrix
+Configuration: see src/config.h
+
+==========================================
+Test: v15.3 Power Spectrum Mode
+Double Precision Build
+N=6, ranks=2
+Parameter file: examples/param_template.par
+Should use zeldovich-PLT PowerSpectrum and RNG
+==========================================
+
+Generating ICs for ppd = 256
+WARNING: Parameter file ppd=256 != N=6
+         Using N=6 from command line
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 256
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+[Rank 1] After primary FFT (array 0, Y=2): buffer OK (checksum=-88)
+[Rank 1] After conjugate FFT (array 0, Y=2): buffer OK (checksum=-88)
+[Rank 1] After primary FFT (array 1, Y=2): buffer OK (checksum=-47)
+[Rank 1] After conjugate FFT (array 1, Y=2): buffer OK (checksum=-47)
+[Rank 1] After primary FFT (array 2, Y=2): buffer OK (checksum=0)
+[Rank 1] After conjugate FFT (array 2, Y=2): buffer OK (checksum=0)
+[Rank 1] After primary FFT (array 3, Y=2): buffer OK (checksum=-47)
+[Rank 1] After conjugate FFT (array 3, Y=2): buffer OK (checksum=-47)
+[RNG-DEBUG] N=6 Y=0 (x,z)=(0,0): k=(0,0,0) k2=0.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[RNG-DEBUG] N=6 Y=0 (x,z)=(1,0): k=(1,0,0) k2=1.000000 | D=(-1.1474379405e-01,7.9733163453e-02) F=(-7.9733163453e-02,-1.1474379405e-01) G=(0.0000000000e+00,-0.0000000000e+00) H=(0.0000000000e+00,-0.0000000000e+00)
+[RNG-DEBUG] N=6 Y=0 (x,z)=(2,0): k=(2,0,0) k2=4.000000 | D=(-5.8412333650e-03,4.2729671059e-02) F=(-2.1364835530e-02,-2.9206166825e-03) G=(0.0000000000e+00,-0.0000000000e+00) H=(0.0000000000e+00,-0.0000000000e+00)
+[RNG-DEBUG] N=6 Y=0 (x,z)=(3,0): k=(3,0,0) k2=9.000000 | D=(-1.9959500108e-02,-2.8404007734e-02) F=(9.4680025778e-03,-6.6531667027e-03) G=(-0.0000000000e+00,-0.0000000000e+00) H=(-0.0000000000e+00,-0.0000000000e+00)
+[RNG-DEBUG] N=6 Y=0 (x,z)=(1,1): k=(1,0,1) k2=2.000000 | D=(1.2848158432e-01,5.6907314356e-02) F=(-2.8453657178e-02,6.4240792159e-02) G=(0.0000000000e+00,0.0000000000e+00) H=(-2.8453657178e-02,6.4240792159e-02)
+[Rank 0] After primary FFT (array 0, Y=0): buffer OK (checksum=126)
+[Rank 0] After primary FFT (array 1, Y=0): buffer OK (checksum=0)
+[Rank 0] After primary FFT (array 2, Y=0): buffer OK (checksum=0)
+[Rank 0] After primary FFT (array 3, Y=0): buffer OK (checksum=0)
+[RNG-DEBUG] N=6 Y=1 (x,z)=(1,1): k=(1,1,1) k2=3.000000 | D=(-1.0563446882e-01,6.8901100726e-02) F=(-2.2967033575e-02,-3.5211489608e-02) G=(-2.2967033575e-02,-3.5211489608e-02) H=(-2.2967033575e-02,-3.5211489608e-02)
+[INFO] num_ranks=2 < total_pairs=4: Each rank will process 2-2 pairs
+====================================================================================
+VERSION 14: PERIODIC BOUNDARY CONDITIONS FOR PADDING
+====================================================================================
+Precision: Double (16 bytes per complex number)
+Matrix size: N = 6³, Total elements: 216
+MPI ranks: 2 (total_pairs: 4 for N=6)
+Multi-batch processing: Each rank processes multiple Y-slice pairs
+Grid decomposition: Core grid only (no padding, X_PADDING=0)
+            Each rank owns non-overlapping X-region
+            No periodic boundary wrapping - standard decomposition
+V12 feature: Z-slab streaming (Zeldovich-compatible output)
+            Output format: [Z][Array][Y][X] matches Zeldovich AZYX
+            Each file contains all (X,Y) for one Z-slab
+V11 feature: Direct receive into persistent source-grouped buffer
+Communication method: MPI_Ialltoallv (Phase A)
+====================================================================================
+
+[INIT] Rank 0: Assigned 2 pairs:
+  Pair 0: Y=0 (self-conjugate)
+  Pair 1: Y=1 and Y=5 (conjugate)
+
+[DISTRIBUTION] Multi-batch slice distribution:
+  Total Y-slice pairs: 4
+  Active ranks: 2
+  Pairs per rank: 2 base + 0 ranks with +1
+  Rank 0 processes: 2 pairs (Y indices 0-1)
+  Estimated total Y-slices: ~6
+
+[INIT] Loading zeldovich-PLT parameters from: examples/param_template.par
+[INIT] PowerSpectrum initialized:
+       Power law index: -2.00
+       Box size: 100.00
+       Fundamental wavenumber: 6.283185e-02
+       Seed: 4
+       Power spectrum mode: ENABLED
+[SETUP] narray = 4 (arrays per Y-slice)
+[SETUP] Creating FFT plans with dummy memory...
+[SETUP] FFT plans created successfully (2D and 1D)
+[MEMORY] Allocated local_y_slices: 0 bytes (0.00 GB) for 0 slices, 4 arrays
+[OK] Rank 0: Macro indexing verified (slices=0, arrays=4)
+
+[V14-DEBUG] Grid decomposition verification (PERIODIC BOUNDARIES):
+  Rank 0:
+    Core:   X=[0,6), Z=[0,3), Pencils=18
+    Padded: X=[0,6), Z=[0,3), Pencils=18
+  Rank 1:
+    Core:   X=[0,6), Z=[3,6), Pencils=18
+    Padded: X=[0,6), Z=[3,6), Pencils=18
+  Note: Negative X-start or X-end > N indicates periodic wrap-around
+[Stage 2] Complete.
+
+[MULTI-BATCH] Starting batch processing...
+              Ranks will process 2 pairs each (approx)
+[GRID] Rank 0 (NO PADDING - CORE GRID ONLY):
+  Core region:   X=[0,6), Z=[0,3), pencils=18
+[BATCHES] Total batches to process: 2
+
+[V11-SETUP] Computing per-source Y-slice totals...
+[V11-SETUP] Rank 0: Source totals: src0=3 src1=3 
+[V11-SETUP] Persistent recv_buffer size: 6912 bytes (0.00 GB)
+            Total elements: 432 = sum of (src_total_slices[src] * my_pencils * narray)
+[V11-MEMORY] Allocated recv_buffer: 0.00 GB (source-grouped layout)
+[V11-SETUP] Rank 0: Write cursors initialized to 0
+[V11-SETUP] Phase 1 pre-computation complete.
+
+[V11-SETUP] Building Y-value ownership mapping...
+[V11-SETUP] Rank 0: Y-mapping complete. Sample: Y=0-->src0[0], Y=3-->src1[2]
+[V11-SETUP] Phase 2 Y-mapping complete.
+
+[MEMORY] Allocated local_y_slices (reusable): 4608 bytes (0.00 GB)
+
+[MULTI-BATCH] Processing 2 batches...
+[BATCH 0] Rank 0: Processing 1 Y-slices (Y=0)
+[DEBUG Y=0] Before 2D FFT (Fourier space) - PRIMARY slice - Max real/imag per array: A0: re=1.285e-01 im=7.973e-02 A1: re=0.000e+00 im=2.590e-01 A2: re=0.000e+00 im=7.973e-02 A3: re=0.000e+00 im=2.590e-01 (NOTE: Non-zero imag expected in Fourier space)
+[DEBUG Y=0] After 2D FFT (Real space) - PRIMARY slice - Max real/imag per array: A0: re=9.444e-01 im=0.000e+00 (ratio=0.000e+00) A1: re=5.743e-01 im=0.000e+00 (ratio=0.000e+00) A2: re=2.747e-01 im=0.000e+00 (ratio=0.000e+00) A3: re=5.743e-01 im=0.000e+00 (ratio=0.000e+00) (NOTE: Imag should be ~0 in real space!)
+[PACK] Rank 0: Packed 144 total elements to send_buffer
+       Sending to ranks: 72 elements to rank 0, 72 elements to rank 1
+[V11-BATCH 0] Cursors advanced. Sample: src0=72, src1=144
+[BATCH 1] Rank 0: Processing 2 Y-slices (Y=1, Y=5)
+[DEBUG Y=1] Before 2D FFT (Fourier space) - PRIMARY slice - Max real/imag per array: A0: re=1.431e-01[Rank 0] After primary FFT (array 0, Y=1): buffer OK (checksum=68)
+[Rank 0] After conjugate FFT (array 0, Y=1): buffer OK (checksum=68)
+[Rank 0] After primary FFT (array 1, Y=1): buffer OK (checksum=84)
+[Rank 0] After conjugate FFT (array 1, Y=1): buffer OK (checksum=84)
+[Rank 0] After primary FFT (array 2, Y=1): buffer OK (checksum=0)
+[Rank 0] After conjugate FFT (array 2, Y=1): buffer OK (checksum=0)
+[Rank 0] After primary FFT (array 3, Y=1): buffer OK (checksum=84)
+[Rank 0] After conjugate FFT (array 3, Y=1): buffer OK (checksum=84)
+ im=2.789e-02 A1: re=1.625e-01 im=4.643e-02 A2: re=0.000e+00 im=2.789e-02 A3: re=1.625e-01 im=4.643e-02 (NOTE: Non-zero imag expected in Fourier space)
+[DEBUG Y=1] Before 2D FFT (Fourier space) - CONJUGATE slice - Max real/imag per array: A0: re=1.431e-01 im=2.789e-02 A1: re=1.625e-01 im=4.643e-02 A2: re=0.000e+00 im=2.789e-02 A3: re=1.625e-01 im=4.643e-02 (NOTE: Should be conjugate of primary!)
+[DEBUG Y=1] Sample conjugate check (first 3 points): A0[0,0]: prim=(1.063e-01,-0.000e+00) conj[0,0]=(1.063e-01,0.000e+00) A0[0,1]: prim=(-4.042e-02,-0.000e+00) conj[0,5]=(-4.042e-02,0.000e+00) A0[1,0]: prim=(-1.274e-01,8.665e-03) conj[5,0]=(-1.274e-01,-8.665e-03) A0[1,1]: prim=(-1.056e-01,-2.297e-02) conj[5,5]=(-1.056e-01,2.297e-02) A1[0,0]: prim=(1.625e-01,-0.000e+00) conj[0,0]=(1.625e-01,0.000e+00) A1[0,1]: prim=(4.643e-02,4.643e-02) conj[0,5]=(4.643e-02,-4.643e-02) A1[1,0]: prim=(8.665e-03,-0.000e+00) conj[5,0]=(8.665e-03,0.000e+00) A1[1,1]: prim=(-2.297e-02,-2.297e-02) conj[5,5]=(-2.297e-02,2.297e-02) 
+[DEBUG Y=1] Before 2D FFT - Buffer addresses: prim=0x5d7f000 conj=0x5d7f900 (diff=144)
+[DEBUG Y=1] Before 2D FFT - Sample values: prim[0,0]=(1.063e-01,-0.000e+00) conj[0,0]=(1.063e-01,0.000e+00)
+[DEBUG Y=1] Right before conjugate FFT - conj[0,0]=(1.063e-01,0.000e+00) prim[0,0]=(2.046e-01,-4.430e-02)
+[DEBUG Y=1] Right after conjugate FFT - conj[0,0]=(2.046e-01,4.430e-02) prim[0,0]=(2.046e-01,-4.430e-02)
+[DEBUG Y=1] After 2D FFT (Real space) - PRIMARY slice - Max real/imag per array: A0: re=5.035e-01 im=5.805e-01 (ratio=1.153e+00) A1: re=2.963e-01 im=1.178e-01 (ratio=3.977e-01) A2: re=8.288e-02 im=7.014e-02 (ratio=8.463e-01) A3: re=2.963e-01 im=1.178e-01 (ratio=3.977e-01) (NOTE: Imag should be ~0 in real space!)
+[DEBUG Y=1] After 2D FFT (Real space) - CONJUGATE slice - Max real/imag per array: A0: re=5.035e-01 im=5.805e-01 (ratio=1.153e+00) A1: re=2.963e-01 im=1.178e-01 (ratio=3.977e-01) A2: re=8.288e-02 im=7.014e-02 (ratio=8.463e-01) A3: re=2.963e-01 im=1.178e-01 (ratio=3.977e-01) (NOTE: Imag should be ~0 in real space!)
+[DEBUG Y=1] Array comparison: 0 identical, 144 different (total=144)
+[DEBUG Y=1] Sample differences (first 3 non-identical): A0[0,0]: prim=(2.046e-01,-4.430e-02) conj=(2.046e-01,4.430e-02) diff=(0.000e+00,8.859e-02) A0[0,1]: prim=(-1.162e-01,1.874e-01) conj=(-1.162e-01,-1.874e-01) diff=(0.000e+00,3.749e-01) A0[0,2]: prim=(-9.609e-02,2.984e-01) conj=(-9.609e-02,-2.984e-01) diff=(0.000e+00,5.968e-01) 
+[PACK] Rank 0: Packed 288 total elements to send_buffer
+       Sending to ranks: 144 elements to rank 0, 144 elements to rank 1
+[V11-BATCH 1] Cursors advanced. Sample: src0=216, src1=216
+[MULTI-BATCH] All batches complete.
+              Generation time: 0.002778 s
+              Communication time: 0.000065 s
+[V11-VERIFY] Rank 0: All cursors match expected totals
+
+[V12-Stage 3] Z-slab streaming from recv_buffer...
+
+[Stage 3] Z-slab streaming: Unpack --> FFT --> Write (Zeldovich format)...
+[MEMORY] Allocated local_z_slab (one Z-slab, core grid): 2304 bytes (0.00 GB)
+         Processing 3 Z-slabs sequentially (Z=[0,3))
+         Each Z-slab: 6 X-values (CORE) x 4 arrays x 6 Y-values
+         Output format: [Z][Array][Y][X] (Zeldovich-compatible)
+[DEBUG Z=0] Before 1D FFT (after unpack) - Max imag per array: A0=3.865e-01 A1=1.178e-01 A2=4.430e-02 A3=1.178e-01 
+[DEBUG Z=0] After 1D FFT - Max imag per array: A0=0.000e+00 A1=0.000e+00 A2=0.000e+00 A3=0.000e+00 
+[Rank 0, Z=0] First Z-slab max values (all Y): A0: re=1.462905e+00 im=0.000000e+00 A1: re=6.604193e-01 im=0.000000e+00 A2: re=3.617207e-01 im=0.000000e+00 A3: re=6.604193e-01 im=0.000000e+00
+
+[RANK 0] Z-slab Z=0 (X=[0,6), after 3D FFT):
+  Array 0:
+    Y=0: X0= -0.019 X1=  0.567 X2=  1.417 X3=  0.244 X4=  1.089 X5=  0.111 
+    Y=1: X0= -0.017 X1=  0.113 X2=  0.695 X3=  0.464 X4=  0.262 X5= -0.161 
+    Y=2: X0= -0.442 X1=  1.289 X2=  0.665 X3=  0.031 X4= -1.069 X5= -1.463 
+    Y=3: X0= -0.837 X1=  0.477 X2=  0.050 X3= -0.561 X4= -0.160 X5= -0.246 
+    Y=4: X0= -0.580 X1= -1.031 X2= -0.767 X3= -0.062 X4=  0.452 X5=  0.999 
+    Y=5: X0= -0.186 X1=  0.235 X2=  0.570 X3=  0[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x52b5bb0 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x5cc94c0 (tracked: 1/1024)
+[INIT] Rank 1: Assigned 2 pairs:
+  Pair 0: Y=2 and Y=4 (conjugate)
+  Pair 1: Y=3 (self-conjugate)
+[OK] Rank 1: Macro indexing verified (slices=0, arrays=4)
+[GRID] Rank 1 (NO PADDING - CORE GRID ONLY):
+  Core region:   X=[0,6), Z=[3,6), pencils=18
+[V11-SETUP] Rank 1: Source totals: src0=3 src1=3 
+[V11-SETUP] Rank 1: Write cursors initialized to 0
+[V11-SETUP] Rank 1: Y-mapping complete. Sample: Y=0-->src0[0], Y=3-->src1[2]
+[BATCH 0] Rank 1: Processing 2 Y-slices (Y=2, Y=4)
+[PACK] Rank 1: Packed 288 total elements to send_buffer
+       Sending to ranks: 144 elements to rank 0, 144 elements to rank 1
+[BATCH 1] Rank 1: Processing 1 Y-slices (Y=3)
+[PACK] Rank 1: Packed 144 total elements to send_buffer
+       Sending to ranks: 72 elements to rank 0, 72 elements to rank 1
+[V11-VERIFY] Rank 1: All cursors match expected totals
+
+[RANK 1] Z-slab Z=3 (X=[0,6), after 3D FFT):
+  Array 0:
+    Y=0: X0=  1.107 X1=  0.921 X2=  1.235 X3=  0.645 X4=  0.926 X5=  1.026 
+    Y=1: X0= -0.197 X1=  0.013 X2=  0.663 X3=  1.021 X4=  0.566 X5=  0.723 
+    Y=2: X0= -0.486 X1= -0.257 X2=  0.288 X3=  0.955 X4=  0.392 X5= -0.455 
+    Y=3: X0=  0.858 X1= -0.206 X2=  0.221 X3=  0.193 X4=  0.546 X5= -0.457 
+    Y=4: X0= -0.151 X1=  0.063 X2=  0.292 X3=  0.551 X4=  0.020 X5= -0.340 
+    Y=5: X0= -0.192 X1=  0.920 X2=  0.930 X3=  0.938 X4=  0.226 X5= -0.033 
+
+
+[RANK 1] Z-slab Z=4 (X=[0,6), after 3D FFT):
+  Array 0:
+    Y=0: X0= -0.672 X1=  1.074 X2=  0.486 X3=  0.403 X4= -0.059 X5= -0.143 
+    Y=1: X0= -0.297 X1= -0.318 X2=  0.643 X3=  1.170 X4= -0.926 X5= -0.589 
+    Y=2: X0= -0.399 X1= -0.202 X2=  0.340 X3=  0.819 X4= -1.414 X5= -1.443 
+    Y=3: X0=  0.315 X1=  1.104 X2=  0.042 X3= -0.401 X4= -0.315 X5= -1.940 
+    Y=4: X0= -0.476 X1=  0.767 X2=  0.433 X3=  0.177 X4=  0.583 X5= -1.247 
+    Y=5: X0= -1.566 X1=  0.852 X2=  0.574 X3=  0.631 X4=  0.350 X5= -0.304 
+
+
+[RANK 1] Z-slab Z=5 (X=[0,6), after 3D FFT):
+  Array 0:
+    Y=0: X0= -0.498 X1= -0.043 X2=  0.274 X3= -0.389 X4= -0.546 X5= -0.148 
+    Y=1: X0=  0.625 X1= -0.150 X2=  0.352 X3=  1.316 X4= -1.198 X5= -1.846 
+    Y=2: X0= -0.346 X1=  0.558 X2=  1.256 X3=  0.599 X4= -1.273 X5= -1.716 
+    Y=3: X0=  0.106 X1=  0.357 X2= -0.320 X3= -1.203 X4= -0.502 X5= -0.462 
+    Y=4: X0=  0.122 X1= -0.283 X2= -1.098 X3= -0.110 X4=  0.523 X5=  0.008 
+    Y=5: X0= -1.453 X1=  0.026 X2=  0.401 X3= -0.012 X4=  0.403 X5=  0.452 
+
+.311 X4=  0.369 X5=  0.055 
+
+
+[RANK 0] Z-slab Z=1 (X=[0,6), after 3D FFT):
+  Array 0:
+    Y=0: X0= -0.473 X1=  0.626 X2= -0.221 X3= -0.613 X4= -0.413 X5= -0.256 
+    Y=1: X0= -1.274 X1=  1.114 X2=  0.562 X3= -0.315 X4= -0.071 X5= -0.200 
+    Y=2: X0=  0.140 X1=  0.208 X2=  0.636 X3= -0.083 X4= -1.033 X5= -0.706 
+    Y=3: X0= -0.009 X1= -0.161 X2= -0.267 X3= -0.910 X4= -0.526 X5= -0.152 
+    Y=4: X0= -0.392 X1= -1.042 X2= -1.232 X3=  0.359 X4=  0.938 X5=  0.447 
+    Y=5: X0=  0.557 X1= -1.161 X2= -1.111 X3=  0.888 X4=  0.088 X5= -0.163 
+
+
+[RANK 0] Z-slab Z=2 (X=[0,6), after 3D FFT):
+  Array 0:
+    Y=0: X0= -0.239 X1=  0.187 X2=  0.308 X3= -0.056 X4=  0.066 X5=  0.824 
+    Y=1: X0= -1.304 X1=  0.139 X2=  0.418 X3=  0.220 X4=  0.352 X5=  0.712 
+    Y=2: X0= -0.817 X1= -0.877 X2=  0.856 X3=  0.485 X4=  0.566 X5=  0.024 
+    Y=3: X0=  0.145 X1= -1.827 X2= -0.005 X3= -0.318 X4=  0.284 X5=  0.526 
+    Y=4: X0= -0.078 X1= -0.976 X2= -1.536 X3=  0.323 X4=  0.246 X5= -0.277 
+    Y=5: X0=  0.024 X1=  0.021 X2= -0.787 X3=  0.849 X4=  0.241 X5= -0.667 
+
+
+========== VERIFICATION: REAL-SPACE AFTER 3D FFT ==========
+Array 0: Max real=1.939982e+00, Max imag=0.000000e+00, Ratio=0.000000e+00 [REAL]
+Array 1: Max real=1.065252e+00, Max imag=0.000000e+00, Ratio=0.000000e+00 [REAL]
+Array 2: Max real=3.869617e-01, Max imag=0.000000e+00, Ratio=0.000000e+00 [REAL]
+Array 3: Max real=1.065252e+00, Max imag=0.000000e+00, Ratio=0.000000e+00 [REAL]
+RESULT: All 4 arrays are PURELY REAL after forward 3D FFT!
+============================================================
+
+[Stage 3] Streaming complete. Time: 0.000795 s
+          (Includes unpacking, FFT, and I/O for all Z-slabs)
+          Total files written: 6 (across all ranks)
+          Total data written: 0.000 GB
+          Files per rank: ~3 (z_count per rank, for 2 ranks)
+          Each file contains one Z-slab: x_count X x 4 arrays x 6 Y-values
+          Typical file size: ~0.00 MB (varies by rank's X-extent)
+          File naming: rank_<rank>/z<z>_slab_N6.bin
+          File format: Binary [Array][Y][X] (Zeldovich AZYX order, fftw_complex = 16 bytes)
+          3D FFT COMPLETE (2D XZ + 1D Y)
+
+
+====================================================================================
+TIMING SUMMARY (v11 - Persistent Recv Buffer + Streaming)
+====================================================================================
+Stage 1 (Y-slice generation + 2D FFT): 0.002778 s
+Stage 2 (Metadata exchange):            0.000000 s
+Stage 3 (Communication: Alltoallv):    0.000065 s
+Stage 3 (Streaming: Unpack+FFT+Write):  0.000795 s
+------------------------------------------------------------------------------------
+Total 3D FFT time (Gen + Comm + FFT):   0.002843 s
+Total time (including all stages):      0.002843 s
+
+Note: In v11, persistent recv_buffer eliminates per-batch allocation
+      Unpacking, 1D FFT, and I/O are combined in streaming stage
+====================================================================================
+
+====================================================================================
+ALL STAGES COMPLETE!
+====================================================================================
+
+Checking if output is purely real...
+Array 1: Max real=1.065252e+00, Max imag=0.000000e+00, Ratio=0.000000e+00 [REAL]
+Array 2: Max real=3.869617e-01, Max imag=0.000000e+00, Ratio=0.000000e+00 [REAL]
+Array 3: Max real=1.065252e+00, Max imag=0.000000e+00, Ratio=0.000000e+00 [REAL]
+RESULT: All 4 arrays are PURELY REAL after forward 3D FFT!
+          File format: Binary [Array][Y][X] (Zeldovich AZYX order, fftw_complex = 16 bytes)
+
+Checking power spectrum initialization...
+Initializing power spectrum with power law index -2
+Initializing power spectrum with power law index -2
+[INIT] PowerSpectrum initialized:
+       Fundamental wavenumber: 6.283185e-02
+       Power spectrum mode: ENABLED
+    Y=5: X0= -0.186 X1=  0.235 X2=  0.570 X3=  0[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x52b5bb0 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x5cc94c0 (tracked: 1/1024)
+
+Job completed!

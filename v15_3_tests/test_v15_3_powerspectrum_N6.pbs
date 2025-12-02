@@ -1,0 +1,87 @@
+#!/bin/bash
+#PBS -N v15_3_ps_dbl_N6
+#PBS -A AbacusAurora
+#PBS -l select=1:ncpus=4:mpiprocs=2:ompthreads=2
+#PBS -l walltime=00:10:00
+#PBS -l filesystems=home
+#PBS -q debug
+#PBS -M helenshao0904@gmail.com
+#PBS -m abe
+#PBS -j oe
+#PBS -o /home/helenshao/InitialConditions/hermitian_3d_matrix_production/v15_3_tests/test_v15_3_powerspectrum_N6_double_aurora.out
+
+cd $PBS_O_WORKDIR
+
+# Load modules
+# Note: frameworks module provides MPI and OpenMP
+echo "Loading frameworks module..."
+module load frameworks
+echo "Loading FFTW module..."
+module load fftw/3.3.10
+
+# Check what's available after loading modules
+echo "Checking MPI compiler..."
+which mpicc
+mpicc --version || echo "mpicc not found or error"
+
+echo "Checking C++ compiler..."
+which mpicxx
+mpicxx --version || echo "mpicxx not found or error"
+
+# Go to hermitian_3d_matrix_production directory
+cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production
+
+# Compile with double precision and RNG consistency debug
+# Makefile auto selects correct FFTW libs based on CFLAGS
+echo "Compiling hermitian_3d_matrix with double precision and RNG debug..."
+make clean
+make CFLAGS="-DUSE_DOUBLE_PRECISION -DDEBUG_RNG_CONSISTENCY=1"
+
+# Job parameters
+NNODES=$(sort -u $PBS_NODEFILE | wc -l)
+NRANKS_PER_NODE=2
+NTHREADS_PER_RANK=2
+NTOTRANKS=$((NNODES * NRANKS_PER_NODE))
+
+# OpenMP settings
+export OMP_NUM_THREADS=$NTHREADS_PER_RANK
+export OMP_PLACES=cores
+export OMP_PROC_BIND=close
+
+# Test parameters
+N=6
+PARAM_FILE="examples/param_template.par"
+
+# Check if parameter file exists
+if [ ! -f "$PARAM_FILE" ]; then
+    echo "ERROR: Parameter file not found: $PARAM_FILE"
+    exit 1
+fi
+
+echo "=========================================="
+echo "Test: v15.3 Power Spectrum Mode"
+echo "Double Precision Build"
+echo "N=$N, ranks=$NTOTRANKS"
+echo "Parameter file: $PARAM_FILE"
+echo "Should use zeldovich-PLT PowerSpectrum and RNG"
+echo "=========================================="
+echo ""
+
+# Run the program with parameter file
+mpiexec -n $NTOTRANKS \
+        -ppn $NRANKS_PER_NODE \
+        --depth=$NTHREADS_PER_RANK \
+        --cpu-bind depth \
+        ./hermitian_3d_matrix $N $PARAM_FILE 2>&1 | tee v15_3_tests/test_v15_3_powerspectrum_N6_double_aurora.log
+
+echo ""
+echo "Checking if output is purely real..."
+grep -i "imaginary\|complex\|real" v15_3_tests/test_v15_3_powerspectrum_N6_double_aurora.log | tail -5
+
+echo ""
+echo "Checking power spectrum initialization..."
+grep -i "power.*spectrum\|PowerSpectrum\|powerlaw\|fundamental\|boxsize" v15_3_tests/test_v15_3_powerspectrum_N6_double_aurora.log | head -10
+
+echo ""
+echo "Job completed!"
+

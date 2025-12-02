@@ -1,0 +1,76 @@
+#!/bin/bash
+#PBS -N v15_3_fallback_N2048_dbl
+#PBS -A AbacusAurora
+#PBS -l select=2:ncpus=64:mpiprocs=32:ompthreads=2
+#PBS -l walltime=00:30:00
+#PBS -l filesystems=home
+#PBS -q debug
+#PBS -M helenshao0904@gmail.com
+#PBS -m abe
+#PBS -j oe
+#PBS -o /home/helenshao/InitialConditions/hermitian_3d_matrix_production/v15_3_tests/test_v15_3_fallback_N2048_double_aurora.out
+
+cd $PBS_O_WORKDIR
+
+# Load modules
+# Note: frameworks module provides MPI and OpenMP
+# fftw module provides FFTW libraries
+echo "Loading frameworks module..."
+module load frameworks
+echo "Loading FFTW module..."
+module load fftw/3.3.10
+
+# Check what's available after loading modules
+echo "Checking MPI compiler..."
+which mpicc
+mpicc --version || echo "mpicc not found or error"
+
+echo "Checking C++ compiler..."
+which mpicxx
+mpicxx --version || echo "mpicxx not found or error"
+
+# Navigate to hermitian_3d_matrix_production directory
+cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production
+
+# Compile using Makefile with double precision
+# Note: The Makefile automatically selects correct FFTW libraries based on CFLAGS
+echo "Compiling hermitian_3d_matrix with double precision..."
+make clean
+make CFLAGS="-DUSE_DOUBLE_PRECISION"
+
+# Job parameters
+NNODES=$(sort -u $PBS_NODEFILE | wc -l)
+NRANKS_PER_NODE=32
+NTHREADS_PER_RANK=2
+NTOTRANKS=$((NNODES * NRANKS_PER_NODE))
+
+# OpenMP settings
+export OMP_NUM_THREADS=$NTHREADS_PER_RANK
+export OMP_PLACES=cores
+export OMP_PROC_BIND=close
+
+# Test parameters
+N=2048
+
+echo "=========================================="
+echo "Test: v15.3 Fallback Mode (no param file)"
+echo "Double Precision Build"
+echo "N=$N, ranks=$NTOTRANKS"
+echo "Should use local RNG (like v15.1.2)"
+echo "=========================================="
+echo ""
+
+# Run the program
+mpiexec -n $NTOTRANKS \
+        -ppn $NRANKS_PER_NODE \
+        --depth=$NTHREADS_PER_RANK \
+        --cpu-bind depth \
+        ./hermitian_3d_matrix $N 2>&1 | tee v15_3_tests/test_v15_3_fallback_N2048_double_aurora.log
+
+echo ""
+echo "Checking if output is purely real..."
+grep -i "imaginary\|complex\|real" v15_3_tests/test_v15_3_fallback_N2048_double_aurora.log | tail -5
+
+echo ""
+echo "Job completed!"
+

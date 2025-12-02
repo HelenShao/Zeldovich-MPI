@@ -21,29 +21,31 @@ void generate_hermitian_slice_pair_local(
     int N,
     int global_y,
     int y_mirror,
-    fftw_complex_t *primary_slices,   // Now flat array (all narray arrays for primary slice)
-    fftw_complex_t *conjugate_slices, // Now flat array (all narray arrays for conjugate slice)
-    int narray,                      // NEW: number of arrays per slice
+    fftw_complex_t *primary_slices,   
+    fftw_complex_t *conjugate_slices, 
+    int narray,                       // 4 arrays per slice, 7 C numbers
     fftw_plan_t plan_2d,
     int rank,
     const power_spectrum_params_t *ps_params,  // Legacy power spectrum parameters (NULL = use uniform RNG)
     PowerSpectrumHandle ps_handle,   // v15.2: zeldovich-PLT PowerSpectrum handle (NULL = use legacy or uniform RNG)
     ParametersHandle params_handle)  // v15.2: zeldovich-PLT Parameters handle (needed for fundamental wavenumber)
 {
-    // Debug: Log entry for segmentation fault investigation (enabled via DEBUG_PRINTS)
-    #if DEBUG_PRINTS
-    fprintf(stderr,
-            "[Rank %d] ENTER generate_hermitian_slice_pair_local: "
-            "Y_primary=%d, Y_mirror=%d, ps_handle=%p, params_handle=%p\n",
-            rank, global_y, y_mirror, (void*)ps_handle, (void*)params_handle);
-    fflush(stderr);
-    #endif
+    // Debug: Log entry for seg fault error
+    // #if DEBUG_PRINTS
+    // fprintf(stderr,
+    //         "[Rank %d] ENTER generate_hermitian_slice_pair_local: "
+    //         "Y_primary=%d, Y_mirror=%d, ps_handle=%p, params_handle=%p\n",
+    //         rank, global_y, y_mirror, (void*)ps_handle, (void*)params_handle);
+    // fflush(stderr);
+    // #endif
+
+    // Precompute N/2 to avoid repeated division in loops
+    int Nhalf = N / 2;
 
     // Create local aliases for macro compatibility
     // primary_slices points to slice 0, conjugate_slices points to slice 1
-    // We need to access them as if they're part of a larger buffer
-    // For macro: Y_SLICE(0, ...) uses primary_slices, Y_SLICE(1, ...) uses conjugate_slices
-    
+    // Need to access them as if they're part of a larger buffer
+
     // Helper function to access primary slice (slice_idx=0)
     #define PRIM_SLICE(array_idx, x, z) \
         primary_slices[(int64_t)(x) + (N) * ((z) + (N) * (array_idx))]
@@ -53,22 +55,17 @@ void generate_hermitian_slice_pair_local(
         conjugate_slices[(int64_t)(x) + (N) * ((z) + (N) * (array_idx))]
     
     // RNG consistency: Skip random numbers for missing grid points when N < MAX_PPD
-    // This maintains consistency with what a full MAX_PPD × MAX_PPD grid would generate
-    // Similar to zeldovich.cpp skip logic
+    // so we can reproduce sim boxes w/ up to MAX_PPD x MAX_PPD grid generators
     int64_t nskip = 0;
     if (N < MAX_PPD) {
         // Calculate skip for missing grid points
-        // When crossing Nyquist boundary at z = N/2 + 1: skip (MAX_PPD - N) * MAX_PPD points (missing z-rows)
-        // When crossing Nyquist boundary at x = N/2 + 1: skip (MAX_PPD - N) points (missing x-values in current z-row)
+        // Missing z-rows: z = N, N+1, ..., MAX_PPD-1 (skip when z == N-1, after processing all z-rows we iterate)
+        // Missing x-values: x = N, N+1, ..., MAX_PPD-1 in each z-row (skip when x == N/2 + 1, crossing Nyquist boundary)
         // For parallel execution, calculate upfront; for sequential, track incrementally
         #if PARALLELIZE_XZ_WITHIN_SLICE
         // Parallel case: calculate total skip upfront (deterministic)
-        // We cross z boundary once: (MAX_PPD - N) * MAX_PPD
-        // We cross x boundary N times (once per z-row): N * (MAX_PPD - N)
-        // Total: (MAX_PPD - N) * MAX_PPD + N * (MAX_PPD - N) = (MAX_PPD - N) * (MAX_PPD + N)
-        // Actually, let's be more precise:
-        // - When z == N/2 + 1: skip (MAX_PPD - N) * MAX_PPD (all missing z-rows)
-        // - For each z from 0 to N-1, when x == N/2 + 1: skip (MAX_PPD - N)
+        // Missing z-rows: (MAX_PPD - N) * MAX_PPD (all missing z-rows, each with MAX_PPD x-values)
+        // Missing x-values: N * (MAX_PPD - N) (for each z from 0 to N-1, skip missing x-values when crossing Nyquist)
         // Total: (MAX_PPD - N) * MAX_PPD + N * (MAX_PPD - N) = (MAX_PPD - N) * (MAX_PPD + N)
         nskip = (MAX_PPD - N) * MAX_PPD + N * (MAX_PPD - N);
         #else
@@ -90,120 +87,126 @@ void generate_hermitian_slice_pair_local(
         // Sequential (x,z) loops: no locks needed, each thread processes different Y-slice
         #endif
         for (int z = 0; z < N; z++) {
-            // RNG consistency: Skip random numbers when crossing Nyquist boundary
-            // When z == N/2 + 1, we enter the negative k region
-            // If N < MAX_PPD, we need to skip missing z-rows (z = N to MAX_PPD-1)
-            #if !PARALLELIZE_XZ_WITHIN_SLICE
-            if (z == N/2 + 1 && N < MAX_PPD) {
-                nskip += (MAX_PPD - N) * MAX_PPD;
-            }
-            #endif
             for (int x = 0; x < N; x++) {
-                // RNG consistency: Skip random numbers when crossing Nyquist boundary
-                // When x == N/2 + 1, we enter the negative k region
-                // If N < MAX_PPD, we need to skip missing x-values (x = N to MAX_PPD-1) in current z-row
-                #if !PARALLELIZE_XZ_WITHIN_SLICE
-                if (x == N/2 + 1 && N < MAX_PPD) {
-                    nskip += MAX_PPD - N;
-                }
-                #endif
                 int x_mirror = (x == 0) ? 0 : N - x;
                 int z_mirror = (z == 0) ? 0 : N - z;
                 
                 // ========== STEP 1: Calculate k-vector components ==========
-                int kx = (x > N/2) ? x - N : x;
-                int ky = (global_y > N/2) ? global_y - N : global_y;
-                int kz = (z > N/2) ? z - N : z;
+                int kx = (x > Nhalf) ? x - N : x;
+                int ky = (global_y > Nhalf) ? global_y - N : global_y;
+                int kz = (z > Nhalf) ? z - N : z;
                 double k2 = (double)(kx*kx + ky*ky + kz*kz);
                 
                 // ========== STEP 2: Generate D using RNG or cgauss() ==========
                 fftw_complex D;
-                if (k2 == 0.0) {
-                    // DC mode: set to zero
-                    D[0] = D[1] = 0.0;
-                } else if (ps_handle != NULL && params_handle != NULL) {
+                if (ps_handle != NULL && params_handle != NULL) {
                     // v15.2: Use zeldovich-PLT power spectrum-weighted Gaussian
                     // If ps_handle is available, we ALWAYS use power spectrum mode (cgauss)
                     
-                    // TEMPORARY: Set Nyquist axis (Y = N/2) to zero
-                    // TODO: Understand the "shifted by one location" issue in zeldovich-PLT
-                    // (see zeldovich.cpp line 646-648). For now, matching zeldovich-PLT behavior
-                    // which sets the Nyquist plane to zero after data reorganization.
-                    // This should be reviewed and potentially changed after understanding the
-                    // data shift operation in LoadBlock() and its relationship to Nyquist handling.
-                    if (global_y == N/2) {
-                        D[0] = D[1] = 0.0;
-                    } else {
-                        // Convert k indices to physical wavenumber: k_phys = k_index * fundamental
-                        double fundamental = zeldovich_params_get_fundamental(params_handle);
-                        double k2_phys = k2 * fundamental * fundamental;
-                        double kmag = sqrt(k2_phys);
-                        
-                        // zeldovich_ps_cgauss returns double precision, convert to real_t
-                        // zeldovich-PLT's v2rng array is sized to ppd/2, so valid indices are 0 to (N/2 - 1)
-                        // Since we've already handled global_y == N/2 above, global_y is now < N/2
-                        int64_t rng_index = global_y;
-                        double D_real, D_imag;
-                        #if PARALLELIZE_XZ_WITHIN_SLICE
-                        // Lock protects generator access
-                        #else
-                        // Sequential access: no locks needed
-                        #endif
-                        zeldovich_ps_cgauss(ps_handle, kmag, rng_index, &D_real, &D_imag);
-                        D[0] = (real_t)D_real;
-                        D[1] = (real_t)D_imag;
+                    // Convert k indices to physical wavenumber: k_phys = k_index * fundamental
+                    double fundamental = zeldovich_params_get_fundamental(params_handle);
+                    double k2_phys = k2 * fundamental * fundamental;
+                    double kmag = sqrt(k2_phys);
+                    
+                    // zeldovich_ps_cgauss returns double precision, convert to real_t
+                    // zeldovich-PLT's v2rng array is sized to ppd/2, so valid indices are 0 to (N/2 - 1)
+                    // In conjugate pair branch, global_y is in range [1, N/2-1] or [N/2+1, N-1]
+                    int64_t rng_index = global_y;
+                    
+                    // RNG consistency: Advance zeldovich-PLT's RNG when crossing Nyquist boundaries
+                    // This matches zeldovich.cpp behavior: advance before calling cgauss
+                    #if !PARALLELIZE_XZ_WITHIN_SLICE
+                    if (nskip > 0) {
+                        zeldovich_ps_advance_rng(ps_handle, params_handle, rng_index, nskip);
+                        nskip = 0;  // Reset after advancing
                     }
+                    #endif
+                    
+                    double D_real, D_imag;
+                    zeldovich_ps_cgauss(ps_handle, kmag, rng_index, &D_real, &D_imag);
+                    D[0] = (real_t)D_real;
+                    D[1] = (real_t)D_imag;
                 } else if (ps_params != NULL) {
-                    // Legacy: Use standalone power spectrum-weighted Gaussian (cgauss)
+                    // Legacy: Use my own power spectrum-weighted Gaussian (cgauss)
                     // Convert k indices to physical wavenumber: k_phys = k_index * fundamental
                     // For now, fundamental = 1.0 (can be added to ps_params later)
                     double fundamental = 1.0;  // TODO: Add to power_spectrum_params_t
                     double k2_phys = k2 * fundamental * fundamental;
                     double kmag = sqrt(k2_phys);
                     
-                    #if PARALLELIZE_XZ_WITHIN_SLICE
-                    // Lock protects generator access
-                    #else
-                    // Sequential access: no locks needed
+                    // RNG consistency: Advance our own RNG when crossing Nyquist boundaries
+                    // This matches the zeldovich-PLT branch behavior
+                    #if !PARALLELIZE_XZ_WITHIN_SLICE
+                    if (nskip > 0 && N < MAX_PPD) {
+                        advance_pcg_global(global_y, 2 * nskip);  // Each complex number uses 2 random numbers
+                        nskip = 0;  // Reset after advancing
+                    }
                     #endif
+                    
                     cgauss(ps_params, kmag, global_y, &D);
                 } else {
                     // Fallback: use uniform random numbers (white noise mode, no power spectrum)
                     // This should only happen when ps_handle is NULL (no parameter file provided)
-                    #if PARALLELIZE_XZ_WITHIN_SLICE
-                    // Lock protects generator access: each call advances generator by +1
-                    // Order is non-deterministic across threads, but generator advances correctly
-                    #else
-                    // Sequential access: no locks needed, generator advances deterministically
-                    #endif
                     // Note: If ps_handle is available, we should have used cgauss() above
                     // This branch is only for backward compatibility (no power spectrum mode)
+                    
+                    // RNG consistency: Advance our own RNG when crossing Nyquist boundaries
+                    // This matches the other branches' behavior
+                    #if !PARALLELIZE_XZ_WITHIN_SLICE
+                    if (nskip > 0 && N < MAX_PPD) {
+                        advance_pcg_global(global_y, 2 * nskip);  // Each complex number uses 2 random numbers
+                        nskip = 0;  // Reset after advancing
+                    }
+                    #endif
+                    
                     double D_re = random_real_pcg_global(global_y);
                     double D_im = random_real_pcg_global(global_y);
                     D[0] = D_re;
                     D[1] = D_im;
                 }
                 
-                // ========== STEP 3: Compute F, G, H deterministically from D ==========
+                // ========== STEP 3: Compute F, G, H from D ==========
                 fftw_complex F, G, H;
-                if (k2 == 0.0) {
-                    // DC mode: set everything to zero (D already set to 0 above)
-                    F[0] = F[1] = G[0] = G[1] = H[0] = H[1] = 0.0;
-                } else {
-                    double ik2 = 1.0 / k2;
-                    
-                    // F = i × kx/k² × D = i × kx × ik2 × (D_re + i×D_im)
-                    //   = i × kx × ik2 × D_re - kx × ik2 × D_im
-                    //   = -kx × ik2 × D_im + i × kx × ik2 × D_re
-                    F[0] = -kx * ik2 * D[1];  // Real part
-                    F[1] =  kx * ik2 * D[0];  // Imaginary part
-                    
-                    G[0] = -ky * ik2 * D[1];
-                    G[1] =  ky * ik2 * D[0];
-                    
-                    H[0] = -kz * ik2 * D[1];
-                    H[1] =  kz * ik2 * D[0];
+                double ik2 = 1.0 / k2;
+                
+                // F = i x kx/k^2 x D = i x kx x ik2 x (D_re + ixD_im)
+                //   = i x kx x ik2 x D_re - kx x ik2 x D_im
+                //   = -kx x ik2 x D_im + i x kx x ik2 x D_re
+                F[0] = -kx * ik2 * D[1];  // Real part
+                F[1] =  kx * ik2 * D[0];  // Imaginary part
+                
+                G[0] = -ky * ik2 * D[1];
+                G[1] =  ky * ik2 * D[0];
+                
+                H[0] = -kz * ik2 * D[1];
+                H[1] =  kz * ik2 * D[0];
+                
+                // ========== DEBUG: Print RNG values for consistency checking ==========
+                #if DEBUG_RNG_CONSISTENCY
+                // Print D, F, G, H for test coordinates to verify RNG consistency across N
+                // Test coordinates cover:
+                // - DC mode: (0,0,0)
+                // - Low k: (1,0,0), (2,0,0), (3,0,0)
+                // - Non-zero z: (1,0,1), (1,1,1)
+                // - Nyquist boundaries: (0,2,0), (0,0,2), (2,2,0), (2,0,2), (0,2,2), (2,2,2)
+                // - Mixed Nyquist: (2,1,0), (1,2,0), (2,1,1), (1,2,1), (1,1,2)
+                // - Boundary cases: (2,0,1), (0,2,1), (1,0,2), (0,1,2)
+                if ((global_y == 0 && z == 0 && (x == 0 || x == 1 || x == 2 || x == 3)) ||
+                    (global_y == 0 && z == 1 && (x == 0 || x == 1 || x == 2)) ||
+                    (global_y == 1 && z == 0 && (x == 0 || x == 1 || x == 2)) ||
+                    (global_y == 1 && z == 1 && (x == 0 || x == 1 || x == 2)) ||
+                    (global_y == 2 && z == 0 && (x == 0 || x == 1 || x == 2)) ||
+                    (global_y == 2 && z == 1 && (x == 0 || x == 1 || x == 2)) ||
+                    (global_y == 0 && z == 2 && (x == 0 || x == 1 || x == 2)) ||
+                    (global_y == 1 && z == 2 && (x == 0 || x == 1 || x == 2)) ||
+                    (global_y == 2 && z == 2 && (x == 0 || x == 1 || x == 2))) {
+                    fprintf(stderr, "[RNG-DEBUG] N=%d Y=%d (x,z)=(%d,%d): k=(%d,%d,%d) k2=%.6f | "
+                            "D=(%.10e,%.10e) F=(%.10e,%.10e) G=(%.10e,%.10e) H=(%.10e,%.10e)\n",
+                            N, global_y, x, z, kx, ky, kz, k2,
+                            D[0], D[1], F[0], F[1], G[0], G[1], H[0], H[1]);
+                    fflush(stderr);
                 }
+                #endif
                 
                 // ========== STEP 4: Store in arrays ==========
                 // Array 0: D + i*F (density + X-displacement)
@@ -235,13 +238,49 @@ void generate_hermitian_slice_pair_local(
                     CONJ_SLICE(a, x_mirror, z_mirror)[0] = re;
                     CONJ_SLICE(a, x_mirror, z_mirror)[1] = -im;
                 }
+                
+                // RNG consistency: After processing last x-value in this z-row (x == N-1),
+                // skip missing x-values (x = N to MAX_PPD-1) in current z-row
+                // Advance immediately since we've finished all x-values for this z-row
+                #if !PARALLELIZE_XZ_WITHIN_SLICE
+                if (x == N - 1 && N < MAX_PPD) {
+                    nskip += MAX_PPD - N; // skip missing x-values in this z-row
+                    
+                    // Advance immediately since we've finished all x-values for this z-row
+                    // nskip may include D=0 skips from earlier in this z-row + missing x-values
+                    if (ps_handle != NULL && params_handle != NULL) {
+                        int64_t rng_index = global_y;
+                        zeldovich_ps_advance_rng(ps_handle, params_handle, rng_index, nskip);
+                    } else if (params_handle == NULL) {
+                        // Local PCG: advance by 2 * nskip (each complex number uses 2 random numbers)
+                        advance_pcg_global(global_y, 2 * nskip);
+                    }
+                    nskip = 0;  // Reset after advancing
+                }
+                #endif
             }
-        }
-        
-        // Advance RNG by 2 * nskip to account for missing grid points
-        // Each complex number needs 2 random numbers (real and imaginary)
-        if (nskip > 0 && N < MAX_PPD) {
-            advance_pcg_global(global_y, 2 * nskip);
+            
+            // RNG consistency: After processing last z-row (z == N-1),
+            // skip missing z-rows (z = N to MAX_PPD-1, each containing MAX_PPD x-values)
+            // Advance immediately since we've finished all RNG calls for this z-row
+            #if !PARALLELIZE_XZ_WITHIN_SLICE
+            if (z == N - 1 && N < MAX_PPD) {
+                nskip += (MAX_PPD - N) * MAX_PPD; // skip missing z-rows
+                
+                // Advance immediately since we've finished all RNG calls for this z-row
+                // nskip may include missing x-values from last x-loop + missing z-rows
+                if (nskip > 0) {
+                    if (ps_handle != NULL && params_handle != NULL) {
+                        int64_t rng_index = global_y;
+                        zeldovich_ps_advance_rng(ps_handle, params_handle, rng_index, nskip);
+                    } else if (params_handle == NULL) {
+                        // Local PCG: advance by 2 * nskip (each complex number uses 2 random numbers)
+                        advance_pcg_global(global_y, 2 * nskip);
+                    }
+                    nskip = 0;  // Reset after advancing
+                }
+            }
+            #endif
         }
     } else {
         // ========== SELF-CONJUGATE: Y=0 or Y=N/2 ==========
@@ -255,7 +294,7 @@ void generate_hermitian_slice_pair_local(
             // For z = 0: x goes 0 to N/2+1, crosses at x = N/2+1: skip (MAX_PPD - N)
             // For z > 0: x goes 0 to N-1, crosses at x = N/2+1: skip (MAX_PPD - N) per z
             // Total: (MAX_PPD - N) + (N/2) * (MAX_PPD - N) = (MAX_PPD - N) * (1 + N/2)
-            nskip = (MAX_PPD - N) * (1 + N/2);
+            nskip = (MAX_PPD - N) * (1 + Nhalf);
             #else
             nskip = 0;  // Will be accumulated during loops
             #endif
@@ -271,44 +310,35 @@ void generate_hermitian_slice_pair_local(
         #else
         // Sequential z-loop: no locks needed
         #endif
-        for (int z = 0; z <= N/2; z++) {
-            // RNG consistency: Skip random numbers when crossing Nyquist boundary
-            // When z == N/2 + 1, we enter the negative k region
-            // If N < MAX_PPD, we need to skip missing z-rows (z = N to MAX_PPD-1)
-            // Note: For self-conjugate, we only iterate z = 0 to N/2, so we check at z = N/2 + 1
-            // But since we stop at z = N/2, we need to account for missing points differently
-            // Actually, for self-conjugate, we don't cross the Nyquist boundary in z (we stop at N/2)
-            // But we still need to account for missing x-values when crossing x = N/2 + 1
-            int x_max = (z == 0 ? N/2 + 1 : N);
+        for (int z = 0; z <= Nhalf; z++) {
+            int x_max = (z == 0 ? Nhalf + 1 : N);
             for (int x = 0; x < x_max; x++) {
-                // RNG consistency: Skip random numbers when crossing Nyquist boundary
-                // When x == N/2 + 1, we enter the negative k region
-                // If N < MAX_PPD, we need to skip missing x-values (x = N to MAX_PPD-1) in current z-row
-                #if !PARALLELIZE_XZ_WITHIN_SLICE
-                if (x == N/2 + 1 && N < MAX_PPD) {
-                    nskip += MAX_PPD - N;
-                }
-                #endif
                 int x_mirror = (x == 0) ? 0 : N - x;
                 int z_mirror = (z == 0) ? 0 : N - z;
                 
                 // Calculate k-vector components first (needed for both cgauss and uniform RNG)
-                int kx = (x > N/2) ? x - N : x;
-                int ky = (global_y > N/2) ? global_y - N : global_y;
-                int kz = (z > N/2) ? z - N : z;
+                int kx = (x > Nhalf) ? x - N : x;
+                int ky = (global_y > Nhalf) ? global_y - N : global_y;
+                int kz = (z > Nhalf) ? z - N : z;
                 double k2 = (double)(kx*kx + ky*ky + kz*kz);
                 
                 // Generate D using RNG or cgauss()
                 // For self-conjugate slices, we still need to check for power spectrum mode
-                #if PARALLELIZE_XZ_WITHIN_SLICE
-                // Lock protects generator access
-                #else
-                // Sequential access: no locks needed
-                #endif
                 fftw_complex D;
                 if (k2 == 0.0) {
                     // DC mode: set to zero
                     D[0] = D[1] = 0.0;
+                    // RNG consistency: When D=0, we skip the RNG call, so advance immediately
+                    // This matches zeldovich.cpp line 361: advance when D is forced to zero
+                    #if !PARALLELIZE_XZ_WITHIN_SLICE
+                    if (ps_handle != NULL && params_handle != NULL) {
+                        int64_t rng_index = global_y;
+                        zeldovich_ps_advance_rng(ps_handle, params_handle, rng_index, 1);
+                    } else if (ps_params != NULL || params_handle == NULL) {
+                        // Local PCG: advance by 2 (each complex number uses 2 random numbers)
+                        advance_pcg_global(global_y, 2);
+                    }
+                    #endif
                 } else if (ps_handle != NULL && params_handle != NULL) {
                     // v15.2: Use zeldovich-PLT power spectrum-weighted Gaussian
                     // If ps_handle is available, we ALWAYS use power spectrum mode (cgauss)
@@ -319,8 +349,14 @@ void generate_hermitian_slice_pair_local(
                     // which sets the Nyquist plane to zero after data reorganization.
                     // This should be reviewed and potentially changed after understanding the
                     // data shift operation in LoadBlock() and its relationship to Nyquist handling.
-                    if (global_y == N/2) {
-                        D[0] = D[1] = 0.0;
+                    if (global_y == Nhalf) {
+                        D[0] = D[1] = 0.0; // temporary fix to set Nyquist axis to zero
+                        // RNG consistency: When D=0, we skip the RNG call, so advance immediately
+                        // This matches zeldovich.cpp line 361: advance when D is forced to zero
+                        #if !PARALLELIZE_XZ_WITHIN_SLICE
+                        int64_t rng_index = global_y;
+                        zeldovich_ps_advance_rng(ps_handle, params_handle, rng_index, 1);
+                        #endif
                     } else {
                         // Convert k indices to physical wavenumber: k_phys = k_index * fundamental
                         double fundamental = zeldovich_params_get_fundamental(params_handle);
@@ -331,6 +367,15 @@ void generate_hermitian_slice_pair_local(
                         // zeldovich-PLT's v2rng array is sized to ppd/2, so valid indices are 0 to (N/2 - 1)
                         // Since we've already handled global_y == N/2 above, global_y is now < N/2
                         int64_t rng_index = global_y;
+                        
+                        // Advance zeldovich-PLT's RNG when crossing Nyquist boundaries
+                        #if !PARALLELIZE_XZ_WITHIN_SLICE
+                        if (nskip > 0) {
+                            zeldovich_ps_advance_rng(ps_handle, params_handle, rng_index, nskip);
+                            nskip = 0;  // Reset after advancing
+                        }
+                        #endif
+                        
                         double D_real, D_imag;
                         zeldovich_ps_cgauss(ps_handle, kmag, rng_index, &D_real, &D_imag);
                         D[0] = (real_t)D_real;
@@ -342,11 +387,30 @@ void generate_hermitian_slice_pair_local(
                     double k2_phys = k2 * fundamental * fundamental;
                     double kmag = sqrt(k2_phys);
                     
+                    // RNG consistency: Advance our own RNG when crossing Nyquist boundaries
+                    // This matches the zeldovich-PLT branch behavior
+                    #if !PARALLELIZE_XZ_WITHIN_SLICE
+                    if (nskip > 0 && N < MAX_PPD) {
+                        advance_pcg_global(global_y, 2 * nskip);  // Each complex number uses 2 random numbers
+                        nskip = 0;  // Reset after advancing
+                    }
+                    #endif
+                    
                     cgauss(ps_params, kmag, global_y, &D);
                 } else {
                     // Fallback: use uniform random numbers (white noise mode, no power spectrum)
                     // This should only happen when ps_handle is NULL (no parameter file provided)
                     // Note: If ps_handle is available, we should have used cgauss() above
+                    
+                    // RNG consistency: Advance our own RNG when crossing Nyquist boundaries
+                    // This matches the other branches' behavior
+                    #if !PARALLELIZE_XZ_WITHIN_SLICE
+                    if (nskip > 0 && N < MAX_PPD) {
+                        advance_pcg_global(global_y, 2 * nskip);  // Each complex number uses 2 random numbers
+                        nskip = 0;  // Reset after advancing
+                    }
+                    #endif
+                    
                     double D_re = random_real_pcg_global(global_y);
                     double D_im = random_real_pcg_global(global_y);
                     D[0] = D_re;
@@ -366,6 +430,33 @@ void generate_hermitian_slice_pair_local(
                     H[0] = -kz * ik2 * D[1];
                     H[1] =  kz * ik2 * D[0];
                 }
+                
+                // ========== DEBUG: Print RNG values for consistency checking ==========
+                #if DEBUG_RNG_CONSISTENCY
+                // Print D, F, G, H for test coordinates to verify RNG consistency across N
+                // Test coordinates cover:
+                // - DC mode: (0,0,0)
+                // - Low k: (1,0,0), (2,0,0), (3,0,0)
+                // - Non-zero z: (1,0,1), (1,1,1)
+                // - Nyquist boundaries: (0,2,0), (0,0,2), (2,2,0), (2,0,2), (0,2,2), (2,2,2)
+                // - Mixed Nyquist: (2,1,0), (1,2,0), (2,1,1), (1,2,1), (1,1,2)
+                // - Boundary cases: (2,0,1), (0,2,1), (1,0,2), (0,1,2)
+                if ((global_y == 0 && z == 0 && (x == 0 || x == 1 || x == 2 || x == 3)) ||
+                    (global_y == 0 && z == 1 && (x == 0 || x == 1 || x == 2)) ||
+                    (global_y == 1 && z == 0 && (x == 0 || x == 1 || x == 2)) ||
+                    (global_y == 1 && z == 1 && (x == 0 || x == 1 || x == 2)) ||
+                    (global_y == 2 && z == 0 && (x == 0 || x == 1 || x == 2)) ||
+                    (global_y == 2 && z == 1 && (x == 0 || x == 1 || x == 2)) ||
+                    (global_y == 0 && z == 2 && (x == 0 || x == 1 || x == 2)) ||
+                    (global_y == 1 && z == 2 && (x == 0 || x == 1 || x == 2)) ||
+                    (global_y == 2 && z == 2 && (x == 0 || x == 1 || x == 2))) {
+                    fprintf(stderr, "[RNG-DEBUG] N=%d Y=%d (x,z)=(%d,%d): k=(%d,%d,%d) k2=%.6f | "
+                            "D=(%.10e,%.10e) F=(%.10e,%.10e) G=(%.10e,%.10e) H=(%.10e,%.10e)\n",
+                            N, global_y, x, z, kx, ky, kz, k2,
+                            D[0], D[1], F[0], F[1], G[0], G[1], H[0], H[1]);
+                    fflush(stderr);
+                }
+                #endif
                 
                 // Store in arrays (all arrays in primary_slices, self-conjugate uses same buffer)
                 PRIM_SLICE(0, x, z)[0] = D[0];
@@ -390,13 +481,49 @@ void generate_hermitian_slice_pair_local(
                         PRIM_SLICE(a, x_mirror, z_mirror)[1] = -im;
                     }
                 }
+                
+                // RNG consistency: After processing last x-value in this z-row (x == x_max - 1),
+                // skip missing x-values (x = x_max to MAX_PPD-1) in current z-row
+                // Advance immediately since we've finished all x-values for this z-row
+                #if !PARALLELIZE_XZ_WITHIN_SLICE
+                if (x == x_max - 1 && N < MAX_PPD) {
+                    nskip += MAX_PPD - x_max; // skip missing x-values in this z-row
+                    
+                    // Advance immediately since we've finished all x-values for this z-row
+                    // nskip may include D=0 skips from earlier in this z-row + missing x-values
+                    if (ps_handle != NULL && params_handle != NULL) {
+                        int64_t rng_index = global_y;
+                        zeldovich_ps_advance_rng(ps_handle, params_handle, rng_index, nskip);
+                    } else if (params_handle == NULL) {
+                        // Local PCG: advance by 2 * nskip (each complex number uses 2 random numbers)
+                        advance_pcg_global(global_y, 2 * nskip);
+                    }
+                    nskip = 0;  // Reset after advancing
+                }
+                #endif
             }
-        }
-        
-        // Advance RNG by 2 * nskip to account for missing grid points
-        // Each complex number needs 2 random numbers (real and imaginary)
-        if (nskip > 0 && N < MAX_PPD) {
-            advance_pcg_global(global_y, 2 * nskip);
+            
+            // RNG consistency: After processing last z-row (z == Nhalf),
+            // skip missing z-rows (z = Nhalf+1 to MAX_PPD-1, each containing MAX_PPD x-values)
+            // Advance immediately since we've finished all RNG calls for this z-row
+            #if !PARALLELIZE_XZ_WITHIN_SLICE
+            if (z == Nhalf && N < MAX_PPD) {
+                nskip += (MAX_PPD - Nhalf - 1) * MAX_PPD; // skip missing z-rows
+                
+                // Advance immediately since we've finished all RNG calls for this z-row
+                // nskip may include missing x-values from last x-loop + missing z-rows
+                if (nskip > 0) {
+                    if (ps_handle != NULL && params_handle != NULL) {
+                        int64_t rng_index = global_y;
+                        zeldovich_ps_advance_rng(ps_handle, params_handle, rng_index, nskip);
+                    } else if (params_handle == NULL) {
+                        // Local PCG: advance by 2 * nskip (each complex number uses 2 random numbers)
+                        advance_pcg_global(global_y, 2 * nskip);
+                    }
+                    nskip = 0;  // Reset after advancing
+                }
+            }
+            #endif
         }
         
         // Enforce self-conjugate constraints (imaginary parts = 0 at special points)
@@ -409,12 +536,12 @@ void generate_hermitian_slice_pair_local(
         // Set imaginary parts to 0 at special points
         for (int a = 0; a < narray; a++) {
             PRIM_SLICE(a, 0, 0)[1] = 0.0;
-            PRIM_SLICE(a, N/2, 0)[1] = 0.0;
-            PRIM_SLICE(a, 0, N/2)[1] = 0.0;
-            PRIM_SLICE(a, N/2, N/2)[1] = 0.0;
+            PRIM_SLICE(a, Nhalf, 0)[1] = 0.0;
+            PRIM_SLICE(a, 0, Nhalf)[1] = 0.0;
+            PRIM_SLICE(a, Nhalf, Nhalf)[1] = 0.0;
         }
         #else
-        // Fallback method (not recommended, kept for compatibility)
+        // If not using zeldovich_method for filling in self-conjugate (buggy!)
         // PARALLELIZATION: Conditional based on PARALLELIZE_XZ_WITHIN_SLICE flag
         #if PARALLELIZE_XZ_WITHIN_SLICE
         // Parallel (x,z) loops: requires locks for thread-safe RNG access
@@ -428,9 +555,9 @@ void generate_hermitian_slice_pair_local(
                 int z_mirror = (z == 0) ? 0 : N - z;
                 
                 // Calculate k-vector components
-                int kx = (x > N/2) ? x - N : x;
-                int ky = (global_y > N/2) ? global_y - N : global_y;
-                int kz = (z > N/2) ? z - N : z;
+                int kx = (x > Nhalf) ? x - N : x;
+                int ky = (global_y > Nhalf) ? global_y - N : global_y;
+                int kz = (z > Nhalf) ? z - N : z;
                 double k2 = (double)(kx*kx + ky*ky + kz*kz);
                 
                 // Generate D using RNG or cgauss()
@@ -438,6 +565,16 @@ void generate_hermitian_slice_pair_local(
                 if (k2 == 0.0) {
                     // DC mode: set to zero
                     D[0] = D[1] = 0.0;
+                    // RNG consistency: When D=0, we skip the RNG call, so advance immediately
+                    #if !PARALLELIZE_XZ_WITHIN_SLICE
+                    if (ps_handle != NULL && params_handle != NULL) {
+                        int64_t rng_index = global_y;
+                        zeldovich_ps_advance_rng(ps_handle, params_handle, rng_index, 1);
+                    } else if (params_handle == NULL) {
+                        // Local PCG: advance by 2 (each complex number uses 2 random numbers)
+                        advance_pcg_global(global_y, 2);
+                    }
+                    #endif
                 } else if (ps_handle != NULL && params_handle != NULL) {
                     // v15.2: Use zeldovich-PLT power spectrum-weighted Gaussian
                     // If ps_handle is available, we ALWAYS use power spectrum mode (cgauss)
@@ -448,8 +585,13 @@ void generate_hermitian_slice_pair_local(
                     // which sets the Nyquist plane to zero after data reorganization.
                     // This should be reviewed and potentially changed after understanding the
                     // data shift operation in LoadBlock() and its relationship to Nyquist handling.
-                    if (global_y == N/2) {
+                    if (global_y == Nhalf) {
                         D[0] = D[1] = 0.0;
+                        // RNG consistency: When D=0, we skip the RNG call, so advance immediately
+                        #if !PARALLELIZE_XZ_WITHIN_SLICE
+                        int64_t rng_index = global_y;
+                        zeldovich_ps_advance_rng(ps_handle, params_handle, rng_index, 1);
+                        #endif
                     } else {
                         double fundamental = zeldovich_params_get_fundamental(params_handle);
                         double k2_phys = k2 * fundamental * fundamental;
@@ -520,7 +662,7 @@ void generate_hermitian_slice_pair_local(
                         PRIM_SLICE(a, x, z)[0] = 0.0;
                         PRIM_SLICE(a, x, z)[1] = 0.0;
                     }
-                } else if ((x == 0 || x == N/2) && (z == 0 || z == N/2)) {
+                } else if ((x == 0 || x == Nhalf) && (z == 0 || z == Nhalf)) {
                     // Self-symmetric points: imaginary = 0
                     PRIM_SLICE(0, x, z)[0] = D[0];
                     PRIM_SLICE(0, x, z)[1] = 0.0;

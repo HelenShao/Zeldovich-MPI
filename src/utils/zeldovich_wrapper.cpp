@@ -1,7 +1,7 @@
 // ====================================================================================
-// ZELDOVICH-PLT C WRAPPER - IMPLEMENTATION
+// ZELDOVICH-PLT WRAPPER
 // ====================================================================================
-// C++ implementation of C interface for zeldovich-PLT PowerSpectrum class
+// C++ wrapper for zeldovich-PLT PowerSpectrum and Parameters classes
 // ====================================================================================
 
 #include "zeldovich_wrapper.h"
@@ -125,7 +125,7 @@ void zeldovich_ps_destroy(PowerSpectrumHandle ps) {
         // Set pointer to NULL after deletion to prevent accidental reuse
         // (Note: p is local, but this documents intent)
         p = NULL;
-        fprintf(stderr, "[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object\n");
+        // fprintf(stderr, "[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object\n");
     } catch (const std::exception& e) {
         fprintf(stderr, "[ERROR] zeldovich_ps_destroy: Exception during deletion: %s\n", e.what());
     } catch (...) {
@@ -177,6 +177,17 @@ void zeldovich_ps_cgauss(PowerSpectrumHandle ps, double wavenumber, int64_t rng_
     Complx result = p->cgauss<2>(wavenumber, rng_index);
     *real = result.real();
     *imag = result.imag();
+}
+
+void zeldovich_ps_advance_rng(PowerSpectrumHandle ps, ParametersHandle params, int64_t rng_index, int64_t nskip) {
+    if (!ps || !params || nskip <= 0) return;
+    PowerSpectrum* p = static_cast<PowerSpectrum*>(ps);
+    Parameters* param = static_cast<Parameters*>(params);
+    // zeldovich.cpp advances by 2 * nskip (each cgauss call uses 2 random numbers)
+    int64_t ppd_half = param->ppd / 2;
+    if (rng_index >= 0 && rng_index < ppd_half && p->v2rng) {
+        p->v2rng[rng_index].advance(2 * nskip);
+    }
 }
 
 double zeldovich_ps_get_normalization(PowerSpectrumHandle ps) {

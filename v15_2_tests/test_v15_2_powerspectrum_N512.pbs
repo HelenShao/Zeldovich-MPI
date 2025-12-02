@@ -1,0 +1,76 @@
+#!/bin/bash
+#PBS -N 15.2_512
+#PBS -A AbacusAurora
+#PBS -l select=2:ncpus=64:mpiprocs=32:ompthreads=2
+#PBS -l walltime=01:00:00
+#PBS -l filesystems=home
+#PBS -q debug
+#PBS -M helenshao0904@gmail.com
+#PBS -m abe
+#PBS -j oe
+#PBS -o /home/helenshao/InitialConditions/hermitian_3d_matrix_production/v15_2_tests/test_v15_2_powerspectrum_N512_double_aurora.out
+
+cd $PBS_O_WORKDIR
+
+# Load modules
+echo "Loading frameworks module..."
+module load frameworks
+echo "Loading FFTW module..."
+module load fftw/3.3.10
+
+# Go to hermitian_3d_matrix_production directory
+cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production
+
+# Compile with double precision
+echo "Compiling hermitian_3d_matrix with double precision..."
+make clean
+make CFLAGS="-DUSE_DOUBLE_PRECISION"
+
+# Job parameters
+NNODES=$(sort -u $PBS_NODEFILE | wc -l)
+NRANKS_PER_NODE=32
+NTHREADS_PER_RANK=2
+NTOTRANKS=$((NNODES * NRANKS_PER_NODE))
+
+# OpenMP settings
+export OMP_NUM_THREADS=$NTHREADS_PER_RANK
+export OMP_PLACES=cores
+export OMP_PROC_BIND=close
+
+# Test parameters
+N=512
+PARAM_FILE="examples/param_N512.par"
+
+# Check if parameter file exists
+if [ ! -f "$PARAM_FILE" ]; then
+    echo "ERROR: Parameter file not found: $PARAM_FILE"
+    exit 1
+fi
+
+echo "=========================================="
+echo "Test: v15.2 Power Spectrum Mode - N=512"
+echo "Double Precision Build"
+echo "N=$N, ranks=$NTOTRANKS (2 nodes, 32 ranks/node)"
+echo "Parameter file: $PARAM_FILE"
+echo "Expected output: ~8 GB (8x N=256)"
+echo "=========================================="
+echo ""
+
+# Run the program with parameter file
+mpiexec -n $NTOTRANKS \
+        -ppn $NRANKS_PER_NODE \
+        --depth=$NTHREADS_PER_RANK \
+        --cpu-bind depth \
+        ./hermitian_3d_matrix $N $PARAM_FILE 2>&1 | tee 15.2_512_aurora.log
+
+# echo ""
+# echo "Checking if output is purely real..."
+# grep -i "imaginary\|complex\|real" 15.2_512_aurora.log | tail -5
+
+# echo ""
+# echo "Checking power spectrum initialization..."
+# grep -i "power.*spectrum\|PowerSpectrum\|powerlaw\|fundamental\|boxsize" 15.2_512_aurora.log | head -10
+
+# echo ""
+# echo "Job completed!"
+

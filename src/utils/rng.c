@@ -1,8 +1,9 @@
 // ====================================================================================
 // PCG RANDOM NUMBER GENERATOR MODULE
 // ====================================================================================
-// This module provides PCG-based random number generation for Hermitian matrix generation.
-// Each Y-slice has its own generator that advances naturally with each call.
+// PCG-based random number generation for Y-slices.
+// Each rank has its own generator that has been advanced to correct state
+// and advances with each call + for skips.
 //
 // Dependencies: pcg-rng/pcg_random.hpp
 // ====================================================================================
@@ -36,7 +37,7 @@ static omp_lock_t *v2rng_locks = NULL;
 #endif
 
 // ====================================================================================
-// FUNCTION IMPLEMENTATIONS
+// FUNCTIONS
 // ====================================================================================
 
 // Initialize global PCG generators array
@@ -69,9 +70,10 @@ void initialize_global_pcg(int L, int M, int N, uint64_t seed) {
         // Each generator is advanced by 2*MAX_PPD*MAX_PPD to ensure independent sequences
         // This matches zeldovich.cpp approach: v2rng[i].advance(2 * MAX_PPD * MAX_PPD)
         // Using MAX_PPD (not actual grid size) maintains consistency across different N values
+        // Cast to uint64_t to avoid integer overflow warning (MAX_PPD=65536 gives 8.5e9 > INT_MAX)
         for(int i = 1; i < v2rng_global_size; i++) {
             v2rng_global[i] = v2rng_global[i-1]; 
-            v2rng_global[i].advance(2 * MAX_PPD * MAX_PPD); // Match zeldovich.cpp: each plane is MAX_PPD^2 complexes
+            v2rng_global[i].advance((uint64_t)2 * MAX_PPD * MAX_PPD); // Match zeldovich.cpp: each plane is MAX_PPD^2 complexes
         }
         
         // Initialize OpenMP locks for thread-safe access (only when parallelizing (x,z) within slice)

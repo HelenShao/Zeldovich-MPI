@@ -1,0 +1,1243 @@
+Loading frameworks module...
+Loading FFTW module...
+Compiling hermitian_3d_matrix with double precision...
+rm -f hermitian_3d_matrix *.o
+mpicxx -Wall -Wextra -Wno-cast-function-type -std=c++17 -O3 -fopenmp -DUSE_DOUBLE_PRECISION -I../zeldovich-PLT/include -I../zeldovich-PLT/subprojects/ParseHeader/include -I../zeldovich-PLT/build/subprojects/ParseHeader -I../zeldovich-PLT/subprojects/fmt-11.2.0/include -Isrc -Isrc/utils -Isrc/fft -Isrc/generation -Isrc/communication -Isrc/streaming -Ideps -I../.. -I../../../..  -I/opt/aurora/25.190.0/spack/unified/0.10.1/install/linux-sles15-x86_64/oneapi-2025.2.0/fftw-3.3.10-bs6lijg/include -o hermitian_3d_matrix src/main.cpp src/utils/printing.c src/utils/verification.c src/utils/decomposition.c src/utils/batch_helpers.c src/utils/rng.c src/utils/power_spectrum.c src/fft/fft_setup.c src/generation/hermitian_generation.c src/communication/mpi_exchange.c src/streaming/z_streaming.c src/STimer.cc src/utils/zeldovich_wrapper.cpp  -L/opt/aurora/25.190.0/spack/unified/0.10.1/install/linux-sles15-x86_64/oneapi-2025.2.0/fftw-3.3.10-bs6lijg/lib -lfftw3 -lfftw3_omp -L../zeldovich-PLT/build -L../zeldovich-PLT/build/subprojects/ParseHeader -L../zeldovich-PLT/build/subprojects/fmt-11.2.0 -lzeldovich -lparseheader -lfmt  -lm -lstdc++ -Wl,-rpath,/home/helenshao/InitialConditions/zeldovich-PLT/build:/home/helenshao/InitialConditions/zeldovich-PLT/build/subprojects/ParseHeader:/home/helenshao/InitialConditions/zeldovich-PLT/build/subprojects/fmt-11.2.0
+icpx: warning: use of '-qopenmp' recommended over '-fopenmp' [-Wrecommended-option]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+src/utils/decomposition.c:139:46: warning: unused parameter 'num_ranks' [-Wunused-parameter]
+  139 | int validate_abacus_compatibility(int N, int num_ranks, int grid_x, int grid_z)
+      |                                              ^
+1 warning generated.
+src/utils/rng.c:48:39: warning: unused parameter 'M' [-Wunused-parameter]
+   48 | void initialize_global_pcg(int L, int M, int N, uint64_t seed) {
+      |                                       ^
+src/utils/rng.c:48:46: warning: unused parameter 'N' [-Wunused-parameter]
+   48 | void initialize_global_pcg(int L, int M, int N, uint64_t seed) {
+      |                                              ^
+2 warnings generated.
+
+Build successful!
+Binary: hermitian_3d_matrix
+Configuration: see src/config.h
+
+==========================================
+Test: v15.2 Power Spectrum Mode - N=1024
+Double Precision Build
+N=1024, ranks=64 (2 nodes, 32 ranks/node)
+Parameter file: examples/param_N1024.par
+Expected output: ~64 GB (64x N=256)
+WARNING: Large output size - ensure sufficient disk space
+==========================================
+
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Generating ICs for ppd = 1024
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Generating ICs for ppd = 1024
+Generating ICs for ppd = 1024
+Generating ICs for ppd = 1024
+Generating ICs for ppd = 1024
+Generating ICs for ppd = 1024
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Generating ICs for ppd = 1024
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+[Rank 61] ENTER generate_hermitian_slice_pair_local: Y_primary=489, Y_mirror=535, ps_handle=0x652d3b0, params_handle=0x6879fa0
+[Rank 62] ENTER generate_hermitian_slice_pair_local: Y_primary=497, Y_mirror=527, ps_handle=0x536fa00, params_handle=0x56bc080
+[Rank 60] ENTER generate_hermitian_slice_pair_local: Y_primary=481, Y_mirror=543, ps_handle=0x5438dc0, params_handle=0x5785ea0
+[Rank 59] ENTER generate_hermitian_slice_pair_local: Y_primary=473, Y_mirror=551, ps_handle=0x4b76640, params_handle=0x4ec2df0
+[Rank 63] ENTER generate_hermitian_slice_pair_local: Y_primary=505, Y_mirror=519, ps_handle=0x621d3b0, params_handle=0x6569e30
+[Rank 39] ENTER generate_hermitian_slice_pair_local: Y_primary=313, Y_mirror=711, ps_handle=0x4a750c0, params_handle=0x4dc11f0
+[Rank 40] ENTER generate_hermitian_slice_pair_local: Y_primary=321, Y_mirror=703, ps_handle=0x4ebcdc0, params_handle=0x5209800
+[Rank 51] ENTER generate_hermitian_slice_pair_local: Y_primary=409, Y_mirror=615, ps_handle=0x6067a00, params_handle=0x63b3c80
+[Rank 53] ENTER generate_hermitian_slice_pair_local: Y_primary=425, Y_mirror=599, ps_handle=0x6483470, params_handle=0x67cf7b0
+[Rank 54] ENTER generate_hermitian_slice_pair_local: Y_primary=433, Y_mirror=591, ps_handle=0x4eaabb0, params_handle=0x51f7170
+[Rank 29] ENTER generate_hermitian_slice_pair_local: Y_primary=233, Y_mirror=791, ps_handle=0x48d83a0, params_handle=0x4c24ab0
+[Rank 58] ENTER generate_hermitian_slice_pair_local: Y_primary=465, Y_mirror=559, ps_handle=0x4d74620, params_handle=0x50c0b60
+[Rank 42] ENTER generate_hermitian_slice_pair_local: Y_primary=337, Y_mirror=687, ps_handle=0x550a740, params_handle=0x5856d20
+[Rank 37] ENTER generate_hermitian_slice_pair_local: Y_primary=297, Y_mirror=727, ps_handle=0x45f30c0, params_handle=0x493f390
+[Rank 28] ENTER generate_hermitian_slice_pair_local: Y_primary=225, Y_mirror=799, ps_handle=0x5541a10, params_handle=0x588ea40
+[Rank 35] ENTER generate_hermitian_slice_pair_local: Y_primary=281, Y_mirror=743, ps_handle=0x59d20c0, params_handle=0x5d1e1f0
+[Rank 44] ENTER generate_hermitian_slice_pair_local: Y_primary=353, Y_mirror=671, ps_handle=0x4a8f9f0, params_handle=0x4ddc400
+[Rank 48] ENTER generate_hermitian_slice_pair_local: Y_primary=385, Y_mirror=639, ps_handle=0x4fbdb00, params_handle=0x530a070
+[Rank 21] ENTER generate_hermitian_slice_pair_local: Y_primary=169, Y_mirror=855, ps_handle=0x5dcbe00, params_handle=0x6118150
+[Rank 8] ENTER generate_hermitian_slice_pair_local: Y_primary=65, Y_mirror=959, ps_handle=0x616fe00, params_handle=0x64bc660
+[Rank 49] ENTER generate_hermitian_slice_pair_local: Y_primary=393, Y_mirror=631, ps_handle=0x4a47910, params_handle=0x4d93b00
+[Rank 19] ENTER generate_hermitian_slice_pair_local: Y_primary=153, Y_mirror=871, ps_handle=0x55d0260, params_handle=0x591c7b0
+[Rank 7] ENTER generate_hermitian_slice_pair_local: Y_primary=57, Y_mirror=967, ps_handle=0x63f1800, params_handle=0x673d900
+[Rank 30] ENTER generate_hermitian_slice_pair_local: Y_primary=241, Y_mirror=783, ps_handle=0x5578030, params_handle=0x58c4440
+[Rank 22] ENTER generate_hermitian_slice_pair_local: Y_primary=177, Y_mirror=847, ps_handle=0x588e8f0, params_handle=0x5bdadb0
+[Rank 46] ENTER generate_hermitian_slice_pair_local: Y_primary=369, Y_mirror=655, ps_handle=0x5505a00, params_handle=0x5851f60
+[Rank 10] ENTER generate_hermitian_slice_pair_local: Y_primary=81, Y_mirror=943, ps_handle=0x5858810, params_handle=0x5ba4f20
+[Rank 56] ENTER generate_hermitian_slice_pair_local: Y_primary=449, Y_mirror=575, ps_handle=0x4799b40, params_handle=0x4ae62c0
+[Rank 31] ENTER generate_hermitian_slice_pair_local: Y_primary=249, Y_mirror=775, ps_handle=0x463ccd0, params_handle=0x4989880
+[Rank 50] ENTER generate_hermitian_slice_pair_local: Y_primary=401, Y_mirror=623, ps_handle=0x51080d0, params_handle=0x5454cf0
+[Rank 3] ENTER generate_hermitian_slice_pair_local: Y_primary=25, Y_mirror=999, ps_handle=0x504d3a0, params_handle=0x5399850
+[Rank 27] ENTER generate_hermitian_slice_pair_local: Y_primary=217, Y_mirror=807, ps_handle=0x457f7c0, params_handle=0x48cbd50
+[Rank 5] ENTER generate_hermitian_slice_pair_local: Y_primary=41, Y_mirror=983, ps_handle=0x6170ea0, params_handle=0x64bd150
+[Rank 2] ENTER generate_hermitian_slice_pair_local: Y_primary=17, Y_mirror=1007, ps_handle=0x4b77e80, params_handle=0x4ec4890
+[Rank 17] ENTER generate_hermitian_slice_pair_local: Y_primary=137, Y_mirror=887, ps_handle=0x58b23a0, params_handle=0x5bfe7a0
+[Rank 34] ENTER generate_hermitian_slice_pair_local: Y_primary=273, Y_mirror=751, ps_handle=0x642fb10, params_handle=0x677c1e0
+[Rank 16] ENTER generate_hermitian_slice_pair_local: Y_primary=129, Y_mirror=895, ps_handle=0x5b98490, params_handle=0x5ee4d00
+[Rank 52] ENTER generate_hermitian_slice_pair_local: Y_primary=417, Y_mirror=607, ps_handle=0x5a082e0, params_handle=0x5d55220
+[Rank 20] ENTER generate_hermitian_slice_pair_local: Y_primary=161, Y_mirror=863, ps_handle=0x4964260, params_handle=0x4cb1320
+[Rank 25] ENTER generate_hermitian_slice_pair_local: Y_primary=201, Y_mirror=823, ps_handle=0x48bb3a0, params_handle=0x4c07c00
+[Rank 38] ENTER generate_hermitian_slice_pair_local: Y_primary=305, Y_mirror=719, ps_handle=0x61be0c0, params_handle=0x650a770
+[Rank 55] ENTER generate_hermitian_slice_pair_local: Y_primary=441, Y_mirror=583, ps_handle=0x5fe02e0, params_handle=0x632c730
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=0, Y_mirror=0, ps_handle=0x4cded40, params_handle=0x503b910
+[Rank 14] ENTER generate_hermitian_slice_pair_local: Y_primary=113, Y_mirror=911, ps_handle=0x5fb7030, params_handle=0x63038a0
+[Rank 23] ENTER generate_hermitian_slice_pair_local: Y_primary=185, Y_mirror=839, ps_handle=0x54008f0, params_handle=0x574c8b0
+[Rank 41] ENTER generate_hermitian_slice_pair_local: Y_primary=329, Y_mirror=695, ps_handle=0x488cbd0, params_handle=0x4bd8f70
+[Rank 57] ENTER generate_hermitian_slice_pair_local: Y_primary=457, Y_mirror=567, ps_handle=0x4bf8ba0, params_handle=0x4f45010
+[Rank 36] ENTER generate_hermitian_slice_pair_local: Y_primary=289, Y_mirror=735, ps_handle=0x557a2e0, params_handle=0x58c7220
+[Rank 9] ENTER generate_hermitian_slice_pair_local: Y_primary=73, Y_mirror=951, ps_handle=0x64e2a10, params_handle=0x682f070
+[Rank 32] ENTER generate_hermitian_slice_pair_local: Y_primary=257, Y_mirror=767, ps_handle=0x636f4c0, params_handle=0x66ccea0
+[Rank 45] ENTER generate_hermitian_slice_pair_local: Y_primary=361, Y_mirror=663, ps_handle=0x4e8e2e0, params_handle=0x51dab00
+[Rank 24] ENTER generate_hermitian_slice_pair_local: Y_primary=193, Y_mirror=831, ps_handle=0x633dcb0, params_handle=0x668a660
+[Rank 12] ENTER generate_hermitian_slice_pair_local: Y_primary=97, Y_mirror=927, ps_handle=0x48a39b0, params_handle=0x4bf07a0
+[Rank 26] ENTER generate_hermitian_slice_pair_local: Y_primary=209, Y_mirror=815, ps_handle=0x6028070, params_handle=0x6374640
+[Rank 33] ENTER generate_hermitian_slice_pair_local: Y_primary=265, Y_mirror=759, ps_handle=0x5c30590, params_handle=0x5f7ca60
+[Rank 11] ENTER generate_hermitian_slice_pair_local: Y_primary=89, Y_mirror=935, ps_handle=0x501f260, params_handle=0x536b7b0
+[Rank 43] ENTER generate_hermitian_slice_pair_local: Y_primary=345, Y_mirror=679, ps_handle=0x4833310, params_handle=0x4b7f920
+[Rank 6] ENTER generate_hermitian_slice_pair_local: Y_primary=49, Y_mirror=975, ps_handle=0x6367810, params_handle=0x66b3f20
+[Rank 47] ENTER generate_hermitian_slice_pair_local: Y_primary=377, Y_mirror=647, ps_handle=0x466bdd0, params_handle=0x49b8430
+[Rank 4] ENTER generate_hermitian_slice_pair_local: Y_primary=33, Y_mirror=991, ps_handle=0x5e79260, params_handle=0x61c6320
+[Rank 1] ENTER generate_hermitian_slice_pair_local: Y_primary=9, Y_mirror=1015, ps_handle=0x5b643a0, params_handle=0x5eb07a0
+[Rank 18] ENTER generate_hermitian_slice_pair_local: Y_primary=145, Y_mirror=879, ps_handle=0x5974a10, params_handle=0x5cc1060
+[Rank 15] ENTER generate_hermitian_slice_pair_local: Y_primary=121, Y_mirror=903, ps_handle=0x53b18f0, params_handle=0x56fd8b0
+[Rank 13] ENTER generate_hermitian_slice_pair_local: Y_primary=105, Y_mirror=919, ps_handle=0x605e260, params_handle=0x63aa9c0
+[Rank 0] After primary FFT (array 0, Y=0): buffer OK (checksum=-56)
+[Rank 0] After primary FFT (array 1, Y=0): buffer OK (checksum=-84)
+[Rank 0] After primary FFT (array 2, Y=0): buffer OK (checksum=56)
+[Rank 0] After primary FFT (array 3, Y=0): buffer OK (checksum=-84)
+[INFO] num_ranks=64 < total_pairs=513: Each rank will process 8-9 pairs
+====================================================================================
+VERSION 14: PERIODIC BOUNDARY CONDITIONS FOR PADDING
+====================================================================================
+Precision: Double (16 bytes per complex number)
+Matrix size: N = 1024³, Total elements: 1073741824
+MPI ranks: 64 (total_pairs: 513 for N=1024)
+Multi-batch processing: Each rank processes multiple Y-slice pairs
+Grid decomposition: Core grid only (no padding, X_PADDING=0)
+            Each rank owns non-overlapping X-region
+            No periodic boundary wrapping - standard decomposition
+V12 feature: Z-slab streaming (Zeldovich-compatible output)
+            Output format: [Z][Array][Y][X] matches Zeldovich AZYX
+            Each file contains all (X,Y) for one Z-slab
+V11 feature: Direct receive into persistent source-grouped buffer
+Communication method: MPI_Ialltoallv (Phase A)
+====================================================================================
+
+[INIT] Rank 0: Assigned 9 pairs:
+  Pair 0: Y=0 (self-conjugate)
+  Pair 1: Y=1 and Y=1023 (conjugate)
+  Pair 2: Y=2 and Y=1022 (conjugate)
+  ... (6 more pairs)
+
+[DISTRIBUTION] Multi-batch slice distribution:
+  Total Y-slice pairs: 513
+  Active ranks: 64
+  Pairs per rank: 8 base + 1 ranks with +1
+  Rank 0 processes: 9 pairs (Y indices 0-8)
+  Estimated total Y-slices: ~1024
+
+[INIT] Loading zeldovich-PLT parameters from: examples/param_N1024.par
+[INIT] PowerSpectrum initialized:
+       Power law index: -2.00
+       Box size: 100.00
+       Fundamental wavenumber: 6.283185e-02
+       Seed: 4
+       Power spectrum mode: ENABLED
+[SETUP] narray = 4 (arrays per Y-slice)
+[SETUP] Creating FFT plans with dummy memory...
+[SETUP] FFT plans created successfully (2D and 1D)
+[MEMORY] Allocated local_y_slices: 0 bytes (0.00 GB) for 0 slices, 4 arrays
+[OK] Rank 0: Macro indexing verified (slices=0, arrays=4)
+
+[V14-DEBUG] Grid decomposition verification (PERIODIC BOUNDARIES):
+  Rank 0:
+    Core:   X=[0,128), Z=[0,128), Pencils=16384
+    Padded: X=[0,128), Z=[0,128), Pencils=16384
+  Rank 1:
+    Core:   X=[0,128), Z=[128,256), Pencils=16384
+    Padded: X=[0,128), Z=[128,256), Pencils=16384
+  Rank 2:
+    Core:   X=[0,128), Z=[256,384), Pencils=16384
+    Padded: X=[0,128), Z=[256,384), Pencils=16384
+  Rank 3:
+    Core:   X=[0,128), Z=[384,512), Pencils=16384
+    Padded: X=[0,128), Z=[384,512), Pencils=16384
+  ... (showing first 4 ranks only)
+  Note: Negative X-start or X-end > N indicates periodic wrap-around
+[Stage 2] Complete.
+
+[MULTI-BATCH] Starting batch processing...
+              Ranks will process 9 pairs each (approx)
+[GRID] Rank 0 (NO PADDING - CORE GRID ONLY):
+  Core region:   X=[0,128), Z=[0,128), pencils=16384
+[BATCHES] Total batches to process: 9
+
+[V11-SETUP] Computing per-source Y-slice totals...
+[V11-SETUP] Rank 0: Source totals: src0=17 src1=16 src2=16 src3=16 ...
+[V11-SETUP] Persistent recv_buffer size: 1073741824 bytes (1.00 GB)
+            Total elements: 67108864 = sum of (src_total_slices[src] * my_pencils * narray)
+[V11-MEMORY] Allocated recv_buffer: 1.00 GB (source-grouped layout)
+[V11-SETUP] Rank 0: Write cursors initialized to 0
+[V11-SETUP] Phase 1 pre-computation complete.
+
+[V11-SETUP] Building Y-value ownership mapping...
+[V11-SETUP] Rank 0: Y-mapping complete. Sample: Y=0-->src0[0], Y=512-->src63[14]
+[V11-SETUP] Phase 2 Y-mapping complete.
+
+[MEMORY] Allocated local_y_slices (reusable): 134217728 bytes (0.12 GB)
+
+[MULTI-BATCH] Processing 9 batches...
+[BATCH 0] Rank 0: Processing 1 Y-slices (Y=0)
+[DEBUG Y=0] Before 2D FFT (Fourier space) - PRIMARY slice - Max real/imag per array: A0: re=1.935e-01 im=1.262e-01 A1: re=0.000e+00 im=8.041e-02 A2: re=0.000e+00 im=1.262e-01 A3: re=0.000e+00 im=8.041e-02 (NOTE: Non-zero imag expected in Fourier space)
+[DEBUG Y=0] After 2D FFT (Real space) - PRIMARY slice - Max real/imag per array: A0: re=4.037e+00 im=7.307e-16 (ratio=1.810e-16) A1: re=3.034e-01 im=1.283e-16 (ratio=4.228e-16) A2: re=4.530e-01 im=1.222e-16 (ratio=2.699e-16) A3: re=[Rank 63] ENTER generate_hermitian_slice_pair_local: Y_primary=506, Y_mirror=518, ps_handle=0x621d3b0, params_handle=0x6569e30
+[Rank 30] ENTER generate_hermitian_slice_pair_local: Y_primary=242, Y_mirror=782, ps_handle=0x5578030, params_handle=0x58c4440
+[Rank 59] ENTER generate_hermitian_slice_pair_local: Y_primary=474, Y_mirror=550, ps_handle=0x4b76640, params_handle=0x4ec2df0
+[Rank 58] ENTER generate_hermitian_slice_pair_local: Y_primary=466, Y_mirror=558, ps_handle=0x4d74620, params_handle=0x50c0b60
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=1, Y_mirror=1023, ps_handle=0x4cded40, params_handle=0x503b910
+[Rank 32] ENTER generate_hermitian_slice_pair_local: Y_primary=258, Y_mirror=766, ps_handle=0x636f4c0, params_handle=0x66ccea0
+[Rank 55] ENTER generate_hermitian_slice_pair_local: Y_primary=442, Y_mirror=582, ps_handle=0x5fe02e0, params_handle=0x632c730
+[Rank 42] ENTER generate_hermitian_slice_pair_local: Y_primary=338, Y_mirror=686, ps_handle=0x550a740, params_handle=0x5856d20
+[Rank 56] ENTER generate_hermitian_slice_pair_local: Y_primary=450, Y_mirror=574, ps_handle=0x4799b40, params_handle=0x4ae62c0
+[Rank 53] ENTER generate_hermitian_slice_pair_local: Y_primary=426, Y_mirror=598, ps_handle=0x6483470, params_handle=0x67cf7b0
+[Rank 54] ENTER generate_hermitian_slice_pair_local: Y_primary=434, Y_mirror=590, ps_handle=0x4eaabb0, params_handle=0x51f7170
+[Rank 44] ENTER generate_hermitian_slice_pair_local: Y_primary=354, Y_mirror=670, ps_handle=0x4a8f9f0, params_handle=0x4ddc400
+[Rank 51] ENTER generate_hermitian_slice_pair_local: Y_primary=410, Y_mirror=614, ps_handle=0x6067a00, params_handle=0x63b3c80
+[Rank 57] ENTER generate_hermitian_slice_pair_local: Y_primary=458, Y_mirror=566, ps_handle=0x4bf8ba0, params_handle=0x4f45010
+[Rank 60] ENTER generate_hermitian_slice_pair_local: Y_primary=482, Y_mirror=542, ps_handle=0x5438dc0, params_handle=0x5785ea0
+[Rank 21] ENTER generate_hermitian_slice_pair_local: Y_primary=170, Y_mirror=854, ps_handle=0x5dcbe00, params_handle=0x6118150
+[Rank 62] ENTER generate_hermitian_slice_pair_local: Y_primary=498, Y_mirror=526, ps_handle=0x536fa00, params_handle=0x56bc080
+[Rank 37] ENTER generate_hermitian_slice_pair_local: Y_primary=298, Y_mirror=726, ps_handle=0x45f30c0, params_handle=0x493f390
+[Rank 41] ENTER generate_hermitian_slice_pair_local: Y_primary=330, Y_mirror=694, ps_handle=0x488cbd0, params_handle=0x4bd8f70
+[Rank 61] ENTER generate_hermitian_slice_pair_local: Y_primary=490, Y_mirror=534, ps_handle=0x652d3b0, params_handle=0x6879fa0
+[Rank 17] ENTER generate_hermitian_slice_pair_local: Y_primary=138, Y_mirror=886, ps_handle=0x58b23a0, params_handle=0x5bfe7a0
+[Rank 39] ENTER generate_hermitian_slice_pair_local: Y_primary=314, Y_mirror=710, ps_handle=0x4a750c0, params_handle=0x4dc11f0
+[Rank 16] ENTER generate_hermitian_slice_pair_local: Y_primary=130, Y_mirror=894, ps_handle=0x5b98490, params_handle=0x5ee4d00
+[Rank 52] ENTER generate_hermitian_slice_pair_local: Y_primary=418, Y_mirror=606, ps_handle=0x5a082e0, params_handle=0x5d55220
+[Rank 40] ENTER generate_hermitian_slice_pair_local: Y_primary=322, Y_mirror=702, ps_handle=0x4ebcdc0, params_handle=0x5209800
+[Rank 50] ENTER generate_hermitian_slice_pair_local: Y_primary=402, Y_mirror=622, ps_handle=0x51080d0, params_handle=0x5454cf0
+[Rank 34] ENTER generate_hermitian_slice_pair_local: Y_primary=274, Y_mirror=750, ps_handle=0x642fb10, params_handle=0x677c1e0
+[Rank 47] ENTER generate_hermitian_slice_pair_local: Y_primary=378, Y_mirror=646, ps_handle=0x466bdd0, params_handle=0x49b8430
+[Rank 49] ENTER generate_hermitian_slice_pair_local: Y_primary=394, Y_mirror=630, ps_handle=0x4a47910, params_handle=0x4d93b00
+[Rank 38] ENTER generate_hermitian_slice_pair_local: Y_primary=306, Y_mirror=718, ps_handle=0x61be0c0, params_handle=0x650a770
+[Rank 23] ENTER generate_hermitian_slice_pair_local: Y_primary=186, Y_mirror=838, ps_handle=0x54008f0, params_handle=0x574c8b0
+[Rank 48] ENTER generate_hermitian_slice_pair_local: Y_primary=386, Y_mirror=638, ps_handle=0x4fbdb00, params_handle=0x530a070
+[Rank 33] ENTER generate_hermitian_slice_pair_local: Y_primary=266, Y_mirror=758, ps_handle=0x5c30590, params_handle=0x5f7ca60
+[Rank 43] ENTER generate_hermitian_slice_pair_local: Y_primary=346, Y_mirror=678, ps_handle=0x4833310, params_handle=0x4b7f920
+[Rank 35] ENTER generate_hermitian_slice_pair_local: Y_primary=282, Y_mirror=742, ps_handle=0x59d20c0, params_handle=0x5d1e1f0
+[Rank 46] ENTER generate_hermitian_slice_pair_local: Y_primary=370, Y_mirror=654, ps_handle=0x5505a00, params_handle=0x5851f60
+[Rank 22] ENTER generate_hermitian_slice_pair_local: Y_primary=178, Y_mirror=846, ps_handle=0x588e8f0, params_handle=0x5bdadb0
+[Rank 36] ENTER generate_hermitian_slice_pair_local: Y_primary=290, Y_mirror=734, ps_handle=0x557a2e0, params_handle=0x58c7220
+[Rank 45] ENTER generate_hermitian_slice_pair_local: Y_primary=362, Y_mirror=662, ps_handle=0x4e8e2e0, params_handle=0x51dab00
+[Rank 20] ENTER generate_hermitian_slice_pair_local: Y_primary=162, Y_mirror=862, ps_handle=0x4964260, params_handle=0x4cb1320
+[Rank 19] ENTER generate_hermitian_slice_pair_local: Y_primary=154, Y_mirror=870, ps_handle=0x55d0260, params_handle=0x591c7b0
+[Rank 4] ENTER generate_hermitian_slice_pair_local: Y_primary=34, Y_mirror=990, ps_handle=0x5e79260, params_handle=0x61c6320
+[Rank 18] ENTER generate_hermitian_slice_pair_local: Y_primary=146, Y_mirror=878, ps_handle=0x5974a10, params_handle=0x5cc1060
+[Rank 9] ENTER generate_hermitian_slice_pair_local: Y_primary=74, Y_mirror=950, ps_handle=0x64e2a10, params_handle=0x682f070
+[Rank 31] ENTER generate_hermitian_slice_pair_local: Y_primary=250, Y_mirror=774, ps_handle=0x463ccd0, params_handle=0x4989880
+[Rank 11] ENTER generate_hermitian_slice_pair_local: Y_primary=90, Y_mirror=934, ps_handle=0x501f260, params_handle=0x536b7b0
+[Rank 14] ENTER generate_hermitian_slice_pair_local: Y_primary=114, Y_mirror=910, ps_handle=0x5fb7030, params_handle=0x63038a0
+[Rank 24] ENTER generate_hermitian_slice_pair_local: Y_primary=194, Y_mirror=830, ps_handle=0x633dcb0, params_handle=0x668a660
+[Rank 6] ENTER generate_hermitian_slice_pair_local: Y_primary=50, Y_mirror=974, ps_handle=0x6367810, params_handle=0x66b3f20
+[Rank 15] ENTER generate_hermitian_slice_pair_local: Y_primary=122, Y_mirror=902, ps_handle=0x53b18f0, params_handle=0x56fd8b0
+[Rank 3] ENTER generate_hermitian_slice_pair_local: Y_primary=26, Y_mirror=998, ps_handle=0x504d3a0, params_handle=0x5399850
+[Rank 12] ENTER generate_hermitian_slice_pair_local: Y_primary=98, Y_mirror=926, ps_handle=0x48a39b0, params_handle=0x4bf07a0
+[Rank 5] ENTER generate_hermitian_slice_pair_local: Y_primary=42, Y_mirror=982, ps_handle=0x6170ea0, params_handle=0x64bd150
+[Rank 28] ENTER generate_hermitian_slice_pair_local: Y_primary=226, Y_mirror=798, ps_handle=0x5541a10, params_handle=0x588ea40
+[Rank 27] ENTER generate_hermitian_slice_pair_local: Y_primary=218, Y_mirror=806, ps_handle=0x457f7c0, params_handle=0x48cbd50
+[Rank 26] ENTER generate_hermitian_slice_pair_local: Y_primary=210, Y_mirror=814, ps_handle=0x6028070, params_handle=0x6374640
+[Rank 29] ENTER generate_hermitian_slice_pair_local: Y_primary=234, Y_mirror=790, ps_handle=0x48d83a0, params_handle=0x4c24ab0
+[Rank 10] ENTER generate_hermitian_slice_pair_local: Y_primary=82, Y_mirror=942, ps_handle=0x5858810, params_handle=0x5ba4f20
+[Rank 7] ENTER generate_hermitian_slice_pair_local: Y_primary=58, Y_mirror=966, ps_handle=0x63f1800, params_handle=0x673d900
+[Rank 1] ENTER generate_hermitian_slice_pair_local: Y_primary=10, Y_mirror=1014, ps_handle=0x5b643a0, params_handle=0x5eb07a0
+[Rank 8] ENTER generate_hermitian_slice_pair_local: Y_primary=66, Y_mirror=958, ps_handle=0x616fe00, params_handle=0x64bc660
+[Rank 2] ENTER generate_hermitian_slice_pair_local: Y_primary=18, Y_mirror=1006, ps_handle=0x4b77e80, params_handle=0x4ec4890
+[Rank 13] ENTER generate_hermitian_slice_pair_local: Y_primary=106, Y_mirror=918, ps_handle=0x605e260, params_handle=0x63aa9c0
+[Rank 25] ENTER generate_hermitian_slice_pair_local: Y_primary=202, Y_mirror=822, ps_handle=0x48bb3a0, params_handle=0x4c07c00
+[Rank 0] After primary FFT (array 0, Y=1): buffer OK (checksum=-70)
+[Rank 0] After conjugate FFT (array 0, Y=1): buffer OK (checksum=-30)
+[Rank 0] After primary FFT (array 1, Y=1): buffer OK (checksum=51)
+[Rank 0] After conjugate FFT (array 1, Y=1): buffer OK (checksum=-15)
+[Rank 0] After primary FFT (array 2, Y=1): buffer OK (checksum=16)
+[Rank 0] After conjugate FFT (array 2, Y=1): buffer OK (checksum=-105)
+[Rank 0] After primary FFT (array 3, Y=1): buffer OK (checksum=51)
+[Rank 0] After conjugate FFT (array 3, Y=1): buffer OK (checksum=-15)
+[Rank 62] ENTER generate_hermitian_slice_pair_local: Y_primary=499, Y_mirror=525, ps_handle=0x536fa00, params_handle=0x56bc080
+[Rank 61] ENTER generate_hermitian_slice_pair_local: Y_primary=491, Y_mirror=533, ps_handle=0x652d3b0, params_handle=0x6879fa0
+[Rank 63] ENTER generate_hermitian_slice_pair_local: Y_primary=507, Y_mirror=517, ps_handle=0x621d3b0, params_handle=0x6569e30
+[Rank 58] ENTER generate_hermitian_slice_pair_local: Y_primary=467, Y_mirror=557, ps_handle=0x4d74620, params_handle=0x50c0b60
+[Rank 39] ENTER generate_hermitian_slice_pair_local: Y_primary=315, Y_mirror=709, ps_handle=0x4a750c0, params_handle=0x4dc11f0
+[Rank 60] ENTER generate_hermitian_slice_pair_local: Y_primary=483, Y_mirror=541, ps_handle=0x5438dc0, params_handle=0x5785ea0
+[Rank 35] ENTER generate_hermitian_slice_pair_local: Y_primary=283, Y_mirror=741, ps_handle=0x59d20c0, params_handle=0x5d1e1f0
+[Rank 41] ENTER generate_hermitian_slice_pair_local: Y_primary=331, Y_mirror=693, ps_handle=0x488cbd0, params_handle=0x4bd8f70
+[Rank 32] ENTER generate_hermitian_slice_pair_local: Y_primary=259, Y_mirror=765, ps_handle=0x636f4c0, params_handle=0x66ccea0
+[Rank 59] ENTER generate_hermitian_slice_pair_local: Y_primary=475, Y_mirror=549, ps_handle=0x4b76640, params_handle=0x4ec2df0
+[Rank 34] ENTER generate_hermitian_slice_pair_local: Y_primary=275, Y_mirror=749, ps_handle=0x642fb10, params_handle=0x677c1e0
+[Rank 37] ENTER generate_hermitian_slice_pair_local: Y_primary=299, Y_mirror=725, ps_handle=0x45f30c0, params_handle=0x493f390
+[Rank 24] ENTER generate_hermitian_slice_pair_local: Y_primary=195, Y_mirror=829, ps_handle=0x633dcb0, params_handle=0x668a660
+[Rank 23] ENTER generate_hermitian_slice_pair_local: Y_primary=187, Y_mirror=837, ps_handle=0x54008f0, params_handle=0x574c8b0
+[Rank 47] ENTER generate_hermitian_slice_pair_local: Y_primary=379, Y_mirror=645, ps_handle=0x466bdd0, params_handle=0x49b8430
+[Rank 48] ENTER generate_hermitian_slice_pair_local: Y_primary=387, Y_mirror=637, ps_handle=0x4fbdb00, params_handle=0x530a070
+[Rank 44] ENTER generate_hermitian_slice_pair_local: Y_primary=355, Y_mirror=669, ps_handle=0x4a8f9f0, params_handle=0x4ddc400
+[Rank 33] ENTER generate_hermitian_slice_pair_local: Y_primary=267, Y_mirror=757, ps_handle=0x5c30590, params_handle=0x5f7ca60
+[Rank 46] ENTER generate_hermitian_slice_pair_local: Y_primary=371, Y_mirror=653, ps_handle=0x5505a00, params_handle=0x5851f60
+[Rank 43] ENTER generate_hermitian_slice_pair_local: Y_primary=347, Y_mirror=677, ps_handle=0x4833310, params_handle=0x4b7f920
+[Rank 56] ENTER generate_hermitian_slice_pair_local: Y_primary=451, Y_mirror=573, ps_handle=0x4799b40, params_handle=0x4ae62c0
+[Rank 51] ENTER generate_hermitian_slice_pair_local: Y_primary=411, Y_mirror=613, ps_handle=0x6067a00, params_handle=0x63b3c80
+[Rank 42] ENTER generate_hermitian_slice_pair_local: Y_primary=339, Y_mirror=685, ps_handle=0x550a740, params_handle=0x5856d20
+[Rank 20] ENTER generate_hermitian_slice_pair_local: Y_primary=163, Y_mirror=861, ps_handle=0x4964260, params_handle=0x4cb1320
+[Rank 49] ENTER generate_hermitian_slice_pair_local: Y_primary=395, Y_mirror=629, ps_handle=0x4a47910, params_handle=0x4d93b00
+[Rank 55] ENTER generate_hermitian_slice_pair_local: Y_primary=443, Y_mirror=581, ps_handle=0x5fe02e0, params_handle=0x632c730
+[Rank 53] ENTER generate_hermitian_slice_pair_local: Y_primary=427, Y_mirror=597, ps_handle=0x6483470, params_handle=0x67cf7b0
+[Rank 40] ENTER generate_hermitian_slice_pair_local: Y_primary=323, Y_mirror=701, ps_handle=0x4ebcdc0, params_handle=0x5209800
+[Rank 54] ENTER generate_hermitian_slice_pair_local: Y_primary=435, Y_mirror=589, ps_handle=0x4eaabb0, params_handle=0x51f7170
+[Rank 36] ENTER generate_hermitian_slice_pair_local: Y_primary=291, Y_mirror=733, ps_handle=0x557a2e0, params_handle=0x58c7220
+[Rank 57] ENTER generate_hermitian_slice_pair_local: Y_primary=459, Y_mirror=565, ps_handle=0x4bf8ba0, params_handle=0x4f45010
+[Rank 18] ENTER generate_hermitian_slice_pair_local: Y_primary=147, Y_mirror=877, ps_handle=0x5974a10, params_handle=0x5cc1060
+[Rank 38] ENTER generate_hermitian_slice_pair_local: Y_primary=307, Y_mirror=717, ps_handle=0x61be0c0, params_handle=0x650a770
+[Rank 52] ENTER generate_hermitian_slice_pair_local: Y_primary=419, Y_mirror=605, ps_handle=0x5a082e0, params_handle=0x5d55220
+[Rank 45] ENTER generate_hermitian_slice_pair_local: Y_primary=363, Y_mirror=661, ps_handle=0x4e8e2e0, params_handle=0x51dab00
+[Rank 50] ENTER generate_hermitian_slice_pair_local: Y_primary=403, Y_mirror=621, ps_handle=0x51080d0, params_handle=0x5454cf0
+[Rank 14] ENTER generate_hermitian_slice_pair_local: Y_primary=115, Y_mirror=909, ps_handle=0x5fb7030, params_handle=0x63038a0
+[Rank 15] ENTER generate_hermitian_slice_pair_local: Y_primary=123, Y_mirror=901, ps_handle=0x53b18f0, params_handle=0x56fd8b0
+[Rank 13] ENTER generate_hermitian_slice_pair_local: Y_primary=107, Y_mirror=917, ps_handle=0x605e260, params_handle=0x63aa9c0
+[Rank 12] ENTER generate_hermitian_slice_pair_local: Y_primary=99, Y_mirror=925, ps_handle=0x48a39b0, params_handle=0x4bf07a0
+[Rank 10] ENTER generate_hermitian_slice_pair_local: Y_primary=83, Y_mirror=941, ps_handle=0x5858810, params_handle=0x5ba4f20
+[Rank 22] ENTER generate_hermitian_slice_pair_local: Y_primary=179, Y_mirror=845, ps_handle=0x588e8f0, params_handle=0x5bdadb0
+[Rank 31] ENTER generate_hermitian_slice_pair_local: Y_primary=251, Y_mirror=773, ps_handle=0x463ccd0, params_handle=0x4989880
+[Rank 29] ENTER generate_hermitian_slice_pair_local: Y_primary=235, Y_mirror=789, ps_handle=0x48d83a0, params_handle=0x4c24ab0
+[Rank 9] ENTER generate_hermitian_slice_pair_local: Y_primary=75, Y_mirror=949, ps_handle=0x64e2a10, params_handle=0x682f070
+[Rank 21] ENTER generate_hermitian_slice_pair_local: Y_primary=171, Y_mirror=853, ps_handle=0x5dcbe00, params_handle=0x6118150
+[Rank 4] ENTER generate_hermitian_slice_pair_local: Y_primary=35, Y_mirror=989, ps_handle=0x5e79260, params_handle=0x61c6320
+[Rank 19] ENTER generate_hermitian_slice_pair_local: Y_primary=155, Y_mirror=869, ps_handle=0x55d0260, params_handle=0x591c7b0
+[Rank 30] ENTER generate_hermitian_slice_pair_local: Y_primary=243, Y_mirror=781, ps_handle=0x5578030, params_handle=0x58c4440
+[Rank 11] ENTER generate_hermitian_slice_pair_local: Y_primary=91, Y_mirror=933, ps_handle=0x501f260, params_handle=0x536b7b0
+[Rank 27] ENTER generate_hermitian_slice_pair_local: Y_primary=219, Y_mirror=805, ps_handle=0x457f7c0, params_handle=0x48cbd50
+[Rank 28] ENTER generate_hermitian_slice_pair_local: Y_primary=227, Y_mirror=797, ps_handle=0x5541a10, params_handle=0x588ea40
+[Rank 26] ENTER generate_hermitian_slice_pair_local: Y_primary=211, Y_mirror=813, ps_handle=0x6028070, params_handle=0x6374640
+[Rank 6] ENTER generate_hermitian_slice_pair_local: Y_primary=51, Y_mirror=973, ps_handle=0x6367810, params_handle=0x66b3f20
+[Rank 17] ENTER generate_hermitian_slice_pair_local: Y_primary=139, Y_mirror=885, ps_handle=0x58b23a0, params_handle=0x5bfe7a0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=2, Y_mirror=1022, ps_handle=0x4cded40, params_handle=0x503b910
+[Rank 2] ENTER generate_hermitian_slice_pair_local: Y_primary=19, Y_mirror=1005, ps_handle=0x4b77e80, params_handle=0x4ec4890
+[Rank 16] ENTER generate_hermitian_slice_pair_local: Y_primary=131, Y_mirror=893, ps_handle=0x5b98490, params_handle=0x5ee4d00
+[Rank 7] ENTER generate_hermitian_slice_pair_local: Y_primary=59, Y_mirror=965, ps_handle=0x63f1800, params_handle=0x673d900
+[Rank 8] ENTER generate_hermitian_slice_pair_local: Y_primary=67, Y_mirror=957, ps_handle=0x616fe00, params_handle=0x64bc660
+[Rank 5] ENTER generate_hermitian_slice_pair_local: Y_primary=43, Y_mirror=981, ps_handle=0x6170ea0, params_handle=0x64bd150
+[Rank 3] ENTER generate_hermitian_slice_pair_local: Y_primary=27, Y_mirror=997, ps_handle=0x504d3a0, params_handle=0x5399850
+[Rank 1] ENTER generate_hermitian_slice_pair_local: Y_primary=11, Y_mirror=1013, ps_handle=0x5b643a0, params_handle=0x5eb07a0
+[Rank 25] ENTER generate_hermitian_slice_pair_local: Y_primary=203, Y_mirror=821, ps_handle=0x48bb3a0, params_handle=0x4c07c00
+3.034e-01 im=1.283e-16 (ratio=4.228e-16) (NOTE: Imag should be ~0 in real space!)
+[PACK] Rank 0: Packed 4194304 total elements to send_buffer
+       Sending to ranks: 65536 elements to rank 0, 65536 elements to rank 1, 65536 elements to rank 2, 65536 elements to rank 3, ...
+[V11-BATCH 0] Cursors advanced. Sample: src0=65536, src1=131072
+         ... Completed 1/9 batches (11.1%)
+[BATCH 1] Rank 0: Processing 2 Y-slices (Y=1, Y=1023)
+[DEBUG Y=1] Before 2D FFT (Fourier space) - PRIMARY slice - Max real/imag per array: A0: re=1.378e-01 im=5.828e-02 A1: re=1.625e-01 im=7.857e-02 A2: re=0.000e+00 im=5.828e-02 A3: re=1.625e-01 im=7.857e-02 (NOTE: Non-zero imag expected in Fourier space)
+[DEBUG Y=1] Before 2D FFT (Fourier space) - CONJUGATE slice - Max real/imag per array: A0: re=1.378e-01 im=5.828e-02 A1: re=1.625e-01 im=7.857e-02 A2: re=0.000e+00 im=5.828e-02 A3: re=1.625e-01 im=7.857e-02 (NOTE: Should be conjugate of primary!)
+[DEBUG Y=1] Sample conjugate check (first 3 points): A0[0,0]: prim=(1.063e-01,-0.000e+00) conj[0,0]=(1.063e-01,0.000e+00) A0[0,1]: prim=(-1.378e-01,-0.000e+00) conj[0,1023]=(-1.378e-01,0.000e+00) A0[1,0]: prim=(-1.274e-01,8.665e-03) conj[1023,0]=(-1.274e-01,-8.665e-03) A0[1,1]: prim=(2.156e-02,3.576e-02) conj[1023,1023]=(2.156e-02,-3.576e-02) A1[0,0]: prim=(1.625e-01,-0.000e+00) conj[0,0]=(1.625e-01,0.000e+00) A1[0,1]: prim=(7.080e-03,7.080e-03) conj[0,1023]=(7.080e-03,-7.080e-03) A1[1,0]: prim=(8.665e-03,-0.000e+00) conj[1023,0]=(8.665e-03,0.000e+00) A1[1,1]: prim=(3.576e-02,3.576e-02) conj[1023,1023]=(3.576e-02,-3.576e-02) 
+[DEBUG Y=1] Before 2D FFT - Buffer addresses: prim=0x14828afd7000 conj=0x14828efd7000 (diff=4194304)
+[DEBUG Y=1] Before 2D FFT - Sample values: prim[0,0]=(1.063e-01,-0.000e+00) conj[0,0]=(1.063e-01,0.000e+00)
+[DEBUG Y=1] Right before conjugate FFT - conj[0,0]=(1.063e-01,0.000e+00) prim[0,0]=(3.192e-01,-4.412e-02)
+[DEBUG Y=1] Right after conjugate FFT - conj[0,0]=(3.192e-01,4.412e-02) prim[0,0]=(3.192e-01,-4.412e-02)
+[DEBUG Y=1] After 2D FFT (Real space) - PRIMARY slice - Max real/imag per array: A0: re=2.510e+00 im=2.269e+00 (ratio=9.042e-01) A1: re=4.314e-01 im=2.649e-01 (ratio=6.140e-01) A2: re=2.089e-01 im=1.888e-01 (ratio=9.037e-01) A3: re=4.314e-01 im=2.649e-01 (ratio=6.140e-01) (NOTE: Imag should be ~0 in real space!)
+[DEBUG Y=1] After 2D FFT (Real space) - CONJUGATE slice - Max real/imag per array: A0: re=2.510e+00 im=2.269e+00 (ratio=9.042e-01) A1: re=4.314e-01 im=2.649e-01 (ratio=6.140e-01) A2: re=2.089e-01 im=1.888e-01 (ratio=9.037e-01) A3: re=4.314e-01 im=2.649e-01 (ratio=6.140e-01) (NOTE: Imag should be ~0 in real space!)
+[DEBUG Y=1] Array comparison: 0 identical, 4194304 different (total=4194304)
+[DEBUG Y=1] Sample differences (first 3 non-identical): A0[0,0]: prim=(3.192e-01,-4.412e-02) conj=(3.192e-01,4.412e-02) diff=(0.000e+00,8.824e-02) A0[0,1]: prim=(2.587e-01,-2.425e-01) conj=(2.587e-01,2.425e-01) diff=(4.441e-16,4.850e-01) A0[0,2]: prim=(3.831e-01,1.406e-01) conj=(3.831e-01,-1.406e-01) diff=(5.551e-17,2.812e-01) 
+[PACK] Rank 0: Packed 8388608 total elements to send_buffer
+       Sending to ranks: 131072 elements to rank 0, 131072 elements to rank 1, 131072 elements to rank 2, 131072 elements to rank 3, ...
+[V11-BATCH 1] Cursors advanced. Sample: src0=196608, src1=262144
+         ... Completed 2/9 batches (22.2%)
+[DEBUG Y=2] Before 2D FFT (Fourier space) - PRIMARY slice - Max real/imag per array: A0: re=1.289e-01 im=1.886e-02 A1: re=3.772e-02 im=1.434e-02 A2: re=0.000e+00 im=1.886e-02 A3: re=3.772e-02 im=1.434e-02 (NOTE: Non-zero imag expected in Fourier space)
+[DEBUG Y=2] Before 2D FFT (Fourier space) - CONJUGATE slice - Max real/imag per array: A0: re=1.289e-01 im=1.886e-02 A1: re=3.772e-02 im=1.434e-02 A2: re=0.000e+00 im=1.886e-02 A3: re=3.772e-02 im=1.434e-02 (NOTE: Should be conjugate of primary!)
+[DEBUG Y=2] Sample conjugate check (first 3 points): A0[0,0]: prim=(1.519e-02,-0.000e+00) conj[0,0]=(1.519e-02,0.000e+00) A0[0,1]: prim=(3.546e-02,0.000e+00) conj[0,1023]=(3.546e-02,-0.000e+00) A0[1,0]: prim=(1.289e-01,-1.886e-02) conj[1023,0]=(1.289e-01,1.886e-02[Rank 0] After primary FFT (array 0, Y=2): buffer OK (checksum=38)
+[Rank 0] After conjugate FFT (array 0, Y=2): buffer OK (checksum=-48)
+[Rank 0] After primary FFT (array 1, Y=2): buffer OK (checksum=6)
+[Rank 0] After conjugate FFT (array 1, Y=2): buffer OK (checksum=-6)
+[Rank 0] After primary FFT (array 2, Y=2): buffer OK (checksum=-20)
+[Rank 0] After conjugate FFT (array 2, Y=2): buffer OK (checksum=-93)
+[Rank 0] After primary FFT (array 3, Y=2): buffer OK (checksum=6)
+[Rank 0] After conjugate FFT (array 3, Y=2): buffer OK (checksum=-6)
+[Rank 60] ENTER generate_hermitian_slice_pair_local: Y_primary=484, Y_mirror=540, ps_handle=0x5438dc0, params_handle=0x5785ea0
+[Rank 62] ENTER generate_hermitian_slice_pair_local: Y_primary=500, Y_mirror=524, ps_handle=0x536fa00, params_handle=0x56bc080
+[Rank 63] ENTER generate_hermitian_slice_pair_local: Y_primary=508, Y_mirror=516, ps_handle=0x621d3b0, params_handle=0x6569e30
+[Rank 61] ENTER generate_hermitian_slice_pair_local: Y_primary=492, Y_mirror=532, ps_handle=0x652d3b0, params_handle=0x6879fa0
+[Rank 37] ENTER generate_hermitian_slice_pair_local: Y_primary=300, Y_mirror=724, ps_handle=0x45f30c0, params_handle=0x493f390
+[Rank 59] ENTER generate_hermitian_slice_pair_local: Y_primary=476, Y_mirror=548, ps_handle=0x4b76640, params_handle=0x4ec2df0
+[Rank 32] ENTER generate_hermitian_slice_pair_local: Y_primary=260, Y_mirror=764, ps_handle=0x636f4c0, params_handle=0x66ccea0
+[Rank 58] ENTER generate_hermitian_slice_pair_local: Y_primary=468, Y_mirror=556, ps_handle=0x4d74620, params_handle=0x50c0b60
+[Rank 43] ENTER generate_hermitian_slice_pair_local: Y_primary=348, Y_mirror=676, ps_handle=0x4833310, params_handle=0x4b7f920
+[Rank 36] ENTER generate_hermitian_slice_pair_local: Y_primary=292, Y_mirror=732, ps_handle=0x557a2e0, params_handle=0x58c7220
+[Rank 24] ENTER generate_hermitian_slice_pair_local: Y_primary=196, Y_mirror=828, ps_handle=0x633dcb0, params_handle=0x668a660
+[Rank 42] ENTER generate_hermitian_slice_pair_local: Y_primary=340, Y_mirror=684, ps_handle=0x550a740, params_handle=0x5856d20
+[Rank 38] ENTER generate_hermitian_slice_pair_local: Y_primary=308, Y_mirror=716, ps_handle=0x61be0c0, params_handle=0x650a770
+[Rank 55] ENTER generate_hermitian_slice_pair_local: Y_primary=444, Y_mirror=580, ps_handle=0x5fe02e0, params_handle=0x632c730
+[Rank 23] ENTER generate_hermitian_slice_pair_local: Y_primary=188, Y_mirror=836, ps_handle=0x54008f0, params_handle=0x574c8b0
+[Rank 9] ENTER generate_hermitian_slice_pair_local: Y_primary=76, Y_mirror=948, ps_handle=0x64e2a10, params_handle=0x682f070
+[Rank 56] ENTER generate_hermitian_slice_pair_local: Y_primary=452, Y_mirror=572, ps_handle=0x4799b40, params_handle=0x4ae62c0
+[Rank 41] ENTER generate_hermitian_slice_pair_local: Y_primary=332, Y_mirror=692, ps_handle=0x488cbd0, params_handle=0x4bd8f70
+[Rank 51] ENTER generate_hermitian_slice_pair_local: Y_primary=412, Y_mirror=612, ps_handle=0x6067a00, params_handle=0x63b3c80
+[Rank 21] ENTER generate_hermitian_slice_pair_local: Y_primary=172, Y_mirror=852, ps_handle=0x5dcbe00, params_handle=0x6118150
+[Rank 57] ENTER generate_hermitian_slice_pair_local: Y_primary=460, Y_mirror=564, ps_handle=0x4bf8ba0, params_handle=0x4f45010
+[Rank 13] ENTER generate_hermitian_slice_pair_local: Y_primary=108, Y_mirror=916, ps_handle=0x605e260, params_handle=0x63aa9c0
+[Rank 54] ENTER generate_hermitian_slice_pair_local: Y_primary=436, Y_mirror=588, ps_handle=0x4eaabb0, params_handle=0x51f7170
+[Rank 45] ENTER generate_hermitian_slice_pair_local: Y_primary=364, Y_mirror=660, ps_handle=0x4e8e2e0, params_handle=0x51dab00
+[Rank 17] ENTER generate_hermitian_slice_pair_local: Y_primary=140, Y_mirror=884, ps_handle=0x58b23a0, params_handle=0x5bfe7a0
+[Rank 22] ENTER generate_hermitian_slice_pair_local: Y_primary=180, Y_mirror=844, ps_handle=0x588e8f0, params_handle=0x5bdadb0
+[Rank 44] ENTER generate_hermitian_slice_pair_local: Y_primary=356, Y_mirror=668, ps_handle=0x4a8f9f0, params_handle=0x4ddc400
+[Rank 33] ENTER generate_hermitian_slice_pair_local: Y_primary=268, Y_mirror=756, ps_handle=0x5c30590, params_handle=0x5f7ca60
+[Rank 18] ENTER generate_hermitian_slice_pair_local: Y_primary=148, Y_mirror=876, ps_handle=0x5974a10, params_handle=0x5cc1060
+[Rank 40] ENTER generate_hermitian_slice_pair_local: Y_primary=324, Y_mirror=700, ps_handle=0x4ebcdc0, params_handle=0x5209800
+[Rank 20] ENTER generate_hermitian_slice_pair_local: Y_primary=164, Y_mirror=860, ps_handle=0x4964260, params_handle=0x4cb1320
+[Rank 52] ENTER generate_hermitian_slice_pair_local: Y_primary=420, Y_mirror=604, ps_handle=0x5a082e0, params_handle=0x5d55220
+[Rank 46] ENTER generate_hermitian_slice_pair_local: Y_primary=372, Y_mirror=652, ps_handle=0x5505a00, params_handle=0x5851f60
+[Rank 16] ENTER generate_hermitian_slice_pair_local: Y_primary=132, Y_mirror=892, ps_handle=0x5b98490, params_handle=0x5ee4d00
+[Rank 3] ENTER generate_hermitian_slice_pair_local: Y_primary=28, Y_mirror=996, ps_handle=0x504d3a0, params_handle=0x5399850
+[Rank 49] ENTER generate_hermitian_slice_pair_local: Y_primary=396, Y_mirror=628, ps_handle=0x4a47910, params_handle=0x4d93b00
+[Rank 34] ENTER generate_hermitian_slice_pair_local: Y_primary=276, Y_mirror=748, ps_handle=0x642fb10, params_handle=0x677c1e0
+[Rank 39] ENTER generate_hermitian_slice_pair_local: Y_primary=316, Y_mirror=708, ps_handle=0x4a750c0, params_handle=0x4dc11f0
+[Rank 31] ENTER generate_hermitian_slice_pair_local: Y_primary=252, Y_mirror=772, ps_handle=0x463ccd0, params_handle=0x4989880
+[Rank 50] ENTER generate_hermitian_slice_pair_local: Y_primary=404, Y_mirror=620, ps_handle=0x51080d0, params_handle=0x5454cf0
+[Rank 27] ENTER generate_hermitian_slice_pair_local: Y_primary=220, Y_mirror=804, ps_handle=0x457f7c0, params_handle=0x48cbd50
+[Rank 53] ENTER generate_hermitian_slice_pair_local: Y_primary=428, Y_mirror=596, ps_handle=0x6483470, params_handle=0x67cf7b0
+[Rank 11] ENTER generate_hermitian_slice_pair_local: Y_primary=92, Y_mirror=932, ps_handle=0x501f260, params_handle=0x536b7b0
+[Rank 35] ENTER generate_hermitian_slice_pair_local: Y_primary=284, Y_mirror=740, ps_handle=0x59d20c0, params_handle=0x5d1e1f0
+[Rank 47] ENTER generate_hermitian_slice_pair_local: Y_primary=380, Y_mirror=644, ps_handle=0x466bdd0, params_handle=0x49b8430
+[Rank 48] ENTER generate_hermitian_slice_pair_local: Y_primary=388, Y_mirror=636, ps_handle=0x4fbdb00, params_handle=0x530a070
+[Rank 15] ENTER generate_hermitian_slice_pair_local: Y_primary=124, Y_mirror=900, ps_handle=0x53b18f0, params_handle=0x56fd8b0
+[Rank 19] ENTER generate_hermitian_slice_pair_local: Y_primary=156, Y_mirror=868, ps_handle=0x55d0260, params_handle=0x591c7b0
+[Rank 4] ENTER generate_hermitian_slice_pair_local: Y_primary=36, Y_mirror=988, ps_handle=0x5e79260, params_handle=0x61c6320
+[Rank 29] ENTER generate_hermitian_slice_pair_local: Y_primary=236, Y_mirror=788, ps_handle=0x48d83a0, params_handle=0x4c24ab0
+[Rank 14] ENTER generate_hermitian_slice_pair_local: Y_primary=116, Y_mirror=908, ps_handle=0x5fb7030, params_handle=0x63038a0
+[Rank 30] ENTER generate_hermitian_slice_pair_local: Y_primary=244, Y_mirror=780, ps_handle=0x5578030, params_handle=0x58c4440
+[Rank 10] ENTER generate_hermitian_slice_pair_local: Y_primary=84, Y_mirror=940, ps_handle=0x5858810, params_handle=0x5ba4f20
+[Rank 2] ENTER generate_hermitian_slice_pair_local: Y_primary=20, Y_mirror=1004, ps_handle=0x4b77e80, params_handle=0x4ec4890
+[Rank 1] ENTER generate_hermitian_slice_pair_local: Y_primary=12, Y_mirror=1012, ps_handle=0x5b643a0, params_handle=0x5eb07a0
+[Rank 7] ENTER generate_hermitian_slice_pair_local: Y_primary=60, Y_mirror=964, ps_handle=0x63f1800, params_handle=0x673d900
+[Rank 26] ENTER generate_hermitian_slice_pair_local: Y_primary=212, Y_mirror=812, ps_handle=0x6028070, params_handle=0x6374640
+[Rank 6] ENTER generate_hermitian_slice_pair_local: Y_primary=52, Y_mirror=972, ps_handle=0x6367810, params_handle=0x66b3f20
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=3, Y_mirror=1021, ps_handle=0x4cded40, params_handle=0x503b910
+[Rank 28] ENTER generate_hermitian_slice_pair_local: Y_primary=228, Y_mirror=796, ps_handle=0x5541a10, params_handle=0x588ea40
+[Rank 12] ENTER generate_hermitian_slice_pair_local: Y_primary=100, Y_mirror=924, ps_handle=0x48a39b0, params_handle=0x4bf07a0
+[Rank 8] ENTER generate_hermitian_slice_pair_local: Y_primary=68, Y_mirror=956, ps_handle=0x616fe00, params_handle=0x64bc660
+[Rank 5] ENTER generate_hermitian_slice_pair_local: Y_primary=44, Y_mirror=980, ps_handle=0x6170ea0, params_handle=0x64bd150
+[Rank 25] ENTER generate_hermitian_slice_pair_local: Y_primary=204, Y_mirror=820, ps_handle=0x48bb3a0, params_handle=0x4c07c00
+[Rank 63] ENTER generate_hermitian_slice_pair_local: Y_primary=509, Y_mirror=515, ps_handle=0x621d3b0, params_handle=0x6569e30
+[Rank 58] ENTER generate_hermitian_slice_pair_local: Y_primary=469, Y_mirror=555, ps_handle=0x4d74620, params_handle=0x50c0b60
+[Rank 43] ENTER generate_hermitian_slice_pair_local: Y_primary=349, Y_mirror=675, ps_handle=0x4833310, params_handle=0x4b7f920
+[Rank 31] ENTER generate_hermitian_slice_pair_local: Y_primary=253, Y_mirror=771, ps_handle=0x463ccd0, params_handle=0x4989880
+[Rank 62] ENTER generate_hermitian_slice_pair_local: Y_primary=501, Y_mirror=523, ps_handle=0x536fa00, params_handle=0x56bc080
+[Rank 60] ENTER generate_hermitian_slice_pair_local: Y_primary=485, Y_mirror=539, ps_handle=0x5438dc0, params_handle=0x5785ea0
+[Rank 29] ENTER generate_hermitian_slice_pair_local: Y_primary=237, Y_mirror=787, ps_handle=0x48d83a0, params_handle=0x4c24ab0
+[Rank 30] ENTER generate_hermitian_slice_pair_local: Y_primary=245, Y_mirror=779, ps_handle=0x5578030, params_handle=0x58c4440
+[Rank 38] ENTER generate_hermitian_slice_pair_local: Y_primary=309, Y_mirror=715, ps_handle=0x61be0c0, params_handle=0x650a770
+[Rank 59] ENTER generate_hermitian_slice_pair_local: Y_primary=477, Y_mirror=547, ps_handle=0x4b76640, params_handle=0x4ec2df0
+[Rank 61] ENTER generate_hermitian_slice_pair_local: Y_primary=493, Y_mirror=531, ps_handle=0x652d3b0, params_handle=0x6879fa0
+[Rank 26] ENTER generate_hermitian_slice_pair_local: Y_primary=213, Y_mirror=811, ps_handle=0x6028070, params_handle=0x6374640
+[Rank 37] ENTER generate_hermitian_slice_pair_local: Y_primary=301, Y_mirror=723, ps_handle=0x45f30c0, params_handle=0x493f390
+[Rank 41] ENTER generate_hermitian_slice_pair_local: Y_primary=333, Y_mirror=691, ps_handle=0x488cbd0, params_handle=0x4bd8f70
+[Rank 44] ENTER generate_hermitian_slice_pair_local: Y_primary=357, Y_mirror=667, ps_handle=0x4a8f9f0, params_handle=0x4ddc400
+[Rank 33] ENTER generate_hermitian_slice_pair_local: Y_primary=269, Y_mirror=755, ps_handle=0x5c30590, params_handle=0x5f7ca60
+[Rank 24] ENTER generate_hermitian_slice_pair_local: Y_primary=197, Y_mirror=827, ps_handle=0x633dcb0, params_handle=0x668a660
+[Rank 51] ENTER generate_hermitian_slice_pair_local: Y_primary=413, Y_mirror=611, ps_handle=0x6067a00, params_handle=0x63b3c80
+[Rank 49] ENTER generate_hermitian_slice_pair_local: Y_primary=397, Y_mirror=627, ps_handle=0x4a47910, params_handle=0x4d93b00
+[Rank 27] ENTER generate_hermitian_slice_pair_local: Y_primary=221, Y_mirror=803, ps_handle=0x457f7c0, params_handle=0x48cbd50
+[Rank 50] ENTER generate_hermitian_slice_pair_local: Y_primary=405, Y_mirror=619, ps_handle=0x51080d0, params_handle=0x5454cf0
+[Rank 47] ENTER generate_hermitian_slice_pair_local: Y_primary=381, Y_mirror=643, ps_handle=0x466bdd0, params_handle=0x49b8430
+[Rank 40] ENTER generate_hermitian_slice_pair_local: Y_primary=325, Y_mirror=699, ps_handle=0x4ebcdc0, params_handle=0x5209800
+[Rank 46] ENTER generate_hermitian_slice_pair_local: Y_primary=373, Y_mirror=651, ps_handle=0x5505a00, params_handle=0x5851f60
+[Rank 48] ENTER generate_hermitian_slice_pair_local: Y_primary=389, Y_mirror=635, ps_handle=0x4fbdb00, params_handle=0x530a070
+[Rank 42] ENTER generate_hermitian_slice_pair_local: Y_primary=341, Y_mirror=683, ps_handle=0x550a740, params_handle=0x5856d20
+[Rank 45] ENTER generate_hermitian_slice_pair_local: Y_primary=365, Y_mirror=659, ps_handle=0x4e8e2e0, params_handle=0x51dab00
+[Rank 52] ENTER generate_hermitian_slice_pair_local: Y_primary=421, Y_mirror=603, ps_handle=0x5a082e0, params_handle=0x5d55220
+[Rank 53] ENTER generate_hermitian_slice_pair_local: Y_primary=429, Y_mirror=595, ps_handle=0x6483470, params_handle=0x67cf7b0
+[Rank 28] ENTER generate_hermitian_slice_pair_local: Y_primary=229, Y_mirror=795, ps_handle=0x5541a10, params_handle=0x588ea40
+[Rank 39] ENTER generate_hermitian_slice_pair_local: Y_primary=317, Y_mirror=707, ps_handle=0x4a750c0, params_handle=0x4dc11f0
+[Rank 55] ENTER generate_hermitian_slice_pair_local: Y_primary=445, Y_mirror=579, ps_handle=0x5fe02e0, params_handle=0x632c730
+[Rank 35] ENTER generate_hermitian_slice_pair_local: Y_primary=285, Y_mirror=739, ps_handle=0x59d20c0, params_handle=0x5d1e1f0
+[Rank 54] ENTER generate_hermitian_slice_pair_local: Y_primary=437, Y_mirror=587, ps_handle=0x4eaabb0, params_handle=0x51f7170
+[Rank 21] ENTER generate_hermitian_slice_pair_local: Y_primary=173, Y_mirror=851, ps_handle=0x5dcbe00, params_handle=0x6118150
+[Rank 34] ENTER generate_hermitian_slice_pair_local: Y_primary=277, Y_mirror=747, ps_handle=0x642fb10, params_handle=0x677c1e0
+[Rank 56] ENTER generate_hermitian_slice_pair_local: Y_primary=453, Y_mirror=571, ps_handle=0x4799b40, params_handle=0x4ae62c0
+[Rank 36] ENTER generate_hermitian_slice_pair_local: Y_primary=293, Y_mirror=731, ps_handle=0x557a2e0, params_handle=0x58c7220
+[Rank 32] ENTER generate_hermitian_slice_pair_local: Y_primary=261, Y_mirror=763, ps_handle=0x636f4c0, params_handle=0x66ccea0
+[Rank 22] ENTER generate_hermitian_slice_pair_local: Y_primary=181, Y_mirror=843, ps_handle=0x588e8f0, params_handle=0x5bdadb0
+[Rank 57] ENTER generate_hermitian_slice_pair_local: Y_primary=461, Y_mirror=563, ps_handle=0x4bf8ba0, params_handle=0x4f45010
+[Rank 23] ENTER generate_hermitian_slice_pair_local: Y_primary=189, Y_mirror=835, ps_handle=0x54008f0, params_handle=0x574c8b0
+[Rank 19] ENTER generate_hermitian_slice_pair_local: Y_primary=157, Y_mirror=867, ps_handle=0x55d0260, params_handle=0x591c7b0
+[Rank 20] ENTER generate_hermitian_slice_pair_local: Y_primary=165, Y_mirror=859, ps_handle=0x4964260, params_handle=0x4cb1320
+[Rank 8] ENTER generate_hermitian_slice_pair_local: Y_primary=69, Y_mirror=955, ps_handle=0x616fe00, params_handle=0x64bc660
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=4, Y_mirror=1020, ps_handle=0x4cded40, params_handle=0x503b910
+[Rank 16] ENTER generate_hermitian_slice_pair_local: Y_primary=133, Y_mirror=891, ps_handle=0x5b98490, params_handle=0x5ee4d00
+[Rank 12] ENTER generate_hermitian_slice_pair_local: Y_primary=101, Y_mirror=923, ps_handle=0x48a39b0, params_handle=0x4bf07a0
+[Rank 10] ENTER generate_hermitian_slice_pair_local: Y_primary=85, Y_mirror=939, ps_handle=0x5858810, params_handle=0x5ba4f20
+[Rank 3] ENTER generate_hermitian_slice_pair_local: Y_primary=29, Y_mirror=995, ps_handle=0x504d3a0, params_handle=0x5399850
+[Rank 17] ENTER generate_hermitian_slice_pair_local: Y_primary=141, Y_mirror=883, ps_handle=0x58b23a0, params_handle=0x5bfe7a0
+[Rank 7] ENTER generate_hermitian_slice_pair_local: Y_primary=61, Y_mirror=963, ps_handle=0x63f1800, params_handle=0x673d900
+[Rank 18] ENTER generate_hermitian_slice_pair_local: Y_primary=149, Y_mirror=875, ps_handle=0x5974a10, params_handle=0x5cc1060
+[Rank 4] ENTER generate_hermitian_slice_pair_local: Y_primary=37, Y_mirror=987, ps_handle=0x5e79260, params_handle=0x61c6320
+[Rank 1] ENTER generate_hermitian_slice_pair_local: Y_primary=13, Y_mirror=1011, ps_handle=0x5b643a0, params_handle=0x5eb07a0
+[Rank 11] ENTER generate_hermitian_slice_pair_local: Y_primary=93, Y_mirror=931, ps_handle=0x501f260, params_handle=0x536b7b0
+[Rank 2] ENTER generate_hermitian_slice_pair_local: Y_primary=21, Y_mirror=1003, ps_handle=0x4b77e80, params_handle=0x4ec4890
+[Rank 14] ENTER generate_hermitian_slice_pair_local: Y_primary=117, Y_mirror=907, ps_handle=0x5fb7030, params_handle=0x63038a0
+[Rank 15] ENTER generate_hermitian_slice_pair_local: Y_primary=125, Y_mirror=899, ps_handle=0x53b18f0, params_handle=0x56fd8b0
+[Rank 9] ENTER generate_hermitian_slice_pair_local: Y_primary=77, Y_mirror=947, ps_handle=0x64e2a10, params_handle=0x682f070
+[Rank 5] ENTER generate_hermitian_slice_pair_local: Y_primary=45, Y_mirror=979, ps_handle=0x6170ea0, params_handle=0x64bd150
+[Rank 6] ENTER generate_hermitian_slice_pair_local: Y_primary=53, Y_mirror=971, ps_handle=0x6367810, params_handle=0x66b3f20
+[Rank 13] ENTER generate_hermitian_slice_pair_local: Y_primary=109, Y_mirror=915, ps_handle=0x605e260, params_handle=0x63aa9c0
+[Rank 25] ENTER generate_hermitian_slice_pair_local: Y_primary=205, Y_mirror=819, ps_handle=0x48bb3a0, params_handle=0x4c07c00
+[Rank 63] ENTER generate_hermitian_slice_pair_local: Y_primary=510, Y_mirror=514, ps_handle=0x621d3b0, params_handle=0x6569e30
+[Rank 31] ENTER generate_hermitian_slice_pair_local: Y_primary=254, Y_mirror=770, ps_handle=0x463ccd0, params_handle=0x4989880
+[Rank 30] ENTER generate_hermitian_slice_pair_local: Y_primary=246, Y_mirror=778, ps_handle=0x5578030, params_handle=0x58c4440
+[Rank 62] ENTER generate_hermitian_slice_pair_local: Y_primary=502, Y_mirror=522, ps_handle=0x536fa00, params_handle=0x56bc080
+[Rank 43] ENTER generate_hermitian_slice_pair_local: Y_primary=350, Y_mirror=674, ps_handle=0x4833310, params_handle=0x4b7f920
+[Rank 42] ENTER generate_hermitian_slice_pair_local: Y_primary=342, Y_mirror=682, ps_handle=0x550a740, params_handle=0x5856d20
+[Rank 26] ENTER generate_hermitian_slice_pair_local: Y_primary=214, Y_mirror=810, ps_handle=0x6028070, params_handle=0x6374640
+[Rank 40] ENTER generate_hermitian_slice_pair_local: Y_primary=326, Y_mirror=698, ps_handle=0x4ebcdc0, params_handle=0x5209800
+[Rank 32] ENTER generate_hermitian_slice_pair_local: Y_primary=262, Y_mirror=762, ps_handle=0x636f4c0, params_handle=0x66ccea0
+[Rank 24] ENTER generate_hermitian_slice_pair_local: Y_primary=198, Y_mirror=826, ps_handle=0x633dcb0, params_handle=0x668a660
+[Rank 29] ENTER generate_hermitian_slice_pair_local: Y_primary=238, Y_mirror=786, ps_handle=0x48d83a0, params_handle=0x4c24ab0
+[Rank 49] ENTER generate_hermitian_slice_pair_local: Y_primary=398, Y_mirror=626, ps_handle=0x4a47910, params_handle=0x4d93b00
+[Rank 27] ENTER generate_hermitian_slice_pair_local: Y_primary=222, Y_mirror=802, ps_handle=0x457f7c0, params_handle=0x48cbd50
+[Rank 36] ENTER generate_hermitian_slice_pair_local: Y_primary=294, Y_mirror=730, ps_handle=0x557a2e0, params_handle=0x58c7220
+[Rank 50] ENTER generate_hermitian_slice_pair_local: Y_primary=406, Y_mirror=618, ps_handle=0x51080d0, params_handle=0x5454cf0
+[Rank 48] ENTER generate_hermitian_slice_pair_local: Y_primary=390, Y_mirror=634, ps_handle=0x4fbdb00, params_handle=0x530a070
+[Rank 33] ENTER generate_hermitian_slice_pair_local: Y_primary=270, Y_mirror=754, ps_handle=0x5c30590, params_handle=0x5f7ca60
+[Rank 58] ENTER generate_hermitian_slice_pair_local: Y_primary=470, Y_mirror=554, ps_handle=0x4d74620, params_handle=0x50c0b60
+[Rank 37] ENTER generate_hermitian_slice_pair_local: Y_primary=302, Y_mirror=722, ps_handle=0x45f30c0, params_handle=0x493f390
+[Rank 53] ENTER generate_hermitian_slice_pair_local: Y_primary=430, Y_mirror=594, ps_handle=0x6483470, params_handle=0x67cf7b0
+[Rank 44] ENTER generate_hermitian_slice_pair_local: Y_primary=358, Y_mirror=666, ps_handle=0x4a8f9f0, params_handle=0x4ddc400
+[Rank 23] ENTER generate_hermitian_slice_pair_local: Y_primary=190, Y_mirror=834, ps_handle=0x54008f0, params_handle=0x574c8b0
+[Rank 28] ENTER generate_hermitian_slice_pair_local: Y_primary=230, Y_mirror=794, ps_handle=0x5541a10, params_handle=0x588ea40
+[Rank 52] ENTER generate_hermitian_slice_pair_local: Y_primary=422, Y_mirror=602, ps_handle=0x5a082e0, params_handle=0x5d55220
+[Rank 47] ENTER generate_hermitian_slice_pair_local: Y_primary=382, Y_mirror=642, ps_handle=0x466bdd0, params_handle=0x49b8430
+[Rank 60] ENTER generate_hermitian_slice_pair_local: Y_primary=486, Y_mirror=538, ps_handle=0x5438dc0, params_handle=0x5785ea0
+[Rank 51] ENTER generate_hermitian_slice_pair_local: Y_primary=414, Y_mirror=610, ps_handle=0x6067a00, params_handle=0x63b3c80
+[Rank 21] ENTER generate_hermitian_slice_pair_local: Y_primary=174, Y_mirror=850, ps_handle=0x5dcbe00, params_handle=0x6118150
+[Rank 61] ENTER generate_hermitian_slice_pair_local: Y_primary=494, Y_mirror=530, ps_handle=0x652d3b0, params_handle=0x6879fa0
+[Rank 46] ENTER generate_hermitian_slice_pair_local: Y_primary=374, Y_mirror=650, ps_handle=0x5505a00, params_handle=0x5851f60
+[Rank 55] ENTER generate_hermitian_slice_pair_local: Y_primary=446, Y_mirror=578, ps_handle=0x5fe02e0, params_handle=0x632c730
+[Rank 59] ENTER generate_hermitian_slice_pair_local: Y_primary=478, Y_mirror=546, ps_handle=0x4b76640, params_handle=0x4ec2df0
+[Rank 35] ENTER generate_hermitian_slice_pair_local: Y_primary=286, Y_mirror=738, ps_handle=0x59d20c0, params_handle=0x5d1e1f0
+[Rank 54] ENTER generate_hermitian_slice_pair_local: Y_primary=438, Y_mirror=586, ps_handle=0x4eaabb0, params_handle=0x51f7170
+[Rank 45] ENTER generate_hermitian_slice_pair_local: Y_primary=366, Y_mirror=658, ps_handle=0x4e8e2e0, params_handle=0x51dab00
+[Rank 56] ENTER generate_hermitian_slice_pair_local: Y_primary=454, Y_mirror=570, ps_handle=0x4799b40, params_handle=0x4ae62c0
+[Rank 38] ENTER generate_hermitian_slice_pair_local: Y_primary=310, Y_mirror=714, ps_handle=0x61be0c0, params_handle=0x650a770
+[Rank 34] ENTER generate_hermitian_slice_pair_local: Y_primary=278, Y_mirror=746, ps_handle=0x642fb10, params_handle=0x677c1e0
+[Rank 41] ENTER generate_hermitian_slice_pair_local: Y_primary=334, Y_mirror=690, ps_handle=0x488cbd0, params_handle=0x4bd8f70
+[Rank 39] ENTER generate_hermitian_slice_pair_local: Y_primary=318, Y_mirror=706, ps_handle=0x4a750c0, params_handle=0x4dc11f0
+[Rank 57] ENTER generate_hermitian_slice_pair_local: Y_primary=462, Y_mirror=562, ps_handle=0x4bf8ba0, params_handle=0x4f45010
+[Rank 15] ENTER generate_hermitian_slice_pair_local: Y_primary=126, Y_mirror=898, ps_handle=0x53b18f0, params_handle=0x56fd8b0
+[Rank 10] ENTER generate_hermitian_slice_pair_local: Y_primary=86, Y_mirror=938, ps_handle=0x5858810, params_handle=0x5ba4f20
+[Rank 14] ENTER generate_hermitian_slice_pair_local: Y_primary=118, Y_mirror=906, ps_handle=0x5fb7030, params_handle=0x63038a0
+[Rank 1] ENTER generate_hermitian_slice_pair_local: Y_primary=14, Y_mirror=1010, ps_handle=0x5b643a0, params_handle=0x5eb07a0
+[Rank 16] ENTER generate_hermitian_slice_pair_local: Y_primary=134, Y_mirror=890, ps_handle=0x5b98490, params_handle=0x5ee4d00
+[Rank 11] ENTER generate_hermitian_slice_pair_local: Y_primary=94, Y_mirror=930, ps_handle=0x501f260, params_handle=0x536b7b0
+[Rank 17] ENTER generate_hermitian_slice_pair_local: Y_primary=142, Y_mirror=882, ps_handle=0x58b23a0, params_handle=0x5bfe7a0
+[Rank 13] ENTER generate_hermitian_slice_pair_local: Y_primary=110, Y_mirror=914, ps_handle=0x605e260, params_handle=0x63aa9c0
+[Rank 22] ENTER generate_hermitian_slice_pair_local: Y_primary=182, Y_mirror=842, ps_handle=0x588e8f0, params_handle=0x5bdadb0
+[Rank 12] ENTER generate_hermitian_slice_pair_local: Y_primary=102, Y_mirror=922, ps_handle=0x48a39b0, params_handle=0x4bf07a0
+[Rank 9] ENTER generate_hermitian_slice_pair_local: Y_primary=78, Y_mirror=946, ps_handle=0x64e2a10, params_handle=0x682f070
+[Rank 19] ENTER generate_hermitian_slice_pair_local: Y_primary=158, Y_mirror=866, ps_handle=0x55d0260, params_handle=0x591c7b0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=5, Y_mirror=1019, ps_handle=0x4cded40, params_handle=0x503b910
+[Rank 6] ENTER generate_hermitian_slice_pair_local: Y_primary=54, Y_mirror=970, ps_handle=0x6367810, params_handle=0x66b3f20
+[Rank 8] ENTER generate_hermitian_slice_pair_local: Y_primary=70, Y_mirror=954, ps_handle=0x616fe00, params_handle=0x64bc660
+[Rank 2] ENTER generate_hermitian_slice_pair_local: Y_primary=22, Y_mirror=1002, ps_handle=0x4b77e80, params_handle=0x4ec4890
+[Rank 20] ENTER generate_hermitian_slice_pair_local: Y_primary=166, Y_mirror=858, ps_handle=0x4964260, params_handle=0x4cb1320
+[Rank 18] ENTER generate_hermitian_slice_pair_local: Y_primary=150, Y_mirror=874, ps_handle=0x5974a10, params_handle=0x5cc1060
+[Rank 4] ENTER generate_hermitian_slice_pair_local: Y_primary=38, Y_mirror=986, ps_handle=0x5e79260, params_handle=0x61c6320
+[Rank 5] ENTER generate_hermitian_slice_pair_local: Y_primary=46, Y_mirror=978, ps_handle=0x6170ea0, params_handle=0x64bd150
+[Rank 7] ENTER generate_hermitian_slice_pair_local: Y_primary=62, Y_mirror=962, ps_handle=0x63f1800, params_handle=0x673d900
+[Rank 3] ENTER generate_hermitian_slice_pair_local: Y_primary=30, Y_mirror=994, ps_handle=0x504d3a0, params_handle=0x5399850
+[Rank 25] ENTER generate_hermitian_slice_pair_local: Y_primary=206, Y_mirror=818, ps_handle=0x48bb3a0, params_handle=0x4c07c00
+[Rank 63] ENTER generate_hermitian_slice_pair_local: Y_primary=511, Y_mirror=513, ps_handle=0x621d3b0, params_handle=0x6569e30
+[Rank 29] ENTER generate_hermitian_slice_pair_local: Y_primary=239, Y_mirror=785, ps_handle=0x48d83a0, params_handle=0x4c24ab0
+[Rank 44] ENTER generate_hermitian_slice_pair_local: Y_primary=359, Y_mirror=665, ps_handle=0x4a8f9f0, params_handle=0x4ddc400
+[Rank 32] ENTER generate_hermitian_slice_pair_local: Y_primary=263, Y_mirror=761, ps_handle=0x636f4c0, params_handle=0x66ccea0
+[Rank 30] ENTER generate_hermitian_slice_pair_local: Y_primary=247, Y_mirror=777, ps_handle=0x5578030, params_handle=0x58c4440
+[Rank 31] ENTER generate_hermitian_slice_pair_local: Y_primary=255, Y_mirror=769, ps_handle=0x463ccd0, params_handle=0x4989880
+[Rank 42] ENTER generate_hermitian_slice_pair_local: Y_primary=343, Y_mirror=681, ps_handle=0x550a740, params_handle=0x5856d20
+[Rank 27] ENTER generate_hermitian_slice_pair_local: Y_primary=223, Y_mirror=801, ps_handle=0x457f7c0, params_handle=0x48cbd50
+[Rank 60] ENTER generate_hermitian_slice_pair_local: Y_primary=487, Y_mirror=537, ps_handle=0x5438dc0, params_handle=0x5785ea0
+[Rank 62] ENTER generate_hermitian_slice_pair_local: Y_primary=503, Y_mirror=521, ps_handle=0x536fa00, params_handle=0x56bc080
+[Rank 40] ENTER generate_hermitian_slice_pair_local: Y_primary=327, Y_mirror=697, ps_handle=0x4ebcdc0, params_handle=0x5209800
+[Rank 26] ENTER generate_hermitian_slice_pair_local: Y_primary=215, Y_mirror=809, ps_handle=0x6028070, params_handle=0x6374640
+[Rank 38] ENTER generate_hermitian_slice_pair_local: Y_primary=311, Y_mirror=713, ps_handle=0x61be0c0, params_handle=0x650a770
+[Rank 58] ENTER generate_hermitian_slice_pair_local: Y_primary=471, Y_mirror=553, ps_handle=0x4d74620, params_handle=0x50c0b60
+[Rank 19] ENTER generate_hermitian_slice_pair_local: Y_primary=159, Y_mirror=865, ps_handle=0x55d0260, params_handle=0x591c7b0
+[Rank 61] ENTER generate_hermitian_slice_pair_local: Y_primary=495, Y_mirror=529, ps_handle=0x652d3b0, params_handle=0x6879fa0
+[Rank 49] ENTER generate_hermitian_slice_pair_local: Y_primary=399, Y_mirror=625, ps_handle=0x4a47910, params_handle=0x4d93b00
+[Rank 28] ENTER generate_hermitian_slice_pair_local: Y_primary=231, Y_mirror=793, ps_handle=0x5541a10, params_handle=0x588ea40
+[Rank 35] ENTER generate_hermitian_slice_pair_local: Y_primary=287, Y_mirror=737, ps_handle=0x59d20c0, params_handle=0x5d1e1f0
+[Rank 59] ENTER generate_hermitian_slice_pair_local: Y_primary=479, Y_mirror=545, ps_handle=0x4b76640, params_handle=0x4ec2df0
+[Rank 17] ENTER generate_hermitian_slice_pair_local: Y_primary=143, Y_mirror=881, ps_handle=0x58b23a0, params_handle=0x5bfe7a0
+[Rank 43] ENTER generate_hermitian_slice_pair_local: Y_primary=351, Y_mirror=673, ps_handle=0x4833310, params_handle=0x4b7f920
+[Rank 37] ENTER generate_hermitian_slice_pair_local: Y_primary=303, Y_mirror=721, ps_handle=0x45f30c0, params_handle=0x493f390
+[Rank 51] ENTER generate_hermitian_slice_pair_local: Y_primary=415, Y_mirror=609, ps_handle=0x6067a00, params_handle=0x63b3c80
+[Rank 22] ENTER generate_hermitian_slice_pair_local: Y_primary=183, Y_mirror=841, ps_handle=0x588e8f0, params_handle=0x5bdadb0
+[Rank 50] ENTER generate_hermitian_slice_pair_local: Y_primary=407, Y_mirror=617, ps_handle=0x51080d0, params_handle=0x5454cf0
+[Rank 21] ENTER generate_hermitian_slice_pair_local: Y_primary=175, Y_mirror=849, ps_handle=0x5dcbe00, params_handle=0x6118150
+[Rank 52] ENTER generate_hermitian_slice_pair_local: Y_primary=423, Y_mirror=601, ps_handle=0x5a082e0, params_handle=0x5d55220
+[Rank 41] ENTER generate_hermitian_slice_pair_local: Y_primary=335, Y_mirror=689, ps_handle=0x488cbd0, params_handle=0x4bd8f70
+[Rank 53] ENTER generate_hermitian_slice_pair_local: Y_primary=431, Y_mirror=593, ps_handle=0x6483470, params_handle=0x67cf7b0
+[Rank 39] ENTER generate_hermitian_slice_pair_local: Y_primary=319, Y_mirror=705, ps_handle=0x4a750c0, params_handle=0x4dc11f0
+[Rank 36] ENTER generate_hermitian_slice_pair_local: Y_primary=295, Y_mirror=729, ps_handle=0x557a2e0, params_handle=0x58c7220
+[Rank 55] ENTER generate_hermitian_slice_pair_local: Y_primary=447, Y_mirror=577, ps_handle=0x5fe02e0, params_handle=0x632c730
+[Rank 34] ENTER generate_hermitian_slice_pair_local: Y_primary=279, Y_mirror=745, ps_handle=0x642fb10, params_handle=0x677c1e0
+[Rank 54] ENTER generate_hermitian_slice_pair_local: Y_primary=439, Y_mirror=585, ps_handle=0x4eaabb0, params_handle=0x51f7170
+[Rank 33] ENTER generate_hermitian_slice_pair_local: Y_primary=271, Y_mirror=753, ps_handle=0x5c30590, params_handle=0x5f7ca60
+[Rank 56] ENTER generate_hermitian_slice_pair_local: Y_primary=455, Y_mirror=569, ps_handle=0x4799b40, params_handle=0x4ae62c0
+[Rank 46] ENTER generate_hermitian_slice_pair_local: Y_primary=375, Y_mirror=649, ps_handle=0x5505a00, params_handle=0x5851f60
+[Rank 57] ENTER generate_hermitian_slice_pair_local: Y_primary=463, Y_mirror=561, ps_handle=0x4bf8ba0, params_handle=0x4f45010
+[Rank 48] ENTER generate_hermitian_slice_pair_local: Y_primary=391, Y_mirror=633, ps_handle=0x4fbdb00, params_handle=0x530a070
+[Rank 47] ENTER generate_hermitian_slice_pair_local: Y_primary=383, Y_mirror=641, ps_handle=0x466bdd0, params_handle=0x49b8430
+[Rank 45] ENTER generate_hermitian_slice_pair_local: Y_primary=367, Y_mirror=657, ps_handle=0x4e8e2e0, params_handle=0x51dab00
+[Rank 23] ENTER generate_hermitian_slice_pair_local: Y_primary=191, Y_mirror=833, ps_handle=0x54008f0, params_handle=0x574c8b0
+[Rank 16] ENTER generate_hermitian_slice_pair_local: Y_primary=135, Y_mirror=889, ps_handle=0x5b98490, params_handle=0x5ee4d00
+[Rank 24] ENTER generate_hermitian_slice_pair_local: Y_primary=199, Y_mirror=825, ps_handle=0x633dcb0, params_handle=0x668a660
+[Rank 13] ENTER generate_hermitian_slice_pair_local: Y_primary=111, Y_mirror=913, ps_handle=0x605e260, params_handle=0x63aa9c0
+[Rank 18] ENTER generate_hermitian_slice_pair_local: Y_primary=151, Y_mirror=873, ps_handle=0x5974a10, params_handle=0x5cc1060
+[Rank 3] ENTER generate_hermitian_slice_pair_local: Y_primary=31, Y_mirror=993, ps_handle=0x504d3a0, params_handle=0x5399850
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=6, Y_mirror=1018, ps_handle=0x4cded40, params_handle=0x503b910
+[Rank 12] ENTER generate_hermitian_slice_pair_local: Y_primary=103, Y_mirror=921, ps_handle=0x48a39b0, params_handle=0x4bf07a0
+[Rank 20] ENTER generate_hermitian_slice_pair_local: Y_primary=167, Y_mirror=857, ps_handle=0x4964260, params_handle=0x4cb1320
+[Rank 7] ENTER generate_hermitian_slice_pair_local: Y_primary=63, Y_mirror=961, ps_handle=0x63f1800, params_handle=0x673d900
+[Rank 15] ENTER generate_hermitian_slice_pair_local: Y_primary=127, Y_mirror=897, ps_handle=0x53b18f0, params_handle=0x56fd8b0
+[Rank 9] ENTER generate_hermitian_slice_pair_local: Y_primary=79, Y_mirror=945, ps_handle=0x64e2a10, params_handle=0x682f070
+[Rank 14] ENTER generate_hermitian_slice_pair_local: Y_primary=119, Y_mirror=905, ps_handle=0x5fb7030, params_handle=0x63038a0
+[Rank 4] ENTER generate_hermitian_slice_pair_local: Y_primary=39, Y_mirror=985, ps_handle=0x5e79260, params_handle=0x61c6320
+[Rank 8] ENTER generate_hermitian_slice_pair_local: Y_primary=71, Y_mirror=953, ps_handle=0x616fe00, params_handle=0x64bc660
+[Rank 11] ENTER generate_hermitian_slice_pair_local: Y_primary=95, Y_mirror=929, ps_handle=0x501f260, params_handle=0x536b7b0
+[Rank 2] ENTER generate_hermitian_slice_pair_local: Y_primary=23, Y_mirror=1001, ps_handle=0x4b77e80, params_handle=0x4ec4890
+[Rank 6] ENTER generate_hermitian_slice_pair_local: Y_primary=55, Y_mirror=969, ps_handle=0x6367810, params_handle=0x66b3f20
+[Rank 10] ENTER generate_hermitian_slice_pair_local: Y_primary=87, Y_mirror=937, ps_handle=0x5858810, params_handle=0x5ba4f20
+[Rank 5] ENTER generate_hermitian_slice_pair_local: Y_primary=47, Y_mirror=977, ps_handle=0x6170ea0, params_handle=0x64bd150
+[Rank 1] ENTER generate_hermitian_slice_pair_local: Y_primary=15, Y_mirror=1009, ps_handle=0x5b643a0, params_handle=0x5eb07a0
+[Rank 25] ENTER generate_hermitian_slice_pair_local: Y_primary=207, Y_mirror=817, ps_handle=0x48bb3a0, params_handle=0x4c07c00
+[Rank 63] ENTER generate_hermitian_slice_pair_local: Y_primary=512, Y_mirror=512, ps_handle=0x621d3b0, params_handle=0x6569e30
+[Rank 30] ENTER generate_hermitian_slice_pair_local: Y_primary=248, Y_mirror=776, ps_handle=0x5578030, params_handle=0x58c4440
+[Rank 33] ENTER generate_hermitian_slice_pair_local: Y_primary=272, Y_mirror=752, ps_handle=0x5c30590, params_handle=0x5f7ca60
+[Rank 58] ENTER generate_hermitian_slice_pair_local: Y_primary=472, Y_mirror=552, ps_handle=0x4d74620, params_handle=0x50c0b60
+[Rank 31] ENTER generate_hermitian_slice_pair_local: Y_primary=256, Y_mirror=768, ps_handle=0x463ccd0, params_handle=0x4989880
+[Rank 62] ENTER generate_hermitian_slice_pair_local: Y_primary=504, Y_mirror=520, ps_handle=0x536fa00, params_handle=0x56bc080
+[Rank 43] ENTER generate_hermitian_slice_pair_local: Y_primary=352, Y_mirror=672, ps_handle=0x4833310, params_handle=0x4b7f920
+[Rank 42] ENTER generate_hermitian_slice_pair_local: Y_primary=344, Y_mirror=680, ps_handle=0x550a740, params_handle=0x5856d20
+[Rank 28] ENTER generate_hermitian_slice_pair_local: Y_primary=232, Y_mirror=792, ps_handle=0x5541a10, params_handle=0x588ea40
+[Rank 61] ENTER generate_hermitian_slice_pair_local: Y_primary=496, Y_mirror=528, ps_handle=0x652d3b0, params_handle=0x6879fa0
+[Rank 59] ENTER generate_hermitian_slice_pair_local: Y_primary=480, Y_mirror=544, ps_handle=0x4b76640, params_handle=0x4ec2df0
+[Rank 20] ENTER generate_hermitian_slice_pair_local: Y_primary=168, Y_mirror=856, ps_handle=0x4964260, params_handle=0x4cb1320
+[Rank 27] ENTER generate_hermitian_slice_pair_local: Y_primary=224, Y_mirror=800, ps_handle=0x457f7c0, params_handle=0x48cbd50
+[Rank 36] ENTER generate_hermitian_slice_pair_local: Y_primary=296, Y_mirror=728, ps_handle=0x557a2e0, params_handle=0x58c7220
+[Rank 34] ENTER generate_hermitian_slice_pair_local: Y_primary=280, Y_mirror=744, ps_handle=0x642fb10, params_handle=0x677c1e0
+[Rank 48] ENTER generate_hermitian_slice_pair_local: Y_primary=392, Y_mirror=632, ps_handle=0x4fbdb00, params_handle=0x530a070
+[Rank 60] ENTER generate_hermitian_slice_pair_local: Y_primary=488, Y_mirror=536, ps_handle=0x5438dc0, params_handle=0x5785ea0
+[Rank 44] ENTER generate_hermitian_slice_pair_local: Y_primary=360, Y_mirror=664, ps_handle=0x4a8f9f0, params_handle=0x4ddc400
+[Rank 49] ENTER generate_hermitian_slice_pair_local: Y_primary=400, Y_mirror=624, ps_handle=0x4a47910, params_handle=0x4d93b00
+[Rank 41] ENTER generate_hermitian_slice_pair_local: Y_primary=336, Y_mirror=688, ps_handle=0x488cbd0, params_handle=0x4bd8f70
+[Rank 29] ENTER generate_hermitian_slice_pair_local: Y_primary=240, Y_mirror=784, ps_handle=0x48d83a0, params_handle=0x4c24ab0
+[Rank 50] ENTER generate_hermitian_slice_pair_local: Y_primary=408, Y_mirror=616, ps_handle=0x51080d0, params_handle=0x5454cf0
+[Rank 39] ENTER generate_hermitian_slice_pair_local: Y_primary=320, Y_mirror=704, ps_handle=0x4a750c0, params_handle=0x4dc11f0
+[Rank 45] ENTER generate_hermitian_slice_pair_local: Y_primary=368, Y_mirror=656, ps_handle=0x4e8e2e0, params_handle=0x51dab00
+[Rank 52] ENTER generate_hermitian_slice_pair_local: Y_primary=424, Y_mirror=600, ps_handle=0x5a082e0, params_handle=0x5d55220
+[Rank 53] ENTER generate_hermitian_slice_pair_local: Y_primary=432, Y_mirror=592, ps_handle=0x6483470, params_handle=0x67cf7b0
+[Rank 26] ENTER generate_hermitian_slice_pair_local: Y_primary=216, Y_mirror=808, ps_handle=0x6028070, params_handle=0x6374640
+[Rank 55] ENTER generate_hermitian_slice_pair_local: Y_primary=448, Y_mirror=576, ps_handle=0x5fe02e0, params_handle=0x632c730
+[Rank 54] ENTER generate_hermitian_slice_pair_local: Y_primary=440, Y_mirror=584, ps_handle=0x4eaabb0, params_handle=0x51f7170
+[Rank 40] ENTER generate_hermitian_slice_pair_local: Y_primary=328, Y_mirror=696, ps_handle=0x4ebcdc0, params_handle=0x5209800
+[Rank 56] ENTER generate_hermitian_slice_pair_local: Y_primary=456, Y_mirror=568, ps_handle=0x4799b40, params_handle=0x4ae62c0
+[Rank 18] ENTER generate_hermitian_slice_pair_local: Y_primary=152, Y_mirror=872, ps_handle=0x5974a10, params_handle=0x5cc1060
+[Rank 51] ENTER generate_hermitian_slice_pair_local: Y_primary=416, Y_mirror=608, ps_handle=0x6067a00, params_handle=0x63b3c80
+[Rank 32] ENTER generate_hermitian_slice_pair_local: Y_primary=264, Y_mirror=760, ps_handle=0x636f4c0, params_handle=0x66ccea0
+[Rank 37] ENTER generate_hermitian_slice_pair_local: Y_primary=304, Y_mirror=720, ps_handle=0x45f30c0, params_handle=0x493f390
+[Rank 46] ENTER generate_hermitian_slice_pair_local: Y_primary=376, Y_mirror=648, ps_handle=0x5505a00, params_handle=0x5851f60
+[Rank 38] ENTER generate_hermitian_slice_pair_local: Y_primary=312, Y_mirror=712, ps_handle=0x61be0c0, params_handle=0x650a770
+[Rank 47] ENTER generate_hermitian_slice_pair_local: Y_primary=384, Y_mirror=640, ps_handle=0x466bdd0, params_handle=0x49b8430
+[Rank 35] ENTER generate_hermitian_slice_pair_local: Y_primary=288, Y_mirror=736, ps_handle=0x59d20c0, params_handle=0x5d1e1f0
+[Rank 57] ENTER generate_hermitian_slice_pair_local: Y_primary=464, Y_mirror=560, ps_handle=0x4bf8ba0, params_handle=0x4f45010
+[Rank 19] ENTER generate_hermitian_slice_pair_local: Y_primary=160, Y_mirror=864, ps_handle=0x55d0260, params_handle=0x591c7b0
+[Rank 11] ENTER generate_hermitian_slice_pair_local: Y_primary=96, Y_mirror=928, ps_handle=0x501f260, params_handle=0x536b7b0
+[Rank 12] ENTER generate_hermitian_slice_pair_local: Y_primary=104, Y_mirror=920, ps_handle=0x48a39b0, params_handle=0x4bf07a0
+[Rank 17] ENTER generate_hermitian_slice_pair_local: Y_primary=144, Y_mirror=880, ps_handle=0x58b23a0, params_handle=0x5bfe7a0
+[Rank 9] ENTER generate_hermitian_slice_pair_local: Y_primary=80, Y_mirror=944, ps_handle=0x64e2a10, params_handle=0x682f070
+[Rank 24] ENTER generate_hermitian_slice_pair_local: Y_primary=200, Y_mirror=824, ps_handle=0x633dcb0, params_handle=0x668a660
+[Rank 8] ENTER generate_hermitian_slice_pair_local: Y_primary=72, Y_mirror=952, ps_handle=0x616fe00, params_handle=0x64bc660
+[Rank 23] ENTER generate_hermitian_slice_pair_local: Y_primary=192, Y_mirror=832, ps_handle=0x54008f0, params_handle=0x574c8b0
+[Rank 22] ENTER generate_hermitian_slice_pair_local: Y_primary=184, Y_mirror=840, ps_handle=0x588e8f0, params_handle=0x5bdadb0
+[Rank 21] ENTER generate_hermitian_slice_pair_local: Y_primary=176, Y_mirror=848, ps_handle=0x5dcbe00, params_handle=0x6118150
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=7, Y_mirror=1017, ps_handle=0x4cded40, params_handle=0x503b910
+[Rank 10] ENTER generate_hermitian_slice_pair_local: Y_primary=88, Y_mirror=936, ps_handle=0x5858810, params_handle=0x5ba4f20
+[Rank 15] ENTER generate_hermitian_slice_pair_local: Y_primary=128, Y_mirror=896, ps_handle=0x53b18f0, params_handle=0x56fd8b0
+[Rank 6] ENTER generate_hermitian_slice_pair_local: Y_primary=56, Y_mirror=968, ps_handle=0x6367810, params_handle=0x66b3f20
+[Rank 14] ENTER generate_hermitian_slice_pair_local: Y_primary=120, Y_mirror=904, ps_handle=0x5fb7030, params_handle=0x63038a0
+[Rank 7] ENTER generate_hermitian_slice_pair_local: Y_primary=64, Y_mirror=960, ps_handle=0x63f1800, params_handle=0x673d900
+[Rank 1] ENTER generate_hermitian_slice_pair_local: Y_primary=16, Y_mirror=1008, ps_handle=0x5b643a0, params_handle=0x5eb07a0
+[Rank 2] ENTER generate_hermitian_slice_pair_local: Y_primary=24, Y_mirror=1000, ps_handle=0x4b77e80, params_handle=0x4ec4890
+[Rank 5] ENTER generate_hermitian_slice_pair_local: Y_primary=48, Y_mirror=976, ps_handle=0x6170ea0, params_handle=0x64bd150
+[Rank 3] ENTER generate_hermitian_slice_pair_local: Y_primary=32, Y_mirror=992, ps_handle=0x504d3a0, params_handle=0x5399850
+[Rank 13] ENTER generate_hermitian_slice_pair_local: Y_primary=112, Y_mirror=912, ps_handle=0x605e260, params_handle=0x63aa9c0
+[Rank 4] ENTER generate_hermitian_slice_pair_local: Y_primary=40, Y_mirror=984, ps_handle=0x5e79260, params_handle=0x61c6320
+[Rank 16] ENTER generate_hermitian_slice_pair_local: Y_primary=136, Y_mirror=888, ps_handle=0x5b98490, params_handle=0x5ee4d00
+[Rank 25] ENTER generate_hermitian_slice_pair_local: Y_primary=208, Y_mirror=816, ps_handle=0x48bb3a0, params_handle=0x4c07c00
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=8, Y_mirror=1016, ps_handle=0x4cded40, params_handle=0x503b910
+) A0[1,1]: prim=(-7.234e-03,9.306e-03) conj[1023,1023]=(-7.234e-03,-9.306e-03) A1[0,0]: prim=(2.321e-02,-0.000e+00) conj[0,0]=(2.321e-02,0.000e+00) A1[0,1]: prim=(-2.302e-03,-1.151e-03) conj[0,1023]=(-2.302e-03,1.151e-03) A1[1,0]: prim=(-3.772e-02,0.000e+00) conj[1023,0]=(-3.772e-02,-0.000e+00) A1[1,1]: prim=(1.861e-02,9.306e-03) conj[1023,1023]=(1.861e-02,-9.306e-03) 
+[DEBUG Y=2] Before 2D FFT - Buffer addresses: prim=0x14828afd7000 conj=0x14828efd7000 (diff=4194304)
+[DEBUG Y=2] Before 2D FFT - Sample values: prim[0,0]=(1.519e-02,-0.000e+00) conj[0,0]=(1.519e-02,0.000e+00)
+[DEBUG Y=2] Right before conjugate FFT - conj[0,0]=(1.519e-02,0.000e+00) prim[0,0]=(1.707e+00,1.014e-02)
+[DEBUG Y=2] Right after conjugate FFT - conj[0,0]=(1.707e+00,-1.014e-02) prim[0,0]=(1.707e+00,1.014e-02)
+[DEBUG Y=2] After 2D FFT (Real space) - PRIMARY slice - Max real/imag per array: A0: re=2.147e+00 im=2.053e+00 (ratio=9.561e-01) A1: re=2.036e-01 im=1.316e-01 (ratio=6.463e-01) A2: re=1.219e-01 im=1.143e-01 (ratio=9.380e-01) A3: re=2.036e-01 im=1.316e-01 (ratio=6.463e-01) (NOTE: Imag should be ~0 in real space!)
+[DEBUG Y=2] After 2D FFT (Real space) - CONJUGATE slice - Max real/imag per array: A0: re=2.147e+00 im=2.053e+00 (ratio=9.561e-01) A1: re=2.036e-01 im=1.316e-01 (ratio=6.463e-01) A2: re=1.219e-01 im=1.143e-01 (ratio=9.380e-01) A3: re=2.036e-01 im=1.316e-01 (ratio=6.463e-01) (NOTE: Imag should be ~0 in real space!)
+[DEBUG Y=2] Array comparison: 0 identical, 4194304 different (total=4194304)
+[DEBUG Y=2] Sample differences (first 3 non-identical): A0[0,0]: prim=(1.707e+00,1.014e-02) conj=(1.707e+00,-1.014e-02) diff=(0.000e+00,2.028e-02) A0[0,1]: prim=(1.688e+00,4.319e-01) conj=(1.688e+00,-4.319e-01) diff=(2.220e-16,8.638e-01) A0[0,2]: prim=(1.587e+00,7.335e-02) conj=(1.587e+00,-7.335e-02) diff=(2.220e-16,1.467e-01) 
+[PACK] Rank 0: Packed 8388608 total elements to send_buffer
+       Sending to ranks: 131072 elements to rank 0, 131072 elements to rank 1, 131072 elements to rank 2, 131072 elements to rank 3, ...
+         ... Completed 3/9 batches (33.3%)
+[PACK] Rank 0: Packed 8388608 total elements to send_buffer
+       Sending to ranks: 131072 elements to rank 0, 131072 elements to rank 1, 131072 elements to rank 2, 131072 elements to rank 3, ...
+         ... Completed 4/9 batches (44.4%)
+[PACK] Rank 0: Packed 8388608 total elements to send_buffer
+       Sending to ranks: 131072 elements to rank 0, 131072 elements to rank 1, 131072 elements to rank 2, 131072 elements to rank 3, ...
+         ... Completed 5/9 batches (55.6%)
+[PACK] Rank 0: Packed 8388608 total elements to send_buffer
+       Sending to ranks: 131072 elements to rank 0, 131072 elements to rank 1, 131072 elements to rank 2, 131072 elements to rank 3, ...
+         ... Completed 6/9 batches (66.7%)
+[PACK] Rank 0: Packed 8388608 total elements to send_buffer
+       Sending to ranks: 131072 elements to rank 0, 131072 elements to rank 1, 131072 elements to rank 2, 131072 elements to rank 3, ...
+         ... Completed 7/9 batches (77.8%)
+[PACK] Rank 0: Packed 8388608 total elements to send_buffer
+       Sending to ranks: 131072 elements to rank 0, 131072 elements to rank 1, 131072 elements to rank 2, 131072 elements to rank 3, ...
+         ... Completed 8/9 batches (88.9%)
+[PACK] Rank 0: Packed 8388608 total elements to send_buffer
+       Sending to ranks: 131072 elements to rank 0, 131072 elements to rank 1, 131072 elements to rank 2, 131072 elements to rank 3, ...
+         ... Completed 9/9 batches (100.0%)
+[MULTI-BATCH] All batches complete.
+              Generation time: 6.359728 s
+              Communication time: 1.113362 s
+[V11-VERIFY] Rank 0: All cursors match expected totals
+
+[V12-Stage 3] Z-slab streaming from recv_buffer...
+
+[Stage 3] Z-slab streaming: Unpack --> FFT --> Write (Zeldovich format)...
+[MEMORY] Allocated local_z_slab (one Z-slab, core grid): 8388608 bytes (0.01 GB)
+         Processing 128 Z-slabs sequentially (Z=[0,128))
+         Each Z-slab: 128 X-values (CORE) x 4 arrays x 1024 Y-values
+         Output format: [Z][Array][Y][X] (Zeldovich-compatible)
+[DEBUG Z=0[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x4b76640 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x5438dc0 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x652d3b0 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x621d3b0 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x4d74620 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x536fa00 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x4a750c0 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x4a47910 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x5505a00 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x642fb10 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x45f30c0 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x4fbdb00 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x636f4c0 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x557a2e0 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x61be0c0 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x488cbd0 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x4e8e2e0 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x51080d0 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x4eaabb0 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x5c30590 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x59d20c0 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x4ebcdc0 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x550a740 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x4833310 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x4a8f9f0 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x466bdd0 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x6067a00 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x5a082e0 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x6483470 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x5fe02e0 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x4799b40 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x4bf8ba0 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x6028070 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x457f7c0 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x5541a10 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x48d83a0 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x5578030 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x463ccd0 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x48bb3a0 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x5dcbe00 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x616fe00 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x4cded40 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x6170ea0 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x605e260 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x5974a10 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x55d0260 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x5b643a0 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x4b77e80 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x504d3a0 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x5e79260 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x6367810 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x63f1800 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x64e2a10 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x5858810 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x501f260 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x48a39b0 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x5fb7030 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x53b18f0 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x5b98490 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x58b23a0 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x4964260 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x588e8f0 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x54008f0 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x633dcb0 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+] Before 1D FFT (after unpack) - Max imag per array: A0=1.418e+00 A1=1.083e-01 A2=6.793e-02 A3=1.083e-01 
+[DEBUG Z=0] After 1D FFT - Max imag per array: A0=9.931e-15 A1=2.879e-16 A2=1.565e-16 A3=2.879e-16 
+[Rank 0, Z=0] First Z-slab max values: A0: re=4.323356e+01 im=9.931077e-15 A1: re=7.872741e-01 im=2.879319e-16 A2: re=4.096213e-01 im=1.564876e-16 A3: re=7.872741e-01 im=2.879319e-16
+         ... Processed 12/128 Z-slabs (9.4%)
+         ... Processed 24/128 Z-slabs (18.8%)
+         ... Processed 36/128 Z-slabs (28.1%)
+         ... Processed 48/128 Z-slabs (37.5%)
+         ... Processed 60/128 Z-slabs (46.9%)
+         ... Processed 72/128 Z-slabs (56.2%)
+         ... Processed 84/128 Z-slabs (65.6%)
+         ... Processed 96/128 Z-slabs (75.0%)
+         ... Processed 108/128 Z-slabs (84.4%)
+         ... Processed 120/128 Z-slabs (93.8%)
+         ... Processed 128/128 Z-slabs (100.0%)
+
+========== VERIFICATION: REAL-SPACE AFTER 3D FFT ==========
+Array 0: Max real=5.551124e+01, Max imag=1.491354e-14, Ratio=2.686581e-16 [REAL]
+Array 1: Max real=1.591355e+00, Max imag=5.517889e-16, Ratio=3.467415e-16 [REAL]
+Array 2: Max real=1.076463e+00, Max imag=3.429833e-16, Ratio=3.186206e-16 [REAL]
+Array 3: Max real=1.591355e+00, Max imag=5.517889e-16, Ratio=3.467415e-16 [REAL]
+RESULT: All 4 arrays are PURELY REAL after forward 3D FFT!
+============================================================
+
+[Stage 3] Streaming complete. Time: 2.384263 s
+          (Includes unpacking, FFT, and I/O for all Z-slabs)
+          Total files written: 8192 (across all ranks)
+          Total data written: 64.000 GB
+          Files per rank: ~128 (z_count per rank, for 64 ranks)
+          Each file contains one Z-slab: x_count X x 4 arrays x 1024 Y-values
+          Typical file size: ~8.00 MB (varies by rank's X-extent)
+          File naming: rank_<rank>/z<z>_slab_N1024.bin
+          File format: Binary [Array][Y][X] (Zeldovich AZYX order, fftw_complex = 16 bytes)
+          3D FFT COMPLETE (2D XZ + 1D Y)
+
+
+====================================================================================
+TIMING SUMMARY (v11 - Persistent Recv Buffer + Streaming)
+====================================================================================
+Stage 1 (Y-slice generation + 2D FFT): 6.359728 s
+Stage 2 (Metadata exchange):            0.000000 s
+Stage 3 (Communication: Alltoallv):    1.113362 s
+Stage 3 (Streaming: Unpack+FFT+Write):  2.384263 s
+------------------------------------------------------------------------------------
+Total 3D FFT time (Gen + Comm + FFT):   7.473090 s
+Total time (including all stages):      7.473090 s
+
+Note: In v11, persistent recv_buffer eliminates per-batch allocation
+      Unpacking, 1D FFT, and I/O are combined in streaming stage
+====================================================================================
+
+====================================================================================
+ALL STAGES COMPLETE!
+====================================================================================
+[INIT] Rank 2: Assigned 8 pairs:
+  Pair 0: Y=17 and Y=1007 (conjugate)
+  Pair 1: Y=18 and Y=1006 (conjugate)
+  Pair 2: Y=19 and Y=1005 (conjugate)
+  ... (5 more pairs)
+[OK] Rank 2: Macro indexing verified (slices=0, arrays=4)
+[PACK] Rank 2: Packed 8388608 total elements to send_buffer
+       Sending to ranks: 131072 elements to rank 0, 131072 elements to rank 1, 131072 elements to rank 2, 131072 elements to rank 3, ...
+[PACK] Rank 2: Packed 8388608 total elements to send_buffer
+       Sending to ranks: 131072 elements to rank 0, 131072 elements to rank 1, 131072 elements to rank 2, 131072 elements to rank 3, ...
+[PACK] Rank 2: Packed 8388608 total elements to send_buffer
+       Sending to ranks: 131072 elements to rank 0, 131072 elements to rank 1, 131072 elements to rank 2, 131072 elements to rank 3, ...
+[PACK] Rank 2: Packed 8388608 total elements to send_buffer
+       Sending to ranks: 131072 elements to rank 0, 131072 elements to rank 1, 131072 elements to rank 2, 131072 elements to rank 3, ...
+[PACK] Rank 2: Packed 8388608 total elements to send_buffer
+       Sending to ranks: 131072 elements to rank 0, 131072 elements to rank 1, 131072 elements to rank 2, 131072 elements to rank 3, ...
+[PACK] Rank 2: Packed 8388608 total elements to send_buffer
+       Sending to ranks: 131072 elements to rank 0, 131072 elements to rank 1, 131072 elements to rank 2, 131072 elements to rank 3, ...
+[PACK] Rank 2: Packed 8388608 total elements to send_buffer
+       Sending to ranks: 131072 elements to rank 0, 131072 elements to rank 1, 131072 elements to rank 2, 131072 elements to rank 3, ...
+[PACK] Rank 2: Packed 8388608 total elements to send_buffer
+       Sending to ranks: 131072 elements to rank 0, 131072 elements to rank 1, 131072 elements to rank 2, 131072 elements to rank 3, ...
+[INIT] Rank 3: Assigned 8 pairs:
+  Pair 0: Y=25 and Y=999 (conjugate)
+  Pair 1: Y=26 and Y=998 (conjugate)
+  Pair 2: Y=27 and Y=997 (conjugate)
+  ... (5 more pairs)
+[INIT] Rank 4: Assigned 8 pairs:
+  Pair 0: Y=33 and Y=991 (conjugate)
+  Pair 1: Y=34 and Y=990 (conjugate)
+  Pair 2: Y=35 and Y=989 (conjugate)
+  ... (5 more pairs)
+[INIT] Rank 1: Assigned 8 pairs:
+  Pair 0: Y=9 and Y=1015 (conjugate)
+  Pair 1: Y=10 and Y=1014 (conjugate)
+  Pair 2: Y=11 and Y=1013 (conjugate)
+  ... (5 more pairs)
+[OK] Rank 1: Macro indexing verified (slices=0, arrays=4)
+[GRID] Rank 1 (NO PADDING - CORE GRID ONLY):
+  Core region:   X=[0,128), Z=[128,256), pencils=16384
+[V11-SETUP] Rank 1: Source totals: src0=17 src1=16 src2=16 src3=16 ...
+[V11-SETUP] Rank 1: Write cursors initialized to 0
+[V11-SETUP] Rank 1: Y-mapping complete. Sample: Y=0-->src0[0], Y=512-->src63[14]
+[BATCH 0] Rank 1: Processing 2 Y-slices (Y=9, Y=1015)
+[PACK] Rank 1: Packed 8388608 total elements to send_buffer
+       Sending to ranks: 131072 elements to rank 0, 131072 elements to rank 1, 131072 elements to rank 2, 131072 elements to rank 3, ...
+[BATCH 1] Rank 1: Processing 2 Y-slices (Y=10, Y=1014)
+[PACK] Rank 1: Packed 8388608 total elements to send_buffer
+       Sending to ranks: 131072 elements to rank 0, 131072 elements to rank 1, 131072 elements to rank 2, 131072 elements to rank 3, ...
+[PACK] Rank 1: Packed 8388608 total elements to send_buffer
+       Sending to ranks: 131072 elements to rank 0, 131072 elements to rank 1, 131072 elements to rank 2, 131072 elements to rank 3, ...
+[PACK] Rank 1: Packed 8388608 total elements to send_buffer
+       Sending to ranks: 131072 elements to rank 0, 131072 elements to rank 1, 131072 elements to rank 2, 131072 elements to rank 3, ...
+[PACK] Rank 1: Packed 8388608 total elements to send_buffer
+       Sending to ranks: 131072 elements to rank 0, 131072 elements to rank 1, 131072 elements to rank 2, 131072 elements to rank 3, ...
+[PACK] Rank 1: Packed 8388608 total elements to send_buffer
+       Sending to ranks: 131072 elements to rank 0, 131072 elements to rank 1, 131072 elements to rank 2, 131072 elements to rank 3, ...
+[PACK] Rank 1: Packed 8388608 total elements to send_buffer
+       Sending to ranks: 131072 elements to rank 0, 131072 elements to rank 1, 131072 elements to rank 2, 131072 elements to rank 3, ...
+[PACK] Rank 1: Packed 8388608 total elements to send_buffer
+       Sending to ranks: 131072 elements to rank 0, 131072 elements to rank 1, 131072 elements to rank 2, 131072 elements to rank 3, ...
+[V11-VERIFY] Rank 1: All cursors match expected totals
+
+Checking if output is purely real...
+Array 1: Max real=1.591355e+00, Max imag=5.517889e-16, Ratio=3.467415e-16 [REAL]
+Array 2: Max real=1.076463e+00, Max imag=3.429833e-16, Ratio=3.186206e-16 [REAL]
+Array 3: Max real=1.591355e+00, Max imag=5.517889e-16, Ratio=3.467415e-16 [REAL]
+RESULT: All 4 arrays are PURELY REAL after forward 3D FFT!
+          File format: Binary [Array][Y][X] (Zeldovich AZYX order, fftw_complex = 16 bytes)
+
+Checking power spectrum initialization...
+Initializing power spectrum with power law index -2
+Initializing power spectrum with power law index -2
+Initializing power spectrum with power law index -2
+Initializing power spectrum with power law index -2
+Initializing power spectrum with power law index -2
+Initializing power spectrum with power law index -2
+Initializing power spectrum with power law index -2
+Initializing power spectrum with power law index -2
+Initializing power spectrum with power law index -2
+Initializing power spectrum with power law index -2
+
+Job completed!

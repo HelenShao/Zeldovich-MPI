@@ -90,6 +90,14 @@ double zeldovich_ps_one_rand(PowerSpectrumHandle ps, int64_t rng_index);
 // Note: zeldovich-PLT uses double precision. Convert to float if needed.
 void zeldovich_ps_cgauss(PowerSpectrumHandle ps, double wavenumber, int64_t rng_index, double* real, double* imag);
 
+// Advance RNG for given Y-slice index
+// ps: PowerSpectrum handle
+// params: Parameters handle (needed to get ppd for bounds checking)
+// rng_index: Y-slice index for RNG (0 to ppd/2)
+// nskip: Number of random numbers to skip (will be multiplied by 2 internally, matching zeldovich.cpp)
+// Note: This is needed to maintain RNG consistency when N < MAX_PPD
+void zeldovich_ps_advance_rng(PowerSpectrumHandle ps, ParametersHandle params, int64_t rng_index, int64_t nskip);
+
 // Get normalization
 double zeldovich_ps_get_normalization(PowerSpectrumHandle ps);
 

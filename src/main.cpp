@@ -1516,6 +1516,67 @@ int main(int argc, char **argv)
                     }
                 }
             }
+            
+            // Print max real/imag for rank 0's first Z-slab (for comparison across runs)
+            if (rank == 0 && z == my_extended_bounds.core.z_start) {
+                real_t first_slab_max_real[4] = {0, 0, 0, 0};
+                real_t first_slab_max_imag[4] = {0, 0, 0, 0};
+                real_t overlap_max_real[4] = {0, 0, 0, 0};
+                real_t overlap_max_imag[4] = {0, 0, 0, 0};
+                const int overlap_N = 256;  // Compare overlapping region with N=256 runs
+                // Due to conjugate symmetry, values after Nyquist are determined by values before Nyquist
+                // So the overlapping region should match up to overlap_N (not just overlap_N/2)
+                // For N=256: x,y,z = 0 to 255 should match N=512: x,y,z = 0 to 255
+                
+                for (int x_idx = 0; x_idx < x_count; x_idx++) {
+                    // Get actual x coordinate (accounting for rank's X region)
+                    int x_global = my_extended_bounds.core.x_start + x_idx;
+                    bool x_in_overlap = (x_global < overlap_N);
+                    
+                    for (int array_idx = 0; array_idx < narray; array_idx++) {
+                        for (int y = 0; y < N; y++) {
+                            double re = fabs_t(ZSLAB(x_idx, array_idx, y, N, narray)[0]);
+                            double im = fabs_t(ZSLAB(x_idx, array_idx, y, N, narray)[1]);
+                            first_slab_max_real[array_idx] = fmax_t(first_slab_max_real[array_idx], re);
+                            first_slab_max_imag[array_idx] = fmax_t(first_slab_max_imag[array_idx], im);
+                            
+                            // Track max for overlapping region: x,y,z all < overlap_N
+                            // Note: z is already 0 (first Z-slab), so only check x and y
+                            // Due to conjugate symmetry, values for x,y,z = 0 to overlap_N-1 should match
+                            if (y < overlap_N && x_in_overlap) {
+                                overlap_max_real[array_idx] = fmax_t(overlap_max_real[array_idx], re);
+                                overlap_max_imag[array_idx] = fmax_t(overlap_max_imag[array_idx], im);
+                            }
+                        }
+                    }
+                }
+                printf("[Rank 0, Z=%d] First Z-slab max values (all Y): ", z);
+                for (int a = 0; a < narray; a++) {
+                    printf("A%d: re=%.6e im=%.6e", a, first_slab_max_real[a], first_slab_max_imag[a]);
+                    if (a < narray - 1) printf(" ");
+                }
+                printf("\n");
+                if (N >= overlap_N) {
+                    printf("[Rank 0, Z=%d] Overlapping region max (x,y,z < %d): ", z, overlap_N);
+                    for (int a = 0; a < narray; a++) {
+                        printf("A%d: re=%.6e im=%.6e", a, overlap_max_real[a], overlap_max_imag[a]);
+                        if (a < narray - 1) printf(" ");
+                    }
+                    printf("\n");
+                }
+            }
+            #endif
+            
+            // Print Z-slab if flag is enabled (for debugging)
+            #if PRINT_Z_SLABS
+            {
+#if USE_X_PADDING
+                int x_start = my_extended_bounds.padded.x_start;
+#else
+                int x_start = my_extended_bounds.core.x_start;
+#endif
+                print_z_slab(rank, z, local_z_slab, x_count, N, narray, x_start);
+            }
             #endif
             
             // V12: Write this Z-slab in Zeldovich order: [Array][Y][X]

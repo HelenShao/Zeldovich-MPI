@@ -28,5 +28,16 @@ void print_y_slice_fourier(int rank, int y_global, fftw_complex_t *slice, int N,
 // title: Title to print before the matrix
 void print_3d_matrix_visual(int N, fftw_complex_t *global_matrix, const char* title);
 
+// Print a Z-slab (final output after 3D FFT)
+// Only prints for small N (N <= 16) and if PRINT_Z_SLABS is enabled
+// rank: MPI rank number
+// z: Z-index of this slab
+// local_z_slab: Pointer to Z-slab data (layout: [X][Array][Y])
+// x_count: Number of X-values in this slab
+// N: Grid size in Y-direction
+// narray: Number of arrays
+// x_start: Starting X-index for this rank's region
+void print_z_slab(int rank, int z, fftw_complex_t *local_z_slab, int x_count, int N, int narray, int x_start);
+
 #endif // HERMITIAN_PRINTING_H
 

@@ -49,3 +49,33 @@ void print_3d_matrix_visual(int N, fftw_complex_t *global_matrix, const char* ti
     }
 }
 
+void print_z_slab(int rank, int z, fftw_complex_t *local_z_slab, int x_count, int N, int narray, int x_start) {
+    #if PRINT_Z_SLABS
+    if (N > 16) return;  // Only print for small N
+    
+    printf("\n[RANK %d] Z-slab Z=%d (X=[%d,%d), after 3D FFT):\n", rank, z, x_start, x_start + x_count);
+    // Print only first array (array_idx=0)
+    int array_idx = 0;
+    printf("  Array %d:\n", array_idx);
+    for (int y = 0; y < N; y++) {
+        printf("    Y=%d: ", y);
+        for (int x_idx = 0; x_idx < x_count; x_idx++) {
+            int x_global = x_start + x_idx;
+            // Access using ZSLAB macro formula: y + N * (array_idx + narray * x_idx)
+            int64_t idx = (int64_t)y + (int64_t)N * ((int64_t)array_idx + (int64_t)narray * (int64_t)x_idx);
+            double re = local_z_slab[idx][0];
+            double im = local_z_slab[idx][1];
+            if (fabs_t(im) < 1e-10) {
+                printf("X%d=%7.3f ", x_global, re);
+            } else {
+                printf("X%d=%6.2f%+5.2fi ", x_global, re, im);
+            }
+        }
+        printf("\n");
+    }
+    printf("\n");
+    #else
+    (void)rank; (void)z; (void)local_z_slab; (void)x_count; (void)N; (void)narray; (void)x_start;
+    #endif
+}
+

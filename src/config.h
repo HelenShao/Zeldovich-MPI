@@ -79,11 +79,26 @@
 #define PRINT_DETAILED_SLICES 0
 #endif
 
+// Print all final output Z-slabs after 3D FFT
+// 0 = No Z-slab printing (recommended for production)
+// 1 = Print all Z-slabs for debugging (small N only, N <= 16)
+#ifndef PRINT_Z_SLABS
+#define PRINT_Z_SLABS 1
+#endif
+
 // Show detailed debug information
 // 0 = Minimal output (production mode)
 // 1 = Verbose debug output
 #ifndef DEBUG_PRINTS
 #define DEBUG_PRINTS 1
+#endif
+
+// Debug RNG consistency: Print raw D, F, G, H values for test coordinates
+// This allows comparing overlapping grid points across different N values
+// 0 = Disabled
+// 1 = Print D, F, G, H for test coordinates (x,y,z) = (0,0,0), (1,0,0), (2,0,0), (3,0,0)
+#ifndef DEBUG_RNG_CONSISTENCY
+#define DEBUG_RNG_CONSISTENCY 0
 #endif
 
 // Verbose output for MPI buffer verification (send/recv buffer bounds, displacements, etc.)

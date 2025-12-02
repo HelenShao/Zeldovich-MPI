@@ -1,0 +1,1508 @@
+Loading frameworks module...
+Loading FFTW module...
+Checking MPI compiler...
+/opt/aurora/25.190.0/spack/unified/0.10.1/install/linux-sles15-x86_64/oneapi-2025.2.0/mpich-develop-git.6037a7a-cym6jg6/bin/mpicc
+Intel(R) oneAPI DPC++/C++ Compiler 2025.2.0 (2025.2.0.20250605)
+Target: x86_64-unknown-linux-gnu
+Thread model: posix
+InstalledDir: /opt/aurora/25.190.0/oneapi/compiler/2025.2/bin/compiler
+Configuration file: /opt/aurora/25.190.0/oneapi/compiler/2025.2/bin/compiler/../icx.cfg
+Checking C++ compiler...
+/opt/aurora/25.190.0/spack/unified/0.10.1/install/linux-sles15-x86_64/oneapi-2025.2.0/mpich-develop-git.6037a7a-cym6jg6/bin/mpicxx
+Intel(R) oneAPI DPC++/C++ Compiler 2025.2.0 (2025.2.0.20250605)
+Target: x86_64-unknown-linux-gnu
+Thread model: posix
+InstalledDir: /opt/aurora/25.190.0/oneapi/compiler/2025.2/bin/compiler
+Configuration file: /opt/aurora/25.190.0/oneapi/compiler/2025.2/bin/compiler/../icpx.cfg
+Compiling hermitian_3d_matrix...
+rm -f hermitian_3d_matrix *.o
+mpicxx -Wall -Wextra -Wno-cast-function-type -std=c++17 -O3 -fopenmp  -I../zeldovich-PLT/include -I../zeldovich-PLT/subprojects/ParseHeader/include -I../zeldovich-PLT/build/subprojects/ParseHeader -I../zeldovich-PLT/subprojects/fmt-11.2.0/include -Isrc -Isrc/utils -Isrc/fft -Isrc/generation -Isrc/communication -Isrc/streaming -Ideps -I../.. -I../../../..  -I/opt/aurora/25.190.0/spack/unified/0.10.1/install/linux-sles15-x86_64/oneapi-2025.2.0/fftw-3.3.10-bs6lijg/include -o hermitian_3d_matrix src/main.cpp src/utils/printing.c src/utils/verification.c src/utils/decomposition.c src/utils/batch_helpers.c src/utils/rng.c src/utils/power_spectrum.c src/fft/fft_setup.c src/generation/hermitian_generation.c src/communication/mpi_exchange.c src/streaming/z_streaming.c src/STimer.cc src/utils/zeldovich_wrapper.cpp  -L/opt/aurora/25.190.0/spack/unified/0.10.1/install/linux-sles15-x86_64/oneapi-2025.2.0/fftw-3.3.10-bs6lijg/lib -lfftw3f -lfftw3f_omp -L../zeldovich-PLT/build -L../zeldovich-PLT/build/subprojects/ParseHeader -L../zeldovich-PLT/build/subprojects/fmt-11.2.0 -lzeldovich -lparseheader -lfmt  -lm -lstdc++ -Wl,-rpath,/home/helenshao/InitialConditions/zeldovich-PLT/build:/home/helenshao/InitialConditions/zeldovich-PLT/build/subprojects/ParseHeader:/home/helenshao/InitialConditions/zeldovich-PLT/build/subprojects/fmt-11.2.0
+icpx: warning: use of '-qopenmp' recommended over '-fopenmp' [-Wrecommended-option]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+src/main.cpp:611:25: warning: absolute value function 'fabsf' given an argument of type 'double' but has parameter of type 'float' which may cause truncation of value [-Wabsolute-value]
+  611 |                     if (fabs_t(expected_re - actual_re) > 1e-10 || 
+      |                         ^
+src/precision.h:78:20: note: expanded from macro 'fabs_t'
+   78 |     #define fabs_t fabsf
+      |                    ^
+src/main.cpp:611:25: note: use function 'std::abs' instead
+  611 |                     if (fabs_t(expected_re - actual_re) > 1e-10 || 
+      |                         ^~~~~~
+      |                         std::abs
+src/precision.h:78:20: note: expanded from macro 'fabs_t'
+   78 |     #define fabs_t fabsf
+      |                    ^
+src/main.cpp:612:25: warning: absolute value function 'fabsf' given an argument of type 'double' but has parameter of type 'float' which may cause truncation of value [-Wabsolute-value]
+  612 |                         fabs_t(expected_im - actual_im) > 1e-10) {
+      |                         ^
+src/precision.h:78:20: note: expanded from macro 'fabs_t'
+   78 |     #define fabs_t fabsf
+      |                    ^
+src/main.cpp:612:25: note: use function 'std::abs' instead
+  612 |                         fabs_t(expected_im - actual_im) > 1e-10) {
+      |                         ^~~~~~
+      |                         std::abs
+src/precision.h:78:20: note: expanded from macro 'fabs_t'
+   78 |     #define fabs_t fabsf
+      |                    ^
+2 warnings generated.
+src/utils/printing.c:40:21: warning: absolute value function 'fabsf' given an argument of type 'double' but has parameter of type 'float' which may cause truncation of value [-Wabsolute-value]
+   40 |                 if (fabs_t(im) < 1e-10) {
+      |                     ^
+src/precision.h:78:20: note: expanded from macro 'fabs_t'
+   78 |     #define fabs_t fabsf
+      |                    ^
+src/utils/printing.c:40:21: note: use function 'std::abs' instead
+   40 |                 if (fabs_t(im) < 1e-10) {
+      |                     ^~~~~~
+      |                     std::abs
+src/precision.h:78:20: note: expanded from macro 'fabs_t'
+   78 |     #define fabs_t fabsf
+      |                    ^
+1 warning generated.
+src/utils/decomposition.c:139:46: warning: unused parameter 'num_ranks' [-Wunused-parameter]
+  139 | int validate_abacus_compatibility(int N, int num_ranks, int grid_x, int grid_z)
+      |                                              ^
+1 warning generated.
+src/utils/rng.c:74:49: warning: overflow in expression; result is 0 with type 'int' [-Winteger-overflow]
+   74 |             v2rng_global[i].advance(2 * MAX_PPD * MAX_PPD); // Match zeldovich.cpp: each plane is MAX_PPD^2 complexes
+      |                                     ~~~~~~~~~~~~^~~~~~~~~
+src/utils/rng.c:48:39: warning: unused parameter 'M' [-Wunused-parameter]
+   48 | void initialize_global_pcg(int L, int M, int N, uint64_t seed) {
+      |                                       ^
+src/utils/rng.c:48:46: warning: unused parameter 'N' [-Wunused-parameter]
+   48 | void initialize_global_pcg(int L, int M, int N, uint64_t seed) {
+      |                                              ^
+3 warnings generated.
+src/generation/hermitian_generation.c:769:42: warning: absolute value function 'fabsf' given an argument of type 'double' but has parameter of type 'float' which may cause truncation of value [-Wabsolute-value]
+  769 |                         double diff_re = fabs_t(prim_re - conj_re);
+      |                                          ^
+src/generation/../precision.h:78:20: note: expanded from macro 'fabs_t'
+   78 |     #define fabs_t fabsf
+      |                    ^
+src/generation/hermitian_generation.c:769:42: note: use function 'std::abs' instead
+  769 |                         double diff_re = fabs_t(prim_re - conj_re);
+      |                                          ^~~~~~
+      |                                          std::abs
+src/generation/../precision.h:78:20: note: expanded from macro 'fabs_t'
+   78 |     #define fabs_t fabsf
+      |                    ^
+src/generation/hermitian_generation.c:770:42: warning: absolute value function 'fabsf' given an argument of type 'double' but has parameter of type 'float' which may cause truncation of value [-Wabsolute-value]
+  770 |                         double diff_im = fabs_t(prim_im - conj_im);
+      |                                          ^
+src/generation/../precision.h:78:20: note: expanded from macro 'fabs_t'
+   78 |     #define fabs_t fabsf
+      |                    ^
+src/generation/hermitian_generation.c:770:42: note: use function 'std::abs' instead
+  770 |                         double diff_im = fabs_t(prim_im - conj_im);
+      |                                          ^~~~~~
+      |                                          std::abs
+src/generation/../precision.h:78:20: note: expanded from macro 'fabs_t'
+   78 |     #define fabs_t fabsf
+      |                    ^
+src/generation/hermitian_generation.c:800:46: warning: absolute value function 'fabsf' given an argument of type 'double' but has parameter of type 'float' which may cause truncation of value [-Wabsolute-value]
+  800 |                             double diff_re = fabs_t(prim_re - conj_re);
+      |                                              ^
+src/generation/../precision.h:78:20: note: expanded from macro 'fabs_t'
+   78 |     #define fabs_t fabsf
+      |                    ^
+src/generation/hermitian_generation.c:800:46: note: use function 'std::abs' instead
+  800 |                             double diff_re = fabs_t(prim_re - conj_re);
+      |                                              ^~~~~~
+      |                                              std::abs
+src/generation/../precision.h:78:20: note: expanded from macro 'fabs_t'
+   78 |     #define fabs_t fabsf
+      |                    ^
+src/generation/hermitian_generation.c:801:46: warning: absolute value function 'fabsf' given an argument of type 'double' but has parameter of type 'float' which may cause truncation of value [-Wabsolute-value]
+  801 |                             double diff_im = fabs_t(prim_im - conj_im);
+      |                                              ^
+src/generation/../precision.h:78:20: note: expanded from macro 'fabs_t'
+   78 |     #define fabs_t fabsf
+      |                    ^
+src/generation/hermitian_generation.c:801:46: note: use function 'std::abs' instead
+  801 |                             double diff_im = fabs_t(prim_im - conj_im);
+      |                                              ^~~~~~
+      |                                              std::abs
+src/generation/../precision.h:78:20: note: expanded from macro 'fabs_t'
+   78 |     #define fabs_t fabsf
+      |                    ^
+4 warnings generated.
+
+Build successful!
+Binary: hermitian_3d_matrix
+Configuration: see src/config.h
+
+==========================================
+Test: v15.2 Fallback Mode (no param file)
+N=2048, ranks=64
+Should use local RNG (like v15.1.2)
+==========================================
+
+[Rank 60] ENTER generate_hermitian_slice_pair_local: Y_primary=961, Y_mirror=1087, ps_handle=(nil), params_handle=(nil)
+[Rank 31] ENTER generate_hermitian_slice_pair_local: Y_primary=497, Y_mirror=1551, ps_handle=(nil), params_handle=(nil)
+[Rank 59] ENTER generate_hermitian_slice_pair_local: Y_primary=945, Y_mirror=1103, ps_handle=(nil), params_handle=(nil)
+[Rank 30] ENTER generate_hermitian_slice_pair_local: Y_primary=481, Y_mirror=1567, ps_handle=(nil), params_handle=(nil)
+[Rank 28] ENTER generate_hermitian_slice_pair_local: Y_primary=449, Y_mirror=1599, ps_handle=(nil), params_handle=(nil)
+[Rank 62] ENTER generate_hermitian_slice_pair_local: Y_primary=993, Y_mirror=1055, ps_handle=(nil), params_handle=(nil)
+[Rank 19] ENTER generate_hermitian_slice_pair_local: Y_primary=305, Y_mirror=1743, ps_handle=(nil), params_handle=(nil)
+[Rank 7] ENTER generate_hermitian_slice_pair_local: Y_primary=113, Y_mirror=1935, ps_handle=(nil), params_handle=(nil)
+[Rank 8] ENTER generate_hermitian_slice_pair_local: Y_primary=129, Y_mirror=1919, ps_handle=(nil), params_handle=(nil)
+[Rank 27] ENTER generate_hermitian_slice_pair_local: Y_primary=433, Y_mirror=1615, ps_handle=(nil), params_handle=(nil)
+[Rank 21] ENTER generate_hermitian_slice_pair_local: Y_primary=337, Y_mirror=1711, ps_handle=(nil), params_handle=(nil)
+[Rank 22] ENTER generate_hermitian_slice_pair_local: Y_primary=353, Y_mirror=1695, ps_handle=(nil), params_handle=(nil)
+[Rank 10] ENTER generate_hermitian_slice_pair_local: Y_primary=161, Y_mirror=1887, ps_handle=(nil), params_handle=(nil)
+[Rank 5] ENTER generate_hermitian_slice_pair_local: Y_primary=81, Y_mirror=1967, ps_handle=(nil), params_handle=(nil)
+[Rank 63] ENTER generate_hermitian_slice_pair_local: Y_primary=1009, Y_mirror=1039, ps_handle=(nil), params_handle=(nil)
+[Rank 4] ENTER generate_hermitian_slice_pair_local: Y_primary=65, Y_mirror=1983, ps_handle=(nil), params_handle=(nil)
+[Rank 12] ENTER generate_hermitian_slice_pair_local: Y_primary=193, Y_mirror=1855, ps_handle=(nil), params_handle=(nil)
+[Rank 16] ENTER generate_hermitian_slice_pair_local: Y_primary=257, Y_mirror=1791, ps_handle=(nil), params_handle=(nil)
+[Rank 17] ENTER generate_hermitian_slice_pair_local: Y_primary=273, Y_mirror=1775, ps_handle=(nil), params_handle=(nil)
+[Rank 20] ENTER generate_hermitian_slice_pair_local: Y_primary=321, Y_mirror=1727, ps_handle=(nil), params_handle=(nil)
+[Rank 11] ENTER generate_hermitian_slice_pair_local: Y_primary=177, Y_mirror=1871, ps_handle=(nil), params_handle=(nil)
+[Rank 2] ENTER generate_hermitian_slice_pair_local: Y_primary=33, Y_mirror=2015, ps_handle=(nil), params_handle=(nil)
+[Rank 61] ENTER generate_hermitian_slice_pair_local: Y_primary=977, Y_mirror=1071, ps_handle=(nil), params_handle=(nil)
+[Rank 1] ENTER generate_hermitian_slice_pair_local: Y_primary=17, Y_mirror=2031, ps_handle=(nil), params_handle=(nil)
+[Rank 14] ENTER generate_hermitian_slice_pair_local: Y_primary=225, Y_mirror=1823, ps_handle=(nil), params_handle=(nil)
+[Rank 51] ENTER generate_hermitian_slice_pair_local: Y_primary=817, Y_mirror=1231, ps_handle=(nil), params_handle=(nil)
+[Rank 39] ENTER generate_hermitian_slice_pair_local: Y_primary=625, Y_mirror=1423, ps_handle=(nil), params_handle=(nil)
+[Rank 25] ENTER generate_hermitian_slice_pair_local: Y_primary=401, Y_mirror=1647, ps_handle=(nil), params_handle=(nil)
+[Rank 40] ENTER generate_hermitian_slice_pair_local: Y_primary=641, Y_mirror=1407, ps_handle=(nil), params_handle=(nil)
+[Rank 18] ENTER generate_hermitian_slice_pair_local: Y_primary=289, Y_mirror=1759, ps_handle=(nil), params_handle=(nil)
+[Rank 54] ENTER generate_hermitian_slice_pair_local: Y_primary=865, Y_mirror=1183, ps_handle=(nil), params_handle=(nil)
+[Rank 58] ENTER generate_hermitian_slice_pair_local: Y_primary=929, Y_mirror=1119, ps_handle=(nil), params_handle=(nil)
+[Rank 53] ENTER generate_hermitian_slice_pair_local: Y_primary=849, Y_mirror=1199, ps_handle=(nil), params_handle=(nil)
+[Rank 29] ENTER generate_hermitian_slice_pair_local: Y_primary=465, Y_mirror=1583, ps_handle=(nil), params_handle=(nil)
+[Rank 42] ENTER generate_hermitian_slice_pair_local: Y_primary=673, Y_mirror=1375, ps_handle=(nil), params_handle=(nil)
+[Rank 3] ENTER generate_hermitian_slice_pair_local: Y_primary=49, Y_mirror=1999, ps_handle=(nil), params_handle=(nil)
+[Rank 24] ENTER generate_hermitian_slice_pair_local: Y_primary=385, Y_mirror=1663, ps_handle=(nil), params_handle=(nil)
+[Rank 37] ENTER generate_hermitian_slice_pair_local: Y_primary=593, Y_mirror=1455, ps_handle=(nil), params_handle=(nil)
+[Rank 35] ENTER generate_hermitian_slice_pair_local: Y_primary=561, Y_mirror=1487, ps_handle=(nil), params_handle=(nil)
+[Rank 6] ENTER generate_hermitian_slice_pair_local: Y_primary=97, Y_mirror=1951, ps_handle=(nil), params_handle=(nil)
+[Rank 23] ENTER generate_hermitian_slice_pair_local: Y_primary=369, Y_mirror=1679, ps_handle=(nil), params_handle=(nil)
+[Rank 26] ENTER generate_hermitian_slice_pair_local: Y_primary=417, Y_mirror=1631, ps_handle=(nil), params_handle=(nil)
+[Rank 15] ENTER generate_hermitian_slice_pair_local: Y_primary=241, Y_mirror=1807, ps_handle=(nil), params_handle=(nil)
+[Rank 44] ENTER generate_hermitian_slice_pair_local: Y_primary=705, Y_mirror=1343, ps_handle=(nil), params_handle=(nil)
+[Rank 34] ENTER generate_hermitian_slice_pair_local: Y_primary=545, Y_mirror=1503, ps_handle=(nil), params_handle=(nil)
+[Rank 49] ENTER generate_hermitian_slice_pair_local: Y_primary=785, Y_mirror=1263, ps_handle=(nil), params_handle=(nil)
+[Rank 9] ENTER generate_hermitian_slice_pair_local: Y_primary=145, Y_mirror=1903, ps_handle=(nil), params_handle=(nil)
+[Rank 38] ENTER generate_hermitian_slice_pair_local: Y_primary=609, Y_mirror=1439, ps_handle=(nil), params_handle=(nil)
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=0, Y_mirror=0, ps_handle=(nil), params_handle=(nil)
+[Rank 48] ENTER generate_hermitian_slice_pair_local: Y_primary=769, Y_mirror=1279, ps_handle=(nil), params_handle=(nil)
+[Rank 46] ENTER generate_hermitian_slice_pair_local: Y_primary=737, Y_mirror=1311, ps_handle=(nil), params_handle=(nil)
+[Rank 55] ENTER generate_hermitian_slice_pair_local: Y_primary=881, Y_mirror=1167, ps_handle=(nil), params_handle=(nil)
+[Rank 56] ENTER generate_hermitian_slice_pair_local: Y_primary=897, Y_mirror=1151, ps_handle=(nil), params_handle=(nil)
+[Rank 43] ENTER generate_hermitian_slice_pair_local: Y_primary=689, Y_mirror=1359, ps_handle=(nil), params_handle=(nil)
+[Rank 52] ENTER generate_hermitian_slice_pair_local: Y_primary=833, Y_mirror=1215, ps_handle=(nil), params_handle=(nil)
+[Rank 41] ENTER generate_hermitian_slice_pair_local: Y_primary=657, Y_mirror=1391, ps_handle=(nil), params_handle=(nil)
+[Rank 32] ENTER generate_hermitian_slice_pair_local: Y_primary=513, Y_mirror=1535, ps_handle=(nil), params_handle=(nil)
+[Rank 13] ENTER generate_hermitian_slice_pair_local: Y_primary=209, Y_mirror=1839, ps_handle=(nil), params_handle=(nil)
+[Rank 36] ENTER generate_hermitian_slice_pair_local: Y_primary=577, Y_mirror=1471, ps_handle=(nil), params_handle=(nil)
+[Rank 57] ENTER generate_hermitian_slice_pair_local: Y_primary=913, Y_mirror=1135, ps_handle=(nil), params_handle=(nil)
+[Rank 33] ENTER generate_hermitian_slice_pair_local: Y_primary=529, Y_mirror=1519, ps_handle=(nil), params_handle=(nil)
+[Rank 50] ENTER generate_hermitian_slice_pair_local: Y_primary=801, Y_mirror=1247, ps_handle=(nil), params_handle=(nil)
+[Rank 47] ENTER generate_hermitian_slice_pair_local: Y_primary=753, Y_mirror=1295, ps_handle=(nil), params_handle=(nil)
+[Rank 45] ENTER generate_hermitian_slice_pair_local: Y_primary=721, Y_mirror=1327, ps_handle=(nil), params_handle=(nil)
+[Rank 0] After primary FFT (array 0, Y=0): buffer OK (checksum=107)
+[Rank 0] After primary FFT (array 1, Y=0): buffer OK (checksum=30)
+[Rank 0] After primary FFT (array 2, Y=0): buffer OK (checksum=57)
+[Rank 0] After primary FFT (array 3, Y=0): buffer OK (checksum=30)
+[INFO] num_ranks=64 < total_pairs=1025: Each rank will process 16-17 pairs
+====================================================================================
+VERSION 14: PERIODIC BOUNDARY CONDITIONS FOR PADDING
+====================================================================================
+Precision: Single (float) (8 bytes per complex number)
+Matrix size: N = 2048³, Total elements: 8589934592
+MPI ranks: 64 (total_pairs: 1025 for N=2048)
+Multi-batch processing: Each rank processes multiple Y-slice pairs
+Grid decomposition: Core grid only (no padding, X_PADDING=0)
+            Each rank owns non-overlapping X-region
+            No periodic boundary wrapping - standard decomposition
+V12 feature: Z-slab streaming (Zeldovich-compatible output)
+            Output format: [Z][Array][Y][X] matches Zeldovich AZYX
+            Each file contains all (X,Y) for one Z-slab
+V11 feature: Direct receive into persistent source-grouped buffer
+Communication method: MPI_Ialltoallv (Phase A)
+====================================================================================
+
+[INIT] Rank 0: Assigned 17 pairs:
+  Pair 0: Y=0 (self-conjugate)
+  Pair 1: Y=1 and Y=2047 (conjugate)
+  Pair 2: Y=2 and Y=2046 (conjugate)
+  ... (14 more pairs)
+
+[DISTRIBUTION] Multi-batch slice distribution:
+  Total Y-slice pairs: 1025
+  Active ranks: 64
+  Pairs per rank: 16 base + 1 ranks with +1
+  Rank 0 processes: 17 pairs (Y indices 0-16)
+  Estimated total Y-slices: ~2048
+
+[INIT] No parameter file provided, using uniform random mode
+[SETUP] narray = 4 (arrays per Y-slice)
+[SETUP] Creating FFT plans with dummy memory...
+[SETUP] FFT plans created successfully (2D and 1D)
+[MEMORY] Allocated local_y_slices: 0 bytes (0.00 GB) for 0 slices, 4 arrays
+[OK] Rank 0: Macro indexing verified (slices=0, arrays=4)
+
+[V14-DEBUG] Grid decomposition verification (PERIODIC BOUNDARIES):
+  Rank 0:
+    Core:   X=[0,256), Z=[0,256), Pencils=65536
+    Padded: X=[0,256), Z=[0,256), Pencils=65536
+  Rank 1:
+    Core:   X=[0,256), Z=[256,512), Pencils=65536
+    Padded: X=[0,256), Z=[256,512), Pencils=65536
+  Rank 2:
+    Core:   X=[0,256), Z=[512,768), Pencils=65536
+    Padded: X=[0,256), Z=[512,768), Pencils=65536
+  Rank 3:
+    Core:   X=[0,256), Z=[768,1024), Pencils=65536
+    Padded: X=[0,256), Z=[768,1024), Pencils=65536
+  ... (showing first 4 ranks only)
+  Note: Negative X-start or X-end > N indicates periodic wrap-around
+[Stage 2] Complete.
+
+[MULTI-BATCH] Starting batch processing...
+              Ranks will process 17 pairs each (approx)
+[GRID] Rank 0 (NO PADDING - CORE GRID ONLY):
+  Core region:   X=[0,256), Z=[0,256), pencils=65536
+[BATCHES] Total batches to process: 17
+
+[V11-SETUP] Computing per-source Y-slice totals...
+[V11-SETUP] Rank 0: Source totals: src0=33 src1=32 src2=32 src3=32 ...
+[V11-SETUP] Persistent recv_buffer size: 4294967296 bytes (4.00 GB)
+            Total elements: 536870912 = sum of (src_total_slices[src] * my_pencils * narray)
+[V11-MEMORY] Allocated recv_buffer: 4.00 GB (source-grouped layout)
+[V11-SETUP] Rank 0: Write cursors initialized to 0
+[V11-SETUP] Phase 1 pre-computation complete.
+
+[V11-SETUP] Building Y-value ownership mapping...
+[V11-SETUP] Rank 0: Y-mapping complete. Sample: Y=0-->src0[0], Y=1024-->src63[30]
+[V11-SETUP] Phase 2 Y-mapping complete.
+
+[MEMORY] Allocated local_y_slices (reusable): 268435456 bytes (0.25 GB)
+
+[MULTI-BATCH] Processing 17 batches...
+[BATCH 0] Rank 0: Processing 1 Y-slices (Y=0)
+[DEBUG Y=0] Before 2D FFT (Fourier space) - PRIMARY slice - Max real/imag per array: A0: re=9.317e-01 im=8.664e-01 A1: re=0.000e+00 im=1.085e+00 A2: re=0.000e+00 im=8.664e-01 A3: re=0.000e+00 im=1.085e+00 (NOTE: Non-zero imag expected in Fourier space)
+[DEBUG Y=0] After 2D FFT (Real space) - PRIMARY slice - Max real/imag per array: A0: re=2.401e+01 im=2.835e-06 (ratio=1.181e-07) A1: re=3.658e+00 im=8.437e-07 (ratio=2.307e-07) A2: re=2.815e+00 im=6.354e-07 (ratio=2.258e-07) A3: re=3.658e+00 im=8.437e-07 (ratio=2.307e-07) (NOTE: Imag should be ~0 in real space!)
+[PACK] Rank 0: Packed 16777216 total elements to send_buffer
+       Sending to ranks: 2[Rank 31] ENTER generate_hermitian_slice_pair_local: Y_primary=498, Y_mirror=1550, ps_handle=(nil), params_handle=(nil)
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=1, Y_mirror=2047, ps_handle=(nil), params_handle=(nil)
+[Rank 63] ENTER generate_hermitian_slice_pair_local: Y_primary=1010, Y_mirror=1038, ps_handle=(nil), params_handle=(nil)
+[Rank 61] ENTER generate_hermitian_slice_pair_local: Y_primary=978, Y_mirror=1070, ps_handle=(nil), params_handle=(nil)
+[Rank 60] ENTER generate_hermitian_slice_pair_local: Y_primary=962, Y_mirror=1086, ps_handle=(nil), params_handle=(nil)
+[Rank 62] ENTER generate_hermitian_slice_pair_local: Y_primary=994, Y_mirror=1054, ps_handle=(nil), params_handle=(nil)
+[Rank 58] ENTER generate_hermitian_slice_pair_local: Y_primary=930, Y_mirror=1118, ps_handle=(nil), params_handle=(nil)
+[Rank 1] ENTER generate_hermitian_slice_pair_local: Y_primary=18, Y_mirror=2030, ps_handle=(nil), params_handle=(nil)
+[Rank 30] ENTER generate_hermitian_slice_pair_local: Y_primary=482, Y_mirror=1566, ps_handle=(nil), params_handle=(nil)
+[Rank 29] ENTER generate_hermitian_slice_pair_local: Y_primary=466, Y_mirror=1582, ps_handle=(nil), params_handle=(nil)
+[Rank 59] ENTER generate_hermitian_slice_pair_local: Y_primary=946, Y_mirror=1102, ps_handle=(nil), params_handle=(nil)
+[Rank 27] ENTER generate_hermitian_slice_pair_local: Y_primary=434, Y_mirror=1614, ps_handle=(nil), params_handle=(nil)
+[Rank 8] ENTER generate_hermitian_slice_pair_local: Y_primary=130, Y_mirror=1918, ps_handle=(nil), params_handle=(nil)
+[Rank 16] ENTER generate_hermitian_slice_pair_local: Y_primary=258, Y_mirror=1790, ps_handle=(nil), params_handle=(nil)
+[Rank 56] ENTER generate_hermitian_slice_pair_local: Y_primary=898, Y_mirror=1150, ps_handle=(nil), params_handle=(nil)
+[Rank 28] ENTER generate_hermitian_slice_pair_local: Y_primary=450, Y_mirror=1598, ps_handle=(nil), params_handle=(nil)
+[Rank 19] ENTER generate_hermitian_slice_pair_local: Y_primary=306, Y_mirror=1742, ps_handle=(nil), params_handle=(nil)
+[Rank 17] ENTER generate_hermitian_slice_pair_local: Y_primary=274, Y_mirror=1774, ps_handle=(nil), params_handle=(nil)
+[Rank 26] ENTER generate_hermitian_slice_pair_local: Y_primary=418, Y_mirror=1630, ps_handle=(nil), params_handle=(nil)
+[Rank 51] ENTER generate_hermitian_slice_pair_local: Y_primary=818, Y_mirror=1230, ps_handle=(nil), params_handle=(nil)
+[Rank 18] ENTER generate_hermitian_slice_pair_local: Y_primary=290, Y_mirror=1758, ps_handle=(nil), params_handle=(nil)
+[Rank 49] ENTER generate_hermitian_slice_pair_local: Y_primary=786, Y_mirror=1262, ps_handle=(nil), params_handle=(nil)
+[Rank 21] ENTER generate_hermitian_slice_pair_local: Y_primary=338, Y_mirror=1710, ps_handle=(nil), params_handle=(nil)
+[Rank 23] ENTER generate_hermitian_slice_pair_local: Y_primary=370, Y_mirror=1678, ps_handle=(nil), params_handle=(nil)
+[Rank 20] ENTER generate_hermitian_slice_pair_local: Y_primary=322, Y_mirror=1726, ps_handle=(nil), params_handle=(nil)
+[Rank 22] ENTER generate_hermitian_slice_pair_local: Y_primary=354, Y_mirror=1694, ps_handle=(nil), params_handle=(nil)
+[Rank 24] ENTER generate_hermitian_slice_pair_local: Y_primary=386, Y_mirror=1662, ps_handle=(nil), params_handle=(nil)
+[Rank 57] ENTER generate_hermitian_slice_pair_local: Y_primary=914, Y_mirror=1134, ps_handle=(nil), params_handle=(nil)
+[Rank 13] ENTER generate_hermitian_slice_pair_local: Y_primary=210, Y_mirror=1838, ps_handle=(nil), params_handle=(nil)
+[Rank 53] ENTER generate_hermitian_slice_pair_local: Y_primary=850, Y_mirror=1198, ps_handle=(nil), params_handle=(nil)
+[Rank 14] ENTER generate_hermitian_slice_pair_local: Y_primary=226, Y_mirror=1822, ps_handle=(nil), params_handle=(nil)
+[Rank 50] ENTER generate_hermitian_slice_pair_local: Y_primary=802, Y_mirror=1246, ps_handle=(nil), params_handle=(nil)
+[Rank 44] ENTER generate_hermitian_slice_pair_local: Y_primary=706, Y_mirror=1342, ps_handle=(nil), params_handle=(nil)
+[Rank 5] ENTER generate_hermitian_slice_pair_local: Y_primary=82, Y_mirror=1966, ps_handle=(nil), params_handle=(nil)
+[Rank 52] ENTER generate_hermitian_slice_pair_local: Y_primary=834, Y_mirror=1214, ps_handle=(nil), params_handle=(nil)
+[Rank 10] ENTER generate_hermitian_slice_pair_local: Y_primary=162, Y_mirror=1886, ps_handle=(nil), params_handle=(nil)
+[Rank 47] ENTER generate_hermitian_slice_pair_local: Y_primary=754, Y_mirror=1294, ps_handle=(nil), params_handle=(nil)
+[Rank 12] ENTER generate_hermitian_slice_pair_local: Y_primary=194, Y_mirror=1854, ps_handle=(nil), params_handle=(nil)
+[Rank 11] ENTER generate_hermitian_slice_pair_local: Y_primary=178, Y_mirror=1870, ps_handle=(nil), params_handle=(nil)
+[Rank 55] ENTER generate_hermitian_slice_pair_local: Y_primary=882, Y_mirror=1166, ps_handle=(nil), params_handle=(nil)
+[Rank 15] ENTER generate_hermitian_slice_pair_local: Y_primary=242, Y_mirror=1806, ps_handle=(nil), params_handle=(nil)
+[Rank 42] ENTER generate_hermitian_slice_pair_local: Y_primary=674, Y_mirror=1374, ps_handle=(nil), params_handle=(nil)
+[Rank 7] ENTER generate_hermitian_slice_pair_local: Y_primary=114, Y_mirror=1934, ps_handle=(nil), params_handle=(nil)
+[Rank 6] ENTER generate_hermitian_slice_pair_local: Y_primary=98, Y_mirror=1950, ps_handle=(nil), params_handle=(nil)
+[Rank 48] ENTER generate_hermitian_slice_pair_local: Y_primary=770, Y_mirror=1278, ps_handle=(nil), params_handle=(nil)
+[Rank 9] ENTER generate_hermitian_slice_pair_local: Y_primary=146, Y_mirror=1902, ps_handle=(nil), params_handle=(nil)
+[Rank 2] ENTER generate_hermitian_slice_pair_local: Y_primary=34, Y_mirror=2014, ps_handle=(nil), params_handle=(nil)
+[Rank 4] ENTER generate_hermitian_slice_pair_local: Y_primary=66, Y_mirror=1982, ps_handle=(nil), params_handle=(nil)
+[Rank 3] ENTER generate_hermitian_slice_pair_local: Y_primary=50, Y_mirror=1998, ps_handle=(nil), params_handle=(nil)
+[Rank 40] ENTER generate_hermitian_slice_pair_local: Y_primary=642, Y_mirror=1406, ps_handle=(nil), params_handle=(nil)
+[Rank 46] ENTER generate_hermitian_slice_pair_local: Y_primary=738, Y_mirror=1310, ps_handle=(nil), params_handle=(nil)
+[Rank 43] ENTER generate_hermitian_slice_pair_local: Y_primary=690, Y_mirror=1358, ps_handle=(nil), params_handle=(nil)
+[Rank 33] ENTER generate_hermitian_slice_pair_local: Y_primary=530, Y_mirror=1518, ps_handle=(nil), params_handle=(nil)
+[Rank 39] ENTER generate_hermitian_slice_pair_local: Y_primary=626, Y_mirror=1422, ps_handle=(nil), params_handle=(nil)
+[Rank 54] ENTER generate_hermitian_slice_pair_local: Y_primary=866, Y_mirror=1182, ps_handle=(nil), params_handle=(nil)
+[Rank 36] ENTER generate_hermitian_slice_pair_local: Y_primary=578, Y_mirror=1470, ps_handle=(nil), params_handle=(nil)
+[Rank 38] ENTER generate_hermitian_slice_pair_local: Y_primary=610, Y_mirror=1438, ps_handle=(nil), params_handle=(nil)
+[Rank 37] ENTER generate_hermitian_slice_pair_local: Y_primary=594, Y_mirror=1454, ps_handle=(nil), params_handle=(nil)
+[Rank 32] ENTER generate_hermitian_slice_pair_local: Y_primary=514, Y_mirror=1534, ps_handle=(nil), params_handle=(nil)
+[Rank 35] ENTER generate_hermitian_slice_pair_local: Y_primary=562, Y_mirror=1486, ps_handle=(nil), params_handle=(nil)
+[Rank 45] ENTER generate_hermitian_slice_pair_local: Y_primary=722, Y_mirror=1326, ps_handle=(nil), params_handle=(nil)
+[Rank 34] ENTER generate_hermitian_slice_pair_local: Y_primary=546, Y_mirror=1502, ps_handle=(nil), params_handle=(nil)
+[Rank 41] ENTER generate_hermitian_slice_pair_local: Y_primary=658, Y_mirror=1390, ps_handle=(nil), params_handle=(nil)
+[Rank 25] ENTER generate_hermitian_slice_pair_local: Y_primary=402, Y_mirror=1646, ps_handle=(nil), params_handle=(nil)
+[Rank 0] After primary FFT (array 0, Y=1): buffer OK (checksum=70)
+[Rank 0] After conjugate FFT (array 0, Y=1): buffer OK (checksum=2)
+[Rank 0] After primary FFT (array 1, Y=1): buffer OK (checksum=-50)
+[Rank 0] After conjugate FFT (array 1, Y=1): buffer OK (checksum=57)
+[Rank 0] After primary FFT (array 2, Y=1): buffer OK (checksum=-25)
+[Rank 0] After conjugate FFT (array 2, Y=1): buffer OK (checksum=38)
+[Rank 0] After primary FFT (array 3, Y=1): buffer OK (checksum=-50)
+[Rank 0] After conjugate FFT (array 3, Y=1): buffer OK (checksum=57)
+[Rank 63] ENTER generate_hermitian_slice_pair_local: Y_primary=1011, Y_mirror=1037, ps_handle=(nil), params_handle=(nil)
+[Rank 62] ENTER generate_hermitian_slice_pair_local: Y_primary=995, Y_mirror=1053, ps_handle=(nil), params_handle=(nil)
+[Rank 59] ENTER generate_hermitian_slice_pair_local: Y_primary=947, Y_mirror=1101, ps_handle=(nil), params_handle=(nil)
+[Rank 32] ENTER generate_hermitian_slice_pair_local: Y_primary=515, Y_mirror=1533, ps_handle=(nil), params_handle=(nil)
+[Rank 61] ENTER generate_hermitian_slice_pair_local: Y_primary=979, Y_mirror=1069, ps_handle=(nil), params_handle=(nil)
+[Rank 60] ENTER generate_hermitian_slice_pair_local: Y_primary=963, Y_mirror=1085, ps_handle=(nil), params_handle=(nil)
+[Rank 58] ENTER generate_hermitian_slice_pair_local: Y_primary=931, Y_mirror=1117, ps_handle=(nil), params_handle=(nil)
+[Rank 33] ENTER generate_hermitian_slice_pair_local: Y_primary=531, Y_mirror=1517, ps_handle=(nil), params_handle=(nil)
+[Rank 45] ENTER generate_hermitian_slice_pair_local: Y_primary=723, Y_mirror=1325, ps_handle=(nil), params_handle=(nil)
+[Rank 24] ENTER generate_hermitian_slice_pair_local: Y_primary=387, Y_mirror=1661, ps_handle=(nil), params_handle=(nil)
+[Rank 15] ENTER generate_hermitian_slice_pair_local: Y_primary=243, Y_mirror=1805, ps_handle=(nil), params_handle=(nil)
+[Rank 31] ENTER generate_hermitian_slice_pair_local: Y_primary=499, Y_mirror=1549, ps_handle=(nil), params_handle=(nil)
+[Rank 52] ENTER generate_hermitian_slice_pair_local: Y_primary=835, Y_mirror=1213, ps_handle=(nil), params_handle=(nil)
+[Rank 53] ENTER generate_hermitian_slice_pair_local: Y_primary=851, Y_mirror=1197, ps_handle=(nil), params_handle=(nil)
+[Rank 34] ENTER generate_hermitian_slice_pair_local: Y_primary=547, Y_mirror=1501, ps_handle=(nil), params_handle=(nil)
+[Rank 26] ENTER generate_hermitian_slice_pair_local: Y_primary=419, Y_mirror=1629, ps_handle=(nil), params_handle=(nil)
+[Rank 40] ENTER generate_hermitian_slice_pair_local: Y_primary=643, Y_mirror=1405, ps_handle=(nil), params_handle=(nil)
+[Rank 50] ENTER generate_hermitian_slice_pair_local: Y_primary=803, Y_mirror=1245, ps_handle=(nil), params_handle=(nil)
+[Rank 51] ENTER generate_hermitian_slice_pair_local: Y_primary=819, Y_mirror=1229, ps_handle=(nil), params_handle=(nil)
+[Rank 29] ENTER generate_hermitian_slice_pair_local: Y_primary=467, Y_mirror=1581, ps_handle=(nil), params_handle=(nil)
+[Rank 46] ENTER generate_hermitian_slice_pair_local: Y_primary=739, Y_mirror=1309, ps_handle=(nil), params_handle=(nil)
+[Rank 49] ENTER generate_hermitian_slice_pair_local: Y_primary=787, Y_mirror=1261, ps_handle=(nil), params_handle=(nil)
+[Rank 41] ENTER generate_hermitian_slice_pair_local: Y_primary=659, Y_mirror=1389, ps_handle=(nil), params_handle=(nil)
+[Rank 13] ENTER generate_hermitian_slice_pair_local: Y_primary=211, Y_mirror=1837, ps_handle=(nil), params_handle=(nil)
+[Rank 43] ENTER generate_hermitian_slice_pair_local: Y_primary=691, Y_mirror=1357, ps_handle=(nil), params_handle=(nil)
+[Rank 47] ENTER generate_hermitian_slice_pair_local: Y_primary=755, Y_mirror=1293, ps_handle=(nil), params_handle=(nil)
+[Rank 9] ENTER generate_hermitian_slice_pair_local: Y_primary=147, Y_mirror=1901, ps_handle=(nil), params_handle=(nil)
+[Rank 48] ENTER generate_hermitian_slice_pair_local: Y_primary=771, Y_mirror=1277, ps_handle=(nil), params_handle=(nil)
+[Rank 37] ENTER generate_hermitian_slice_pair_local: Y_primary=595, Y_mirror=1453, ps_handle=(nil), params_handle=(nil)
+[Rank 44] ENTER generate_hermitian_slice_pair_local: Y_primary=707, Y_mirror=1341, ps_handle=(nil), params_handle=(nil)
+[Rank 39] ENTER generate_hermitian_slice_pair_local: Y_primary=627, Y_mirror=1421, ps_handle=(nil), params_handle=(nil)
+[Rank 28] ENTER generate_hermitian_slice_pair_local: Y_primary=451, Y_mirror=1597, ps_handle=(nil), params_handle=(nil)
+[Rank 30] ENTER generate_hermitian_slice_pair_local: Y_primary=483, Y_mirror=1565, ps_handle=(nil), params_handle=(nil)
+[Rank 56] ENTER generate_hermitian_slice_pair_local: Y_primary=899, Y_mirror=1149, ps_handle=(nil), params_handle=(nil)
+[Rank 11] ENTER generate_hermitian_slice_pair_local: Y_primary=179, Y_mirror=1869, ps_handle=(nil), params_handle=(nil)
+[Rank 36] ENTER generate_hermitian_slice_pair_local: Y_primary=579, Y_mirror=1469, ps_handle=(nil), params_handle=(nil)
+[Rank 27] ENTER generate_hermitian_slice_pair_local: Y_primary=435, Y_mirror=1613, ps_handle=(nil), params_handle=(nil)
+[Rank 23] ENTER generate_hermitian_slice_pair_local: Y_primary=371, Y_mirror=1677, ps_handle=(nil), params_handle=(nil)
+[Rank 35] ENTER generate_hermitian_slice_pair_local: Y_primary=563, Y_mirror=1485, ps_handle=(nil), params_handle=(nil)
+[Rank 57] ENTER generate_hermitian_slice_pair_local: Y_primary=915, Y_mirror=1133, ps_handle=(nil), params_handle=(nil)
+[Rank 54] ENTER generate_hermitian_slice_pair_local: Y_primary=867, Y_mirror=1181, ps_handle=(nil), params_handle=(nil)
+[Rank 38] ENTER generate_hermitian_slice_pair_local: Y_primary=611, Y_mirror=1437, ps_handle=(nil), params_handle=(nil)
+[Rank 42] ENTER generate_hermitian_slice_pair_local: Y_primary=675, Y_mirror=1373, ps_handle=(nil), params_handle=(nil)
+[Rank 18] ENTER generate_hermitian_slice_pair_local: Y_primary=291, Y_mirror=1757, ps_handle=(nil), params_handle=(nil)
+[Rank 19] ENTER generate_hermitian_slice_pair_local: Y_primary=307, Y_mirror=1741, ps_handle=(nil), params_handle=(nil)
+[Rank 55] ENTER generate_hermitian_slice_pair_local: Y_primary=883, Y_mirror=1165, ps_handle=(nil), params_handle=(nil)
+[Rank 21] ENTER generate_hermitian_slice_pair_local: Y_primary=339, Y_mirror=1709, ps_handle=(nil), params_handle=(nil)
+[Rank 22] ENTER generate_hermitian_slice_pair_local: Y_primary=355, Y_mirror=1693, ps_handle=(nil), params_handle=(nil)
+[Rank 20] ENTER generate_hermitian_slice_pair_local: Y_primary=323, Y_mirror=1725, ps_handle=(nil), params_handle=(nil)
+[Rank 16] ENTER generate_hermitian_slice_pair_local: Y_primary=259, Y_mirror=1789, ps_handle=(nil), params_handle=(nil)
+[Rank 6] ENTER generate_hermitian_slice_pair_local: Y_primary=99, Y_mirror=1949, ps_handle=(nil), params_handle=(nil)
+[Rank 14] ENTER generate_hermitian_slice_pair_local: Y_primary=227, Y_mirror=1821, ps_handle=(nil), params_handle=(nil)
+[Rank 12] ENTER generate_hermitian_slice_pair_local: Y_primary=195, Y_mirror=1853, ps_handle=(nil), params_handle=(nil)
+[Rank 3] ENTER generate_hermitian_slice_pair_local: Y_primary=51, Y_mirror=1997, ps_handle=(nil), params_handle=(nil)
+[Rank 17] ENTER generate_hermitian_slice_pair_local: Y_primary=275, Y_mirror=1773, ps_handle=(nil), params_handle=(nil)
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=2, Y_mirror=2046, ps_handle=(nil), params_handle=(nil)
+[Rank 5] ENTER generate_hermitian_slice_pair_local: Y_primary=83, Y_mirror=1965, ps_handle=(nil), params_handle=(nil)
+[Rank 10] ENTER generate_hermitian_slice_pair_local: Y_primary=163, Y_mirror=1885, ps_handle=(nil), params_handle=(nil)
+[Rank 7] ENTER generate_hermitian_slice_pair_local: Y_primary=115, Y_mirror=1933, ps_handle=(nil), params_handle=(nil)
+[Rank 1] ENTER generate_hermitian_slice_pair_local: Y_primary=19, Y_mirror=2029, ps_handle=(nil), params_handle=(nil)
+[Rank 25] ENTER generate_hermitian_slice_pair_local: Y_primary=403, Y_mirror=1645, ps_handle=(nil), params_handle=(nil)
+[Rank 8] ENTER generate_hermitian_slice_pair_local: Y_primary=131, Y_mirror=1917, ps_handle=(nil), params_handle=(nil)
+[Rank 2] ENTER generate_hermitian_slice_pair_local: Y_primary=35, Y_mirror=2013, ps_handle=(nil), params_handle=(nil)
+[Rank 4] ENTER generate_hermitian_slice_pair_local: Y_primary=67, Y_mirror=1981, ps_handle=(nil), params_handle=(nil)
+62144 elements to rank 0, 262144 elements to rank 1, 262144 elements to rank 2, 262144 elements to rank 3, ...
+[V11-BATCH 0] Cursors advanced. Sample: src0=262144, src1=524288
+[BATCH 1] Rank 0: Processing 2 Y-slices (Y=1, Y=2047)
+[DEBUG Y=1] Before 2D FFT (Fourier space) - PRIMARY slice - Max real/imag per array: A0: re=6.659e-01 im=2.874e-01 A1: re=8.664e-01 im=2.346e-01 A2: re=0.000e+00 im=2.874e-01 A3: re=8.664e-01 im=2.346e-01 (NOTE: Non-zero imag expected in Fourier space)
+[DEBUG Y=1] Before 2D FFT (Fourier space) - CONJUGATE slice - Max real/imag per array: A0: re=6.659e-01 im=2.874e-01 A1: re=8.664e-01 im=2.346e-01 A2: re=0.000e+00 im=2.874e-01 A3: re=8.664e-01 im=2.346e-01 (NOTE: Should be conjugate of primary!)
+[DEBUG Y=1] Sample conjugate check (first 3 points): A0[0,0]: prim=(2.418e-01,-0.000e+00) conj[0,0]=(2.418e-01,0.000e+00) A0[0,1]: prim=(2.753e-01,0.000e+00) conj[0,2047]=(2.753e-01,-0.000e+00) A0[1,0]: prim=(-5.570e-01,-1.935e-01) conj[2047,0]=(-5.570e-01,1.935e-01) A0[1,1]: prim=(-4.613e-01,-8.784e-02) conj[2047,2047]=(-4.613e-01,8.784e-02) A1[0,0]: prim=(8.664e-01,-0.000e+00) conj[0,0]=(8.664e-01,0.000e+00) A1[0,1]: prim=(-2.340e-01,-2.340e-01) conj[0,2047]=(-2.340e-01,2.340e-01) A1[1,0]: prim=(-1.935e-01,0.000e+00) conj[2047,0]=(-1.935e-01,-0.000e+00) A1[1,1]: prim=(-8.784e-02,-8.784e-02) conj[2047,2047]=(-8.784e-02,8.784e-02) 
+[DEBUG Y=1] Before 2D FFT - Buffer addresses: prim=0x14587efd7000 conj=0x145886fd7000 (diff=16777216)
+[DEBUG Y=1] Before 2D FFT - Sample values: prim[0,0]=(2.418e-01,-0.000e+00) conj[0,0]=(2.418e-01,0.000e+00)
+[DEBUG Y=1] Right before conjugate FFT - conj[0,0]=(2.418e-01,0.000e+00) prim[0,0]=(5.921e+00,-6.551e-01)
+[DEBUG Y=1] Right after conjugate FFT - conj[0,0]=(5.921e+00,6.551e-01) prim[0,0]=(5.921e+00,-6.551e-01)
+[DEBUG Y=1] After 2D FFT (Real space) - PRIMARY slice - Max real/imag per array: A0: re=1.547e+01 im=1.628e+01 (ratio=1.052e+00) A1: re=2.709e+00 im=1.457e+00 (ratio=5.376e-01) A2: re=1.387e+00 im=1.243e+00 (ratio=8.967e-01) A3: re=2.709e+00 im=1.457e+00 (ratio=5.376e-01) (NOTE: Imag should be ~0 in real space!)
+[DEBUG Y=1] After 2D FFT (Real space) - CONJUGATE slice - Max real/imag per array: A0: re=1.547e+01 im=1.628e+01 (ratio=1.052e+00) A1: re=2.709e+00 im=1.457e+00 (ratio=5.376e-01) A2: re=1.387e+00 im=1.243e+00 (ratio=8.967e-01) A3: re=2.709e+00 im=1.457e+00 (ratio=5.376e-01) (NOTE: Imag should be ~0 in real space!)
+[DEBUG Y=1] Array comparison: 0 identical, 16777216 different (total=16777216)
+[DEBUG Y=1] Sample differences (first 3 non-identical): A0[0,0]: prim=(5.921e+00,-6.551e-01) conj=(5.921e+00,6.551e-01) diff=(0.000e+00,1.310e+00) A0[0,1]: prim=(6.016e+00,7.947e-01) conj=(6.016e+00,-7.947e-01) diff=(9.537e-07,1.589e+00) A0[0,2]: prim=(3.910e+00,4.145e-01) conj=(3.910e+00,-4.145e-01) diff=(4.768e-07,8.289e-01) 
+[PACK] Rank 0: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+[V11-BATCH 1] Cursors advanced. Sample: src0=786432, src1=1048576
+         ... Completed 2/17 batches (11.8%)
+[DEBUG Y=2] Before 2D FFT (Fourier space) - PRIMARY slice - Max real/imag per array: A0: re=4.621e-01 im=1.160e-01 A1: re=2.166e-01 im=9.843e-02 A2: re=0.000e+00 im=1.160e-01 A3: re=2.166e-01 im=9.843e-02 (NOTE: Non-zero imag expected in Fourier space)
+[DEBUG Y=2] Before 2D FFT (Fourier space) - CONJUGATE slice - Max real/imag per array: A0: re=4.621e-01 im=1.160e-01 A1: re=2.166e-01 im=9.843e-02 A2: re=0.000e+00 im=1.160e-01 A3: re=2.166e-01 im=9.843e-02 (NOTE: Should be conjugate of primary!)
+[DEBUG Y=2] Sample conjugate check (first 3 points): A0[0,0]: prim=(1.209e-01,-0.000e+00) conj[0,0]=(1.209e-01,0.000e+00) A0[0,1]: prim=(1.741e-01,0.000e+00) conj[0,2047]=(1.741e-01,-0.000e+00) A0[1,0]: prim=(-3.523e-01,-4.896e-02) conj[2047,0]=(-3.523e-01,4.896e-02) A0[1,1]: prim=(-3.262e-01,-3.105e-02) conj[2047,2047]=(-3.262e-01,3.105e-02) A1[0,0]: prim=(2.166e-01,-0.000e+00) conj[0,0]=(2.166e-01,0.000e+00) A1[0,1]: prim=(-1.184e-01,-5.920e-02) conj[0[Rank 0] After primary FFT (array 0, Y=2): buffer OK (checksum=43)
+[Rank 0] After conjugate FFT (array 0, Y=2): buffer OK (checksum=83)
+[Rank 0] After primary FFT (array 1, Y=2): buffer OK (checksum=-46)
+[Rank 0] After conjugate FFT (array 1, Y=2): buffer OK (checksum=63)
+[Rank 0] After primary FFT (array 2, Y=2): buffer OK (checksum=76)
+[Rank 0] After conjugate FFT (array 2, Y=2): buffer OK (checksum=-122)
+[Rank 0] After primary FFT (array 3, Y=2): buffer OK (checksum=-46)
+[Rank 0] After conjugate FFT (array 3, Y=2): buffer OK (checksum=63)
+[Rank 63] ENTER generate_hermitian_slice_pair_local: Y_primary=1012, Y_mirror=1036, ps_handle=(nil), params_handle=(nil)
+[Rank 62] ENTER generate_hermitian_slice_pair_local: Y_primary=996, Y_mirror=1052, ps_handle=(nil), params_handle=(nil)
+[Rank 61] ENTER generate_hermitian_slice_pair_local: Y_primary=980, Y_mirror=1068, ps_handle=(nil), params_handle=(nil)
+[Rank 59] ENTER generate_hermitian_slice_pair_local: Y_primary=948, Y_mirror=1100, ps_handle=(nil), params_handle=(nil)
+[Rank 58] ENTER generate_hermitian_slice_pair_local: Y_primary=932, Y_mirror=1116, ps_handle=(nil), params_handle=(nil)
+[Rank 38] ENTER generate_hermitian_slice_pair_local: Y_primary=612, Y_mirror=1436, ps_handle=(nil), params_handle=(nil)
+[Rank 60] ENTER generate_hermitian_slice_pair_local: Y_primary=964, Y_mirror=1084, ps_handle=(nil), params_handle=(nil)
+[Rank 37] ENTER generate_hermitian_slice_pair_local: Y_primary=596, Y_mirror=1452, ps_handle=(nil), params_handle=(nil)
+[Rank 32] ENTER generate_hermitian_slice_pair_local: Y_primary=516, Y_mirror=1532, ps_handle=(nil), params_handle=(nil)
+[Rank 33] ENTER generate_hermitian_slice_pair_local: Y_primary=532, Y_mirror=1516, ps_handle=(nil), params_handle=(nil)
+[Rank 24] ENTER generate_hermitian_slice_pair_local: Y_primary=388, Y_mirror=1660, ps_handle=(nil), params_handle=(nil)
+[Rank 44] ENTER generate_hermitian_slice_pair_local: Y_primary=708, Y_mirror=1340, ps_handle=(nil), params_handle=(nil)
+[Rank 36] ENTER generate_hermitian_slice_pair_local: Y_primary=580, Y_mirror=1468, ps_handle=(nil), params_handle=(nil)
+[Rank 34] ENTER generate_hermitian_slice_pair_local: Y_primary=548, Y_mirror=1500, ps_handle=(nil), params_handle=(nil)
+[Rank 48] ENTER generate_hermitian_slice_pair_local: Y_primary=772, Y_mirror=1276, ps_handle=(nil), params_handle=(nil)
+[Rank 46] ENTER generate_hermitian_slice_pair_local: Y_primary=740, Y_mirror=1308, ps_handle=(nil), params_handle=(nil)
+[Rank 49] ENTER generate_hermitian_slice_pair_local: Y_primary=788, Y_mirror=1260, ps_handle=(nil), params_handle=(nil)
+[Rank 56] ENTER generate_hermitian_slice_pair_local: Y_primary=900, Y_mirror=1148, ps_handle=(nil), params_handle=(nil)
+[Rank 54] ENTER generate_hermitian_slice_pair_local: Y_primary=868, Y_mirror=1180, ps_handle=(nil), params_handle=(nil)
+[Rank 55] ENTER generate_hermitian_slice_pair_local: Y_primary=884, Y_mirror=1164, ps_handle=(nil), params_handle=(nil)
+[Rank 52] ENTER generate_hermitian_slice_pair_local: Y_primary=836, Y_mirror=1212, ps_handle=(nil), params_handle=(nil)
+[Rank 35] ENTER generate_hermitian_slice_pair_local: Y_primary=564, Y_mirror=1484, ps_handle=(nil), params_handle=(nil)
+[Rank 15] ENTER generate_hermitian_slice_pair_local: Y_primary=244, Y_mirror=1804, ps_handle=(nil), params_handle=(nil)
+[Rank 23] ENTER generate_hermitian_slice_pair_local: Y_primary=372, Y_mirror=1676, ps_handle=(nil), params_handle=(nil)
+[Rank 43] ENTER generate_hermitian_slice_pair_local: Y_primary=692, Y_mirror=1356, ps_handle=(nil), params_handle=(nil)
+[Rank 51] ENTER generate_hermitian_slice_pair_local: Y_primary=820, Y_mirror=1228, ps_handle=(nil), params_handle=(nil)
+[Rank 13] ENTER generate_hermitian_slice_pair_local: Y_primary=212, Y_mirror=1836, ps_handle=(nil), params_handle=(nil)
+[Rank 41] ENTER generate_hermitian_slice_pair_local: Y_primary=660, Y_mirror=1388, ps_handle=(nil), params_handle=(nil)
+[Rank 39] ENTER generate_hermitian_slice_pair_local: Y_primary=628, Y_mirror=1420, ps_handle=(nil), params_handle=(nil)
+[Rank 31] ENTER generate_hermitian_slice_pair_local: Y_primary=500, Y_mirror=1548, ps_handle=(nil), params_handle=(nil)
+[Rank 50] ENTER generate_hermitian_slice_pair_local: Y_primary=804, Y_mirror=1244, ps_handle=(nil), params_handle=(nil)
+[Rank 40] ENTER generate_hermitian_slice_pair_local: Y_primary=644, Y_mirror=1404, ps_handle=(nil), params_handle=(nil)
+[Rank 30] ENTER generate_hermitian_slice_pair_local: Y_primary=484, Y_mirror=1564, ps_handle=(nil), params_handle=(nil)
+[Rank 9] ENTER generate_hermitian_slice_pair_local: Y_primary=148, Y_mirror=1900, ps_handle=(nil), params_handle=(nil)
+[Rank 11] ENTER generate_hermitian_slice_pair_local: Y_primary=180, Y_mirror=1868, ps_handle=(nil), params_handle=(nil)
+[Rank 42] ENTER generate_hermitian_slice_pair_local: Y_primary=676, Y_mirror=1372, ps_handle=(nil), params_handle=(nil)
+[Rank 53] ENTER generate_hermitian_slice_pair_local: Y_primary=852, Y_mirror=1196, ps_handle=(nil), params_handle=(nil)
+[Rank 45] ENTER generate_hermitian_slice_pair_local: Y_primary=724, Y_mirror=1324, ps_handle=(nil), params_handle=(nil)
+[Rank 47] ENTER generate_hermitian_slice_pair_local: Y_primary=756, Y_mirror=1292, ps_handle=(nil), params_handle=(nil)
+[Rank 57] ENTER generate_hermitian_slice_pair_local: Y_primary=916, Y_mirror=1132, ps_handle=(nil), params_handle=(nil)
+[Rank 29] ENTER generate_hermitian_slice_pair_local: Y_primary=468, Y_mirror=1580, ps_handle=(nil), params_handle=(nil)
+[Rank 26] ENTER generate_hermitian_slice_pair_local: Y_primary=420, Y_mirror=1628, ps_handle=(nil), params_handle=(nil)
+[Rank 28] ENTER generate_hermitian_slice_pair_local: Y_primary=452, Y_mirror=1596, ps_handle=(nil), params_handle=(nil)
+[Rank 27] ENTER generate_hermitian_slice_pair_local: Y_primary=436, Y_mirror=1612, ps_handle=(nil), params_handle=(nil)
+[Rank 6] ENTER generate_hermitian_slice_pair_local: Y_primary=100, Y_mirror=1948, ps_handle=(nil), params_handle=(nil)
+[Rank 21] ENTER generate_hermitian_slice_pair_local: Y_primary=340, Y_mirror=1708, ps_handle=(nil), params_handle=(nil)
+[Rank 19] ENTER generate_hermitian_slice_pair_local: Y_primary=308, Y_mirror=1740, ps_handle=(nil), params_handle=(nil)
+[Rank 22] ENTER generate_hermitian_slice_pair_local: Y_primary=356, Y_mirror=1692, ps_handle=(nil), params_handle=(nil)
+[Rank 17] ENTER generate_hermitian_slice_pair_local: Y_primary=276, Y_mirror=1772, ps_handle=(nil), params_handle=(nil)
+[Rank 2] ENTER generate_hermitian_slice_pair_local: Y_primary=36, Y_mirror=2012, ps_handle=(nil), params_handle=(nil)
+[Rank 16] ENTER generate_hermitian_slice_pair_local: Y_primary=260, Y_mirror=1788, ps_handle=(nil), params_handle=(nil)
+[Rank 4] ENTER generate_hermitian_slice_pair_local: Y_primary=68, Y_mirror=1980, ps_handle=(nil), params_handle=(nil)
+[Rank 20] ENTER generate_hermitian_slice_pair_local: Y_primary=324, Y_mirror=1724, ps_handle=(nil), params_handle=(nil)
+[Rank 10] ENTER generate_hermitian_slice_pair_local: Y_primary=164, Y_mirror=1884, ps_handle=(nil), params_handle=(nil)
+[Rank 3] ENTER generate_hermitian_slice_pair_local: Y_primary=52, Y_mirror=1996, ps_handle=(nil), params_handle=(nil)
+[Rank 12] ENTER generate_hermitian_slice_pair_local: Y_primary=196, Y_mirror=1852, ps_handle=(nil), params_handle=(nil)
+[Rank 18] ENTER generate_hermitian_slice_pair_local: Y_primary=292, Y_mirror=1756, ps_handle=(nil), params_handle=(nil)
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=3, Y_mirror=2045, ps_handle=(nil), params_handle=(nil)
+[Rank 7] ENTER generate_hermitian_slice_pair_local: Y_primary=116, Y_mirror=1932, ps_handle=(nil), params_handle=(nil)
+[Rank 5] ENTER generate_hermitian_slice_pair_local: Y_primary=84, Y_mirror=1964, ps_handle=(nil), params_handle=(nil)
+[Rank 14] ENTER generate_hermitian_slice_pair_local: Y_primary=228, Y_mirror=1820, ps_handle=(nil), params_handle=(nil)
+[Rank 25] ENTER generate_hermitian_slice_pair_local: Y_primary=404, Y_mirror=1644, ps_handle=(nil), params_handle=(nil)
+[Rank 8] ENTER generate_hermitian_slice_pair_local: Y_primary=132, Y_mirror=1916, ps_handle=(nil), params_handle=(nil)
+[Rank 1] ENTER generate_hermitian_slice_pair_local: Y_primary=20, Y_mirror=2028, ps_handle=(nil), params_handle=(nil)
+[Rank 31] ENTER generate_hermitian_slice_pair_local: Y_primary=501, Y_mirror=1547, ps_handle=(nil), params_handle=(nil)
+[Rank 61] ENTER generate_hermitian_slice_pair_local: Y_primary=981, Y_mirror=1067, ps_handle=(nil), params_handle=(nil)
+[Rank 63] ENTER generate_hermitian_slice_pair_local: Y_primary=1013, Y_mirror=1035, ps_handle=(nil), params_handle=(nil)
+[Rank 30] ENTER generate_hermitian_slice_pair_local: Y_primary=485, Y_mirror=1563, ps_handle=(nil), params_handle=(nil)
+[Rank 62] ENTER generate_hermitian_slice_pair_local: Y_primary=997, Y_mirror=1051, ps_handle=(nil), params_handle=(nil)
+[Rank 27] ENTER generate_hermitian_slice_pair_local: Y_primary=437, Y_mirror=1611, ps_handle=(nil), params_handle=(nil)
+[Rank 52] ENTER generate_hermitian_slice_pair_local: Y_primary=837, Y_mirror=1211, ps_handle=(nil), params_handle=(nil)
+[Rank 26] ENTER generate_hermitian_slice_pair_local: Y_primary=421, Y_mirror=1627, ps_handle=(nil), params_handle=(nil)
+[Rank 60] ENTER generate_hermitian_slice_pair_local: Y_primary=965, Y_mirror=1083, ps_handle=(nil), params_handle=(nil)
+[Rank 15] ENTER generate_hermitian_slice_pair_local: Y_primary=245, Y_mirror=1803, ps_handle=(nil), params_handle=(nil)
+[Rank 59] ENTER generate_hermitian_slice_pair_local: Y_primary=949, Y_mirror=1099, ps_handle=(nil), params_handle=(nil)
+[Rank 1] ENTER generate_hermitian_slice_pair_local: Y_primary=21, Y_mirror=2027, ps_handle=(nil), params_handle=(nil)
+[Rank 29] ENTER generate_hermitian_slice_pair_local: Y_primary=469, Y_mirror=1579, ps_handle=(nil), params_handle=(nil)
+[Rank 58] ENTER generate_hermitian_slice_pair_local: Y_primary=933, Y_mirror=1115, ps_handle=(nil), params_handle=(nil)
+[Rank 18] ENTER generate_hermitian_slice_pair_local: Y_primary=293, Y_mirror=1755, ps_handle=(nil), params_handle=(nil)
+[Rank 20] ENTER generate_hermitian_slice_pair_local: Y_primary=325, Y_mirror=1723, ps_handle=(nil), params_handle=(nil)
+[Rank 19] ENTER generate_hermitian_slice_pair_local: Y_primary=309, Y_mirror=1739, ps_handle=(nil), params_handle=(nil)
+[Rank 21] ENTER generate_hermitian_slice_pair_local: Y_primary=341, Y_mirror=1707, ps_handle=(nil), params_handle=(nil)
+[Rank 17] ENTER generate_hermitian_slice_pair_local: Y_primary=277, Y_mirror=1771, ps_handle=(nil), params_handle=(nil)
+[Rank 23] ENTER generate_hermitian_slice_pair_local: Y_primary=373, Y_mirror=1675, ps_handle=(nil), params_handle=(nil)
+[Rank 22] ENTER generate_hermitian_slice_pair_local: Y_primary=357, Y_mirror=1691, ps_handle=(nil), params_handle=(nil)
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=4, Y_mirror=2044, ps_handle=(nil), params_handle=(nil)
+[Rank 28] ENTER generate_hermitian_slice_pair_local: Y_primary=453, Y_mirror=1595, ps_handle=(nil), params_handle=(nil)
+[Rank 5] ENTER generate_hermitian_slice_pair_local: Y_primary=85, Y_mirror=1963, ps_handle=(nil), params_handle=(nil)
+[Rank 24] ENTER generate_hermitian_slice_pair_local: Y_primary=389, Y_mirror=1659, ps_handle=(nil), params_handle=(nil)
+[Rank 6] ENTER generate_hermitian_slice_pair_local: Y_primary=101, Y_mirror=1947, ps_handle=(nil), params_handle=(nil)
+[Rank 7] ENTER generate_hermitian_slice_pair_local: Y_primary=117, Y_mirror=1931, ps_handle=(nil), params_handle=(nil)
+[Rank 11] ENTER generate_hermitian_slice_pair_local: Y_primary=181, Y_mirror=1867, ps_handle=(nil), params_handle=(nil)
+[Rank 57] ENTER generate_hermitian_slice_pair_local: Y_primary=917, Y_mirror=1131, ps_handle=(nil), params_handle=(nil)
+[Rank 13] ENTER generate_hermitian_slice_pair_local: Y_primary=213, Y_mirror=1835, ps_handle=(nil), params_handle=(nil)
+[Rank 4] ENTER generate_hermitian_slice_pair_local: Y_primary=69, Y_mirror=1979, ps_handle=(nil), params_handle=(nil)
+[Rank 51] ENTER generate_hermitian_slice_pair_local: Y_primary=821, Y_mirror=1227, ps_handle=(nil), params_handle=(nil)
+[Rank 3] ENTER generate_hermitian_slice_pair_local: Y_primary=53, Y_mirror=1995, ps_handle=(nil), params_handle=(nil)
+[Rank 16] ENTER generate_hermitian_slice_pair_local: Y_primary=261, Y_mirror=1787, ps_handle=(nil), params_handle=(nil)
+[Rank 49] ENTER generate_hermitian_slice_pair_local: Y_primary=789, Y_mirror=1259, ps_handle=(nil), params_handle=(nil)
+[Rank 2] ENTER generate_hermitian_slice_pair_local: Y_primary=37, Y_mirror=2011, ps_handle=(nil), params_handle=(nil)
+[Rank 12] ENTER generate_hermitian_slice_pair_local: Y_primary=197, Y_mirror=1851, ps_handle=(nil), params_handle=(nil)
+[Rank 9] ENTER generate_hermitian_slice_pair_local: Y_primary=149, Y_mirror=1899, ps_handle=(nil), params_handle=(nil)
+[Rank 10] ENTER generate_hermitian_slice_pair_local: Y_primary=165, Y_mirror=1883, ps_handle=(nil), params_handle=(nil)
+[Rank 14] ENTER generate_hermitian_slice_pair_local: Y_primary=229, Y_mirror=1819, ps_handle=(nil), params_handle=(nil)
+[Rank 8] ENTER generate_hermitian_slice_pair_local: Y_primary=133, Y_mirror=1915, ps_handle=(nil), params_handle=(nil)
+[Rank 45] ENTER generate_hermitian_slice_pair_local: Y_primary=725, Y_mirror=1323, ps_handle=(nil), params_handle=(nil)
+[Rank 50] ENTER generate_hermitian_slice_pair_local: Y_primary=805, Y_mirror=1243, ps_handle=(nil), params_handle=(nil)
+[Rank 42] ENTER generate_hermitian_slice_pair_local: Y_primary=677, Y_mirror=1371, ps_handle=(nil), params_handle=(nil)
+[Rank 40] ENTER generate_hermitian_slice_pair_local: Y_primary=645, Y_mirror=1403, ps_handle=(nil), params_handle=(nil)
+[Rank 43] ENTER generate_hermitian_slice_pair_local: Y_primary=693, Y_mirror=1355, ps_handle=(nil), params_handle=(nil)
+[Rank 35] ENTER generate_hermitian_slice_pair_local: Y_primary=565, Y_mirror=1483, ps_handle=(nil), params_handle=(nil)
+[Rank 54] ENTER generate_hermitian_slice_pair_local: Y_primary=869, Y_mirror=1179, ps_handle=(nil), params_handle=(nil)
+[Rank 46] ENTER generate_hermitian_slice_pair_local: Y_primary=741, Y_mirror=1307, ps_handle=(nil), params_handle=(nil)
+[Rank 55] ENTER generate_hermitian_slice_pair_local: Y_primary=885, Y_mirror=1163, ps_handle=(nil), params_handle=(nil)
+[Rank 44] ENTER generate_hermitian_slice_pair_local: Y_primary=709, Y_mirror=1339, ps_handle=(nil), params_handle=(nil)
+[Rank 56] ENTER generate_hermitian_slice_pair_local: Y_primary=901, Y_mirror=1147, ps_handle=(nil), params_handle=(nil)
+[Rank 39] ENTER generate_hermitian_slice_pair_local: Y_primary=629, Y_mirror=1419, ps_handle=(nil), params_handle=(nil)
+[Rank 53] ENTER generate_hermitian_slice_pair_local: Y_primary=853, Y_mirror=1195, ps_handle=(nil), params_handle=(nil)
+[Rank 36] ENTER generate_hermitian_slice_pair_local: Y_primary=581, Y_mirror=1467, ps_handle=(nil), params_handle=(nil)
+[Rank 38] ENTER generate_hermitian_slice_pair_local: Y_primary=613, Y_mirror=1435, ps_handle=(nil), params_handle=(nil)
+[Rank 34] ENTER generate_hermitian_slice_pair_local: Y_primary=549, Y_mirror=1499, ps_handle=(nil), params_handle=(nil)
+[Rank 41] ENTER generate_hermitian_slice_pair_local: Y_primary=661, Y_mirror=1387, ps_handle=(nil), params_handle=(nil)
+[Rank 37] ENTER generate_hermitian_slice_pair_local: Y_primary=597, Y_mirror=1451, ps_handle=(nil), params_handle=(nil)
+[Rank 48] ENTER generate_hermitian_slice_pair_local: Y_primary=773, Y_mirror=1275, ps_handle=(nil), params_handle=(nil)
+[Rank 33] ENTER generate_hermitian_slice_pair_local: Y_primary=533, Y_mirror=1515, ps_handle=(nil), params_handle=(nil)
+[Rank 32] ENTER generate_hermitian_slice_pair_local: Y_primary=517, Y_mirror=1531, ps_handle=(nil), params_handle=(nil)
+[Rank 47] ENTER generate_hermitian_slice_pair_local: Y_primary=757, Y_mirror=1291, ps_handle=(nil), params_handle=(nil)
+[Rank 25] ENTER generate_hermitian_slice_pair_local: Y_primary=405, Y_mirror=1643, ps_handle=(nil), params_handle=(nil)
+[Rank 63] ENTER generate_hermitian_slice_pair_local: Y_primary=1014, Y_mirror=1034, ps_handle=(nil), params_handle=(nil)
+[Rank 37] ENTER generate_hermitian_slice_pair_local: Y_primary=598, Y_mirror=1450, ps_handle=(nil), params_handle=(nil)
+[Rank 62] ENTER generate_hermitian_slice_pair_local: Y_primary=998, Y_mirror=1050, ps_handle=(nil), params_handle=(nil)
+[Rank 38] ENTER generate_hermitian_slice_pair_local: Y_primary=614, Y_mirror=1434, ps_handle=(nil), params_handle=(nil)
+[Rank 59] ENTER generate_hermitian_slice_pair_local: Y_primary=950, Y_mirror=1098, ps_handle=(nil), params_handle=(nil)
+[Rank 39] ENTER generate_hermitian_slice_pair_local: Y_primary=630, Y_mirror=1418, ps_handle=(nil), params_handle=(nil)
+[Rank 49] ENTER generate_hermitian_slice_pair_local: Y_primary=790, Y_mirror=1258, ps_handle=(nil), params_handle=(nil)
+[Rank 30] ENTER generate_hermitian_slice_pair_local: Y_primary=486, Y_mirror=1562, ps_handle=(nil), params_handle=(nil)
+[Rank 51] ENTER generate_hermitian_slice_pair_local: Y_primary=822, Y_mirror=1226, ps_handle=(nil), params_handle=(nil)
+[Rank 36] ENTER generate_hermitian_slice_pair_local: Y_primary=582, Y_mirror=1466, ps_handle=(nil), params_handle=(nil)
+[Rank 41] ENTER generate_hermitian_slice_pair_local: Y_primary=662, Y_mirror=1386, ps_handle=(nil), params_handle=(nil)
+[Rank 50] ENTER generate_hermitian_slice_pair_local: Y_primary=806, Y_mirror=1242, ps_handle=(nil), params_handle=(nil)
+[Rank 40] ENTER generate_hermitian_slice_pair_local: Y_primary=646, Y_mirror=1402, ps_handle=(nil), params_handle=(nil)
+[Rank 31] ENTER generate_hermitian_slice_pair_local: Y_primary=502, Y_mirror=1546, ps_handle=(nil), params_handle=(nil)
+[Rank 52] ENTER generate_hermitian_slice_pair_local: Y_primary=838, Y_mirror=1210, ps_handle=(nil), params_handle=(nil)
+[Rank 32] ENTER generate_hermitian_slice_pair_local: Y_primary=518, Y_mirror=1530, ps_handle=(nil), params_handle=(nil)
+[Rank 58] ENTER generate_hermitian_slice_pair_local: Y_primary=934, Y_mirror=1114, ps_handle=(nil), params_handle=(nil)
+[Rank 48] ENTER generate_hermitian_slice_pair_local: Y_primary=774, Y_mirror=1274, ps_handle=(nil), params_handle=(nil)
+[Rank 53] ENTER generate_hermitian_slice_pair_local: Y_primary=854, Y_mirror=1194, ps_handle=(nil), params_handle=(nil)
+[Rank 35] ENTER generate_hermitian_slice_pair_local: Y_primary=566, Y_mirror=1482, ps_handle=(nil), params_handle=(nil)
+[Rank 29] ENTER generate_hermitian_slice_pair_local: Y_primary=470, Y_mirror=1578, ps_handle=(nil), params_handle=(nil)
+[Rank 55] ENTER generate_hermitian_slice_pair_local: Y_primary=886, Y_mirror=1162, ps_handle=(nil), params_handle=(nil)
+[Rank 54] ENTER generate_hermitian_slice_pair_local: Y_primary=870, Y_mirror=1178, ps_handle=(nil), params_handle=(nil)
+[Rank 33] ENTER generate_hermitian_slice_pair_local: Y_primary=534, Y_mirror=1514, ps_handle=(nil), params_handle=(nil)
+[Rank 56] ENTER generate_hermitian_slice_pair_local: Y_primary=902, Y_mirror=1146, ps_handle=(nil), params_handle=(nil)
+[Rank 61] ENTER generate_hermitian_slice_pair_local: Y_primary=982, Y_mirror=1066, ps_handle=(nil), params_handle=(nil)
+[Rank 47] ENTER generate_hermitian_slice_pair_local: Y_primary=758, Y_mirror=1290, ps_handle=(nil), params_handle=(nil)
+[Rank 46] ENTER generate_hermitian_slice_pair_local: Y_primary=742, Y_mirror=1306, ps_handle=(nil), params_handle=(nil)
+[Rank 34] ENTER generate_hermitian_slice_pair_local: Y_primary=550, Y_mirror=1498, ps_handle=(nil), params_handle=(nil)
+[Rank 44] ENTER generate_hermitian_slice_pair_local: Y_primary=710, Y_mirror=1338, ps_handle=(nil), params_handle=(nil)
+[Rank 60] ENTER generate_hermitian_slice_pair_local: Y_primary=966, Y_mirror=1082, ps_handle=(nil), params_handle=(nil)
+[Rank 45] ENTER generate_hermitian_slice_pair_local: Y_primary=726, Y_mirror=1322, ps_handle=(nil), params_handle=(nil)
+[Rank 27] ENTER generate_hermitian_slice_pair_local: Y_primary=438, Y_mirror=1610, ps_handle=(nil), params_handle=(nil)
+[Rank 42] ENTER generate_hermitian_slice_pair_local: Y_primary=678, Y_mirror=1370, ps_handle=(nil), params_handle=(nil)
+[Rank 43] ENTER generate_hermitian_slice_pair_local: Y_primary=694, Y_mirror=1354, ps_handle=(nil), params_handle=(nil)
+[Rank 26] ENTER generate_hermitian_slice_pair_local: Y_primary=422, Y_mirror=1626, ps_handle=(nil), params_handle=(nil)
+[Rank 57] ENTER generate_hermitian_slice_pair_local: Y_primary=918, Y_mirror=1130, ps_handle=(nil), params_handle=(nil)
+[Rank 19] ENTER generate_hermitian_slice_pair_local: Y_primary=310, Y_mirror=1738, ps_handle=(nil), params_handle=(nil)
+[Rank 18] ENTER generate_hermitian_slice_pair_local: Y_primary=294, Y_mirror=1754, ps_handle=(nil), params_handle=(nil)
+[Rank 28] ENTER generate_hermitian_slice_pair_local: Y_primary=454, Y_mirror=1594, ps_handle=(nil), params_handle=(nil)
+[Rank 23] ENTER generate_hermitian_slice_pair_local: Y_primary=374, Y_mirror=1674, ps_handle=(nil), params_handle=(nil)
+[Rank 10] ENTER generate_hermitian_slice_pair_local: Y_primary=166, Y_mirror=1882, ps_handle=(nil), params_handle=(nil)
+[Rank 7] ENTER generate_hermitian_slice_pair_local: Y_primary=118, Y_mirror=1930, ps_handle=(nil), params_handle=(nil)
+[Rank 8] ENTER generate_hermitian_slice_pair_local: Y_primary=134, Y_mirror=1914, ps_handle=(nil), params_handle=(nil)
+[Rank 17] ENTER generate_hermitian_slice_pair_local: Y_primary=278, Y_mirror=1770, ps_handle=(nil), params_handle=(nil)
+[Rank 13] ENTER generate_hermitian_slice_pair_local: Y_primary=214, Y_mirror=1834, ps_handle=(nil), params_handle=(nil)
+[Rank 9] ENTER generate_hermitian_slice_pair_local: Y_primary=150, Y_mirror=1898, ps_handle=(nil), params_handle=(nil)
+[Rank 12] ENTER generate_hermitian_slice_pair_local: Y_primary=198, Y_mirror=1850, ps_handle=(nil), params_handle=(nil)
+[Rank 20] ENTER generate_hermitian_slice_pair_local: Y_primary=326, Y_mirror=1722, ps_handle=(nil), params_handle=(nil)
+[Rank 16] ENTER generate_hermitian_slice_pair_local: Y_primary=262, Y_mirror=1786, ps_handle=(nil), params_handle=(nil)
+[Rank 6] ENTER generate_hermitian_slice_pair_local: Y_primary=102, Y_mirror=1946, ps_handle=(nil), params_handle=(nil)
+[Rank 1] ENTER generate_hermitian_slice_pair_local: Y_primary=22, Y_mirror=2026, ps_handle=(nil), params_handle=(nil)
+[Rank 15] ENTER generate_hermitian_slice_pair_local: Y_primary=246, Y_mirror=1802, ps_handle=(nil), params_handle=(nil)
+[Rank 14] ENTER generate_hermitian_slice_pair_local: Y_primary=230, Y_mirror=1818, ps_handle=(nil), params_handle=(nil)
+[Rank 5] ENTER generate_hermitian_slice_pair_local: Y_primary=86, Y_mirror=1962, ps_handle=(nil), params_handle=(nil)
+[Rank 11] ENTER generate_hermitian_slice_pair_local: Y_primary=182, Y_mirror=1866, ps_handle=(nil), params_handle=(nil)
+[Rank 3] ENTER generate_hermitian_slice_pair_local: Y_primary=54, Y_mirror=1994, ps_handle=(nil), params_handle=(nil)
+[Rank 24] ENTER generate_hermitian_slice_pair_local: Y_primary=390, Y_mirror=1658, ps_handle=(nil), params_handle=(nil)
+[Rank 25] ENTER generate_hermitian_slice_pair_local: Y_primary=406, Y_mirror=1642, ps_handle=(nil), params_handle=(nil)
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=5, Y_mirror=2043, ps_handle=(nil), params_handle=(nil)
+[Rank 22] ENTER generate_hermitian_slice_pair_local: Y_primary=358, Y_mirror=1690, ps_handle=(nil), params_handle=(nil)
+[Rank 2] ENTER generate_hermitian_slice_pair_local: Y_primary=38, Y_mirror=2010, ps_handle=(nil), params_handle=(nil)
+[Rank 4] ENTER generate_hermitian_slice_pair_local: Y_primary=70, Y_mirror=1978, ps_handle=(nil), params_handle=(nil)
+[Rank 21] ENTER generate_hermitian_slice_pair_local: Y_primary=342, Y_mirror=1706, ps_handle=(nil), params_handle=(nil)
+[Rank 63] ENTER generate_hermitian_slice_pair_local: Y_primary=1015, Y_mirror=1033, ps_handle=(nil), params_handle=(nil)
+[Rank 62] ENTER generate_hermitian_slice_pair_local: Y_primary=999, Y_mirror=1049, ps_handle=(nil), params_handle=(nil)
+[Rank 59] ENTER generate_hermitian_slice_pair_local: Y_primary=951, Y_mirror=1097, ps_handle=(nil), params_handle=(nil)
+[Rank 31] ENTER generate_hermitian_slice_pair_local: Y_primary=503, Y_mirror=1545, ps_handle=(nil), params_handle=(nil)
+[Rank 34] ENTER generate_hermitian_slice_pair_local: Y_primary=551, Y_mirror=1497, ps_handle=(nil), params_handle=(nil)
+[Rank 30] ENTER generate_hermitian_slice_pair_local: Y_primary=487, Y_mirror=1561, ps_handle=(nil), params_handle=(nil)
+[Rank 40] ENTER generate_hermitian_slice_pair_local: Y_primary=647, Y_mirror=1401, ps_handle=(nil), params_handle=(nil)
+[Rank 58] ENTER generate_hermitian_slice_pair_local: Y_primary=935, Y_mirror=1113, ps_handle=(nil), params_handle=(nil)
+[Rank 33] ENTER generate_hermitian_slice_pair_local: Y_primary=535, Y_mirror=1513, ps_handle=(nil), params_handle=(nil)
+[Rank 35] ENTER generate_hermitian_slice_pair_local: Y_primary=567, Y_mirror=1481, ps_handle=(nil), params_handle=(nil)
+[Rank 28] ENTER generate_hermitian_slice_pair_local: Y_primary=455, Y_mirror=1593, ps_handle=(nil), params_handle=(nil)
+[Rank 51] ENTER generate_hermitian_slice_pair_local: Y_primary=823, Y_mirror=1225, ps_handle=(nil), params_handle=(nil)
+[Rank 32] ENTER generate_hermitian_slice_pair_local: Y_primary=519, Y_mirror=1529, ps_handle=(nil), params_handle=(nil)
+[Rank 41] ENTER generate_hermitian_slice_pair_local: Y_primary=663, Y_mirror=1385, ps_handle=(nil), params_handle=(nil)
+[Rank 49] ENTER generate_hermitian_slice_pair_local: Y_primary=791, Y_mirror=1257, ps_handle=(nil), params_handle=(nil)
+[Rank 50] ENTER generate_hermitian_slice_pair_local: Y_primary=807, Y_mirror=1241, ps_handle=(nil), params_handle=(nil)
+[Rank 52] ENTER generate_hermitian_slice_pair_local: Y_primary=839, Y_mirror=1209, ps_handle=(nil), params_handle=(nil)
+[Rank 29] ENTER generate_hermitian_slice_pair_local: Y_primary=471, Y_mirror=1577, ps_handle=(nil), params_handle=(nil)
+[Rank 60] ENTER generate_hermitian_slice_pair_local: Y_primary=967, Y_mirror=1081, ps_handle=(nil), params_handle=(nil)
+[Rank 38] ENTER generate_hermitian_slice_pair_local: Y_primary=615, Y_mirror=1433, ps_handle=(nil), params_handle=(nil)
+[Rank 43] ENTER generate_hermitian_slice_pair_local: Y_primary=695, Y_mirror=1353, ps_handle=(nil), params_handle=(nil)
+[Rank 53] ENTER generate_hermitian_slice_pair_local: Y_primary=855, Y_mirror=1193, ps_handle=(nil), params_handle=(nil)
+[Rank 55] ENTER generate_hermitian_slice_pair_local: Y_primary=887, Y_mirror=1161, ps_handle=(nil), params_handle=(nil)
+[Rank 54] ENTER generate_hermitian_slice_pair_local: Y_primary=871, Y_mirror=1177, ps_handle=(nil), params_handle=(nil)
+[Rank 37] ENTER generate_hermitian_slice_pair_local: Y_primary=599, Y_mirror=1449, ps_handle=(nil), params_handle=(nil)
+[Rank 56] ENTER generate_hermitian_slice_pair_local: Y_primary=903, Y_mirror=1145, ps_handle=(nil), params_handle=(nil)
+[Rank 27] ENTER generate_hermitian_slice_pair_local: Y_primary=439, Y_mirror=1609, ps_handle=(nil), params_handle=(nil)
+[Rank 36] ENTER generate_hermitian_slice_pair_local: Y_primary=583, Y_mirror=1465, ps_handle=(nil), params_handle=(nil)
+[Rank 26] ENTER generate_hermitian_slice_pair_local: Y_primary=423, Y_mirror=1625, ps_handle=(nil), params_handle=(nil)
+[Rank 39] ENTER generate_hermitian_slice_pair_local: Y_primary=631, Y_mirror=1417, ps_handle=(nil), params_handle=(nil)
+[Rank 61] ENTER generate_hermitian_slice_pair_local: Y_primary=983, Y_mirror=1065, ps_handle=(nil), params_handle=(nil)
+[Rank 44] ENTER generate_hermitian_slice_pair_local: Y_primary=711, Y_mirror=1337, ps_handle=(nil), params_handle=(nil)
+[Rank 23] ENTER generate_hermitian_slice_pair_local: Y_primary=375, Y_mirror=1673, ps_handle=(nil), params_handle=(nil)
+[Rank 46] ENTER generate_hermitian_slice_pair_local: Y_primary=743, Y_mirror=1305, ps_handle=(nil), params_handle=(nil)
+[Rank 47] ENTER generate_hermitian_slice_pair_local: Y_primary=759, Y_mirror=1289, ps_handle=(nil), params_handle=(nil)
+[Rank 42] ENTER generate_hermitian_slice_pair_local: Y_primary=679, Y_mirror=1369, ps_handle=(nil), params_handle=(nil)
+[Rank 48] ENTER generate_hermitian_slice_pair_local: Y_primary=775, Y_mirror=1273, ps_handle=(nil), params_handle=(nil)
+[Rank 45] ENTER generate_hermitian_slice_pair_local: Y_primary=727, Y_mirror=1321, ps_handle=(nil), params_handle=(nil)
+[Rank 57] ENTER generate_hermitian_slice_pair_local: Y_primary=919, Y_mirror=1129, ps_handle=(nil), params_handle=(nil)
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=6, Y_mirror=2042, ps_handle=(nil), params_handle=(nil)
+[Rank 11] ENTER generate_hermitian_slice_pair_local: Y_primary=183, Y_mirror=1865, ps_handle=(nil), params_handle=(nil)
+[Rank 12] ENTER generate_hermitian_slice_pair_local: Y_primary=199, Y_mirror=1849, ps_handle=(nil), params_handle=(nil)
+[Rank 22] ENTER generate_hermitian_slice_pair_local: Y_primary=359, Y_mirror=1689, ps_handle=(nil), params_handle=(nil)
+[Rank 19] ENTER generate_hermitian_slice_pair_local: Y_primary=311, Y_mirror=1737, ps_handle=(nil), params_handle=(nil)
+[Rank 5] ENTER generate_hermitian_slice_pair_local: Y_primary=87, Y_mirror=1961, ps_handle=(nil), params_handle=(nil)
+[Rank 10] ENTER generate_hermitian_slice_pair_local: Y_primary=167, Y_mirror=1881, ps_handle=(nil), params_handle=(nil)
+[Rank 9] ENTER generate_hermitian_slice_pair_local: Y_primary=151, Y_mirror=1897, ps_handle=(nil), params_handle=(nil)
+[Rank 3] ENTER generate_hermitian_slice_pair_local: Y_primary=55, Y_mirror=1993, ps_handle=(nil), params_handle=(nil)
+[Rank 7] ENTER generate_hermitian_slice_pair_local: Y_primary=119, Y_mirror=1929, ps_handle=(nil), params_handle=(nil)
+[Rank 24] ENTER generate_hermitian_slice_pair_local: Y_primary=391, Y_mirror=1657, ps_handle=(nil), params_handle=(nil)
+[Rank 8] ENTER generate_hermitian_slice_pair_local: Y_primary=135, Y_mirror=1913, ps_handle=(nil), params_handle=(nil)
+[Rank 15] ENTER generate_hermitian_slice_pair_local: Y_primary=247, Y_mirror=1801, ps_handle=(nil), params_handle=(nil)
+[Rank 21] ENTER generate_hermitian_slice_pair_local: Y_primary=343, Y_mirror=1705, ps_handle=(nil), params_handle=(nil)
+[Rank 20] ENTER generate_hermitian_slice_pair_local: Y_primary=327, Y_mirror=1721, ps_handle=(nil), params_handle=(nil)
+[Rank 6] ENTER generate_hermitian_slice_pair_local: Y_primary=103, Y_mirror=1945, ps_handle=(nil), params_handle=(nil)
+[Rank 14] ENTER generate_hermitian_slice_pair_local: Y_primary=231, Y_mirror=1817, ps_handle=(nil), params_handle=(nil)
+[Rank 1] ENTER generate_hermitian_slice_pair_local: Y_primary=23, Y_mirror=2025, ps_handle=(nil), params_handle=(nil)
+[Rank 4] ENTER generate_hermitian_slice_pair_local: Y_primary=71, Y_mirror=1977, ps_handle=(nil), params_handle=(nil)
+[Rank 17] ENTER generate_hermitian_slice_pair_local: Y_primary=279, Y_mirror=1769, ps_handle=(nil), params_handle=(nil)
+[Rank 16] ENTER generate_hermitian_slice_pair_local: Y_primary=263, Y_mirror=1785, ps_handle=(nil), params_handle=(nil)
+[Rank 18] ENTER generate_hermitian_slice_pair_local: Y_primary=295, Y_mirror=1753, ps_handle=(nil), params_handle=(nil)
+[Rank 2] ENTER generate_hermitian_slice_pair_local: Y_primary=39, Y_mirror=2009, ps_handle=(nil), params_handle=(nil)
+[Rank 25] ENTER generate_hermitian_slice_pair_local: Y_primary=407, Y_mirror=1641, ps_handle=(nil), params_handle=(nil)
+[Rank 13] ENTER generate_hermitian_slice_pair_local: Y_primary=215, Y_mirror=1833, ps_handle=(nil), params_handle=(nil)
+[Rank 63] ENTER generate_hermitian_slice_pair_local: Y_primary=1016, Y_mirror=1032, ps_handle=(nil), params_handle=(nil)
+[Rank 41] ENTER generate_hermitian_slice_pair_local: Y_primary=664, Y_mirror=1384, ps_handle=(nil), params_handle=(nil)
+[Rank 59] ENTER generate_hermitian_slice_pair_local: Y_primary=952, Y_mirror=1096, ps_handle=(nil), params_handle=(nil)
+[Rank 33] ENTER generate_hermitian_slice_pair_local: Y_primary=536, Y_mirror=1512, ps_handle=(nil), params_handle=(nil)
+[Rank 32] ENTER generate_hermitian_slice_pair_local: Y_primary=520, Y_mirror=1528, ps_handle=(nil), params_handle=(nil)
+[Rank 62] ENTER generate_hermitian_slice_pair_local: Y_primary=1000, Y_mirror=1048, ps_handle=(nil), params_handle=(nil)
+[Rank 40] ENTER generate_hermitian_slice_pair_local: Y_primary=648, Y_mirror=1400, ps_handle=(nil), params_handle=(nil)
+[Rank 58] ENTER generate_hermitian_slice_pair_local: Y_primary=936, Y_mirror=1112, ps_handle=(nil), params_handle=(nil)
+[Rank 46] ENTER generate_hermitian_slice_pair_local: Y_primary=744, Y_mirror=1304, ps_handle=(nil), params_handle=(nil)
+[Rank 43] ENTER generate_hermitian_slice_pair_local: Y_primary=696, Y_mirror=1352, ps_handle=(nil), params_handle=(nil)
+[Rank 60] ENTER generate_hermitian_slice_pair_local: Y_primary=968, Y_mirror=1080, ps_handle=(nil), params_handle=(nil)
+[Rank 47] ENTER generate_hermitian_slice_pair_local: Y_primary=760, Y_mirror=1288, ps_handle=(nil), params_handle=(nil)
+[Rank 28] ENTER generate_hermitian_slice_pair_local: Y_primary=456, Y_mirror=1592, ps_handle=(nil), params_handle=(nil)
+[Rank 37] ENTER generate_hermitian_slice_pair_local: Y_primary=600, Y_mirror=1448, ps_handle=(nil), params_handle=(nil)
+[Rank 29] ENTER generate_hermitian_slice_pair_local: Y_primary=472, Y_mirror=1576, ps_handle=(nil), params_handle=(nil)
+[Rank 31] ENTER generate_hermitian_slice_pair_local: Y_primary=504, Y_mirror=1544, ps_handle=(nil), params_handle=(nil)
+[Rank 52] ENTER generate_hermitian_slice_pair_local: Y_primary=840, Y_mirror=1208, ps_handle=(nil), params_handle=(nil)
+[Rank 49] ENTER generate_hermitian_slice_pair_local: Y_primary=792, Y_mirror=1256, ps_handle=(nil), params_handle=(nil)
+[Rank 34] ENTER generate_hermitian_slice_pair_local: Y_primary=552, Y_mirror=1496, ps_handle=(nil), params_handle=(nil)
+[Rank 42] ENTER generate_hermitian_slice_pair_local: Y_primary=680, Y_mirror=1368, ps_handle=(nil), params_handle=(nil)
+[Rank 53] ENTER generate_hermitian_slice_pair_local: Y_primary=856, Y_mirror=1192, ps_handle=(nil), params_handle=(nil)
+[Rank 55] ENTER generate_hermitian_slice_pair_local: Y_primary=888, Y_mirror=1160, ps_handle=(nil), params_handle=(nil)
+[Rank 54] ENTER generate_hermitian_slice_pair_local: Y_primary=872, Y_mirror=1176, ps_handle=(nil), params_handle=(nil)
+[Rank 61] ENTER generate_hermitian_slice_pair_local: Y_primary=984, Y_mirror=1064, ps_handle=(nil), params_handle=(nil)
+[Rank 30] ENTER generate_hermitian_slice_pair_local: Y_primary=488, Y_mirror=1560, ps_handle=(nil), params_handle=(nil)
+[Rank 48] ENTER generate_hermitian_slice_pair_local: Y_primary=776, Y_mirror=1272, ps_handle=(nil), params_handle=(nil)
+[Rank 56] ENTER generate_hermitian_slice_pair_local: Y_primary=904, Y_mirror=1144, ps_handle=(nil), params_handle=(nil)
+[Rank 44] ENTER generate_hermitian_slice_pair_local: Y_primary=712, Y_mirror=1336, ps_handle=(nil), params_handle=(nil)
+[Rank 26] ENTER generate_hermitian_slice_pair_local: Y_primary=424, Y_mirror=1624, ps_handle=(nil), params_handle=(nil)
+[Rank 35] ENTER generate_hermitian_slice_pair_local: Y_primary=568, Y_mirror=1480, ps_handle=(nil), params_handle=(nil)
+[Rank 45] ENTER generate_hermitian_slice_pair_local: Y_primary=728, Y_mirror=1320, ps_handle=(nil), params_handle=(nil)
+[Rank 27] ENTER generate_hermitian_slice_pair_local: Y_primary=440, Y_mirror=1608, ps_handle=(nil), params_handle=(nil)
+[Rank 24] ENTER generate_hermitian_slice_pair_local: Y_primary=392, Y_mirror=1656, ps_handle=(nil), params_handle=(nil)
+[Rank 51] ENTER generate_hermitian_slice_pair_local: Y_primary=824, Y_mirror=1224, ps_handle=(nil), params_handle=(nil)
+[Rank 39] ENTER generate_hermitian_slice_pair_local: Y_primary=632, Y_mirror=1416, ps_handle=(nil), params_handle=(nil)
+[Rank 36] ENTER generate_hermitian_slice_pair_local: Y_primary=584, Y_mirror=1464, ps_handle=(nil), params_handle=(nil)
+[Rank 50] ENTER generate_hermitian_slice_pair_local: Y_primary=808, Y_mirror=1240, ps_handle=(nil), params_handle=(nil)
+[Rank 38] ENTER generate_hermitian_slice_pair_local: Y_primary=616, Y_mirror=1432, ps_handle=(nil), params_handle=(nil)
+[Rank 57] ENTER generate_hermitian_slice_pair_local: Y_primary=920, Y_mirror=1128, ps_handle=(nil), params_handle=(nil)
+[Rank 23] ENTER generate_hermitian_slice_pair_local: Y_primary=376, Y_mirror=1672, ps_handle=(nil), params_handle=(nil)
+[Rank 14] ENTER generate_hermitian_slice_pair_local: Y_primary=232, Y_mirror=1816, ps_handle=(nil), params_handle=(nil)
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=7, Y_mirror=2041, ps_handle=(nil), params_handle=(nil)
+[Rank 11] ENTER generate_hermitian_slice_pair_local: Y_primary=184, Y_mirror=1864, ps_handle=(nil), params_handle=(nil)
+[Rank 13] ENTER generate_hermitian_slice_pair_local: Y_primary=216, Y_mirror=1832, ps_handle=(nil), params_handle=(nil)
+[Rank 15] ENTER generate_hermitian_slice_pair_local: Y_primary=248, Y_mirror=1800, ps_handle=(nil), params_handle=(nil)
+[Rank 18] ENTER generate_hermitian_slice_pair_local: Y_primary=296, Y_mirror=1752, ps_handle=(nil), params_handle=(nil)
+[Rank 7] ENTER generate_hermitian_slice_pair_local: Y_primary=120, Y_mirror=1928, ps_handle=(nil), params_handle=(nil)
+[Rank 21] ENTER generate_hermitian_slice_pair_local: Y_primary=344, Y_mirror=1704, ps_handle=(nil), params_handle=(nil)
+[Rank 9] ENTER generate_hermitian_slice_pair_local: Y_primary=152, Y_mirror=1896, ps_handle=(nil), params_handle=(nil)
+[Rank 10] ENTER generate_hermitian_slice_pair_local: Y_primary=168, Y_mirror=1880, ps_handle=(nil), params_handle=(nil)
+[Rank 8] ENTER generate_hermitian_slice_pair_local: Y_primary=136, Y_mirror=1912, ps_handle=(nil), params_handle=(nil)
+[Rank 16] ENTER generate_hermitian_slice_pair_local: Y_primary=264, Y_mirror=1784, ps_handle=(nil), params_handle=(nil)
+[Rank 12] ENTER generate_hermitian_slice_pair_local: Y_primary=200, Y_mirror=1848, ps_handle=(nil), params_handle=(nil)
+[Rank 5] ENTER generate_hermitian_slice_pair_local: Y_primary=88, Y_mirror=1960, ps_handle=(nil), params_handle=(nil)
+[Rank 1] ENTER generate_hermitian_slice_pair_local: Y_primary=24, Y_mirror=2024, ps_handle=(nil), params_handle=(nil)
+[Rank 6] ENTER generate_hermitian_slice_pair_local: Y_primary=104, Y_mirror=1944, ps_handle=(nil), params_handle=(nil)
+[Rank 4] ENTER generate_hermitian_slice_pair_local: Y_primary=72, Y_mirror=1976, ps_handle=(nil), params_handle=(nil)
+[Rank 17] ENTER generate_hermitian_slice_pair_local: Y_primary=280, Y_mirror=1768, ps_handle=(nil), params_handle=(nil)
+[Rank 3] ENTER generate_hermitian_slice_pair_local: Y_primary=56, Y_mirror=1992, ps_handle=(nil), params_handle=(nil)
+[Rank 22] ENTER generate_hermitian_slice_pair_local: Y_primary=360, Y_mirror=1688, ps_handle=(nil), params_handle=(nil)
+[Rank 20] ENTER generate_hermitian_slice_pair_local: Y_primary=328, Y_mirror=1720, ps_handle=(nil), params_handle=(nil)
+[Rank 2] ENTER generate_hermitian_slice_pair_local: Y_primary=40, Y_mirror=2008, ps_handle=(nil), params_handle=(nil)
+[Rank 19] ENTER generate_hermitian_slice_pair_local: Y_primary=312, Y_mirror=1736, ps_handle=(nil), params_handle=(nil)
+[Rank 25] ENTER generate_hermitian_slice_pair_local: Y_primary=408, Y_mirror=1640, ps_handle=(nil), params_handle=(nil)
+[Rank 31] ENTER generate_hermitian_slice_pair_local: Y_primary=505, Y_mirror=1543, ps_handle=(nil), params_handle=(nil)
+[Rank 63] ENTER generate_hermitian_slice_pair_local: Y_primary=1017, Y_mirror=1031, ps_handle=(nil), params_handle=(nil)
+[Rank 61] ENTER generate_hermitian_slice_pair_local: Y_primary=985, Y_mirror=1063, ps_handle=(nil), params_handle=(nil)
+[Rank 62] ENTER generate_hermitian_slice_pair_local: Y_primary=1001, Y_mirror=1047, ps_handle=(nil), params_handle=(nil)
+[Rank 60] ENTER generate_hermitian_slice_pair_local: Y_primary=969, Y_mirror=1079, ps_handle=(nil), params_handle=(nil)
+[Rank 27] ENTER generate_hermitian_slice_pair_local: Y_primary=441, Y_mirror=1607, ps_handle=(nil), params_handle=(nil)
+[Rank 58] ENTER generate_hermitian_slice_pair_local: Y_primary=937, Y_mirror=1111, ps_handle=(nil), params_handle=(nil)
+[Rank 59] ENTER generate_hermitian_slice_pair_local: Y_primary=953, Y_mirror=1095, ps_handle=(nil), params_handle=(nil)
+[Rank 8] ENTER generate_hermitian_slice_pair_local: Y_primary=137, Y_mirror=1911, ps_handle=(nil), params_handle=(nil)
+[Rank 26] ENTER generate_hermitian_slice_pair_local: Y_primary=425, Y_mirror=1623, ps_handle=(nil), params_handle=(nil)
+[Rank 30] ENTER generate_hermitian_slice_pair_local: Y_primary=489, Y_mirror=1559, ps_handle=(nil), params_handle=(nil)
+[Rank 29] ENTER generate_hermitian_slice_pair_local: Y_primary=473, Y_mirror=1575, ps_handle=(nil), params_handle=(nil)
+[Rank 14] ENTER generate_hermitian_slice_pair_local: Y_primary=233, Y_mirror=1815, ps_handle=(nil), params_handle=(nil)
+[Rank 16] ENTER generate_hermitian_slice_pair_local: Y_primary=265, Y_mirror=1783, ps_handle=(nil), params_handle=(nil)
+[Rank 1] ENTER generate_hermitian_slice_pair_local: Y_primary=25, Y_mirror=2023, ps_handle=(nil), params_handle=(nil)
+[Rank 19] ENTER generate_hermitian_slice_pair_local: Y_primary=313, Y_mirror=1735, ps_handle=(nil), params_handle=(nil)
+[Rank 28] ENTER generate_hermitian_slice_pair_local: Y_primary=457, Y_mirror=1591, ps_handle=(nil), params_handle=(nil)
+[Rank 15] ENTER generate_hermitian_slice_pair_local: Y_primary=249, Y_mirror=1799, ps_handle=(nil), params_handle=(nil)
+[Rank 4] ENTER generate_hermitian_slice_pair_local: Y_primary=73, Y_mirror=1975, ps_handle=(nil), params_handle=(nil)
+[Rank 20] ENTER generate_hermitian_slice_pair_local: Y_primary=329, Y_mirror=1719, ps_handle=(nil), params_handle=(nil)
+[Rank 21] ENTER generate_hermitian_slice_pair_local: Y_primary=345, Y_mirror=1703, ps_handle=(nil), params_handle=(nil)
+[Rank 23] ENTER generate_hermitian_slice_pair_local: Y_primary=377, Y_mirror=1671, ps_handle=(nil), params_handle=(nil)
+[Rank 22] ENTER generate_hermitian_slice_pair_local: Y_primary=361, Y_mirror=1687, ps_handle=(nil), params_handle=(nil)
+[Rank 24] ENTER generate_hermitian_slice_pair_local: Y_primary=393, Y_mirror=1655, ps_handle=(nil), params_handle=(nil)
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=8, Y_mirror=2040, ps_handle=(nil), params_handle=(nil)
+[Rank 57] ENTER generate_hermitian_slice_pair_local: Y_primary=921, Y_mirror=1127, ps_handle=(nil), params_handle=(nil)
+[Rank 7] ENTER generate_hermitian_slice_pair_local: Y_primary=121, Y_mirror=1927, ps_handle=(nil), params_handle=(nil)
+[Rank 32] ENTER generate_hermitian_slice_pair_local: Y_primary=521, Y_mirror=1527, ps_handle=(nil), params_handle=(nil)
+[Rank 42] ENTER generate_hermitian_slice_pair_local: Y_primary=681, Y_mirror=1367, ps_handle=(nil), params_handle=(nil)
+[Rank 12] ENTER generate_hermitian_slice_pair_local: Y_primary=201, Y_mirror=1847, ps_handle=(nil), params_handle=(nil)
+[Rank 13] ENTER generate_hermitian_slice_pair_local: Y_primary=217, Y_mirror=1831, ps_handle=(nil), params_handle=(nil)
+[Rank 10] ENTER generate_hermitian_slice_pair_local: Y_primary=169, Y_mirror=1879, ps_handle=(nil), params_handle=(nil)
+[Rank 45] ENTER generate_hermitian_slice_pair_local: Y_primary=729, Y_mirror=1319, ps_handle=(nil), params_handle=(nil)
+[Rank 5] ENTER generate_hermitian_slice_pair_local: Y_primary=89, Y_mirror=1959, ps_handle=(nil), params_handle=(nil)
+[Rank 47] ENTER generate_hermitian_slice_pair_local: Y_primary=761, Y_mirror=1287, ps_handle=(nil), params_handle=(nil)
+[Rank 9] ENTER generate_hermitian_slice_pair_local: Y_primary=153, Y_mirror=1895, ps_handle=(nil), params_handle=(nil)
+[Rank 46] ENTER generate_hermitian_slice_pair_local: Y_primary=745, Y_mirror=1303, ps_handle=(nil), params_handle=(nil)
+[Rank 44] ENTER generate_hermitian_slice_pair_local: Y_primary=713, Y_mirror=1335, ps_handle=(nil), params_handle=(nil)
+[Rank 11] ENTER generate_hermitian_slice_pair_local: Y_primary=185, Y_mirror=1863, ps_handle=(nil), params_handle=(nil)
+[Rank 40] ENTER generate_hermitian_slice_pair_local: Y_primary=649, Y_mirror=1399, ps_handle=(nil), params_handle=(nil)
+[Rank 3] ENTER generate_hermitian_slice_pair_local: Y_primary=57, Y_mirror=1991, ps_handle=(nil), params_handle=(nil)
+[Rank 6] ENTER generate_hermitian_slice_pair_local: Y_primary=105, Y_mirror=1943, ps_handle=(nil), params_handle=(nil)
+[Rank 17] ENTER generate_hermitian_slice_pair_local: Y_primary=281, Y_mirror=1767, ps_handle=(nil), params_handle=(nil)
+[Rank 55] ENTER generate_hermitian_slice_pair_local: Y_primary=889, Y_mirror=1159, ps_handle=(nil), params_handle=(nil)
+[Rank 2] ENTER generate_hermitian_slice_pair_local: Y_primary=41, Y_mirror=2007, ps_handle=(nil), params_handle=(nil)
+[Rank 18] ENTER generate_hermitian_slice_pair_local: Y_primary=297, Y_mirror=1751, ps_handle=(nil), params_handle=(nil)
+[Rank 56] ENTER generate_hermitian_slice_pair_local: Y_primary=905, Y_mirror=1143, ps_handle=(nil), params_handle=(nil)
+[Rank 43] ENTER generate_hermitian_slice_pair_local: Y_primary=697, Y_mirror=1351, ps_handle=(nil), params_handle=(nil)
+[Rank 54] ENTER generate_hermitian_slice_pair_local: Y_primary=873, Y_mirror=1175, ps_handle=(nil), params_handle=(nil)
+[Rank 50] ENTER generate_hermitian_slice_pair_local: Y_primary=809, Y_mirror=1239, ps_handle=(nil), params_handle=(nil)
+[Rank 53] ENTER generate_hermitian_slice_pair_local: Y_primary=857, Y_mirror=1191, ps_handle=(nil), params_handle=(nil)
+[Rank 52] ENTER generate_hermitian_slice_pair_local: Y_primary=841, Y_mirror=1207, ps_handle=(nil), params_handle=(nil)
+[Rank 41] ENTER generate_hermitian_slice_pair_local: Y_primary=665, Y_mirror=1383, ps_handle=(nil), params_handle=(nil)
+[Rank 39] ENTER generate_hermitian_slice_pair_local: Y_primary=633, Y_mirror=1415, ps_handle=(nil), params_handle=(nil)
+[Rank 49] ENTER generate_hermitian_slice_pair_local: Y_primary=793, Y_mirror=1255, ps_handle=(nil), params_handle=(nil)
+[Rank 38] ENTER generate_hermitian_slice_pair_local: Y_primary=617, Y_mirror=1431, ps_handle=(nil), params_handle=(nil)
+[Rank 51] ENTER generate_hermitian_slice_pair_local: Y_primary=825, Y_mirror=1223, ps_handle=(nil), params_handle=(nil)
+[Rank 34] ENTER generate_hermitian_slice_pair_local: Y_primary=553, Y_mirror=1495, ps_handle=(nil), params_handle=(nil)
+[Rank 37] ENTER generate_hermitian_slice_pair_local: Y_primary=601, Y_mirror=1447, ps_handle=(nil), params_handle=(nil)
+[Rank 36] ENTER generate_hermitian_slice_pair_local: Y_primary=585, Y_mirror=1463, ps_handle=(nil), params_handle=(nil)
+[Rank 33] ENTER generate_hermitian_slice_pair_local: Y_primary=537, Y_mirror=1511, ps_handle=(nil), params_handle=(nil)
+[Rank 35] ENTER generate_hermitian_slice_pair_local: Y_primary=569, Y_mirror=1479, ps_handle=(nil), params_handle=(nil)
+[Rank 48] ENTER generate_hermitian_slice_pair_local: Y_primary=777, Y_mirror=1271, ps_handle=(nil), params_handle=(nil)
+[Rank 25] ENTER generate_hermitian_slice_pair_local: Y_primary=409, Y_mirror=1639, ps_handle=(nil), params_handle=(nil)
+[Rank 63] ENTER generate_hermitian_slice_pair_local: Y_primary=1018, Y_mirror=1030, ps_handle=(nil), params_handle=(nil)
+[Rank 62] ENTER generate_hermitian_slice_pair_local: Y_primary=1002, Y_mirror=1046, ps_handle=(nil), params_handle=(nil)
+[Rank 40] ENTER generate_hermitian_slice_pair_local: Y_primary=650, Y_mirror=1398, ps_handle=(nil), params_handle=(nil)
+[Rank 41] ENTER generate_hermitian_slice_pair_local: Y_primary=666, Y_mirror=1382, ps_handle=(nil), params_handle=(nil)
+[Rank 59] ENTER generate_hermitian_slice_pair_local: Y_primary=954, Y_mirror=1094, ps_handle=(nil), params_handle=(nil)
+[Rank 27] ENTER generate_hermitian_slice_pair_local: Y_primary=442, Y_mirror=1606, ps_handle=(nil), params_handle=(nil)
+[Rank 29] ENTER generate_hermitian_slice_pair_local: Y_primary=474, Y_mirror=1574, ps_handle=(nil), params_handle=(nil)
+[Rank 43] ENTER generate_hermitian_slice_pair_local: Y_primary=698, Y_mirror=1350, ps_handle=(nil), params_handle=(nil)
+[Rank 31] ENTER generate_hermitian_slice_pair_local: Y_primary=506, Y_mirror=1542, ps_handle=(nil), params_handle=(nil)
+[Rank 58] ENTER generate_hermitian_slice_pair_local: Y_primary=938, Y_mirror=1110, ps_handle=(nil), params_handle=(nil)
+[Rank 33] ENTER generate_hermitian_slice_pair_local: Y_primary=538, Y_mirror=1510, ps_handle=(nil), params_handle=(nil)
+[Rank 44] ENTER generate_hermitian_slice_pair_local: Y_primary=714, Y_mirror=1334, ps_handle=(nil), params_handle=(nil)
+[Rank 49] ENTER generate_hermitian_slice_pair_local: Y_primary=794, Y_mirror=1254, ps_handle=(nil), params_handle=(nil)
+[Rank 51] ENTER generate_hermitian_slice_pair_local: Y_primary=826, Y_mirror=1222, ps_handle=(nil), params_handle=(nil)
+[Rank 48] ENTER generate_hermitian_slice_pair_local: Y_primary=778, Y_mirror=1270, ps_handle=(nil), params_handle=(nil)
+[Rank 30] ENTER generate_hermitian_slice_pair_local: Y_primary=490, Y_mirror=1558, ps_handle=(nil), params_handle=(nil)
+[Rank 50] ENTER generate_hermitian_slice_pair_local: Y_primary=810, Y_mirror=1238, ps_handle=(nil), params_handle=(nil)
+[Rank 36] ENTER generate_hermitian_slice_pair_local: Y_primary=586, Y_mirror=1462, ps_handle=(nil), params_handle=(nil)
+[Rank 38] ENTER generate_hermitian_slice_pair_local: Y_primary=618, Y_mirror=1430, ps_handle=(nil), params_handle=(nil)
+[Rank 61] ENTER generate_hermitian_slice_pair_local: Y_primary=986, Y_mirror=1062, ps_handle=(nil), params_handle=(nil)
+[Rank 19] ENTER generate_hermitian_slice_pair_local: Y_primary=314, Y_mirror=1734, ps_handle=(nil), params_handle=(nil)
+[Rank 52] ENTER generate_hermitian_slice_pair_local: Y_primary=842, Y_mirror=1206, ps_handle=(nil), params_handle=(nil)
+[Rank 37] ENTER generate_hermitian_slice_pair_local: Y_primary=602, Y_mirror=1446, ps_handle=(nil), params_handle=(nil)
+[Rank 28] ENTER generate_hermitian_slice_pair_local: Y_primary=458, Y_mirror=1590, ps_handle=(nil), params_handle=(nil)
+[Rank 53] ENTER generate_hermitian_slice_pair_local: Y_primary=858, Y_mirror=1190, ps_handle=(nil), params_handle=(nil)
+[Rank 45] ENTER generate_hermitian_slice_pair_local: Y_primary=730, Y_mirror=1318, ps_handle=(nil), params_handle=(nil)
+[Rank 60] ENTER generate_hermitian_slice_pair_local: Y_primary=970, Y_mirror=1078, ps_handle=(nil), params_handle=(nil)
+[Rank 55] ENTER generate_hermitian_slice_pair_local: Y_primary=890, Y_mirror=1158, ps_handle=(nil), params_handle=(nil)
+[Rank 46] ENTER generate_hermitian_slice_pair_local: Y_primary=746, Y_mirror=1302, ps_handle=(nil), params_handle=(nil)
+[Rank 54] ENTER generate_hermitian_slice_pair_local: Y_primary=874, Y_mirror=1174, ps_handle=(nil), params_handle=(nil)
+[Rank 26] ENTER generate_hermitian_slice_pair_local: Y_primary=426, Y_mirror=1622, ps_handle=(nil), params_handle=(nil)
+[Rank 32] ENTER generate_hermitian_slice_pair_local: Y_primary=522, Y_mirror=1526, ps_handle=(nil), params_handle=(nil)
+[Rank 56] ENTER generate_hermitian_slice_pair_local: Y_primary=906, Y_mirror=1142, ps_handle=(nil), params_handle=(nil)
+[Rank 34] ENTER generate_hermitian_slice_pair_local: Y_primary=554, Y_mirror=1494, ps_handle=(nil), params_handle=(nil)
+[Rank 47] ENTER generate_hermitian_slice_pair_local: Y_primary=762, Y_mirror=1286, ps_handle=(nil), params_handle=(nil)
+[Rank 42] ENTER generate_hermitian_slice_pair_local: Y_primary=682, Y_mirror=1366, ps_handle=(nil), params_handle=(nil)
+[Rank 35] ENTER generate_hermitian_slice_pair_local: Y_primary=570, Y_mirror=1478, ps_handle=(nil), params_handle=(nil)
+[Rank 39] ENTER generate_hermitian_slice_pair_local: Y_primary=634, Y_mirror=1414, ps_handle=(nil), params_handle=(nil)
+[Rank 57] ENTER generate_hermitian_slice_pair_local: Y_primary=922, Y_mirror=1126, ps_handle=(nil), params_handle=(nil)
+[Rank 12] ENTER generate_hermitian_slice_pair_local: Y_primary=202, Y_mirror=1846, ps_handle=(nil), params_handle=(nil)
+[Rank 24] ENTER generate_hermitian_slice_pair_local: Y_primary=394, Y_mirror=1654, ps_handle=(nil), params_handle=(nil)
+[Rank 18] ENTER generate_hermitian_slice_pair_local: Y_primary=298, Y_mirror=1750, ps_handle=(nil), params_handle=(nil)
+[Rank 8] ENTER generate_hermitian_slice_pair_local: Y_primary=138, Y_mirror=1910, ps_handle=(nil), params_handle=(nil)
+[Rank 11] ENTER generate_hermitian_slice_pair_local: Y_primary=186, Y_mirror=1862, ps_handle=(nil), params_handle=(nil)
+[Rank 7] ENTER generate_hermitian_slice_pair_local: Y_primary=122, Y_mirror=1926, ps_handle=(nil), params_handle=(nil)
+[Rank 9] ENTER generate_hermitian_slice_pair_local: Y_primary=154, Y_mirror=1894, ps_handle=(nil), params_handle=(nil)
+[Rank 15] ENTER generate_hermitian_slice_pair_local: Y_primary=250, Y_mirror=1798, ps_handle=(nil), params_handle=(nil)
+[Rank 5] ENTER generate_hermitian_slice_pair_local: Y_primary=90, Y_mirror=1958, ps_handle=(nil), params_handle=(nil)
+[Rank 10] ENTER generate_hermitian_slice_pair_local: Y_primary=170, Y_mirror=1878, ps_handle=(nil), params_handle=(nil)
+[Rank 13] ENTER generate_hermitian_slice_pair_local: Y_primary=218, Y_mirror=1830, ps_handle=(nil), params_handle=(nil)
+[Rank 20] ENTER generate_hermitian_slice_pair_local: Y_primary=330, Y_mirror=1718, ps_handle=(nil), params_handle=(nil)
+[Rank 21] ENTER generate_hermitian_slice_pair_local: Y_primary=346, Y_mirror=1702, ps_handle=(nil), params_handle=(nil)
+[Rank 2] ENTER generate_hermitian_slice_pair_local: Y_primary=42, Y_mirror=2006, ps_handle=(nil), params_handle=(nil)
+[Rank 23] ENTER generate_hermitian_slice_pair_local: Y_primary=378, Y_mirror=1670, ps_handle=(nil), params_handle=(nil)
+[Rank 22] ENTER generate_hermitian_slice_pair_local: Y_primary=362, Y_mirror=1686, ps_handle=(nil), params_handle=(nil)
+[Rank 3] ENTER generate_hermitian_slice_pair_local: Y_primary=58, Y_mirror=1990, ps_handle=(nil), params_handle=(nil)
+[Rank 17] ENTER generate_hermitian_slice_pair_local: Y_primary=282, Y_mirror=1766, ps_handle=(nil), params_handle=(nil)
+[Rank 1] ENTER generate_hermitian_slice_pair_local: Y_primary=26, Y_mirror=2022, ps_handle=(nil), params_handle=(nil)
+[Rank 14] ENTER generate_hermitian_slice_pair_local: Y_primary=234, Y_mirror=1814, ps_handle=(nil), params_handle=(nil)
+[Rank 25] ENTER generate_hermitian_slice_pair_local: Y_primary=410, Y_mirror=1638, ps_handle=(nil), params_handle=(nil)
+[Rank 6] ENTER generate_hermitian_slice_pair_local: Y_primary=106, Y_mirror=1942, ps_handle=(nil), params_handle=(nil)
+[Rank 4] ENTER generate_hermitian_slice_pair_local: Y_primary=74, Y_mirror=1974, ps_handle=(nil), params_handle=(nil)
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=9, Y_mirror=2039, ps_handle=(nil), params_handle=(nil)
+[Rank 16] ENTER generate_hermitian_slice_pair_local: Y_primary=266, Y_mirror=1782, ps_handle=(nil), params_handle=(nil)
+[Rank 63] ENTER generate_hermitian_slice_pair_local: Y_primary=1019, Y_mirror=1029, ps_handle=(nil), params_handle=(nil)
+[Rank 62] ENTER generate_hermitian_slice_pair_local: Y_primary=1003, Y_mirror=1045, ps_handle=(nil), params_handle=(nil)
+[Rank 59] ENTER generate_hermitian_slice_pair_local: Y_primary=955, Y_mirror=1093, ps_handle=(nil), params_handle=(nil)
+[Rank 31] ENTER generate_hermitian_slice_pair_local: Y_primary=507, Y_mirror=1541, ps_handle=(nil), params_handle=(nil)
+[Rank 33] ENTER generate_hermitian_slice_pair_local: Y_primary=539, Y_mirror=1509, ps_handle=(nil), params_handle=(nil)
+[Rank 58] ENTER generate_hermitian_slice_pair_local: Y_primary=939, Y_mirror=1109, ps_handle=(nil), params_handle=(nil)
+[Rank 35] ENTER generate_hermitian_slice_pair_local: Y_primary=571, Y_mirror=1477, ps_handle=(nil), params_handle=(nil)
+[Rank 43] ENTER generate_hermitian_slice_pair_local: Y_primary=699, Y_mirror=1349, ps_handle=(nil), params_handle=(nil)
+[Rank 40] ENTER generate_hermitian_slice_pair_local: Y_primary=651, Y_mirror=1397, ps_handle=(nil), params_handle=(nil)
+[Rank 32] ENTER generate_hermitian_slice_pair_local: Y_primary=523, Y_mirror=1525, ps_handle=(nil), params_handle=(nil)
+[Rank 41] ENTER generate_hermitian_slice_pair_local: Y_primary=667, Y_mirror=1381, ps_handle=(nil), params_handle=(nil)
+[Rank 60] ENTER generate_hermitian_slice_pair_local: Y_primary=971, Y_mirror=1077, ps_handle=(nil), params_handle=(nil)
+[Rank 42] ENTER generate_hermitian_slice_pair_local: Y_primary=683, Y_mirror=1365, ps_handle=(nil), params_handle=(nil)
+[Rank 61] ENTER generate_hermitian_slice_pair_local: Y_primary=987, Y_mirror=1061, ps_handle=(nil), params_handle=(nil)
+[Rank 27] ENTER generate_hermitian_slice_pair_local: Y_primary=443, Y_mirror=1605, ps_handle=(nil), params_handle=(nil)
+[Rank 47] ENTER generate_hermitian_slice_pair_local: Y_primary=763, Y_mirror=1285, ps_handle=(nil), params_handle=(nil)
+[Rank 34] ENTER generate_hermitian_slice_pair_local: Y_primary=555, Y_mirror=1493, ps_handle=(nil), params_handle=(nil)
+[Rank 46] ENTER generate_hermitian_slice_pair_local: Y_primary=747, Y_mirror=1301, ps_handle=(nil), params_handle=(nil)
+[Rank 48] ENTER generate_hermitian_slice_pair_local: Y_primary=779, Y_mirror=1269, ps_handle=(nil), params_handle=(nil)
+[Rank 26] ENTER generate_hermitian_slice_pair_local: Y_primary=427, Y_mirror=1621, ps_handle=(nil), params_handle=(nil)
+[Rank 49] ENTER generate_hermitian_slice_pair_local: Y_primary=795, Y_mirror=1253, ps_handle=(nil), params_handle=(nil)
+[Rank 51] ENTER generate_hermitian_slice_pair_local: Y_primary=827, Y_mirror=1221, ps_handle=(nil), params_handle=(nil)
+[Rank 38] ENTER generate_hermitian_slice_pair_local: Y_primary=619, Y_mirror=1429, ps_handle=(nil), params_handle=(nil)
+[Rank 39] ENTER generate_hermitian_slice_pair_local: Y_primary=635, Y_mirror=1413, ps_handle=(nil), params_handle=(nil)
+[Rank 44] ENTER generate_hermitian_slice_pair_local: Y_primary=715, Y_mirror=1333, ps_handle=(nil), params_handle=(nil)
+[Rank 30] ENTER generate_hermitian_slice_pair_local: Y_primary=491, Y_mirror=1557, ps_handle=(nil), params_handle=(nil)
+[Rank 45] ENTER generate_hermitian_slice_pair_local: Y_primary=731, Y_mirror=1317, ps_handle=(nil), params_handle=(nil)
+[Rank 50] ENTER generate_hermitian_slice_pair_local: Y_primary=811, Y_mirror=1237, ps_handle=(nil), params_handle=(nil)
+[Rank 52] ENTER generate_hermitian_slice_pair_local: Y_primary=843, Y_mirror=1205, ps_handle=(nil), params_handle=(nil)
+[Rank 53] ENTER generate_hermitian_slice_pair_local: Y_primary=859, Y_mirror=1189, ps_handle=(nil), params_handle=(nil)
+[Rank 29] ENTER generate_hermitian_slice_pair_local: Y_primary=475, Y_mirror=1573, ps_handle=(nil), params_handle=(nil)
+[Rank 55] ENTER generate_hermitian_slice_pair_local: Y_primary=891, Y_mirror=1157, ps_handle=(nil), params_handle=(nil)
+[Rank 54] ENTER generate_hermitian_slice_pair_local: Y_primary=875, Y_mirror=1173, ps_handle=(nil), params_handle=(nil)
+[Rank 37] ENTER generate_hermitian_slice_pair_local: Y_primary=603, Y_mirror=1445, ps_handle=(nil), params_handle=(nil)
+[Rank 17] ENTER generate_hermitian_slice_pair_local: Y_primary=283, Y_mirror=1765, ps_handle=(nil), params_handle=(nil)
+[Rank 16] ENTER generate_hermitian_slice_pair_local: Y_primary=267, Y_mirror=1781, ps_handle=(nil), params_handle=(nil)
+[Rank 56] ENTER generate_hermitian_slice_pair_local: Y_primary=907, Y_mirror=1141, ps_handle=(nil), params_handle=(nil)
+[Rank 28] ENTER generate_hermitian_slice_pair_local: Y_primary=459, Y_mirror=1589, ps_handle=(nil), params_handle=(nil)
+[Rank 36] ENTER generate_hermitian_slice_pair_local: Y_primary=587, Y_mirror=1461, ps_handle=(nil), params_handle=(nil)
+[Rank 57] ENTER generate_hermitian_slice_pair_local: Y_primary=923, Y_mirror=1125, ps_handle=(nil), params_handle=(nil)
+[Rank 10] ENTER generate_hermitian_slice_pair_local: Y_primary=171, Y_mirror=1877, ps_handle=(nil), params_handle=(nil)
+[Rank 7] ENTER generate_hermitian_slice_pair_local: Y_primary=123, Y_mirror=1925, ps_handle=(nil), params_handle=(nil)
+[Rank 12] ENTER generate_hermitian_slice_pair_local: Y_primary=203, Y_mirror=1845, ps_handle=(nil), params_handle=(nil)
+[Rank 11] ENTER generate_hermitian_slice_pair_local: Y_primary=187, Y_mirror=1861, ps_handle=(nil), params_handle=(nil)
+[Rank 22] ENTER generate_hermitian_slice_pair_local: Y_primary=363, Y_mirror=1685, ps_handle=(nil), params_handle=(nil)
+[Rank 6] ENTER generate_hermitian_slice_pair_local: Y_primary=107, Y_mirror=1941, ps_handle=(nil), params_handle=(nil)
+[Rank 9] ENTER generate_hermitian_slice_pair_local: Y_primary=155, Y_mirror=1893, ps_handle=(nil), params_handle=(nil)
+[Rank 18] ENTER generate_hermitian_slice_pair_local: Y_primary=299, Y_mirror=1749, ps_handle=(nil), params_handle=(nil)
+[Rank 19] ENTER generate_hermitian_slice_pair_local: Y_primary=315, Y_mirror=1733, ps_handle=(nil), params_handle=(nil)
+[Rank 5] ENTER generate_hermitian_slice_pair_local: Y_primary=91, Y_mirror=1957, ps_handle=(nil), params_handle=(nil)
+[Rank 24] ENTER generate_hermitian_slice_pair_local: Y_primary=395, Y_mirror=1653, ps_handle=(nil), params_handle=(nil)
+[Rank 4] ENTER generate_hermitian_slice_pair_local: Y_primary=75, Y_mirror=1973, ps_handle=(nil), params_handle=(nil)
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=10, Y_mirror=2038, ps_handle=(nil), params_handle=(nil)
+[Rank 20] ENTER generate_hermitian_slice_pair_local: Y_primary=331, Y_mirror=1717, ps_handle=(nil), params_handle=(nil)
+[Rank 8] ENTER generate_hermitian_slice_pair_local: Y_primary=139, Y_mirror=1909, ps_handle=(nil), params_handle=(nil)
+[Rank 23] ENTER generate_hermitian_slice_pair_local: Y_primary=379, Y_mirror=1669, ps_handle=(nil), params_handle=(nil)
+[Rank 21] ENTER generate_hermitian_slice_pair_local: Y_primary=347, Y_mirror=1701, ps_handle=(nil), params_handle=(nil)
+[Rank 3] ENTER generate_hermitian_slice_pair_local: Y_primary=59, Y_mirror=1989, ps_handle=(nil), params_handle=(nil)
+[Rank 25] ENTER generate_hermitian_slice_pair_local: Y_primary=411, Y_mirror=1637, ps_handle=(nil), params_handle=(nil)
+[Rank 15] ENTER generate_hermitian_slice_pair_local: Y_primary=251, Y_mirror=1797, ps_handle=(nil), params_handle=(nil)
+[Rank 2] ENTER generate_hermitian_slice_pair_local: Y_primary=43, Y_mirror=2005, ps_handle=(nil), params_handle=(nil)
+[Rank 13] ENTER generate_hermitian_slice_pair_local: Y_primary=219, Y_mirror=1829, ps_handle=(nil), params_handle=(nil)
+[Rank 1] ENTER generate_hermitian_slice_pair_local: Y_primary=27, Y_mirror=2021, ps_handle=(nil), params_handle=(nil)
+[Rank 14] ENTER generate_hermitian_slice_pair_local: Y_primary=235, Y_mirror=1813, ps_handle=(nil), params_handle=(nil)
+[Rank 63] ENTER generate_hermitian_slice_pair_local: Y_primary=1020, Y_mirror=1028, ps_handle=(nil), params_handle=(nil)
+[Rank 40] ENTER generate_hermitian_slice_pair_local: Y_primary=652, Y_mirror=1396, ps_handle=(nil), params_handle=(nil)
+[Rank 59] ENTER generate_hermitian_slice_pair_local: Y_primary=956, Y_mirror=1092, ps_handle=(nil), params_handle=(nil)
+[Rank 30] ENTER generate_hermitian_slice_pair_local: Y_primary=492, Y_mirror=1556, ps_handle=(nil), params_handle=(nil)
+[Rank 31] ENTER generate_hermitian_slice_pair_local: Y_primary=508, Y_mirror=1540, ps_handle=(nil), params_handle=(nil)
+[Rank 27] ENTER generate_hermitian_slice_pair_local: Y_primary=444, Y_mirror=1604, ps_handle=(nil), params_handle=(nil)
+[Rank 62] ENTER generate_hermitian_slice_pair_local: Y_primary=1004, Y_mirror=1044, ps_handle=(nil), params_handle=(nil)
+[Rank 35] ENTER generate_hermitian_slice_pair_local: Y_primary=572, Y_mirror=1476, ps_handle=(nil), params_handle=(nil)
+[Rank 29] ENTER generate_hermitian_slice_pair_local: Y_primary=476, Y_mirror=1572, ps_handle=(nil), params_handle=(nil)
+[Rank 41] ENTER generate_hermitian_slice_pair_local: Y_primary=668, Y_mirror=1380, ps_handle=(nil), params_handle=(nil)
+[Rank 32] ENTER generate_hermitian_slice_pair_local: Y_primary=524, Y_mirror=1524, ps_handle=(nil), params_handle=(nil)
+[Rank 28] ENTER generate_hermitian_slice_pair_local: Y_primary=460, Y_mirror=1588, ps_handle=(nil), params_handle=(nil)
+[Rank 47] ENTER generate_hermitian_slice_pair_local: Y_primary=764, Y_mirror=1284, ps_handle=(nil), params_handle=(nil)
+[Rank 58] ENTER generate_hermitian_slice_pair_local: Y_primary=940, Y_mirror=1108, ps_handle=(nil), params_handle=(nil)
+[Rank 46] ENTER generate_hermitian_slice_pair_local: Y_primary=748, Y_mirror=1300, ps_handle=(nil), params_handle=(nil)
+[Rank 34] ENTER generate_hermitian_slice_pair_local: Y_primary=556, Y_mirror=1492, ps_handle=(nil), params_handle=(nil)
+[Rank 48] ENTER generate_hermitian_slice_pair_local: Y_primary=780, Y_mirror=1268, ps_handle=(nil), params_handle=(nil)
+[Rank 26] ENTER generate_hermitian_slice_pair_local: Y_primary=428, Y_mirror=1620, ps_handle=(nil), params_handle=(nil)
+[Rank 51] ENTER generate_hermitian_slice_pair_local: Y_primary=828, Y_mirror=1220, ps_handle=(nil), params_handle=(nil)
+[Rank 33] ENTER generate_hermitian_slice_pair_local: Y_primary=540, Y_mirror=1508, ps_handle=(nil), params_handle=(nil)
+[Rank 60] ENTER generate_hermitian_slice_pair_local: Y_primary=972, Y_mirror=1076, ps_handle=(nil), params_handle=(nil)
+[Rank 42] ENTER generate_hermitian_slice_pair_local: Y_primary=684, Y_mirror=1364, ps_handle=(nil), params_handle=(nil)
+[Rank 52] ENTER generate_hermitian_slice_pair_local: Y_primary=844, Y_mirror=1204, ps_handle=(nil), params_handle=(nil)
+[Rank 53] ENTER generate_hermitian_slice_pair_local: Y_primary=860, Y_mirror=1188, ps_handle=(nil), params_handle=(nil)
+[Rank 11] ENTER generate_hermitian_slice_pair_local: Y_primary=188, Y_mirror=1860, ps_handle=(nil), params_handle=(nil)
+[Rank 55] ENTER generate_hermitian_slice_pair_local: Y_primary=892, Y_mirror=1156, ps_handle=(nil), params_handle=(nil)
+[Rank 54] ENTER generate_hermitian_slice_pair_local: Y_primary=876, Y_mirror=1172, ps_handle=(nil), params_handle=(nil)
+[Rank 45] ENTER generate_hermitian_slice_pair_local: Y_primary=732, Y_mirror=1316, ps_handle=(nil), params_handle=(nil)
+[Rank 56] ENTER generate_hermitian_slice_pair_local: Y_primary=908, Y_mirror=1140, ps_handle=(nil), params_handle=(nil)
+[Rank 44] ENTER generate_hermitian_slice_pair_local: Y_primary=716, Y_mirror=1332, ps_handle=(nil), params_handle=(nil)
+[Rank 61] ENTER generate_hermitian_slice_pair_local: Y_primary=988, Y_mirror=1060, ps_handle=(nil), params_handle=(nil)
+[Rank 49] ENTER generate_hermitian_slice_pair_local: Y_primary=796, Y_mirror=1252, ps_handle=(nil), params_handle=(nil)
+[Rank 43] ENTER generate_hermitian_slice_pair_local: Y_primary=700, Y_mirror=1348, ps_handle=(nil), params_handle=(nil)
+[Rank 39] ENTER generate_hermitian_slice_pair_local: Y_primary=636, Y_mirror=1412, ps_handle=(nil), params_handle=(nil)
+[Rank 50] ENTER generate_hermitian_slice_pair_local: Y_primary=812, Y_mirror=1236, ps_handle=(nil), params_handle=(nil)
+[Rank 37] ENTER generate_hermitian_slice_pair_local: Y_primary=604, Y_mirror=1444, ps_handle=(nil), params_handle=(nil)
+[Rank 38] ENTER generate_hermitian_slice_pair_local: Y_primary=620, Y_mirror=1428, ps_handle=(nil), params_handle=(nil)
+[Rank 36] ENTER generate_hermitian_slice_pair_local: Y_primary=588, Y_mirror=1460, ps_handle=(nil), params_handle=(nil)
+[Rank 57] ENTER generate_hermitian_slice_pair_local: Y_primary=924, Y_mirror=1124, ps_handle=(nil), params_handle=(nil)
+[Rank 19] ENTER generate_hermitian_slice_pair_local: Y_primary=316, Y_mirror=1732, ps_handle=(nil), params_handle=(nil)
+[Rank 12] ENTER generate_hermitian_slice_pair_local: Y_primary=204, Y_mirror=1844, ps_handle=(nil), params_handle=(nil)
+[Rank 10] ENTER generate_hermitian_slice_pair_local: Y_primary=172, Y_mirror=1876, ps_handle=(nil), params_handle=(nil)
+[Rank 15] ENTER generate_hermitian_slice_pair_local: Y_primary=252, Y_mirror=1796, ps_handle=(nil), params_handle=(nil)
+[Rank 9] ENTER generate_hermitian_slice_pair_local: Y_primary=156, Y_mirror=1892, ps_handle=(nil), params_handle=(nil)
+[Rank 13] ENTER generate_hermitian_slice_pair_local: Y_primary=220, Y_mirror=1828, ps_handle=(nil), params_handle=(nil)
+[Rank 24] ENTER generate_hermitian_slice_pair_local: Y_primary=396, Y_mirror=1652, ps_handle=(nil), params_handle=(nil)
+[Rank 14] ENTER generate_hermitian_slice_pair_local: Y_primary=236, Y_mirror=1812, ps_handle=(nil), params_handle=(nil)
+[Rank 6] ENTER generate_hermitian_slice_pair_local: Y_primary=108, Y_mirror=1940, ps_handle=(nil), params_handle=(nil)
+[Rank 20] ENTER generate_hermitian_slice_pair_local: Y_primary=332, Y_mirror=1716, ps_handle=(nil), params_handle=(nil)
+[Rank 8] ENTER generate_hermitian_slice_pair_local: Y_primary=140, Y_mirror=1908, ps_handle=(nil), params_handle=(nil)
+[Rank 7] ENTER generate_hermitian_slice_pair_local: Y_primary=124, Y_mirror=1924, ps_handle=(nil), params_handle=(nil)
+[Rank 23] ENTER generate_hermitian_slice_pair_local: Y_primary=380, Y_mirror=1668, ps_handle=(nil), params_handle=(nil)
+[Rank 22] ENTER generate_hermitian_slice_pair_local: Y_primary=364, Y_mirror=1684, ps_handle=(nil), params_handle=(nil)
+[Rank 3] ENTER generate_hermitian_slice_pair_local: Y_primary=60, Y_mirror=1988, ps_handle=(nil), params_handle=(nil)
+[Rank 21] ENTER generate_hermitian_slice_pair_local: Y_primary=348, Y_mirror=1700, ps_handle=(nil), params_handle=(nil)
+[Rank 16] ENTER generate_hermitian_slice_pair_local: Y_primary=268, Y_mirror=1780, ps_handle=(nil), params_handle=(nil)
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=11, Y_mirror=2037, ps_handle=(nil), params_handle=(nil)
+[Rank 4] ENTER generate_hermitian_slice_pair_local: Y_primary=76, Y_mirror=1972, ps_handle=(nil), params_handle=(nil)
+[Rank 5] ENTER generate_hermitian_slice_pair_local: Y_primary=92, Y_mirror=1956, ps_handle=(nil), params_handle=(nil)
+[Rank 2] ENTER generate_hermitian_slice_pair_local: Y_primary=44, Y_mirror=2004, ps_handle=(nil), params_handle=(nil)
+[Rank 18] ENTER generate_hermitian_slice_pair_local: Y_primary=300, Y_mirror=1748, ps_handle=(nil), params_handle=(nil)
+[Rank 1] ENTER generate_hermitian_slice_pair_local: Y_primary=28, Y_mirror=2020, ps_handle=(nil), params_handle=(nil)
+[Rank 17] ENTER generate_hermitian_slice_pair_local: Y_primary=284, Y_mirror=1764, ps_handle=(nil), params_handle=(nil)
+[Rank 25] ENTER generate_hermitian_slice_pair_local: Y_primary=412, Y_mirror=1636, ps_handle=(nil), params_handle=(nil)
+[Rank 63] ENTER generate_hermitian_slice_pair_local: Y_primary=1021, Y_mirror=1027, ps_handle=(nil), params_handle=(nil)
+[Rank 62] ENTER generate_hermitian_slice_pair_local: Y_primary=1005, Y_mirror=1043, ps_handle=(nil), params_handle=(nil)
+[Rank 58] ENTER generate_hermitian_slice_pair_local: Y_primary=941, Y_mirror=1107, ps_handle=(nil), params_handle=(nil)
+[Rank 61] ENTER generate_hermitian_slice_pair_local: Y_primary=989, Y_mirror=1059, ps_handle=(nil), params_handle=(nil)
+[Rank 31] ENTER generate_hermitian_slice_pair_local: Y_primary=509, Y_mirror=1539, ps_handle=(nil), params_handle=(nil)
+[Rank 60] ENTER generate_hermitian_slice_pair_local: Y_primary=973, Y_mirror=1075, ps_handle=(nil), params_handle=(nil)
+[Rank 49] ENTER generate_hermitian_slice_pair_local: Y_primary=797, Y_mirror=1251, ps_handle=(nil), params_handle=(nil)
+[Rank 59] ENTER generate_hermitian_slice_pair_local: Y_primary=957, Y_mirror=1091, ps_handle=(nil), params_handle=(nil)
+[Rank 30] ENTER generate_hermitian_slice_pair_local: Y_primary=493, Y_mirror=1555, ps_handle=(nil), params_handle=(nil)
+[Rank 26] ENTER generate_hermitian_slice_pair_local: Y_primary=429, Y_mirror=1619, ps_handle=(nil), params_handle=(nil)
+[Rank 22] ENTER generate_hermitian_slice_pair_local: Y_primary=365, Y_mirror=1683, ps_handle=(nil), params_handle=(nil)
+[Rank 29] ENTER generate_hermitian_slice_pair_local: Y_primary=477, Y_mirror=1571, ps_handle=(nil), params_handle=(nil)
+[Rank 28] ENTER generate_hermitian_slice_pair_local: Y_primary=461, Y_mirror=1587, ps_handle=(nil), params_handle=(nil)
+[Rank 57] ENTER generate_hermitian_slice_pair_local: Y_primary=925, Y_mirror=1123, ps_handle=(nil), params_handle=(nil)
+[Rank 27] ENTER generate_hermitian_slice_pair_local: Y_primary=445, Y_mirror=1603, ps_handle=(nil), params_handle=(nil)
+[Rank 41] ENTER generate_hermitian_slice_pair_local: Y_primary=669, Y_mirror=1379, ps_handle=(nil), params_handle=(nil)
+[Rank 44] ENTER generate_hermitian_slice_pair_local: Y_primary=717, Y_mirror=1331, ps_handle=(nil), params_handle=(nil)
+[Rank 48] ENTER generate_hermitian_slice_pair_local: Y_primary=781, Y_mirror=1267, ps_handle=(nil), params_handle=(nil)
+[Rank 43] ENTER generate_hermitian_slice_pair_local: Y_primary=701, Y_mirror=1347, ps_handle=(nil), params_handle=(nil)
+[Rank 40] ENTER generate_hermitian_slice_pair_local: Y_primary=653, Y_mirror=1395, ps_handle=(nil), params_handle=(nil)
+[Rank 50] ENTER generate_hermitian_slice_pair_local: Y_primary=813, Y_mirror=1235, ps_handle=(nil), params_handle=(nil)
+[Rank 51] ENTER generate_hermitian_slice_pair_local: Y_primary=829, Y_mirror=1219, ps_handle=(nil), params_handle=(nil)
+[Rank 34] ENTER generate_hermitian_slice_pair_local: Y_primary=557, Y_mirror=1491, ps_handle=(nil), params_handle=(nil)
+[Rank 55] ENTER generate_hermitian_slice_pair_local: Y_primary=893, Y_mirror=1155, ps_handle=(nil), params_handle=(nil)
+[Rank 45] ENTER generate_hermitian_slice_pair_local: Y_primary=733, Y_mirror=1315, ps_handle=(nil), params_handle=(nil)
+[Rank 56] ENTER generate_hermitian_slice_pair_local: Y_primary=909, Y_mirror=1139, ps_handle=(nil), params_handle=(nil)
+[Rank 52] ENTER generate_hermitian_slice_pair_local: Y_primary=845, Y_mirror=1203, ps_handle=(nil), params_handle=(nil)
+[Rank 37] ENTER generate_hermitian_slice_pair_local: Y_primary=605, Y_mirror=1443, ps_handle=(nil), params_handle=(nil)
+[Rank 38] ENTER generate_hermitian_slice_pair_local: Y_primary=621, Y_mirror=1427, ps_handle=(nil), params_handle=(nil)
+[Rank 5] ENTER generate_hermitian_slice_pair_local: Y_primary=93, Y_mirror=1955, ps_handle=(nil), params_handle=(nil)
+[Rank 54] ENTER generate_hermitian_slice_pair_local: Y_primary=877, Y_mirror=1171, ps_handle=(nil), params_handle=(nil)
+[Rank 1] ENTER generate_hermitian_slice_pair_local: Y_primary=29, Y_mirror=2019, ps_handle=(nil), params_handle=(nil)
+[Rank 53] ENTER generate_hermitian_slice_pair_local: Y_primary=861, Y_mirror=1187, ps_handle=(nil), params_handle=(nil)
+[Rank 35] ENTER generate_hermitian_slice_pair_local: Y_primary=573, Y_mirror=1475, ps_handle=(nil), params_handle=(nil)
+[Rank 39] ENTER generate_hermitian_slice_pair_local: Y_primary=637, Y_mirror=1411, ps_handle=(nil), params_handle=(nil)
+[Rank 47] ENTER generate_hermitian_slice_pair_local: Y_primary=765, Y_mirror=1283, ps_handle=(nil), params_handle=(nil)
+[Rank 17] ENTER generate_hermitian_slice_pair_local: Y_primary=285, Y_mirror=1763, ps_handle=(nil), params_handle=(nil)
+[Rank 36] ENTER generate_hermitian_slice_pair_local: Y_primary=589, Y_mirror=1459, ps_handle=(nil), params_handle=(nil)
+[Rank 46] ENTER generate_hermitian_slice_pair_local: Y_primary=749, Y_mirror=1299, ps_handle=(nil), params_handle=(nil)
+[Rank 42] ENTER generate_hermitian_slice_pair_local: Y_primary=685, Y_mirror=1363, ps_handle=(nil), params_handle=(nil)
+[Rank 9] ENTER generate_hermitian_slice_pair_local: Y_primary=157, Y_mirror=1891, ps_handle=(nil), params_handle=(nil)
+[Rank 32] ENTER generate_hermitian_slice_pair_local: Y_primary=525, Y_mirror=1523, ps_handle=(nil), params_handle=(nil)
+[Rank 4] ENTER generate_hermitian_slice_pair_local: Y_primary=77, Y_mirror=1971, ps_handle=(nil), params_handle=(nil)
+[Rank 33] ENTER generate_hermitian_slice_pair_local: Y_primary=541, Y_mirror=1507, ps_handle=(nil), params_handle=(nil)
+[Rank 24] ENTER generate_hermitian_slice_pair_local: Y_primary=397, Y_mirror=1651, ps_handle=(nil), params_handle=(nil)
+[Rank 16] ENTER generate_hermitian_slice_pair_local: Y_primary=269, Y_mirror=1779, ps_handle=(nil), params_handle=(nil)
+[Rank 11] ENTER generate_hermitian_slice_pair_local: Y_primary=189, Y_mirror=1859, ps_handle=(nil), params_handle=(nil)
+[Rank 8] ENTER generate_hermitian_slice_pair_local: Y_primary=141, Y_mirror=1907, ps_handle=(nil), params_handle=(nil)
+[Rank 23] ENTER generate_hermitian_slice_pair_local: Y_primary=381, Y_mirror=1667, ps_handle=(nil), params_handle=(nil)
+[Rank 3] ENTER generate_hermitian_slice_pair_local: Y_primary=61, Y_mirror=1987, ps_handle=(nil), params_handle=(nil)
+[Rank 10] ENTER generate_hermitian_slice_pair_local: Y_primary=173, Y_mirror=1875, ps_handle=(nil), params_handle=(nil)
+[Rank 14] ENTER generate_hermitian_slice_pair_local: Y_primary=237, Y_mirror=1811, ps_handle=(nil), params_handle=(nil)
+[Rank 6] ENTER generate_hermitian_slice_pair_local: Y_primary=109, Y_mirror=1939, ps_handle=(nil), params_handle=(nil)
+[Rank 12] ENTER generate_hermitian_slice_pair_local: Y_primary=205, Y_mirror=1843, ps_handle=(nil), params_handle=(nil)
+[Rank 20] ENTER generate_hermitian_slice_pair_local: Y_primary=333, Y_mirror=1715, ps_handle=(nil), params_handle=(nil)
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=12, Y_mirror=2036, ps_handle=(nil), params_handle=(nil)
+[Rank 21] ENTER generate_hermitian_slice_pair_local: Y_primary=349, Y_mirror=1699, ps_handle=(nil), params_handle=(nil)
+[Rank 15] ENTER generate_hermitian_slice_pair_local: Y_primary=253, Y_mirror=1795, ps_handle=(nil), params_handle=(nil)
+[Rank 7] ENTER generate_hermitian_slice_pair_local: Y_primary=125, Y_mirror=1923, ps_handle=(nil), params_handle=(nil)
+[Rank 13] ENTER generate_hermitian_slice_pair_local: Y_primary=221, Y_mirror=1827, ps_handle=(nil), params_handle=(nil)
+[Rank 19] ENTER generate_hermitian_slice_pair_local: Y_primary=317, Y_mirror=1731, ps_handle=(nil), params_handle=(nil)
+[Rank 2] ENTER generate_hermitian_slice_pair_local: Y_primary=45, Y_mirror=2003, ps_handle=(nil), params_handle=(nil)
+[Rank 18] ENTER generate_hermitian_slice_pair_local: Y_primary=301, Y_mirror=1747, ps_handle=(nil), params_handle=(nil)
+[Rank 25] ENTER generate_hermitian_slice_pair_local: Y_primary=413, Y_mirror=1635, ps_handle=(nil), params_handle=(nil)
+[Rank 63] ENTER generate_hermitian_slice_pair_local: Y_primary=1022, Y_mirror=1026, ps_handle=(nil), params_handle=(nil)
+[Rank 62] ENTER generate_hermitian_slice_pair_local: Y_primary=1006, Y_mirror=1042, ps_handle=(nil), params_handle=(nil)
+[Rank 59] ENTER generate_hermitian_slice_pair_local: Y_primary=958, Y_mirror=1090, ps_handle=(nil), params_handle=(nil)
+[Rank 41] ENTER generate_hermitian_slice_pair_local: Y_primary=670, Y_mirror=1378, ps_handle=(nil), params_handle=(nil)
+[Rank 34] ENTER generate_hermitian_slice_pair_local: Y_primary=558, Y_mirror=1490, ps_handle=(nil), params_handle=(nil)
+[Rank 31] ENTER generate_hermitian_slice_pair_local: Y_primary=510, Y_mirror=1538, ps_handle=(nil), params_handle=(nil)
+[Rank 60] ENTER generate_hermitian_slice_pair_local: Y_primary=974, Y_mirror=1074, ps_handle=(nil), params_handle=(nil)
+[Rank 32] ENTER generate_hermitian_slice_pair_local: Y_primary=526, Y_mirror=1522, ps_handle=(nil), params_handle=(nil)
+[Rank 46] ENTER generate_hermitian_slice_pair_local: Y_primary=750, Y_mirror=1298, ps_handle=(nil), params_handle=(nil)
+[Rank 40] ENTER generate_hermitian_slice_pair_local: Y_primary=654, Y_mirror=1394, ps_handle=(nil), params_handle=(nil)
+[Rank 48] ENTER generate_hermitian_slice_pair_local: Y_primary=782, Y_mirror=1266, ps_handle=(nil), params_handle=(nil)
+[Rank 30] ENTER generate_hermitian_slice_pair_local: Y_primary=494, Y_mirror=1554, ps_handle=(nil), params_handle=(nil)
+[Rank 43] ENTER generate_hermitian_slice_pair_local: Y_primary=702, Y_mirror=1346, ps_handle=(nil), params_handle=(nil)
+[Rank 58] ENTER generate_hermitian_slice_pair_local: Y_primary=942, Y_mirror=1106, ps_handle=(nil), params_handle=(nil)
+[Rank 35] ENTER generate_hermitian_slice_pair_local: Y_primary=574, Y_mirror=1474, ps_handle=(nil), params_handle=(nil)
+[Rank 51] ENTER generate_hermitian_slice_pair_local: Y_primary=830, Y_mirror=1218, ps_handle=(nil), params_handle=(nil)
+[Rank 28] ENTER generate_hermitian_slice_pair_local: Y_primary=462, Y_mirror=1586, ps_handle=(nil), params_handle=(nil)
+[Rank 50] ENTER generate_hermitian_slice_pair_local: Y_primary=814, Y_mirror=1234, ps_handle=(nil), params_handle=(nil)
+[Rank 44] ENTER generate_hermitian_slice_pair_local: Y_primary=718, Y_mirror=1330, ps_handle=(nil), params_handle=(nil)
+[Rank 52] ENTER generate_hermitian_slice_pair_local: Y_primary=846, Y_mirror=1202, ps_handle=(nil), params_handle=(nil)
+[Rank 53] ENTER generate_hermitian_slice_pair_local: Y_primary=862, Y_mirror=1186, ps_handle=(nil), params_handle=(nil)
+[Rank 29] ENTER generate_hermitian_slice_pair_local: Y_primary=478, Y_mirror=1570, ps_handle=(nil), params_handle=(nil)
+[Rank 55] ENTER generate_hermitian_slice_pair_local: Y_primary=894, Y_mirror=1154, ps_handle=(nil), params_handle=(nil)
+[Rank 54] ENTER generate_hermitian_slice_pair_local: Y_primary=878, Y_mirror=1170, ps_handle=(nil), params_handle=(nil)
+[Rank 33] ENTER generate_hermitian_slice_pair_local: Y_primary=542, Y_mirror=1506, ps_handle=(nil), params_handle=(nil)
+[Rank 47] ENTER generate_hermitian_slice_pair_local: Y_primary=766, Y_mirror=1282, ps_handle=(nil), params_handle=(nil)
+[Rank 56] ENTER generate_hermitian_slice_pair_local: Y_primary=910, Y_mirror=1138, ps_handle=(nil), params_handle=(nil)
+[Rank 61] ENTER generate_hermitian_slice_pair_local: Y_primary=990, Y_mirror=1058, ps_handle=(nil), params_handle=(nil)
+[Rank 26] ENTER generate_hermitian_slice_pair_local: Y_primary=430, Y_mirror=1618, ps_handle=(nil), params_handle=(nil)
+[Rank 45] ENTER generate_hermitian_slice_pair_local: Y_primary=734, Y_mirror=1314, ps_handle=(nil), params_handle=(nil)
+[Rank 49] ENTER generate_hermitian_slice_pair_local: Y_primary=798, Y_mirror=1250, ps_handle=(nil), params_handle=(nil)
+[Rank 42] ENTER generate_hermitian_slice_pair_local: Y_primary=686, Y_mirror=1362, ps_handle=(nil), params_handle=(nil)
+[Rank 20] ENTER generate_hermitian_slice_pair_local: Y_primary=334, Y_mirror=1714, ps_handle=(nil), params_handle=(nil)
+[Rank 16] ENTER generate_hermitian_slice_pair_local: Y_primary=270, Y_mirror=1778, ps_handle=(nil), params_handle=(nil)
+[Rank 39] ENTER generate_hermitian_slice_pair_local: Y_primary=638, Y_mirror=1410, ps_handle=(nil), params_handle=(nil)
+[Rank 27] ENTER generate_hermitian_slice_pair_local: Y_primary=446, Y_mirror=1602, ps_handle=(nil), params_handle=(nil)
+[Rank 38] ENTER generate_hermitian_slice_pair_local: Y_primary=622, Y_mirror=1426, ps_handle=(nil), params_handle=(nil)
+[Rank 37] ENTER generate_hermitian_slice_pair_local: Y_primary=606, Y_mirror=1442, ps_handle=(nil), params_handle=(nil)
+[Rank 13] ENTER generate_hermitian_slice_pair_local: Y_primary=222, Y_mirror=1826, ps_handle=(nil), params_handle=(nil)
+[Rank 18] ENTER generate_hermitian_slice_pair_local: Y_primary=302, Y_mirror=1746, ps_handle=(nil), params_handle=(nil)
+[Rank 36] ENTER generate_hermitian_slice_pair_local: Y_primary=590, Y_mirror=1458, ps_handle=(nil), params_handle=(nil)
+[Rank 57] ENTER generate_hermitian_slice_pair_local: Y_primary=926, Y_mirror=1122, ps_handle=(nil), params_handle=(nil)
+[Rank 12] ENTER generate_hermitian_slice_pair_local: Y_primary=206, Y_mirror=1842, ps_handle=(nil), params_handle=(nil)
+[Rank 7] ENTER generate_hermitian_slice_pair_local: Y_primary=126, Y_mirror=1922, ps_handle=(nil), params_handle=(nil)
+[Rank 14] ENTER generate_hermitian_slice_pair_local: Y_primary=238, Y_mirror=1810, ps_handle=(nil), params_handle=(nil)
+[Rank 6] ENTER generate_hermitian_slice_pair_local: Y_primary=110, Y_mirror=1938, ps_handle=(nil), params_handle=(nil)
+[Rank 8] ENTER generate_hermitian_slice_pair_local: Y_primary=142, Y_mirror=1906, ps_handle=(nil), params_handle=(nil)
+[Rank 15] ENTER generate_hermitian_slice_pair_local: Y_primary=254, Y_mirror=1794, ps_handle=(nil), params_handle=(nil)
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=13, Y_mirror=2035, ps_handle=(nil), params_handle=(nil)
+[Rank 22] ENTER generate_hermitian_slice_pair_local: Y_primary=366, Y_mirror=1682, ps_handle=(nil), params_handle=(nil)
+[Rank 19] ENTER generate_hermitian_slice_pair_local: Y_primary=318, Y_mirror=1730, ps_handle=(nil), params_handle=(nil)
+[Rank 5] ENTER generate_hermitian_slice_pair_local: Y_primary=94, Y_mirror=1954, ps_handle=(nil), params_handle=(nil)
+[Rank 24] ENTER generate_hermitian_slice_pair_local: Y_primary=398, Y_mirror=1650, ps_handle=(nil), params_handle=(nil)
+[Rank 1] ENTER generate_hermitian_slice_pair_local: Y_primary=30, Y_mirror=2018, ps_handle=(nil), params_handle=(nil)
+[Rank 23] ENTER generate_hermitian_slice_pair_local: Y_primary=382, Y_mirror=1666, ps_handle=(nil), params_handle=(nil)
+[Rank 17] ENTER generate_hermitian_slice_pair_local: Y_primary=286, Y_mirror=1762, ps_handle=(nil), params_handle=(nil)
+[Rank 21] ENTER generate_hermitian_slice_pair_local: Y_primary=350, Y_mirror=1698, ps_handle=(nil), params_handle=(nil)
+[Rank 4] ENTER generate_hermitian_slice_pair_local: Y_primary=78, Y_mirror=1970, ps_handle=(nil), params_handle=(nil)
+[Rank 2] ENTER generate_hermitian_slice_pair_local: Y_primary=46, Y_mirror=2002, ps_handle=(nil), params_handle=(nil)
+[Rank 10] ENTER generate_hermitian_slice_pair_local: Y_primary=174, Y_mirror=1874, ps_handle=(nil), params_handle=(nil)
+[Rank 9] ENTER generate_hermitian_slice_pair_local: Y_primary=158, Y_mirror=1890, ps_handle=(nil), params_handle=(nil)
+[Rank 3] ENTER generate_hermitian_slice_pair_local: Y_primary=62, Y_mirror=1986, ps_handle=(nil), params_handle=(nil)
+[Rank 11] ENTER generate_hermitian_slice_pair_local: Y_primary=190, Y_mirror=1858, ps_handle=(nil), params_handle=(nil)
+[Rank 25] ENTER generate_hermitian_slice_pair_local: Y_primary=414, Y_mirror=1634, ps_handle=(nil), params_handle=(nil)
+,2047]=(-1.184e-01,5.920e-02) A1[1,0]: prim=(-9.791e-02,0.000e+00) conj[2047,0]=(-9.791e-02,-0.000e+00) A1[1,1]: prim=(-6.211e-02,-3.105e-02) conj[2047,2047]=(-6.211e-02,3.105e-02) 
+[DEBUG Y=2] Before 2D FFT - Buffer addresses: prim=0x14587efd7000 conj=0x145886fd7000 (diff=16777216)
+[DEBUG Y=2] Before 2D FFT - Sample values: prim[0,0]=(1.209e-01,-0.000e+00) conj[0,0]=(1.209e-01,0.000e+00)
+[DEBUG Y=2] Right before conjugate FFT - conj[0,0]=(1.209e-01,0.000e+00) prim[0,0]=(5.871e+00,-2.947e-01)
+[DEBUG Y=2] Right after conjugate FFT - conj[0,0]=(5.871e+00,2.947e-01) prim[0,0]=(5.871e+00,-2.947e-01)
+[DEBUG Y=2] After 2D FFT (Real space) - PRIMARY slice - Max real/imag per array: A0: re=1.553e+01 im=1.546e+01 (ratio=9.952e-01) A1: re=1.447e+00 im=1.081e+00 (ratio=7.473e-01) A2: re=9.502e-01 im=6.790e-01 (ratio=7.146e-01) A3: re=1.447e+00 im=1.081e+00 (ratio=7.473e-01) (NOTE: Imag should be ~0 in real space!)
+[DEBUG Y=2] After 2D FFT (Real space) - CONJUGATE slice - Max real/imag per array: A0: re=1.553e+01 im=1.546e+01 (ratio=9.952e-01) A1: re=1.447e+00 im=1.081e+00 (ratio=7.473e-01) A2: re=9.502e-01 im=6.790e-01 (ratio=7.146e-01) A3: re=1.447e+00 im=1.081e+00 (ratio=7.473e-01) (NOTE: Imag should be ~0 in real space!)
+[DEBUG Y=2] Array comparison: 0 identical, 16777216 different (total=16777216)
+[DEBUG Y=2] Sample differences (first 3 non-identical): A0[0,0]: prim=(5.871e+00,-2.947e-01) conj=(5.871e+00,2.947e-01) diff=(0.000e+00,5.895e-01) A0[0,1]: prim=(5.966e+00,1.153e+00) conj=(5.966e+00,-1.153e+00) diff=(4.768e-07,2.307e+00) A0[0,2]: prim=(3.860e+00,7.713e-01) conj=(3.860e+00,-7.712e-01) diff=(2.384e-07,1.542e+00) 
+[PACK] Rank 0: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+[PACK] Rank 0: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+         ... Completed 4/17 batches (23.5%)
+[PACK] Rank 0: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+[PACK] Rank 0: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+         ... Completed 6/17 batches (35.3%)
+[PACK] Rank 0: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+[PACK] Rank 0: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+         ... Completed 8/17 batches (47.1%)
+[PACK] Rank 0: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+[PACK] Rank 0: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+         ... Completed 10/17 batches (58.8%)
+[PACK] Rank 0: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+[PACK] Rank 0: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+         ... Completed 12/17 batches (70.6%)
+[PACK] Rank 0: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+[PACK] Rank 0: Packed 33554432 total elements to send_[Rank 63] ENTER generate_hermitian_slice_pair_local: Y_primary=1023, Y_mirror=1025, ps_handle=(nil), params_handle=(nil)
+[Rank 32] ENTER generate_hermitian_slice_pair_local: Y_primary=527, Y_mirror=1521, ps_handle=(nil), params_handle=(nil)
+[Rank 33] ENTER generate_hermitian_slice_pair_local: Y_primary=543, Y_mirror=1505, ps_handle=(nil), params_handle=(nil)
+[Rank 40] ENTER generate_hermitian_slice_pair_local: Y_primary=655, Y_mirror=1393, ps_handle=(nil), params_handle=(nil)
+[Rank 31] ENTER generate_hermitian_slice_pair_local: Y_primary=511, Y_mirror=1537, ps_handle=(nil), params_handle=(nil)
+[Rank 34] ENTER generate_hermitian_slice_pair_local: Y_primary=559, Y_mirror=1489, ps_handle=(nil), params_handle=(nil)
+[Rank 59] ENTER generate_hermitian_slice_pair_local: Y_primary=959, Y_mirror=1089, ps_handle=(nil), params_handle=(nil)
+[Rank 35] ENTER generate_hermitian_slice_pair_local: Y_primary=575, Y_mirror=1473, ps_handle=(nil), params_handle=(nil)
+[Rank 41] ENTER generate_hermitian_slice_pair_local: Y_primary=671, Y_mirror=1377, ps_handle=(nil), params_handle=(nil)
+[Rank 30] ENTER generate_hermitian_slice_pair_local: Y_primary=495, Y_mirror=1553, ps_handle=(nil), params_handle=(nil)
+[Rank 29] ENTER generate_hermitian_slice_pair_local: Y_primary=479, Y_mirror=1569, ps_handle=(nil), params_handle=(nil)
+[Rank 62] ENTER generate_hermitian_slice_pair_local: Y_primary=1007, Y_mirror=1041, ps_handle=(nil), params_handle=(nil)
+[Rank 28] ENTER generate_hermitian_slice_pair_local: Y_primary=463, Y_mirror=1585, ps_handle=(nil), params_handle=(nil)
+[Rank 47] ENTER generate_hermitian_slice_pair_local: Y_primary=767, Y_mirror=1281, ps_handle=(nil), params_handle=(nil)
+[Rank 42] ENTER generate_hermitian_slice_pair_local: Y_primary=687, Y_mirror=1361, ps_handle=(nil), params_handle=(nil)
+[Rank 24] ENTER generate_hermitian_slice_pair_local: Y_primary=399, Y_mirror=1649, ps_handle=(nil), params_handle=(nil)
+[Rank 27] ENTER generate_hermitian_slice_pair_local: Y_primary=447, Y_mirror=1601, ps_handle=(nil), params_handle=(nil)
+[Rank 48] ENTER generate_hermitian_slice_pair_local: Y_primary=783, Y_mirror=1265, ps_handle=(nil), params_handle=(nil)
+[Rank 52] ENTER generate_hermitian_slice_pair_local: Y_primary=847, Y_mirror=1201, ps_handle=(nil), params_handle=(nil)
+[Rank 37] ENTER generate_hermitian_slice_pair_local: Y_primary=607, Y_mirror=1441, ps_handle=(nil), params_handle=(nil)
+[Rank 60] ENTER generate_hermitian_slice_pair_local: Y_primary=975, Y_mirror=1073, ps_handle=(nil), params_handle=(nil)
+[Rank 51] ENTER generate_hermitian_slice_pair_local: Y_primary=831, Y_mirror=1217, ps_handle=(nil), params_handle=(nil)
+[Rank 53] ENTER generate_hermitian_slice_pair_local: Y_primary=863, Y_mirror=1185, ps_handle=(nil), params_handle=(nil)
+[Rank 26] ENTER generate_hermitian_slice_pair_local: Y_primary=431, Y_mirror=1617, ps_handle=(nil), params_handle=(nil)
+[Rank 55] ENTER generate_hermitian_slice_pair_local: Y_primary=895, Y_mirror=1153, ps_handle=(nil), params_handle=(nil)
+[Rank 39] ENTER generate_hermitian_slice_pair_local: Y_primary=639, Y_mirror=1409, ps_handle=(nil), params_handle=(nil)
+[Rank 46] ENTER generate_hermitian_slice_pair_local: Y_primary=751, Y_mirror=1297, ps_handle=(nil), params_handle=(nil)
+[Rank 19] ENTER generate_hermitian_slice_pair_local: Y_primary=319, Y_mirror=1729, ps_handle=(nil), params_handle=(nil)
+[Rank 54] ENTER generate_hermitian_slice_pair_local: Y_primary=879, Y_mirror=1169, ps_handle=(nil), params_handle=(nil)
+[Rank 49] ENTER generate_hermitian_slice_pair_local: Y_primary=799, Y_mirror=1249, ps_handle=(nil), params_handle=(nil)
+[Rank 56] ENTER generate_hermitian_slice_pair_local: Y_primary=911, Y_mirror=1137, ps_handle=(nil), params_handle=(nil)
+[Rank 58] ENTER generate_hermitian_slice_pair_local: Y_primary=943, Y_mirror=1105, ps_handle=(nil), params_handle=(nil)
+[Rank 38] ENTER generate_hermitian_slice_pair_local: Y_primary=623, Y_mirror=1425, ps_handle=(nil), params_handle=(nil)
+[Rank 36] ENTER generate_hermitian_slice_pair_local: Y_primary=591, Y_mirror=1457, ps_handle=(nil), params_handle=(nil)
+[Rank 45] ENTER generate_hermitian_slice_pair_local: Y_primary=735, Y_mirror=1313, ps_handle=(nil), params_handle=(nil)
+[Rank 61] ENTER generate_hermitian_slice_pair_local: Y_primary=991, Y_mirror=1057, ps_handle=(nil), params_handle=(nil)
+[Rank 23] ENTER generate_hermitian_slice_pair_local: Y_primary=383, Y_mirror=1665, ps_handle=(nil), params_handle=(nil)
+[Rank 50] ENTER generate_hermitian_slice_pair_local: Y_primary=815, Y_mirror=1233, ps_handle=(nil), params_handle=(nil)
+[Rank 44] ENTER generate_hermitian_slice_pair_local: Y_primary=719, Y_mirror=1329, ps_handle=(nil), params_handle=(nil)
+[Rank 43] ENTER generate_hermitian_slice_pair_local: Y_primary=703, Y_mirror=1345, ps_handle=(nil), params_handle=(nil)
+[Rank 57] ENTER generate_hermitian_slice_pair_local: Y_primary=927, Y_mirror=1121, ps_handle=(nil), params_handle=(nil)
+[Rank 13] ENTER generate_hermitian_slice_pair_local: Y_primary=223, Y_mirror=1825, ps_handle=(nil), params_handle=(nil)
+[Rank 12] ENTER generate_hermitian_slice_pair_local: Y_primary=207, Y_mirror=1841, ps_handle=(nil), params_handle=(nil)
+[Rank 17] ENTER generate_hermitian_slice_pair_local: Y_primary=287, Y_mirror=1761, ps_handle=(nil), params_handle=(nil)
+[Rank 6] ENTER generate_hermitian_slice_pair_local: Y_primary=111, Y_mirror=1937, ps_handle=(nil), params_handle=(nil)
+[Rank 8] ENTER generate_hermitian_slice_pair_local: Y_primary=143, Y_mirror=1905, ps_handle=(nil), params_handle=(nil)
+[Rank 18] ENTER generate_hermitian_slice_pair_local: Y_primary=303, Y_mirror=1745, ps_handle=(nil), params_handle=(nil)
+[Rank 20] ENTER generate_hermitian_slice_pair_local: Y_primary=335, Y_mirror=1713, ps_handle=(nil), params_handle=(nil)
+[Rank 22] ENTER generate_hermitian_slice_pair_local: Y_primary=367, Y_mirror=1681, ps_handle=(nil), params_handle=(nil)
+[Rank 7] ENTER generate_hermitian_slice_pair_local: Y_primary=127, Y_mirror=1921, ps_handle=(nil), params_handle=(nil)
+[Rank 21] ENTER generate_hermitian_slice_pair_local: Y_primary=351, Y_mirror=1697, ps_handle=(nil), params_handle=(nil)
+[Rank 1] ENTER generate_hermitian_slice_pair_local: Y_primary=31, Y_mirror=2017, ps_handle=(nil), params_handle=(nil)
+[Rank 5] ENTER generate_hermitian_slice_pair_local: Y_primary=95, Y_mirror=1953, ps_handle=(nil), params_handle=(nil)
+[Rank 16] ENTER generate_hermitian_slice_pair_local: Y_primary=271, Y_mirror=1777, ps_handle=(nil), params_handle=(nil)
+[Rank 4] ENTER generate_hermitian_slice_pair_local: Y_primary=79, Y_mirror=1969, ps_handle=(nil), params_handle=(nil)
+[Rank 3] ENTER generate_hermitian_slice_pair_local: Y_primary=63, Y_mirror=1985, ps_handle=(nil), params_handle=(nil)
+[Rank 14] ENTER generate_hermitian_slice_pair_local: Y_primary=239, Y_mirror=1809, ps_handle=(nil), params_handle=(nil)
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=14, Y_mirror=2034, ps_handle=(nil), params_handle=(nil)
+[Rank 9] ENTER generate_hermitian_slice_pair_local: Y_primary=159, Y_mirror=1889, ps_handle=(nil), params_handle=(nil)
+[Rank 11] ENTER generate_hermitian_slice_pair_local: Y_primary=191, Y_mirror=1857, ps_handle=(nil), params_handle=(nil)
+[Rank 15] ENTER generate_hermitian_slice_pair_local: Y_primary=255, Y_mirror=1793, ps_handle=(nil), params_handle=(nil)
+[Rank 2] ENTER generate_hermitian_slice_pair_local: Y_primary=47, Y_mirror=2001, ps_handle=(nil), params_handle=(nil)
+[Rank 10] ENTER generate_hermitian_slice_pair_local: Y_primary=175, Y_mirror=1873, ps_handle=(nil), params_handle=(nil)
+[Rank 25] ENTER generate_hermitian_slice_pair_local: Y_primary=415, Y_mirror=1633, ps_handle=(nil), params_handle=(nil)
+[Rank 63] ENTER generate_hermitian_slice_pair_local: Y_primary=1024, Y_mirror=1024, ps_handle=(nil), params_handle=(nil)
+[Rank 59] ENTER generate_hermitian_slice_pair_local: Y_primary=960, Y_mirror=1088, ps_handle=(nil), params_handle=(nil)
+[Rank 62] ENTER generate_hermitian_slice_pair_local: Y_primary=1008, Y_mirror=1040, ps_handle=(nil), params_handle=(nil)
+[Rank 32] ENTER generate_hermitian_slice_pair_local: Y_primary=528, Y_mirror=1520, ps_handle=(nil), params_handle=(nil)
+[Rank 58] ENTER generate_hermitian_slice_pair_local: Y_primary=944, Y_mirror=1104, ps_handle=(nil), params_handle=(nil)
+[Rank 30] ENTER generate_hermitian_slice_pair_local: Y_primary=496, Y_mirror=1552, ps_handle=(nil), params_handle=(nil)
+[Rank 40] ENTER generate_hermitian_slice_pair_local: Y_primary=656, Y_mirror=1392, ps_handle=(nil), params_handle=(nil)
+[Rank 33] ENTER generate_hermitian_slice_pair_local: Y_primary=544, Y_mirror=1504, ps_handle=(nil), params_handle=(nil)
+[Rank 41] ENTER generate_hermitian_slice_pair_local: Y_primary=672, Y_mirror=1376, ps_handle=(nil), params_handle=(nil)
+[Rank 28] ENTER generate_hermitian_slice_pair_local: Y_primary=464, Y_mirror=1584, ps_handle=(nil), params_handle=(nil)
+[Rank 60] ENTER generate_hermitian_slice_pair_local: Y_primary=976, Y_mirror=1072, ps_handle=(nil), params_handle=(nil)
+[Rank 35] ENTER generate_hermitian_slice_pair_local: Y_primary=576, Y_mirror=1472, ps_handle=(nil), params_handle=(nil)
+[Rank 47] ENTER generate_hermitian_slice_pair_local: Y_primary=768, Y_mirror=1280, ps_handle=(nil), params_handle=(nil)
+[Rank 31] ENTER generate_hermitian_slice_pair_local: Y_primary=512, Y_mirror=1536, ps_handle=(nil), params_handle=(nil)
+[Rank 34] ENTER generate_hermitian_slice_pair_local: Y_primary=560, Y_mirror=1488, ps_handle=(nil), params_handle=(nil)
+[Rank 19] ENTER generate_hermitian_slice_pair_local: Y_primary=320, Y_mirror=1728, ps_handle=(nil), params_handle=(nil)
+[Rank 49] ENTER generate_hermitian_slice_pair_local: Y_primary=800, Y_mirror=1248, ps_handle=(nil), params_handle=(nil)
+[Rank 51] ENTER generate_hermitian_slice_pair_local: Y_primary=832, Y_mirror=1216, ps_handle=(nil), params_handle=(nil)
+[Rank 29] ENTER generate_hermitian_slice_pair_local: Y_primary=480, Y_mirror=1568, ps_handle=(nil), params_handle=(nil)
+[Rank 43] ENTER generate_hermitian_slice_pair_local: Y_primary=704, Y_mirror=1344, ps_handle=(nil), params_handle=(nil)
+[Rank 50] ENTER generate_hermitian_slice_pair_local: Y_primary=816, Y_mirror=1232, ps_handle=(nil), params_handle=(nil)
+[Rank 52] ENTER generate_hermitian_slice_pair_local: Y_primary=848, Y_mirror=1200, ps_handle=(nil), params_handle=(nil)
+[Rank 61] ENTER generate_hermitian_slice_pair_local: Y_primary=992, Y_mirror=1056, ps_handle=(nil), params_handle=(nil)
+[Rank 53] ENTER generate_hermitian_slice_pair_local: Y_primary=864, Y_mirror=1184, ps_handle=(nil), params_handle=(nil)
+[Rank 18] ENTER generate_hermitian_slice_pair_local: Y_primary=304, Y_mirror=1744, ps_handle=(nil), params_handle=(nil)
+[Rank 27] ENTER generate_hermitian_slice_pair_local: Y_primary=448, Y_mirror=1600, ps_handle=(nil), params_handle=(nil)
+[Rank 45] ENTER generate_hermitian_slice_pair_local: Y_primary=736, Y_mirror=1312, ps_handle=(nil), params_handle=(nil)
+[Rank 55] ENTER generate_hermitian_slice_pair_local: Y_primary=896, Y_mirror=1152, ps_handle=(nil), params_handle=(nil)
+[Rank 39] ENTER generate_hermitian_slice_pair_local: Y_primary=640, Y_mirror=1408, ps_handle=(nil), params_handle=(nil)
+[Rank 54] ENTER generate_hermitian_slice_pair_local: Y_primary=880, Y_mirror=1168, ps_handle=(nil), params_handle=(nil)
+[Rank 56] ENTER generate_hermitian_slice_pair_local: Y_primary=912, Y_mirror=1136, ps_handle=(nil), params_handle=(nil)
+[Rank 46] ENTER generate_hermitian_slice_pair_local: Y_primary=752, Y_mirror=1296, ps_handle=(nil), params_handle=(nil)
+[Rank 26] ENTER generate_hermitian_slice_pair_local: Y_primary=432, Y_mirror=1616, ps_handle=(nil), params_handle=(nil)
+[Rank 44] ENTER generate_hermitian_slice_pair_local: Y_primary=720, Y_mirror=1328, ps_handle=(nil), params_handle=(nil)
+[Rank 42] ENTER generate_hermitian_slice_pair_local: Y_primary=688, Y_mirror=1360, ps_handle=(nil), params_handle=(nil)
+[Rank 48] ENTER generate_hermitian_slice_pair_local: Y_primary=784, Y_mirror=1264, ps_handle=(nil), params_handle=(nil)
+[Rank 36] ENTER generate_hermitian_slice_pair_local: Y_primary=592, Y_mirror=1456, ps_handle=(nil), params_handle=(nil)
+[Rank 37] ENTER generate_hermitian_slice_pair_local: Y_primary=608, Y_mirror=1440, ps_handle=(nil), params_handle=(nil)
+[Rank 38] ENTER generate_hermitian_slice_pair_local: Y_primary=624, Y_mirror=1424, ps_handle=(nil), params_handle=(nil)
+[Rank 57] ENTER generate_hermitian_slice_pair_local: Y_primary=928, Y_mirror=1120, ps_handle=(nil), params_handle=(nil)
+[Rank 13] ENTER generate_hermitian_slice_pair_local: Y_primary=224, Y_mirror=1824, ps_handle=(nil), params_handle=(nil)
+[Rank 22] ENTER generate_hermitian_slice_pair_local: Y_primary=368, Y_mirror=1680, ps_handle=(nil), params_handle=(nil)
+[Rank 24] ENTER generate_hermitian_slice_pair_local: Y_primary=400, Y_mirror=1648, ps_handle=(nil), params_handle=(nil)
+[Rank 12] ENTER generate_hermitian_slice_pair_local: Y_primary=208, Y_mirror=1840, ps_handle=(nil), params_handle=(nil)
+[Rank 9] ENTER generate_hermitian_slice_pair_local: Y_primary=160, Y_mirror=1888, ps_handle=(nil), params_handle=(nil)
+[Rank 10] ENTER generate_hermitian_slice_pair_local: Y_primary=176, Y_mirror=1872, ps_handle=(nil), params_handle=(nil)
+[Rank 23] ENTER generate_hermitian_slice_pair_local: Y_primary=384, Y_mirror=1664, ps_handle=(nil), params_handle=(nil)
+[Rank 20] ENTER generate_hermitian_slice_pair_local: Y_primary=336, Y_mirror=1712, ps_handle=(nil), params_handle=(nil)
+[Rank 17] ENTER generate_hermitian_slice_pair_local: Y_primary=288, Y_mirror=1760, ps_handle=(nil), params_handle=(nil)
+[Rank 11] ENTER generate_hermitian_slice_pair_local: Y_primary=192, Y_mirror=1856, ps_handle=(nil), params_handle=(nil)
+[Rank 8] ENTER generate_hermitian_slice_pair_local: Y_primary=144, Y_mirror=1904, ps_handle=(nil), params_handle=(nil)
+[Rank 21] ENTER generate_hermitian_slice_pair_local: Y_primary=352, Y_mirror=1696, ps_handle=(nil), params_handle=(nil)
+[Rank 16] ENTER generate_hermitian_slice_pair_local: Y_primary=272, Y_mirror=1776, ps_handle=(nil), params_handle=(nil)
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=15, Y_mirror=2033, ps_handle=(nil), params_handle=(nil)
+[Rank 14] ENTER generate_hermitian_slice_pair_local: Y_primary=240, Y_mirror=1808, ps_handle=(nil), params_handle=(nil)
+[Rank 5] ENTER generate_hermitian_slice_pair_local: Y_primary=96, Y_mirror=1952, ps_handle=(nil), params_handle=(nil)
+[Rank 15] ENTER generate_hermitian_slice_pair_local: Y_primary=256, Y_mirror=1792, ps_handle=(nil), params_handle=(nil)
+[Rank 6] ENTER generate_hermitian_slice_pair_local: Y_primary=112, Y_mirror=1936, ps_handle=(nil), params_handle=(nil)
+[Rank 7] ENTER generate_hermitian_slice_pair_local: Y_primary=128, Y_mirror=1920, ps_handle=(nil), params_handle=(nil)
+[Rank 3] ENTER generate_hermitian_slice_pair_local: Y_primary=64, Y_mirror=1984, ps_handle=(nil), params_handle=(nil)
+[Rank 25] ENTER generate_hermitian_slice_pair_local: Y_primary=416, Y_mirror=1632, ps_handle=(nil), params_handle=(nil)
+[Rank 1] ENTER generate_hermitian_slice_pair_local: Y_primary=32, Y_mirror=2016, ps_handle=(nil), params_handle=(nil)
+[Rank 2] ENTER generate_hermitian_slice_pair_local: Y_primary=48, Y_mirror=2000, ps_handle=(nil), params_handle=(nil)
+[Rank 4] ENTER generate_hermitian_slice_pair_local: Y_primary=80, Y_mirror=1968, ps_handle=(nil), params_handle=(nil)
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=16, Y_mirror=2032, ps_handle=(nil), params_handle=(nil)
+buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+         ... Completed 14/17 batches (82.4%)
+[PACK] Rank 0: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+[PACK] Rank 0: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+         ... Completed 16/17 batches (94.1%)
+[PACK] Rank 0: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+         ... Completed 17/17 batches (100.0%)
+[MULTI-BATCH] All batches complete.
+              Generation time: 44.535293 s
+              Communication time: 4.524252 s
+[V11-VERIFY] Rank 0: All cursors match expected totals
+
+[V12-Stage 3] Z-slab streaming from recv_buffer...
+
+[Stage 3] Z-slab streaming: Unpack --> FFT --> Write (Zeldovich format)...
+[MEMORY] Allocated local_z_slab (one Z-slab, core grid): 16777216 bytes (0.02 GB)
+         Processing 256 Z-slabs sequentially (Z=[0,256))
+         Each Z-slab: 256 X-values (CORE) x 4 arrays x 2048 Y-values
+         Output format: [Z][Array][Y][X] (Zeldovich-compatible)
+[DEBUG Z=0] Before 1D FFT (after unpack) - Max imag per array: A0=6.807e+00 A1=2.434e-01 A2=6.597e-01 A3=2.434e-01 
+[DEBUG Z=0] After 1D FFT - Max imag per array: A0=2.444e-04 A1=8.256e-07 A2=7.231e-07 A3=8.256e-07 
+         ... Processed 25/256 Z-slabs (9.8%)
+         ... Processed 50/256 Z-slabs (19.5%)
+         ... Processed 75/256 Z-slabs (29.3%)
+         ... Processed 100/256 Z-slabs (39.1%)
+         ... Processed 125/256 Z-slabs (48.8%)
+         ... Processed 150/256 Z-slabs (58.6%)
+         ... Processed 175/256 Z-slabs (68.4%)
+         ... Processed 200/256 Z-slabs (78.1%)
+         ... Processed 225/256 Z-slabs (87.9%)
+         ... Processed 250/256 Z-slabs (97.7%)
+         ... Processed 256/256 Z-slabs (100.0%)
+
+========== VERIFICATION: REAL-SPACE AFTER 3D FFT ==========
+Array 0: Max real=1.374205e+04, Max imag=5.042360e-04, Ratio=3.669293e-08 [REAL]
+Array 1: Max real=3.950185e+01, Max imag=2.505307e-06, Ratio=6.342254e-08 [REAL]
+Array 2: Max real=2.320824e+01, Max imag=1.567839e-06, Ratio=6.755526e-08 [REAL]
+Array 3: Max real=3.950185e+01, Max imag=2.505307e-06, Ratio=6.342254e-08 [REAL]
+RESULT: All 4 arrays are PURELY REAL after forward 3D FFT!
+============================================================
+
+[Stage 3] Streaming complete. Time: 18.688199 s
+          (Includes unpacking, FFT, and I/O for all Z-slabs)
+          Total files written: 16384 (across all ranks)
+          Total data written: 256.000 GB
+          Files per rank: ~256 (z_count per rank, for 64 ranks)
+          Each file contains one Z-slab: x_count X x 4 arrays x 2048 Y-values
+          Typical file size: ~16.00 MB (varies by rank's X-extent)
+          File naming: rank_<rank>/z<z>_slab_N2048.bin
+          File format: Binary [Array][Y][X] (Zeldovich AZYX order, fftw_complex = 8 bytes)
+          3D FFT COMPLETE (2D XZ + 1D Y)
+
+
+====================================================================================
+TIMING SUMMARY (v11 - Persistent Recv Buffer + Streaming)
+====================================================================================
+Stage 1 (Y-slice generation + 2D FFT): 44.535293 s
+Stage 2 (Metadata exchange):            0.000000 s
+Stage 3 (Communication: Alltoallv):    4.524252 s
+Stage 3 (Streaming: Unpack+FFT+Write):  18.688199 s
+------------------------------------------------------------------------------------
+Total 3D FFT time (Gen + Comm + FFT):   49.059546 s
+Total time (including all stages):      49.059546 s
+
+Note: In v11, persistent recv_buffer eliminates per-batch allocation
+      Unpacking, 1D FFT, and I/O are combined in streaming stage
+===============================================[INIT] Rank 2: Assigned 16 pairs:
+  Pair 0: Y=33 and Y=2015 (conjugate)
+  Pair 1: Y=34 and Y=2014 (conjugate)
+  Pair 2: Y=35 and Y=2013 (conjugate)
+  ... (13 more pairs)
+[OK] Rank 2: Macro indexing verified (slices=0, arrays=4)
+[PACK] Rank 2: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+[PACK] Rank 2: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+[PACK] Rank 2: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+[PACK] Rank 2: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+[PACK] Rank 2: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+[PACK] Rank 2: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+[PACK] Rank 2: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+[PACK] Rank 2: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+[PACK] Rank 2: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+[PACK] Rank 2: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+[PACK] Rank 2: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+[PACK] Rank 2: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+[PACK] Rank 2: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+[PACK] Rank 2: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+[PACK] Rank 2: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+[PACK] Rank 2: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+=====================================
+
+====================================================================================
+ALL STAGES COMPLETE!
+====================================================================================
+[INIT] Rank 1: Assigned 16 pairs:
+  Pair 0: Y=17 and Y=2031 (conjugate)
+  Pair 1: Y=18 and Y=2030 (conjugate)
+  Pair 2: Y=19 and Y=2029 (conjugate)
+  ... (13 more pairs)
+[OK] Rank 1: Macro indexing verified (slices=0, arrays=4)
+[GRID] Rank 1 (NO PADDING - CORE GRID ONLY):
+  Core region:   X=[0,256), Z=[256,512), pencils=65536
+[V11-SETUP] Rank 1: Source totals: src0=33 src1=32 src2=32 src3=32 ...
+[V11-SETUP] Rank 1: Write cursors initialized to 0
+[V11-SETUP] Rank 1: Y-mapping complete. Sample: Y=0-->src0[0], Y=1024-->src63[30]
+[BATCH 0] Rank 1: Processing 2 Y-slices (Y=17, Y=2031)
+[PACK] Rank 1: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+[BATCH 1] Rank 1: Processing 2 Y-slices (Y=18, Y=2030)
+[PACK] Rank 1: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+[PACK] Rank 1: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+[PACK] Rank 1: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+[PACK] Rank 1: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+[PACK] Rank 1: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+[PACK] Rank 1: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+[PACK] Rank 1: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+[PACK] Rank 1: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+[PACK] Rank 1: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+[PACK] Rank 1: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+[PACK] Rank 1: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+[PACK] Rank 1: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+[PACK] Rank 1: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+[PACK] Rank 1: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+[PACK] Rank 1: Packed 33554432 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0, 524288 elements to rank 1, 524288 elements to rank 2, 524288 elements to rank 3, ...
+[V11-VERIFY] Rank 1: All cursors match expected totals
+[INIT] Rank 4: Assigned 16 pairs:
+  Pair 0: Y=65 and Y=1983 (conjugate)
+  Pair 1: Y=66 and Y=1982 (conjugate)
+  Pair 2: Y=67 and Y=1981 (conjugate)
+  ... (13 more pairs)
+[INIT] Rank 3: Assigned 16 pairs:
+  Pair 0: Y=49 and Y=1999 (conjugate)
+  Pair 1: Y=50 and Y=1998 (conjugate)
+  Pair 2: Y=51 and Y=1997 (conjugate)
+  ... (13 more pairs)
+
+Checking if output is purely real...
+Array 1: Max real=3.950185e+01, Max imag=2.505307e-06, Ratio=6.342254e-08 [REAL]
+Array 2: Max real=2.320824e+01, Max imag=1.567839e-06, Ratio=6.755526e-08 [REAL]
+Array 3: Max real=3.950185e+01, Max imag=2.505307e-06, Ratio=6.342254e-08 [REAL]
+RESULT: All 4 arrays are PURELY REAL after forward 3D FFT!
+          File format: Binary [Array][Y][X] (Zeldovich AZYX order, fftw_complex = 8 bytes)
+
+Job completed!

@@ -1,0 +1,1288 @@
+Loading frameworks module...
+Loading FFTW module...
+Checking MPI compiler...
+/opt/aurora/25.190.0/spack/unified/0.10.1/install/linux-sles15-x86_64/oneapi-2025.2.0/mpich-develop-git.6037a7a-cym6jg6/bin/mpicc
+Intel(R) oneAPI DPC++/C++ Compiler 2025.2.0 (2025.2.0.20250605)
+Target: x86_64-unknown-linux-gnu
+Thread model: posix
+InstalledDir: /opt/aurora/25.190.0/oneapi/compiler/2025.2/bin/compiler
+Configuration file: /opt/aurora/25.190.0/oneapi/compiler/2025.2/bin/compiler/../icx.cfg
+Checking C++ compiler...
+/opt/aurora/25.190.0/spack/unified/0.10.1/install/linux-sles15-x86_64/oneapi-2025.2.0/mpich-develop-git.6037a7a-cym6jg6/bin/mpicxx
+Intel(R) oneAPI DPC++/C++ Compiler 2025.2.0 (2025.2.0.20250605)
+Target: x86_64-unknown-linux-gnu
+Thread model: posix
+InstalledDir: /opt/aurora/25.190.0/oneapi/compiler/2025.2/bin/compiler
+Configuration file: /opt/aurora/25.190.0/oneapi/compiler/2025.2/bin/compiler/../icpx.cfg
+Compiling hermitian_3d_matrix with double precision...
+rm -f hermitian_3d_matrix *.o
+mpicxx -Wall -Wextra -Wno-cast-function-type -std=c++17 -O3 -fopenmp -DUSE_DOUBLE_PRECISION -I../zeldovich-PLT/include -I../zeldovich-PLT/subprojects/ParseHeader/include -I../zeldovich-PLT/build/subprojects/ParseHeader -I../zeldovich-PLT/subprojects/fmt-11.2.0/include -Isrc -Isrc/utils -Isrc/fft -Isrc/generation -Isrc/communication -Isrc/streaming -Ideps -I../.. -I../../../..  -I/opt/aurora/25.190.0/spack/unified/0.10.1/install/linux-sles15-x86_64/oneapi-2025.2.0/fftw-3.3.10-bs6lijg/include -o hermitian_3d_matrix src/main.cpp src/utils/printing.c src/utils/verification.c src/utils/decomposition.c src/utils/batch_helpers.c src/utils/rng.c src/utils/power_spectrum.c src/fft/fft_setup.c src/generation/hermitian_generation.c src/communication/mpi_exchange.c src/streaming/z_streaming.c src/STimer.cc src/utils/zeldovich_wrapper.cpp  -L/opt/aurora/25.190.0/spack/unified/0.10.1/install/linux-sles15-x86_64/oneapi-2025.2.0/fftw-3.3.10-bs6lijg/lib -lfftw3 -lfftw3_omp -L../zeldovich-PLT/build -L../zeldovich-PLT/build/subprojects/ParseHeader -L../zeldovich-PLT/build/subprojects/fmt-11.2.0 -lzeldovich -lparseheader -lfmt  -lm -lstdc++ -Wl,-rpath,/home/helenshao/InitialConditions/zeldovich-PLT/build:/home/helenshao/InitialConditions/zeldovich-PLT/build/subprojects/ParseHeader:/home/helenshao/InitialConditions/zeldovich-PLT/build/subprojects/fmt-11.2.0
+icpx: warning: use of '-qopenmp' recommended over '-fopenmp' [-Wrecommended-option]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+src/utils/decomposition.c:139:46: warning: unused parameter 'num_ranks' [-Wunused-parameter]
+  139 | int validate_abacus_compatibility(int N, int num_ranks, int grid_x, int grid_z)
+      |                                              ^
+1 warning generated.
+src/utils/rng.c:48:39: warning: unused parameter 'M' [-Wunused-parameter]
+   48 | void initialize_global_pcg(int L, int M, int N, uint64_t seed) {
+      |                                       ^
+src/utils/rng.c:48:46: warning: unused parameter 'N' [-Wunused-parameter]
+   48 | void initialize_global_pcg(int L, int M, int N, uint64_t seed) {
+      |                                              ^
+2 warnings generated.
+
+Build successful!
+Binary: hermitian_3d_matrix
+Configuration: see src/config.h
+
+==========================================
+Test: v15.2 Power Spectrum Mode
+Double Precision Build
+N=256, ranks=32
+Parameter file: examples/param_N256.par
+Should use zeldovich-PLT PowerSpectrum and RNG
+==========================================
+
+Can't find executable  ##
+Generating ICs for ppd = 256
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=0, Y_mirror=0, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] After primary FFT (array 0, Y=0): buffer OK (checksum=116)
+[Rank 0] After primary FFT (array 1, Y=0): buffer OK (checksum=84)
+[Rank 0] After primary FFT (array 2, Y=0): buffer OK (checksum=15)
+[Rank 0] After primary FFT (array 3, Y=0): buffer OK (checksum=84)
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=1, Y_mirror=255, ps_handle=0x59a0d70, params_handle=0x59a0690
+[INFO] num_ranks=1 < total_pairs=129: Each rank will process 129-129 pairs
+====================================================================================
+VERSION 14: PERIODIC BOUNDARY CONDITIONS FOR PADDING
+====================================================================================
+Precision: Double (16 bytes per complex number)
+Matrix size: N = 256³, Total elements: 16777216
+MPI ranks: 1 (total_pairs: 129 for N=256)
+Multi-batch processing: Each rank processes multiple Y-slice pairs
+Grid decomposition: Core grid only (no padding, X_PADDING=0)
+            Each rank owns non-overlapping X-region
+            No periodic boundary wrapping - standard decomposition
+V12 feature: Z-slab streaming (Zeldovich-compatible output)
+            Output format: [Z][Array][Y][X] matches Zeldovich AZYX
+            Each file contains all (X,Y) for one Z-slab
+V11 feature: Direct receive into persistent source-grouped buffer
+Communication method: MPI_Ialltoallv (Phase A)
+====================================================================================
+
+[INIT] Rank 0: Assigned 129 pairs:
+  Pair 0: Y=0 (self-conjugate)
+  Pair 1: Y=1 and Y=255 (conjugate)
+  Pair 2: Y=2 and Y=254 (conjugate)
+  ... (126 more pairs)
+
+[DISTRIBUTION] Multi-batch slice distribution:
+  Total Y-slice pairs: 129
+  Active ranks: 1
+  Pairs per rank: 129 base + 0 ranks with +1
+  Rank 0 processes: 129 pairs (Y indices 0-128)
+  Estimated total Y-slices: ~256
+
+[INIT] Loading zeldovich-PLT parameters from: examples/param_N256.par
+[INIT] PowerSpectrum initialized:
+       Power law index: -2.00
+       Box size: 100.00
+       Fundamental wavenumber: 6.283185e-02
+       Seed: 4
+       Power spectrum mode: ENABLED
+[SETUP] narray = 4 (arrays per Y-slice)
+[SETUP] Creating FFT plans with dummy memory...
+[SETUP] FFT plans created successfully (2D and 1D)
+[MEMORY] Allocated local_y_slices: 0 bytes (0.00 GB) for 0 slices, 4 arrays
+[OK] Rank 0: Macro indexing verified (slices=0, arrays=4)
+
+[V14-DEBUG] Grid decomposition verification (PERIODIC BOUNDARIES):
+  Rank 0:
+    Core:   X=[0,256), Z=[0,256), Pencils=65536
+    Padded: X=[0,256), Z=[0,256), Pencils=65536
+  Note: Negative X-start or X-end > N indicates periodic wrap-around
+[Stage 2] Complete.
+
+[MULTI-BATCH] Starting batch processing...
+              Ranks will process 129 pairs each (approx)
+[GRID] Rank 0 (NO PADDING - CORE GRID ONLY):
+  Core region:   X=[0,256), Z=[0,256), pencils=65536
+[BATCHES] Total batches to process: 129
+
+[V11-SETUP] Computing per-source Y-slice totals...
+[V11-SETUP] Rank 0: Source totals: src0=256 
+[V11-SETUP] Persistent recv_buffer size: 1073741824 bytes (1.00 GB)
+            Total elements: 67108864 = sum of (src_total_slices[src] * my_pencils * narray)
+[V11-MEMORY] Allocated recv_buffer: 1.00 GB (source-grouped layout)
+[V11-SETUP] Rank 0: Write cursors initialized to 0
+[V11-SETUP] Phase 1 pre-computation complete.
+
+[V11-SETUP] Building Y-value ownership mapping...
+[V11-SETUP] Rank 0: Y-mapping complete. Sample: Y=0-->src0[0], Y=128-->src0[255]
+[V11-SETUP] Phase 2 Y-mapping complete.
+
+[MEMORY] Allocated local_y_slices (reusable): 8388608 bytes (0.01 GB)
+
+[MULTI-BATCH] Processing 129 batches...
+[BATCH 0] Rank 0: Processing 1 Y-slices (Y=0)
+[DEBUG Y=0] Before 2D FFT (Fourier space) - PRIMARY slice - Max real/imag per array: A0: re=1.253e-01 im=7.973e-02 A1: re=0.000e+00 im=4.787e-02 A2: re=0.000e+00 im=7.973e-02 A3: re=0.000e+00 im=4.787e-02 (NOTE: Non-zero imag expected in Fourier space)
+[DEBUG Y=0] After 2D FFT (Real space) - PRIMARY slice - Max real/imag per array: A0: re=2.737e+00 im=4.788e-16 (ratio=1.749e-16) A1: re=3.080e-01 im=8.086e-17 (ratio=2.626e-16) A2: re=3.869e-01 im=1.033e-16 (ratio=2.669e-16) A3: re=3.080e-01 im=8.086e-17 (ratio=2.626e-16) (NOTE: Imag should be ~0 in real space!)
+[PACK] Rank 0: Packed 262144 total elements to send_buffer
+       Sending to ranks: 262144 elements to rank 0
+[V11-BATCH 0] Cursors advanced. Sample: src0=262144, src1=0
+[BATCH 1] Rank 0: Processing 2 Y-slices (Y=1, Y=255)
+[DEBUG Y=1] Before 2D FFT (Fourier space) - PRIMARY slice - Max real/imag per a[Rank 0] After primary FFT (array 0, Y=1): buffer OK (checksum=-15)
+[Rank 0] After conjugate FFT (array 0, Y=1): buffer OK (checksum=-58)
+[Rank 0] After primary FFT (array 1, Y=1): buffer OK (checksum=-13)
+[Rank 0] After conjugate FFT (array 1, Y=1): buffer OK (checksum=122)
+[Rank 0] After primary FFT (array 2, Y=1): buffer OK (checksum=-56)
+[Rank 0] After conjugate FFT (array 2, Y=1): buffer OK (checksum=-23)
+[Rank 0] After primary FFT (array 3, Y=1): buffer OK (checksum=-13)
+[Rank 0] After conjugate FFT (array 3, Y=1): buffer OK (checksum=122)
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=2, Y_mirror=254, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] After primary FFT (array 0, Y=2): buffer OK (checksum=-89)
+rray: A0: re=1.274e-01 im=4.777e-02 A1: re=1.625e-01 im=5.501e-02 A2: re=0.000e+00 im=4.777e-02 A3: re=1.625e-01 im=5.501e-02 (NOTE: Non-zero imag expected in Fourier space)
+[DEBUG Y=1] Before 2D FFT (Fourier space) - CONJUGATE slice - Max real/imag per array: A0: re=1.274e-01 im=4.777e-02 A1: re=1.625e-01 im=5.501e-02 A2: re=0.000e+00 im=4.777e-02 A3: re=1.625e-01 im=5.501e-02 (NOTE: Should be conjugate of primary!)
+[DEBUG Y=1] Sample conjugate check (first 3 points): A0[0,0]: prim=(1.063e-01,-0.000e+00) conj[0,0]=(1.063e-01,0.000e+00) A0[0,1]: prim=(-4.042e-02,-0.000e+00) conj[0,255]=(-4.042e-02,0.000e+00) A0[1,0]: prim=(-1.274e-01,8.665e-03) conj[255,0]=(-1.274e-01,-8.665e-03) A0[1,1]: prim=(-1.056e-01,-2.297e-02) conj[255,255]=(-1.056e-01,2.297e-02) A1[0,0]: prim=(1.625e-01,-0.000e+00) conj[0,0]=(1.625e-01,0.000e+00) A1[0,1]: prim=(4.643e-02,4.643e-02) conj[0,255]=(4.643e-02,-4.643e-02) A1[1,0]: prim=(8.665e-03,-0.000e+00) conj[255,0]=(8.665e-03,0.000e+00) A1[1,1]: prim=(-2.297e-02,-2.297e-02) conj[255,255]=(-2.297e-02,2.297e-02) 
+[DEBUG Y=1] Before 2D FFT - Buffer addresses: prim=0x154af495e000 conj=0x154af4d5e000 (diff=262144)
+[DEBUG Y=1] Before 2D FFT - Sample values: prim[0,0]=(1.063e-01,-0.000e+00) conj[0,0]=(1.063e-01,0.000e+00)
+[DEBUG Y=1] Right before conjugate FFT - conj[0,0]=(1.063e-01,0.000e+00) prim[0,0]=(1.058e+00,4.730e-02)
+[DEBUG Y=1] Right after conjugate FFT - conj[0,0]=(1.058e+00,-4.730e-02) prim[0,0]=(1.058e+00,4.730e-02)
+[DEBUG Y=1] After 2D FFT (Real space) - PRIMARY slice - Max real/imag per array: A0: re=1.564e+00 im=1.780e+00 (ratio=1.138e+00) A1: re=3.992e-01 im=2.255e-01 (ratio=5.650e-01) A2: re=1.470e-01 im=1.752e-01 (ratio=1.192e+00) A3: re=3.992e-01 im=2.255e-01 (ratio=5.650e-01) (NOTE: Imag should be ~0 in real space!)
+[DEBUG Y=1] After 2D FFT (Real space) - CONJUGATE slice - Max real/imag per array: A0: re=1.564e+00 im=1.780e+00 (ratio=1.138e+00) A1: re=3.992e-01 im=2.255e-01 (ratio=5.650e-01) A2: re=1.470e-01 im=1.752e-01 (ratio=1.192e+00) A3: re=3.992e-01 im=2.255e-01 (ratio=5.650e-01) (NOTE: Imag should be ~0 in real space!)
+[DEBUG Y=1] Array comparison: 0 identical, 262144 different (total=262144)
+[DEBUG Y=1] Sample differences (first 3 non-identical): A0[0,0]: prim=(1.058e+00,4.730e-02) conj=(1.058e+00,-4.730e-02) diff=(0.000e+00,9.459e-02) A0[0,1]: prim=(7.549e-01,-1.777e-01) conj=(7.549e-01,1.777e-01) diff=(0.000e+00,3.554e-01) A0[0,2]: prim=(1.297e-01,-6.672e-02) conj=(1.297e-01,6.672e-02) diff=(2.776e-17,1.334e-01) 
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[V11-BATCH 1] Cursors advanced. Sample: src0=786432, src1=0
+[DEBUG Y=2] Before 2D FFT (Fourier space) - PRIMARY slice - Max real/imag per array: A0: re=1.289e-01 im=2.306e-02 A1: re=3.772e-02 im=2.700e-02 A2: re=0.000e+00 im=2.306e-02 A3: re=3.772e-02 im=2.700e-02 (NOTE: Non-zero imag expected in Fourier space)
+[DEBUG Y=2] Before 2D FFT (Fourier space) - CONJUGATE slice - Max real/imag per array: A0: re=1.289e-01 im=2.306e-02 A1: re=3.772e-02 im=2.700e-02 A2: re=0.000e+00 im=2.306e-02 A3: re=3.772e-02 im=2.700e-02 (NOTE: Should be conjugate of primary!)
+[DEBUG Y=2] Sample conjugate check (first 3 points): A0[0,0]: prim=(1.519e-02,-0.000e+00) conj[0,0]=(1.519e-02,0.000e+00) A0[0,1]: prim=(-1.493e-02,0.000e+00) conj[0,255]=(-1.493e-02,-0.000e+00) A0[1,0]: prim=(1.289e-01,-1.886e-02) conj[255,0]=(1.289e-01,1.886e-02) A0[1,1]: prim=(1.827e-02,4.777e-03) conj[255,255]=(1.827e-02,-4.777e-03) A1[0,0]: prim=(2.321e-02,-0.000e+00) conj[0,0]=(2.321e-02,0.000e+00) A1[0,1]: prim=(-4.983e-03,-2.492e-03) conj[0,255]=(-4.983e-03,2.492e-03) A1[1,0]: prim=(-3.772e-02,0.000e+00) conj[255,0]=(-3.772e-02,-0.000e+00) A1[1,1]: prim=(9.553e-03,4.777e-03) conj[255,255]=(9.553e-03,-4.777e-03) 
+[DEBUG Y=2] Before 2D FFT - Buffer addresses: prim=0x154af495e000 conj=0x154af4d5e000 (diff=262144)
+[DEBUG Y=2] Before 2D FFT - Sample values: prim[0,0]=(1.519e-02,-0.000e+00) conj[0,0]=(1.519e-02,0.000e+00)
+[DEBUG Y=2] Right before conjugate FFT - conj[0,0]=(1.519e-02,0.000e+00) prim[0,0]=(2.[Rank 0] After conjugate FFT (array 0, Y=2): buffer OK (checksum=59)
+[Rank 0] After primary FFT (array 1, Y=2): buffer OK (checksum=-126)
+[Rank 0] After conjugate FFT (array 1, Y=2): buffer OK (checksum=-101)
+[Rank 0] After primary FFT (array 2, Y=2): buffer OK (checksum=-83)
+[Rank 0] After conjugate FFT (array 2, Y=2): buffer OK (checksum=70)
+[Rank 0] After primary FFT (array 3, Y=2): buffer OK (checksum=-126)
+[Rank 0] After conjugate FFT (array 3, Y=2): buffer OK (checksum=-101)
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=3, Y_mirror=253, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=4, Y_mirror=252, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=5, Y_mirror=251, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=6, Y_mirror=250, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=7, Y_mirror=249, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=8, Y_mirror=248, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=9, Y_mirror=247, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=10, Y_mirror=246, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=11, Y_mirror=245, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=12, Y_mirror=244, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=13, Y_mirror=243, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=14, Y_mirror=242, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=15, Y_mirror=241, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=16, Y_mirror=240, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=17, Y_mirror=239, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=18, Y_mirror=238, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=19, Y_mirror=237, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=20, Y_mirror=236, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=21, Y_mirror=235, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=22, Y_mirror=234, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=23, Y_mirror=233, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=24, Y_mirror=232, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=25, Y_mirror=231, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=26, Y_mirror=230, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=27, Y_mirror=229, ps_handle=0x59a0d70, params_handle=0x59a0690
+046e-01,2.506e-02)
+[DEBUG Y=2] Right after conjugate FFT - conj[0,0]=(2.046e-01,-2.506e-02) prim[0,0]=(2.046e-01,2.506e-02)
+[DEBUG Y=2] After 2D FFT (Real space) - PRIMARY slice - Max real/imag per array: A0: re=1.832e+00 im=1.514e+00 (ratio=8.263e-01) A1: re=1.598e-01 im=1.542e-01 (ratio=9.648e-01) A2: re=1.047e-01 im=1.211e-01 (ratio=1.156e+00) A3: re=1.598e-01 im=1.542e-01 (ratio=9.648e-01) (NOTE: Imag should be ~0 in real space!)
+[DEBUG Y=2] After 2D FFT (Real space) - CONJUGATE slice - Max real/imag per array: A0: re=1.832e+00 im=1.514e+00 (ratio=8.263e-01) A1: re=1.598e-01 im=1.542e-01 (ratio=9.648e-01) A2: re=1.047e-01 im=1.211e-01 (ratio=1.156e+00) A3: re=1.598e-01 im=1.542e-01 (ratio=9.648e-01) (NOTE: Imag should be ~0 in real space!)
+[DEBUG Y=2] Array comparison: 0 identical, 262144 different (total=262144)
+[DEBUG Y=2] Sample differences (first 3 non-identical): A0[0,0]: prim=(2.046e-01,2.506e-02) conj=(2.046e-01,-2.506e-02) diff=(0.000e+00,5.012e-02) A0[0,1]: prim=(4.151e-01,-2.948e-01) conj=(4.151e-01,2.948e-01) diff=(0.000e+00,5.895e-01) A0[0,2]: prim=(3.096e-01,-3.051e-01) conj=(3.096e-01,3.051e-01) diff=(1.110e-16,6.103e-01) 
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+         ... Completed 13/129 batches (10.1%)
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+         ... Completed 26/129 batches (20.2%)
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elem[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=28, Y_mirror=228, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=29, Y_mirror=227, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=30, Y_mirror=226, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=31, Y_mirror=225, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=32, Y_mirror=224, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=33, Y_mirror=223, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=34, Y_mirror=222, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=35, Y_mirror=221, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=36, Y_mirror=220, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=37, Y_mirror=219, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=38, Y_mirror=218, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=39, Y_mirror=217, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=40, Y_mirror=216, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=41, Y_mirror=215, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=42, Y_mirror=214, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=43, Y_mirror=213, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=44, Y_mirror=212, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=45, Y_mirror=211, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=46, Y_mirror=210, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=47, Y_mirror=209, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=48, Y_mirror=208, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=49, Y_mirror=207, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=50, Y_mirror=206, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=51, Y_mirror=205, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=52, Y_mirror=204, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=53, Y_mirror=203, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=54, Y_mirror=202, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=55, Y_mirror=201, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=56, Y_mirror=200, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=57, Y_mirror=199, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=58, Y_mirror=198, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=59, Y_mirror=197, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=60, Y_mirror=196, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=61, Y_mirror=195, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=62, Y_mirror=194, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=63, Y_mirror=193, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=64, Y_mirror=192, ps_handle=0x59a0d70, params_handle=0x59a0690
+ents to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+         ... Completed 39/129 batches (30.2%)
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+         ... Completed 52/129 batches (40.3%)
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 [Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=65, Y_mirror=191, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=66, Y_mirror=190, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=67, Y_mirror=189, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=68, Y_mirror=188, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=69, Y_mirror=187, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=70, Y_mirror=186, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=71, Y_mirror=185, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=72, Y_mirror=184, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=73, Y_mirror=183, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=74, Y_mirror=182, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=75, Y_mirror=181, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=76, Y_mirror=180, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=77, Y_mirror=179, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=78, Y_mirror=178, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=79, Y_mirror=177, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=80, Y_mirror=176, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=81, Y_mirror=175, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=82, Y_mirror=174, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=83, Y_mirror=173, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=84, Y_mirror=172, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=85, Y_mirror=171, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=86, Y_mirror=170, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=87, Y_mirror=169, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=88, Y_mirror=168, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=89, Y_mirror=167, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=90, Y_mirror=166, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=91, Y_mirror=165, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=92, Y_mirror=164, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=93, Y_mirror=163, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=94, Y_mirror=162, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=95, Y_mirror=161, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=96, Y_mirror=160, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=97, Y_mirror=159, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=98, Y_mirror=158, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=99, Y_mirror=157, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=100, Y_mirror=156, ps_handle=0x59a0d70, params_handle=0x59a0690
+total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+         ... Completed 65/129 batches (50.4%)
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+         ... Completed 78/129 batches (60.5%)
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+         ... Completed 91/129 batches (70.5%)
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 52428[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=101, Y_mirror=155, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=102, Y_mirror=154, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=103, Y_mirror=153, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=104, Y_mirror=152, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=105, Y_mirror=151, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=106, Y_mirror=150, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=107, Y_mirror=149, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=108, Y_mirror=148, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=109, Y_mirror=147, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=110, Y_mirror=146, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=111, Y_mirror=145, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=112, Y_mirror=144, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=113, Y_mirror=143, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=114, Y_mirror=142, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=115, Y_mirror=141, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=116, Y_mirror=140, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=117, Y_mirror=139, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=118, Y_mirror=138, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=119, Y_mirror=137, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=120, Y_mirror=136, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=121, Y_mirror=135, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=122, Y_mirror=134, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=123, Y_mirror=133, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=124, Y_mirror=132, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=125, Y_mirror=131, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=126, Y_mirror=130, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=127, Y_mirror=129, ps_handle=0x59a0d70, params_handle=0x59a0690
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=128, Y_mirror=128, ps_handle=0x59a0d70, params_handle=0x59a0690
+8 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+         ... Completed 104/129 batches (80.6%)
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+         ... Completed 117/129 batches (90.7%)
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 262144 total elements to send_buffer
+       Sending to ranks: 262144 elements to rank 0
+         ... Completed 129/129 batches (100.0%)
+[MULTI-BATCH] All batches complete.
+              Generation time: 2.019215 s
+              Communication time: 0.179024 s
+[V11-VERIFY] Rank 0: All cursors match expected totals
+
+[V12-Stage 3] Z-slab streaming from recv_buffer...
+
+[Stage 3] Z-slab streaming: Unpack --> FFT --> Write (Zeldovich format)...
+[MEMORY] Allocated local_z_slab (one Z-slab, core grid): 4194304 bytes (0.00 GB)
+         Processing 256 Z-slabs sequentially (Z=[0,256))
+         Each Z-slab: 256 X-values (CORE) x 4 arrays x 256 Y-values
+         Output format: [Z][Array][Y][X] (Zeldovich-compatible)
+[DEBUG Z=0] Before 1D FFT (after unpack) - Max imag per array: A0=1.285e+00 A1=1.195e-01 A2=9.807e-02 A3=1.195e-01 
+[DEBUG Z=0] After 1D FFT - Max imag per array: A0=3.874e-15 A1=3.017e-16 A2=1.336e-16 A3=3.017e-16 [DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x59a0d70 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+
+[Rank 0, Z=0] First Z-slab max values (all Y): A0: re=1.995560e+01 im=3.874290e-15 A1: re=1.198294e+00 im=3.017010e-16 A2: re=4.972965e-01 im=1.336194e-16 A3: re=1.198294e+00 im=3.017010e-16
+[Rank 0, Z=0] Overlapping region max (x,y,z < 256): A0: re=1.995560e+01 im=3.874290e-15 A1: re=1.198294e+00 im=3.017010e-16 A2: re=4.972965e-01 im=1.336194e-16 A3: re=1.198294e+00 im=3.017010e-16
+         ... Processed 25/256 Z-slabs (9.8%)
+         ... Processed 50/256 Z-slabs (19.5%)
+         ... Processed 75/256 Z-slabs (29.3%)
+         ... Processed 100/256 Z-slabs (39.1%)
+         ... Processed 125/256 Z-slabs (48.8%)
+         ... Processed 150/256 Z-slabs (58.6%)
+         ... Processed 175/256 Z-slabs (68.4%)
+         ... Processed 200/256 Z-slabs (78.1%)
+         ... Processed 225/256 Z-slabs (87.9%)
+         ... Processed 250/256 Z-slabs (97.7%)
+         ... Processed 256/256 Z-slabs (100.0%)
+
+========== VERIFICATION: REAL-SPACE AFTER 3D FFT ==========
+Array 0: Max real=2.428473e+01, Max imag=5.670784e-15, Ratio=2.335123e-16 [REAL]
+Array 1: Max real=1.422494e+00, Max imag=4.091838e-16, Ratio=2.876524e-16 [REAL]
+Array 2: Max real=8.825620e-01, Max imag=2.330790e-16, Ratio=2.640936e-16 [REAL]
+Array 3: Max real=1.422494e+00, Max imag=4.091838e-16, Ratio=2.876524e-16 [REAL]
+RESULT: All 4 arrays are PURELY REAL after forward 3D FFT!
+============================================================
+
+[Stage 3] Streaming complete. Time: 3.846870 s
+          (Includes unpacking, FFT, and I/O for all Z-slabs)
+          Total files written: 256 (across all ranks)
+          Total data written: 1.000 GB
+          Files per rank: ~256 (z_count per rank, for 1 ranks)
+          Each file contains one Z-slab: x_count X x 4 arrays x 256 Y-values
+          Typical file size: ~4.00 MB (varies by rank's X-extent)
+          File naming: rank_<rank>/z<z>_slab_N256.bin
+          File format: Binary [Array][Y][X] (Zeldovich AZYX order, fftw_complex = 16 bytes)
+          3D FFT COMPLETE (2D XZ + 1D Y)
+
+
+====================================================================================
+TIMING SUMMARY (v11 - Persistent Recv Buffer + Streaming)
+====================================================================================
+Stage 1 (Y-slice generation + 2D FFT): 2.019215 s
+Stage 2 (Metadata exchange):            0.000000 s
+Stage 3 (Communication: Alltoallv):    0.179024 s
+Stage 3 (Streaming: Unpack+FFT+Write):  3.846870 s
+------------------------------------------------------------------------------------
+Total 3D FFT time (Gen + Comm + FFT):   2.198239 s
+Total time (including all stages):      2.198239 s
+
+Note: In v11, persistent recv_buffer eliminates per-batch allocation
+      Unpacking, 1D FFT, and I/O are combined in streaming stage
+====================================================================================
+
+====================================================================================
+ALL STAGES COMPLETE!
+====================================================================================
+Loading frameworks module...
+Loading FFTW module...
+Checking MPI compiler...
+/opt/aurora/25.190.0/spack/unified/0.10.1/install/linux-sles15-x86_64/oneapi-2025.2.0/mpich-develop-git.6037a7a-cym6jg6/bin/mpicc
+Intel(R) oneAPI DPC++/C++ Compiler 2025.2.0 (2025.2.0.20250605)
+Target: x86_64-unknown-linux-gnu
+Thread model: posix
+InstalledDir: /opt/aurora/25.190.0/oneapi/compiler/2025.2/bin/compiler
+Configuration file: /opt/aurora/25.190.0/oneapi/compiler/2025.2/bin/compiler/../icx.cfg
+Checking C++ compiler...
+/opt/aurora/25.190.0/spack/unified/0.10.1/install/linux-sles15-x86_64/oneapi-2025.2.0/mpich-develop-git.6037a7a-cym6jg6/bin/mpicxx
+Intel(R) oneAPI DPC++/C++ Compiler 2025.2.0 (2025.2.0.20250605)
+Target: x86_64-unknown-linux-gnu
+Thread model: posix
+InstalledDir: /opt/aurora/25.190.0/oneapi/compiler/2025.2/bin/compiler
+Configuration file: /opt/aurora/25.190.0/oneapi/compiler/2025.2/bin/compiler/../icpx.cfg
+Compiling hermitian_3d_matrix with double precision...
+rm -f hermitian_3d_matrix *.o
+mpicxx -Wall -Wextra -Wno-cast-function-type -std=c++17 -O3 -fopenmp -DUSE_DOUBLE_PRECISION -I../zeldovich-PLT/include -I../zeldovich-PLT/subprojects/ParseHeader/include -I../zeldovich-PLT/build/subprojects/ParseHeader -I../zeldovich-PLT/subprojects/fmt-11.2.0/include -Isrc -Isrc/utils -Isrc/fft -Isrc/generation -Isrc/communication -Isrc/streaming -Ideps -I../.. -I../../../..  -I/opt/aurora/25.190.0/spack/unified/0.10.1/install/linux-sles15-x86_64/oneapi-2025.2.0/fftw-3.3.10-bs6lijg/include -o hermitian_3d_matrix src/main.cpp src/utils/printing.c src/utils/verification.c src/utils/decomposition.c src/utils/batch_helpers.c src/utils/rng.c src/utils/power_spectrum.c src/fft/fft_setup.c src/generation/hermitian_generation.c src/communication/mpi_exchange.c src/streaming/z_streaming.c src/STimer.cc src/utils/zeldovich_wrapper.cpp  -L/opt/aurora/25.190.0/spack/unified/0.10.1/install/linux-sles15-x86_64/oneapi-2025.2.0/fftw-3.3.10-bs6lijg/lib -lfftw3 -lfftw3_omp -L../zeldovich-PLT/build -L../zeldovich-PLT/build/subprojects/ParseHeader -L../zeldovich-PLT/build/subprojects/fmt-11.2.0 -lzeldovich -lparseheader -lfmt  -lm -lstdc++ -Wl,-rpath,/home/helenshao/InitialConditions/zeldovich-PLT/build:/home/helenshao/InitialConditions/zeldovich-PLT/build/subprojects/ParseHeader:/home/helenshao/InitialConditions/zeldovich-PLT/build/subprojects/fmt-11.2.0
+icpx: warning: use of '-qopenmp' recommended over '-fopenmp' [-Wrecommended-option]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+src/utils/decomposition.c:139:46: warning: unused parameter 'num_ranks' [-Wunused-parameter]
+  139 | int validate_abacus_compatibility(int N, int num_ranks, int grid_x, int grid_z)
+      |                                              ^
+1 warning generated.
+src/utils/rng.c:48:39: warning: unused parameter 'M' [-Wunused-parameter]
+   48 | void initialize_global_pcg(int L, int M, int N, uint64_t seed) {
+      |                                       ^
+src/utils/rng.c:48:46: warning: unused parameter 'N' [-Wunused-parameter]
+   48 | void initialize_global_pcg(int L, int M, int N, uint64_t seed) {
+      |                                              ^
+2 warnings generated.
+
+Build successful!
+Binary: hermitian_3d_matrix
+Configuration: see src/config.h
+
+==========================================
+Test: v15.2 Power Spectrum Mode
+Double Precision Build
+N=256, ranks=32
+Parameter file: examples/param_N256.par
+Should use zeldovich-PLT PowerSpectrum and RNG
+==========================================
+
+Can't find executable  ##
+Generating ICs for ppd = 256
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=0, Y_mirror=0, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] After primary FFT (array 0, Y=0): buffer OK (checksum=116)
+[Rank 0] After primary FFT (array 1, Y=0): buffer OK (checksum=84)
+[Rank 0] After primary FFT (array 2, Y=0): buffer OK (checksum=15)
+[Rank 0] After primary FFT (array 3, Y=0): buffer OK (checksum=84)
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=1, Y_mirror=255, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[INFO] num_ranks=1 < total_pairs=129: Each rank will process 129-129 pairs
+====================================================================================
+VERSION 14: PERIODIC BOUNDARY CONDITIONS FOR PADDING
+====================================================================================
+Precision: Double (16 bytes per complex number)
+Matrix size: N = 256³, Total elements: 16777216
+MPI ranks: 1 (total_pairs: 129 for N=256)
+Multi-batch processing: Each rank processes multiple Y-slice pairs
+Grid decomposition: Core grid only (no padding, X_PADDING=0)
+            Each rank owns non-overlapping X-region
+            No periodic boundary wrapping - standard decomposition
+V12 feature: Z-slab streaming (Zeldovich-compatible output)
+            Output format: [Z][Array][Y][X] matches Zeldovich AZYX
+            Each file contains all (X,Y) for one Z-slab
+V11 feature: Direct receive into persistent source-grouped buffer
+Communication method: MPI_Ialltoallv (Phase A)
+====================================================================================
+
+[INIT] Rank 0: Assigned 129 pairs:
+  Pair 0: Y=0 (self-conjugate)
+  Pair 1: Y=1 and Y=255 (conjugate)
+  Pair 2: Y=2 and Y=254 (conjugate)
+  ... (126 more pairs)
+
+[DISTRIBUTION] Multi-batch slice distribution:
+  Total Y-slice pairs: 129
+  Active ranks: 1
+  Pairs per rank: 129 base + 0 ranks with +1
+  Rank 0 processes: 129 pairs (Y indices 0-128)
+  Estimated total Y-slices: ~256
+
+[INIT] Loading zeldovich-PLT parameters from: examples/param_N256.par
+[INIT] PowerSpectrum initialized:
+       Power law index: -2.00
+       Box size: 100.00
+       Fundamental wavenumber: 6.283185e-02
+       Seed: 4
+       Power spectrum mode: ENABLED
+[SETUP] narray = 4 (arrays per Y-slice)
+[SETUP] Creating FFT plans with dummy memory...
+[SETUP] FFT plans created successfully (2D and 1D)
+[MEMORY] Allocated local_y_slices: 0 bytes (0.00 GB) for 0 slices, 4 arrays
+[OK] Rank 0: Macro indexing verified (slices=0, arrays=4)
+
+[V14-DEBUG] Grid decomposition verification (PERIODIC BOUNDARIES):
+  Rank 0:
+    Core:   X=[0,256), Z=[0,256), Pencils=65536
+    Padded: X=[0,256), Z=[0,256), Pencils=65536
+  Note: Negative X-start or X-end > N indicates periodic wrap-around
+[Stage 2] Complete.
+
+[MULTI-BATCH] Starting batch processing...
+              Ranks will process 129 pairs each (approx)
+[GRID] Rank 0 (NO PADDING - CORE GRID ONLY):
+  Core region:   X=[0,256), Z=[0,256), pencils=65536
+[BATCHES] Total batches to process: 129
+
+[V11-SETUP] Computing per-source Y-slice totals...
+[V11-SETUP] Rank 0: Source totals: src0=256 
+[V11-SETUP] Persistent recv_buffer size: 1073741824 bytes (1.00 GB)
+            Total elements: 67108864 = sum of (src_total_slices[src] * my_pencils * narray)
+[V11-MEMORY] Allocated recv_buffer: 1.00 GB (source-grouped layout)
+[V11-SETUP] Rank 0: Write cursors initialized to 0
+[V11-SETUP] Phase 1 pre-computation complete.
+
+[V11-SETUP] Building Y-value ownership mapping...
+[V11-SETUP] Rank 0: Y-mapping complete. Sample: Y=0-->src0[0], Y=128-->src0[255]
+[V11-SETUP] Phase 2 Y-mapping complete.
+
+[MEMORY] Allocated local_y_slices (reusable): 8388608 bytes (0.01 GB)
+
+[MULTI-BATCH] Processing 129 batches...
+[BATCH 0] Rank 0: Processing 1 Y-slices (Y=0)
+[DEBUG Y=0] Before 2D FFT (Fourier space) - PRIMARY slice - Max real/imag per array: A0: re=1.253e-01 im=7.973e-02 A1: re=0.000e+00 im=4.787e-02 A2: re=0.000e+00 im=7.973e-02 A3: re=0.000e+00 im=4.787e-02 (NOTE: Non-zero imag expected in Fourier space)
+[DEBUG Y=0] After 2D FFT (Real space) - PRIMARY slice - Max real/imag per array: A0: re=2.737e+00 im=4.788e-16 (ratio=1.749e-16) A1: re=3.080e-01 im=8.086e-17 (ratio=2.626e-16) A2: re=3.869e-01 im=1.033e-16 (ratio=2.669e-16) A3: re=3.080e-01 im=8.086e-17 (ratio=2.626e-16) (NOTE: Imag should be ~0 in real space!)
+[PACK] Rank 0: Packed 262144 total elements to send_buffer
+       Sending to ranks: 262144 elements to rank 0
+[V11-BATCH 0] Cursors advanced. Sample: src0=262144, src1=0
+[BATCH 1] Rank 0: Processing 2 Y-slices (Y=1, Y=255)
+[DEBUG Y=1] Before 2D FFT (Fourier space) - PRIMARY slice - Max real/imag per a[Rank 0] After primary FFT (array 0, Y=1): buffer OK (checksum=-15)
+[Rank 0] After conjugate FFT (array 0, Y=1): buffer OK (checksum=-58)
+[Rank 0] After primary FFT (array 1, Y=1): buffer OK (checksum=-13)
+[Rank 0] After conjugate FFT (array 1, Y=1): buffer OK (checksum=122)
+[Rank 0] After primary FFT (array 2, Y=1): buffer OK (checksum=-56)
+[Rank 0] After conjugate FFT (array 2, Y=1): buffer OK (checksum=-23)
+[Rank 0] After primary FFT (array 3, Y=1): buffer OK (checksum=-13)
+[Rank 0] After conjugate FFT (array 3, Y=1): buffer OK (checksum=122)
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=2, Y_mirror=254, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] After primary FFT (array 0, Y=2): buffer OK (checksum=-89)
+rray: A0: re=1.274e-01 im=4.777e-02 A1: re=1.625e-01 im=5.501e-02 A2: re=0.000e+00 im=4.777e-02 A3: re=1.625e-01 im=5.501e-02 (NOTE: Non-zero imag expected in Fourier space)
+[DEBUG Y=1] Before 2D FFT (Fourier space) - CONJUGATE slice - Max real/imag per array: A0: re=1.274e-01 im=4.777e-02 A1: re=1.625e-01 im=5.501e-02 A2: re=0.000e+00 im=4.777e-02 A3: re=1.625e-01 im=5.501e-02 (NOTE: Should be conjugate of primary!)
+[DEBUG Y=1] Sample conjugate check (first 3 points): A0[0,0]: prim=(1.063e-01,-0.000e+00) conj[0,0]=(1.063e-01,0.000e+00) A0[0,1]: prim=(-4.042e-02,-0.000e+00) conj[0,255]=(-4.042e-02,0.000e+00) A0[1,0]: prim=(-1.274e-01,8.665e-03) conj[255,0]=(-1.274e-01,-8.665e-03) A0[1,1]: prim=(-1.056e-01,-2.297e-02) conj[255,255]=(-1.056e-01,2.297e-02) A1[0,0]: prim=(1.625e-01,-0.000e+00) conj[0,0]=(1.625e-01,0.000e+00) A1[0,1]: prim=(4.643e-02,4.643e-02) conj[0,255]=(4.643e-02,-4.643e-02) A1[1,0]: prim=(8.665e-03,-0.000e+00) conj[255,0]=(8.665e-03,0.000e+00) A1[1,1]: prim=(-2.297e-02,-2.297e-02) conj[255,255]=(-2.297e-02,2.297e-02) 
+[DEBUG Y=1] Before 2D FFT - Buffer addresses: prim=0x1498f051b000 conj=0x1498f091b000 (diff=262144)
+[DEBUG Y=1] Before 2D FFT - Sample values: prim[0,0]=(1.063e-01,-0.000e+00) conj[0,0]=(1.063e-01,0.000e+00)
+[DEBUG Y=1] Right before conjugate FFT - conj[0,0]=(1.063e-01,0.000e+00) prim[0,0]=(1.058e+00,4.730e-02)
+[DEBUG Y=1] Right after conjugate FFT - conj[0,0]=(1.058e+00,-4.730e-02) prim[0,0]=(1.058e+00,4.730e-02)
+[DEBUG Y=1] After 2D FFT (Real space) - PRIMARY slice - Max real/imag per array: A0: re=1.564e+00 im=1.780e+00 (ratio=1.138e+00) A1: re=3.992e-01 im=2.255e-01 (ratio=5.650e-01) A2: re=1.470e-01 im=1.752e-01 (ratio=1.192e+00) A3: re=3.992e-01 im=2.255e-01 (ratio=5.650e-01) (NOTE: Imag should be ~0 in real space!)
+[DEBUG Y=1] After 2D FFT (Real space) - CONJUGATE slice - Max real/imag per array: A0: re=1.564e+00 im=1.780e+00 (ratio=1.138e+00) A1: re=3.992e-01 im=2.255e-01 (ratio=5.650e-01) A2: re=1.470e-01 im=1.752e-01 (ratio=1.192e+00) A3: re=3.992e-01 im=2.255e-01 (ratio=5.650e-01) (NOTE: Imag should be ~0 in real space!)
+[DEBUG Y=1] Array comparison: 0 identical, 262144 different (total=262144)
+[DEBUG Y=1] Sample differences (first 3 non-identical): A0[0,0]: prim=(1.058e+00,4.730e-02) conj=(1.058e+00,-4.730e-02) diff=(0.000e+00,9.459e-02) A0[0,1]: prim=(7.549e-01,-1.777e-01) conj=(7.549e-01,1.777e-01) diff=(0.000e+00,3.554e-01) A0[0,2]: prim=(1.297e-01,-6.672e-02) conj=(1.297e-01,6.672e-02) diff=(2.776e-17,1.334e-01) 
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[V11-BATCH 1] Cursors advanced. Sample: src0=786432, src1=0
+[DEBUG Y=2] Before 2D FFT (Fourier space) - PRIMARY slice - Max real/imag per array: A0: re=1.289e-01 im=2.306e-02 A1: re=3.772e-02 im=2.700e-02 A2: re=0.000e+00 im=2.306e-02 A3: re=3.772e-02 im=2.700e-02 (NOTE: Non-zero imag expected in Fourier space)
+[DEBUG Y=2] Before 2D FFT (Fourier space) - CONJUGATE slice - Max real/imag per array: A0: re=1.289e-01 im=2.306e-02 A1: re=3.772e-02 im=2.700e-02 A2: re=0.000e+00 im=2.306e-02 A3: re=3.772e-02 im=2.700e-02 (NOTE: Should be conjugate of primary!)
+[DEBUG Y=2] Sample conjugate check (first 3 points): A0[0,0]: prim=(1.519e-02,-0.000e+00) conj[0,0]=(1.519e-02,0.000e+00) A0[0,1]: prim=(-1.493e-02,0.000e+00) conj[0,255]=(-1.493e-02,-0.000e+00) A0[1,0]: prim=(1.289e-01,-1.886e-02) conj[255,0]=(1.289e-01,1.886e-02) A0[1,1]: prim=(1.827e-02,4.777e-03) conj[255,255]=(1.827e-02,-4.777e-03) A1[0,0]: prim=(2.321e-02,-0.000e+00) conj[0,0]=(2.321e-02,0.000e+00) A1[0,1]: prim=(-4.983e-03,-2.492e-03) conj[0,255]=(-4.983e-03,2.492e-03) A1[1,0]: prim=(-3.772e-02,0.000e+00) conj[255,0]=(-3.772e-02,-0.000e+00) A1[1,1]: prim=(9.553e-03,4.777e-03) conj[255,255]=(9.553e-03,-4.777e-03) 
+[DEBUG Y=2] Before 2D FFT - Buffer addresses: prim=0x1498f051b000 conj=0x1498f091b000 (diff=262144)
+[DEBUG Y=2] Before 2D FFT - Sample values: prim[0,0]=(1.519e-02,-0.000e+00) conj[0,0]=(1.519e-02,0.000e+00)
+[DEBUG Y=2] Right before conjugate FFT - conj[0,0]=(1.519e-02,0.000e+00) prim[0,0]=(2.[Rank 0] After conjugate FFT (array 0, Y=2): buffer OK (checksum=59)
+[Rank 0] After primary FFT (array 1, Y=2): buffer OK (checksum=-126)
+[Rank 0] After conjugate FFT (array 1, Y=2): buffer OK (checksum=-101)
+[Rank 0] After primary FFT (array 2, Y=2): buffer OK (checksum=-83)
+[Rank 0] After conjugate FFT (array 2, Y=2): buffer OK (checksum=70)
+[Rank 0] After primary FFT (array 3, Y=2): buffer OK (checksum=-126)
+[Rank 0] After conjugate FFT (array 3, Y=2): buffer OK (checksum=-101)
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=3, Y_mirror=253, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=4, Y_mirror=252, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=5, Y_mirror=251, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=6, Y_mirror=250, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=7, Y_mirror=249, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=8, Y_mirror=248, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=9, Y_mirror=247, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=10, Y_mirror=246, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=11, Y_mirror=245, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=12, Y_mirror=244, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=13, Y_mirror=243, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=14, Y_mirror=242, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=15, Y_mirror=241, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=16, Y_mirror=240, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=17, Y_mirror=239, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=18, Y_mirror=238, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=19, Y_mirror=237, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=20, Y_mirror=236, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=21, Y_mirror=235, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=22, Y_mirror=234, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=23, Y_mirror=233, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=24, Y_mirror=232, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=25, Y_mirror=231, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=26, Y_mirror=230, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=27, Y_mirror=229, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+046e-01,2.506e-02)
+[DEBUG Y=2] Right after conjugate FFT - conj[0,0]=(2.046e-01,-2.506e-02) prim[0,0]=(2.046e-01,2.506e-02)
+[DEBUG Y=2] After 2D FFT (Real space) - PRIMARY slice - Max real/imag per array: A0: re=1.832e+00 im=1.514e+00 (ratio=8.263e-01) A1: re=1.598e-01 im=1.542e-01 (ratio=9.648e-01) A2: re=1.047e-01 im=1.211e-01 (ratio=1.156e+00) A3: re=1.598e-01 im=1.542e-01 (ratio=9.648e-01) (NOTE: Imag should be ~0 in real space!)
+[DEBUG Y=2] After 2D FFT (Real space) - CONJUGATE slice - Max real/imag per array: A0: re=1.832e+00 im=1.514e+00 (ratio=8.263e-01) A1: re=1.598e-01 im=1.542e-01 (ratio=9.648e-01) A2: re=1.047e-01 im=1.211e-01 (ratio=1.156e+00) A3: re=1.598e-01 im=1.542e-01 (ratio=9.648e-01) (NOTE: Imag should be ~0 in real space!)
+[DEBUG Y=2] Array comparison: 0 identical, 262144 different (total=262144)
+[DEBUG Y=2] Sample differences (first 3 non-identical): A0[0,0]: prim=(2.046e-01,2.506e-02) conj=(2.046e-01,-2.506e-02) diff=(0.000e+00,5.012e-02) A0[0,1]: prim=(4.151e-01,-2.948e-01) conj=(4.151e-01,2.948e-01) diff=(0.000e+00,5.895e-01) A0[0,2]: prim=(3.096e-01,-3.051e-01) conj=(3.096e-01,3.051e-01) diff=(1.110e-16,6.103e-01) 
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+         ... Completed 13/129 batches (10.1%)
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+         ... Completed 26/129 batches (20.2%)
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elem[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=28, Y_mirror=228, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=29, Y_mirror=227, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=30, Y_mirror=226, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=31, Y_mirror=225, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=32, Y_mirror=224, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=33, Y_mirror=223, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=34, Y_mirror=222, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=35, Y_mirror=221, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=36, Y_mirror=220, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=37, Y_mirror=219, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=38, Y_mirror=218, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=39, Y_mirror=217, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=40, Y_mirror=216, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=41, Y_mirror=215, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=42, Y_mirror=214, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=43, Y_mirror=213, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=44, Y_mirror=212, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=45, Y_mirror=211, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=46, Y_mirror=210, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=47, Y_mirror=209, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=48, Y_mirror=208, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=49, Y_mirror=207, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=50, Y_mirror=206, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=51, Y_mirror=205, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=52, Y_mirror=204, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=53, Y_mirror=203, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=54, Y_mirror=202, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=55, Y_mirror=201, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=56, Y_mirror=200, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=57, Y_mirror=199, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=58, Y_mirror=198, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=59, Y_mirror=197, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=60, Y_mirror=196, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=61, Y_mirror=195, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=62, Y_mirror=194, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=63, Y_mirror=193, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=64, Y_mirror=192, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+ents to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+         ... Completed 39/129 batches (30.2%)
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+         ... Completed 52/129 batches (40.3%)
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 [Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=65, Y_mirror=191, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=66, Y_mirror=190, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=67, Y_mirror=189, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=68, Y_mirror=188, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=69, Y_mirror=187, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=70, Y_mirror=186, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=71, Y_mirror=185, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=72, Y_mirror=184, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=73, Y_mirror=183, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=74, Y_mirror=182, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=75, Y_mirror=181, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=76, Y_mirror=180, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=77, Y_mirror=179, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=78, Y_mirror=178, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=79, Y_mirror=177, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=80, Y_mirror=176, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=81, Y_mirror=175, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=82, Y_mirror=174, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=83, Y_mirror=173, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=84, Y_mirror=172, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=85, Y_mirror=171, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=86, Y_mirror=170, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=87, Y_mirror=169, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=88, Y_mirror=168, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=89, Y_mirror=167, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=90, Y_mirror=166, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=91, Y_mirror=165, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=92, Y_mirror=164, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=93, Y_mirror=163, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=94, Y_mirror=162, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=95, Y_mirror=161, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=96, Y_mirror=160, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=97, Y_mirror=159, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=98, Y_mirror=158, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=99, Y_mirror=157, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=100, Y_mirror=156, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+         ... Completed 65/129 batches (50.4%)
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+         ... Completed 78/129 batches (60.5%)
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+         ... Completed 91/129 batches (70.5%)
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 52428[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=101, Y_mirror=155, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=102, Y_mirror=154, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=103, Y_mirror=153, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=104, Y_mirror=152, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=105, Y_mirror=151, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=106, Y_mirror=150, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=107, Y_mirror=149, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=108, Y_mirror=148, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=109, Y_mirror=147, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=110, Y_mirror=146, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=111, Y_mirror=145, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=112, Y_mirror=144, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=113, Y_mirror=143, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=114, Y_mirror=142, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=115, Y_mirror=141, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=116, Y_mirror=140, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=117, Y_mirror=139, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=118, Y_mirror=138, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=119, Y_mirror=137, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=120, Y_mirror=136, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=121, Y_mirror=135, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=122, Y_mirror=134, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=123, Y_mirror=133, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=124, Y_mirror=132, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=125, Y_mirror=131, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=126, Y_mirror=130, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=127, Y_mirror=129, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+[Rank 0] ENTER generate_hermitian_slice_pair_local: Y_primary=128, Y_mirror=128, ps_handle=0x4c1ae70, params_handle=0x4c1eda0
+8 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+         ... Completed 104/129 batches (80.6%)
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+         ... Completed 117/129 batches (90.7%)
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 524288 total elements to send_buffer
+       Sending to ranks: 524288 elements to rank 0
+[PACK] Rank 0: Packed 262144 total elements to send_buffer
+       Sending to ranks: 262144 elements to rank 0
+         ... Completed 129/129 batches (100.0%)
+[MULTI-BATCH] All batches complete.
+              Generation time: 2.029259 s
+              Communication time: 0.179219 s
+[V11-VERIFY] Rank 0: All cursors match expected totals
+
+[V12-Stage 3] Z-slab streaming from recv_buffer...
+
+[Stage 3] Z-slab streaming: Unpack --> FFT --> Write (Zeldovich format)...
+[MEMORY] Allocated local_z_slab (one Z-slab, core grid): 4194304 bytes (0.00 GB)
+         Processing 256 Z-slabs sequentially (Z=[0,256))
+         Each Z-slab: 256 X-values (CORE) x 4 arrays x 256 Y-values
+         Output format: [Z][Array][Y][X] (Zeldovich-compatible)
+[DEBUG Z=0] Before 1D FFT (after unpack) - Max imag per array: A0=1.285e+00 A1=1.195e-01 A2=9.807e-02 A3=1.195e-01 
+[DEBUG Z=0] After 1D FFT - Max imag per array: A0=3.874e-15 A1=3.017e-16 A2=1.336e-16 A3=3.017e-16 [DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x4c1ae70 (tracked: 1/1024)
+[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object
+
+[Rank 0, Z=0] First Z-slab max values (all Y): A0: re=1.995560e+01 im=3.874290e-15 A1: re=1.198294e+00 im=3.017010e-16 A2: re=4.972965e-01 im=1.336194e-16 A3: re=1.198294e+00 im=3.017010e-16
+[Rank 0, Z=0] Overlapping region max (x,y,z < 256): A0: re=1.995560e+01 im=3.874290e-15 A1: re=1.198294e+00 im=3.017010e-16 A2: re=4.972965e-01 im=1.336194e-16 A3: re=1.198294e+00 im=3.017010e-16
+         ... Processed 25/256 Z-slabs (9.8%)
+         ... Processed 50/256 Z-slabs (19.5%)
+         ... Processed 75/256 Z-slabs (29.3%)
+         ... Processed 100/256 Z-slabs (39.1%)
+         ... Processed 125/256 Z-slabs (48.8%)
+         ... Processed 150/256 Z-slabs (58.6%)
+         ... Processed 175/256 Z-slabs (68.4%)
+         ... Processed 200/256 Z-slabs (78.1%)
+         ... Processed 225/256 Z-slabs (87.9%)
+         ... Processed 250/256 Z-slabs (97.7%)
+         ... Processed 256/256 Z-slabs (100.0%)
+
+========== VERIFICATION: REAL-SPACE AFTER 3D FFT ==========
+Array 0: Max real=2.428473e+01, Max imag=5.670784e-15, Ratio=2.335123e-16 [REAL]
+Array 1: Max real=1.422494e+00, Max imag=4.091838e-16, Ratio=2.876524e-16 [REAL]
+Array 2: Max real=8.825620e-01, Max imag=2.330790e-16, Ratio=2.640936e-16 [REAL]
+Array 3: Max real=1.422494e+00, Max imag=4.091838e-16, Ratio=2.876524e-16 [REAL]
+RESULT: All 4 arrays are PURELY REAL after forward 3D FFT!
+============================================================
+
+[Stage 3] Streaming complete. Time: 3.832882 s
+          (Includes unpacking, FFT, and I/O for all Z-slabs)
+          Total files written: 256 (across all ranks)
+          Total data written: 1.000 GB
+          Files per rank: ~256 (z_count per rank, for 1 ranks)
+          Each file contains one Z-slab: x_count X x 4 arrays x 256 Y-values
+          Typical file size: ~4.00 MB (varies by rank's X-extent)
+          File naming: rank_<rank>/z<z>_slab_N256.bin
+          File format: Binary [Array][Y][X] (Zeldovich AZYX order, fftw_complex = 16 bytes)
+          3D FFT COMPLETE (2D XZ + 1D Y)
+
+
+====================================================================================
+TIMING SUMMARY (v11 - Persistent Recv Buffer + Streaming)
+====================================================================================
+Stage 1 (Y-slice generation + 2D FFT): 2.029259 s
+Stage 2 (Metadata exchange):            0.000000 s
+Stage 3 (Communication: Alltoallv):    0.179219 s
+Stage 3 (Streaming: Unpack+FFT+Write):  3.832882 s
+------------------------------------------------------------------------------------
+Total 3D FFT time (Gen + Comm + FFT):   2.208479 s
+Total time (including all stages):      2.208479 s
+
+Note: In v11, persistent recv_buffer eliminates per-batch allocation
+      Unpacking, 1D FFT, and I/O are combined in streaming stage
+====================================================================================
+
+====================================================================================
+ALL STAGES COMPLETE!
+====================================================================================
