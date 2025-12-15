@@ -1,5 +1,5 @@
 // ====================================================================================
-// HERMITIAN 3D MATRIX MPI - BATCH PROCESSING HELPERS
+// BATCH PROCESSING HELPERS
 // ====================================================================================
 
 #include "utils/batch_helpers.h"
@@ -8,7 +8,9 @@
 #include <stdbool.h>
 
 // ====================================================================================
-// FUNCTION IMPLEMENTATIONS
+// Maps from rank's local batch idx to the global y pair idx, based on rank division
+// Each rank can independently compute which Y-slices it's processing 
+// in a given batch, without communication.
 // ====================================================================================
 
 int get_rank_batch_slice_count(int target_rank, int batch_idx, int N, int num_ranks)
@@ -23,10 +25,10 @@ int get_rank_batch_slice_count(int target_rank, int batch_idx, int N, int num_ra
     int rank_pair_start;
     
     if (target_rank < remainder) {
-        rank_num_pairs = pairs_per_rank + 1;
+        rank_num_pairs = pairs_per_rank + 1; // extra pair for remainder ranks
         rank_pair_start = target_rank * (pairs_per_rank + 1);
     } else {
-        rank_num_pairs = pairs_per_rank;
+        rank_num_pairs = pairs_per_rank;     // regular pairs for non-remainder ranks
         rank_pair_start = remainder * (pairs_per_rank + 1) + (target_rank - remainder) * pairs_per_rank;
     }
     
@@ -43,6 +45,16 @@ int get_rank_batch_slice_count(int target_rank, int batch_idx, int N, int num_ra
     
     return is_self_conjugate ? 1 : 2;
 }
+
+// ====================================================================================
+// What y values is the rank processing in a given batch?
+// Example 
+// N=8, num_ranks=3:
+// Rank 0, batch 0: y_values = [0], count = 1 (self-conjugate Y=0)
+// Rank 0, batch 1: y_values = [1, 7], count = 2 (conjugate pair)
+// Rank 1, batch 0: y_values = [2, 6], count = 2 (conjugate pair)
+// ...
+// ====================================================================================
 
 void get_rank_batch_y_values(int target_rank, int batch_idx, int N, int num_ranks,
                               int *out_y_values, int *out_count)
@@ -85,6 +97,12 @@ void get_rank_batch_y_values(int target_rank, int batch_idx, int N, int num_rank
         *out_count = 2;
     }
 }
+
+// ====================================================================================
+// Calculates MPI send/recv arrays for MPI_Ialltoallv
+// Allocates and returns: sendcounts, sdispls, recvcounts, rdispls
+// Uses padded bounds for destination regions (includes overlap regions)
+// ====================================================================================
 
 void calculate_batch_send_recv_counts(
     int rank, int num_ranks, int N, int narray, int batch_idx,

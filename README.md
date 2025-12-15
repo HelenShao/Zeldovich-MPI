@@ -1,12 +1,12 @@
 # Hermitian 3D Matrix MPI - Production Version
 
-Fast, memory-efficient generation of Hermitian 3D matrices in Fourier space with real-space output using hybrid MPI+OpenMP parallelization.
+Generation of Hermitian 3D matrices in Fourier space with real-space output using hybrid MPI+OpenMP parallelization.
 
 ## Location
 
 **Current working location**: `/scratch/gpfs/hshao/C_Bible/InitialConditions/hermitian_3d_matrix_production`
 
-This is the new dedicated workspace for the project. The previous location was:
+The previous location:
 - `/scratch/gpfs/hshao/C_Bible/FFT_Hermitian/fftw_openmp/mpi_mock/hermitian_3d_matrix_production`
 
 ## Related Repositories
@@ -17,7 +17,7 @@ This is the new dedicated workspace for the project. The previous location was:
 
 ## Overview
 
-This code generates large-scale 3D Hermitian matrices in Fourier space and transforms them to real space using a distributed 3D FFT. The Hermitian symmetry ensures the result is purely real, making it suitable for cosmological simulations (density fields, displacement fields) and other applications requiring real-valued 3D fields from Fourier-space generation.
+This code generates large-scale 3D Hermitian matrices in Fourier space and transforms them to real space using a distributed 3D FFT. The Hermitian symmetry ensures the result is purely real, as required for cosmological simulations (density fields, displacement fields).
 
 ### Key Features
 
@@ -271,13 +271,13 @@ This is a production code under active development. Contributions welcome!
 
 ## Status
 
-**Phase 1 Complete**: ✅ Directory structure and documentation created
+**Phase 1 Complete**:  Directory structure and documentation created
 
-**Phase 2 Complete**: ✅ Configuration extracted to `src/config.h` with comprehensive documentation
+**Phase 2 Complete**:  Configuration extracted to `src/config.h` with comprehensive documentation
 
-**Phase 3 Complete**: ✅ Types and precision extracted to `src/types.h` and `src/precision.h`
+**Phase 3 Complete**:  Types and precision extracted to `src/types.h` and `src/precision.h`
 
-**Phase 4 Complete**: ✅ Utility functions extracted to `src/utils/` modules
+**Phase 4 Complete**:  Utility functions extracted to `src/utils/` modules
 
 **Current Version**: v14 (periodic boundary conditions) - Production refactoring in progress
 

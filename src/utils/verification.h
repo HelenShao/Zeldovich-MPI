@@ -2,11 +2,8 @@
 #define HERMITIAN_VERIFICATION_H
 
 // ====================================================================================
-// HERMITIAN 3D MATRIX MPI - VERIFICATION UTILITIES
+// VERIFICATION UTILITIES
 // ====================================================================================
-// This file contains functions for verifying Hermitian symmetry, completeness, and
-// correctness of the generated matrices at various stages of processing.
-//
 // Depends on: config.h, precision.h, types.h, mpi.h
 // ====================================================================================
 
@@ -17,7 +14,7 @@
 #include <stdbool.h>
 
 // ====================================================================================
-// FUNCTION DECLARATIONS
+// Verifying Hermitian symmetry, completeness, and correctness at various stages
 // ====================================================================================
 
 // Verify Hermitian symmetry between a pair of Y-slices
@@ -44,5 +41,5 @@ void verify_pencil_completeness_with_flags(char *y_filled, int pencils_per_rank,
 // Checks that the final output is numerically real (imaginary parts < 1e-10)
 void verify_real_space_symmetry(int N, fftw_complex_t *global_matrix);
 
-#endif // HERMITIAN_VERIFICATION_H
+#endif
 

@@ -22,6 +22,7 @@ extern "C" {
 ParametersHandle zeldovich_params_create(const char* param_file) {
     try {
         Parameters* params = new Parameters(fs::path(param_file));
+        // Cast to ParametersHandle object
         return static_cast<ParametersHandle>(params);
     } catch (...) {
         return NULL;
@@ -30,12 +31,14 @@ ParametersHandle zeldovich_params_create(const char* param_file) {
 
 void zeldovich_params_destroy(ParametersHandle params) {
     if (params) {
+        // Cast to Parameters object and delete
         delete static_cast<Parameters*>(params);
     }
 }
 
 double zeldovich_params_get_fundamental(ParametersHandle params) {
     if (!params) return 0.0;
+    // Cast to Parameters object and return fundamental
     Parameters* p = static_cast<Parameters*>(params);
     return p->fundamental;
 }
@@ -118,12 +121,10 @@ void zeldovich_ps_destroy(PowerSpectrumHandle ps) {
             (void*)p, num_destroyed, MAX_TRACKED_OBJECTS);
     
     try {
-        // Delete the PowerSpectrum object
-        // The destructor will delete[] v2rng array
-        // NOTE: After deletion, p becomes a dangling pointer - do not dereference
+        // Delete the PowerSpectrum object, will delete[] v2rng array
+        // NOTE: After deletion, p becomes a dangling pointer - do not de-reference
         delete p;
         // Set pointer to NULL after deletion to prevent accidental reuse
-        // (Note: p is local, but this documents intent)
         p = NULL;
         // fprintf(stderr, "[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object\n");
     } catch (const std::exception& e) {
@@ -214,5 +215,5 @@ int zeldovich_ps_get_fixed_power(PowerSpectrumHandle ps) {
     return p->fixed_power;
 }
 
-} // extern "C"
+} 
 

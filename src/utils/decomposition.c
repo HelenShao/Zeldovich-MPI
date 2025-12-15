@@ -1,5 +1,5 @@
 // ====================================================================================
-// HERMITIAN 3D MATRIX MPI - GRID DECOMPOSITION UTILITIES
+// GRID DECOMPOSITION UTILITIES
 // ====================================================================================
 
 #include "utils/decomposition.h"
@@ -7,16 +7,14 @@
 #include <stdio.h>
 
 // ====================================================================================
-// FUNCTION IMPLEMENTATIONS
+// Calculate grid factors (grid_x × grid_z = num_ranks)
 // ====================================================================================
 
-// Calculate grid factors (grid_x × grid_z = num_ranks)
-// Handles special cases including Abacus layout (81×81 = 6561 ranks)
 void calculate_grid_factors(int num_ranks, int *grid_x_out, int *grid_z_out)
 {
     int grid_x, grid_z;
     
-    // Abacus-specific case: 81² = 6561 nodes
+    // AbacusAurora: 81^2 = 6561 nodes
     if (num_ranks == 6561) {
         grid_x = 81; grid_z = 81;
     } else if (num_ranks == 8) {
@@ -38,6 +36,11 @@ void calculate_grid_factors(int num_ranks, int *grid_x_out, int *grid_z_out)
     *grid_z_out = grid_z;
 }
 
+// ====================================================================================
+// Get the grid bounds for a given rank. 
+// All boundaries are in GridBounds struct for easier reference.
+// ====================================================================================
+
 GridBounds get_grid_bounds(int dest, int N, int num_pencil_ranks)
 {
     GridBounds bounds;
@@ -46,11 +49,11 @@ GridBounds get_grid_bounds(int dest, int N, int num_pencil_ranks)
     int grid_x, grid_z;
     calculate_grid_factors(num_pencil_ranks, &grid_x, &grid_z);
     
-    // Determine which block in the 2D grid this rank owns
+    // Locate the block in the 2D grid that this rank owns
     int x_block = dest / grid_z;  // Row in processor grid
     int z_block = dest % grid_z;  // Column in processor grid
     
-    // X-dimension decomposition with remainder handling
+    // X-dimension decomposition: Divide NxN slice into chunks with remainder handling
     int base_x = N / grid_x;
     int remainder_x = N % grid_x;
     if (x_block < remainder_x) {
@@ -63,7 +66,7 @@ GridBounds get_grid_bounds(int dest, int N, int num_pencil_ranks)
         bounds.x_end = bounds.x_start + base_x;
     }
     
-    // Z-dimension decomposition with remainder handling
+    // Z-dimension decomposition: Divide NxN slice into chunks with remainder handling
     int base_z = N / grid_z;
     int remainder_z = N % grid_z;
     if (z_block < remainder_z) {

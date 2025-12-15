@@ -1,12 +1,12 @@
 // ====================================================================================
-// HERMITIAN 3D MATRIX MPI - DEBUG PRINTING UTILITIES
+// PRINTING UTILITIES
 // ====================================================================================
 
 #include "utils/printing.h"
 #include <stdio.h>
 
 // ====================================================================================
-// FUNCTION IMPLEMENTATIONS
+// Printing for debugging and verification
 // ====================================================================================
 
 void print_y_slice_fourier(int rank, int y_global, fftw_complex_t *slice, int N, int array_idx, const char *label) {

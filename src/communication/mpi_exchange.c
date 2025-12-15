@@ -1,18 +1,19 @@
 // ====================================================================================
-// HERMITIAN 3D MATRIX MPI - MPI COMMUNICATION MODULE
+// MPI COMMUNICATION MODULE
 // ====================================================================================
 
 #include "mpi_exchange.h"
 #include "../utils/decomposition.h"
 #include "../utils/verification.h"
-#include "../types.h"  // For Y_SLICE, PENCIL macros
+#include "../types.h"  // For Y_SLICE, PENCIL, PERIODIC_X, PERIODIC_Z macros
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
 
 // ====================================================================================
-// FUNCTION IMPLEMENTATIONS
+//  Exchange metadata so that each rank knows which Y-slices it is responsible for
+//  and which Y-indices it is responsible for during unpacking
 // ====================================================================================
 
 void exchange_metadata(int rank, int num_y_ranks, int N,
@@ -25,6 +26,7 @@ void exchange_metadata(int rank, int num_y_ranks, int N,
     
     #if METADATA_EXCHANGE_METHOD == 0
     // ========== METHOD A: Each rank calculates + Allgatherv ==========
+    // Unused!! - kept for future reference. See Method B below.
     if (rank == 0 && DEBUG_PRINTS) {
         printf("[METADATA] Using Method A: Each rank calculates + MPI_Allgatherv\n");
     }
@@ -73,9 +75,9 @@ void exchange_metadata(int rank, int num_y_ranks, int N,
         printf("[METADATA] Using Method B: Rank 0 calculates + MPI_Bcast\n");
     }
     
-    // Allocate arrays on all ranks
-    int *all_num_my_slices = (int*)malloc(sizeof(int) * num_y_ranks); // array containing the number of Y-slices for each rank
-    int **all_y_global_maps = (int**)malloc(sizeof(int*) * num_y_ranks); // array containing the Y-indices for each rank
+    // All ranks: allocate arrays for # of Y-slices & Y-indices it is responsible for
+    int *all_num_my_slices = (int*)malloc(sizeof(int) * num_y_ranks); // number of Y-slices for each rank
+    int **all_y_global_maps = (int**)malloc(sizeof(int*) * num_y_ranks); // Y-indices for each rank
     
     // MULTI-BATCH: Each rank can process multiple pairs
     if (rank == 0) {
@@ -90,9 +92,11 @@ void exchange_metadata(int rank, int num_y_ranks, int N,
             int rank_pair_start;
             
             if (i < remainder) {
+                // This rank gets one more pair than the average (remainder)
                 rank_num_pairs = pairs_per_rank + 1;
                 rank_pair_start = i * (pairs_per_rank + 1);
             } else {
+                // This rank gets the average number of pairs
                 rank_num_pairs = pairs_per_rank;
                 rank_pair_start = remainder * (pairs_per_rank + 1) + (i - remainder) * pairs_per_rank;
             }
@@ -109,7 +113,7 @@ void exchange_metadata(int rank, int num_y_ranks, int N,
             all_num_my_slices[i] = total_y_values;
             all_y_global_maps[i] = (int*)malloc(sizeof(int) * total_y_values);
             
-            // Populate Y-values
+            // Populate all_y_global_maps[i] with y-indices that rank i will own
             int idx = 0;
             for (int j = 0; j < rank_num_pairs; j++) {
                 int pair_idx = rank_pair_start + j;
@@ -136,6 +140,7 @@ void exchange_metadata(int rank, int num_y_ranks, int N,
         MPI_Bcast(all_y_global_maps[i], all_num_my_slices[i], MPI_INT, 0, MPI_COMM_WORLD);
     }
     
+    // Assign outputs to the function args ("return values")
     *out_all_num_my_slices = all_num_my_slices;
     *out_all_y_global_maps = all_y_global_maps;
     
@@ -158,14 +163,20 @@ void exchange_metadata(int rank, int num_y_ranks, int N,
     }
 }
 
+// ====================================================================================
+//  Pack the Y-slices into send buffer in rank-contiguous manner for MPI comm
+//  For each destination rank, extracts the (X,Z) region it owns from all local Y-slices
+//  Also checks bounds and detects buffer overflows
+// ====================================================================================
+
 void pack_slices_to_send_buffer(
     int rank, int num_ranks, int N, int narray,
     fftw_complex_t *local_y_slices,
     int num_my_slices, int *y_global_map,
     fftw_complex_t *send_buffer, int *sendcounts, int *sdispls)
 {
-    (void)rank;  // Unused but kept for consistency
-    (void)y_global_map;  // Unused currently but kept for future use
+    (void)rank;  // Unused, kept for consistency
+    (void)y_global_map;  // Unused currently, kept for future use
     
     // Calculate total send buffer size for bounds checking
     int total_send_size = 0;
@@ -193,14 +204,14 @@ void pack_slices_to_send_buffer(
         // OpenMP: Parallelize over arrays, Y-slices, and (X,Z) points
         // Collapse(4) combines all four loops for better load balancing
         // Packing order: [array][slice][x][z] - each iteration is fully independent = parallel-safe
-        // V14: Apply PERIODIC_X/Z to handle wrap-around at boundaries
+        // V14: Apply optional PERIODIC_X/Z to handle wrap-around at boundaries
         #pragma omp parallel for collapse(4)
         for (int array_idx = 0; array_idx < narray; array_idx++) {
             for (int slice_idx = 0; slice_idx < num_my_slices; slice_idx++) {
                 // Loop over all X-Z points in the destination's (X,Z) chunk
                 for (int x = bounds.x_start; x < bounds.x_end; x++) {
                     for (int z = bounds.z_start; z < bounds.z_end; z++) {
-                        // V14: Apply periodic boundary conditions
+                        // V14: Apply periodic boundary conditions if padding enabled
                         // x can be negative (wraps from right) or >= N (wraps to left)
                         int x_actual = PERIODIC_X(x, N);
                         int z_actual = PERIODIC_Z(z, N);
@@ -218,6 +229,7 @@ void pack_slices_to_send_buffer(
                                          + local_x * z_count + local_z;
 
                         // Bounds check to detect buffer overflow
+                        // Ensures the absolute write position is within the entire send_buffer
                         int64_t buffer_idx = offset + pack_idx;
                         if (buffer_idx < 0 || buffer_idx >= total_send_size) {
                             fprintf(stderr, "[PACK ERROR] Rank %d: buffer_idx=%ld out of bounds [0, %d) for dest=%d\n",
@@ -228,7 +240,7 @@ void pack_slices_to_send_buffer(
                                    (long)pack_idx, offset, region_size, sendcounts[dest]);
                             MPI_Abort(MPI_COMM_WORLD, 1);
                         }
-                        // Also check within destination's region
+                        // Ensures the relative index is within the current destination's block
                         if (pack_idx < 0 || pack_idx >= sendcounts[dest]) {
                             fprintf(stderr, "[PACK ERROR] Rank %d: pack_idx=%ld out of dest region [0, %d) for dest=%d\n",
                                    rank, (long)pack_idx, sendcounts[dest], dest);
@@ -261,13 +273,18 @@ void pack_slices_to_send_buffer(
     }
 }
 
+// ====================================================================================
+//  Unpack recv buffer (different for each rank) into pencils, 
+//  keepin track of global y-indices to maintain correct Hermitian symmetry
+// ====================================================================================
+
 void unpack_recv_buffer_to_pencils(
     int rank, int num_ranks, int N, int narray,
     fftw_complex_t *recv_buffer, int *recvcounts, int *rdispls,
     int **all_y_global_maps, int *all_num_my_slices,
     fftw_complex_t *local_pencils)
 {
-    (void)recvcounts;  // Unused but kept for future extensibility
+    (void)recvcounts;  // Unused, kept for future extensibility?
     
     // V13: Use PADDED bounds for unpacking (includes overlap regions)
     GridBounds my_bounds = get_padded_bounds_simple(rank, N, num_ranks);
@@ -305,8 +322,8 @@ void unpack_recv_buffer_to_pencils(
                         int pencil_idx = local_x * z_count + local_z;
                         
                         // Unpack index matches pack index: [array][slice][pencil]
-                        // Layout: array_idx * (src_num_slices * my_pencils) <-- each array has # slices, with each slice containing # pencils
-                        //        + slice_idx * my_pencils
+                        // Layout: array_idx * (src_num_slices * my_pencils) <-- each array has # src_num_slices
+                        //        + slice_idx * my_pencils <-- each slice contains # my_pencils
                         //        + pencil_idx
                         int64_t unpack_idx = (int64_t)array_idx * src_num_slices * my_pencils
                                            + slice_idx * my_pencils

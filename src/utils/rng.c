@@ -40,12 +40,13 @@ static omp_lock_t *v2rng_locks = NULL;
 // FUNCTIONS
 // ====================================================================================
 
-// Initialize global PCG generators array
-// L, M, N: Grid dimensions (typically all equal to N)
+// Initialize global PCG generators array (NxNxN)
 // seed: Base seed for reproducibility
 //
-// Allocates one generator per Y-slice index (0 to L/2, inclusive)
-// Each generator is initialized to produce independent random sequences
+// One generator per Y-slice: Each Y-slice (Y = 0, 1, 2, ..., N/2) has its own RNG generator.
+// Hermitian symmetry: Only Y values 0 to N/2 need to be generated; the rest are determined by symmetry.
+// Deterministic sequences: Each generator produces an independent, reproducible sequence for its Y-slice.
+// Array size: L/2 + 1 includes both Y=0 and Y=N/2 (both are self-conjugate).
 void initialize_global_pcg(int L, int M, int N, uint64_t seed) {
     if (!v2rng_global_initialized) {
         // All threads share same v2rng array

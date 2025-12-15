@@ -5,7 +5,6 @@
 // ZELDOVICH-PLT C WRAPPER - HEADER
 // ====================================================================================
 // C interface for zeldovich-PLT PowerSpectrum class
-// This allows C code to use zeldovich-PLT's power spectrum functionality
 // ====================================================================================
 
 #include <stdint.h>
@@ -31,7 +30,7 @@ ParametersHandle zeldovich_params_create(const char* param_file);
 // Destroy Parameters object
 void zeldovich_params_destroy(ParametersHandle params);
 
-// Get fundamental wavenumber (2π/boxsize)
+// Get fundamental wavenumber (2pi/boxsize)
 double zeldovich_params_get_fundamental(ParametersHandle params);
 
 // Get boxsize
@@ -114,5 +113,5 @@ int zeldovich_ps_get_fixed_power(PowerSpectrumHandle ps);
 }
 #endif
 
-#endif // ZELDOVICH_WRAPPER_H
+#endif
 

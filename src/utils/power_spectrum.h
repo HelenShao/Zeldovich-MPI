@@ -3,8 +3,9 @@
 
 // ====================================================================================
 // POWER SPECTRUM AND GAUSSIAN RANDOM FIELD GENERATION
+// ** obsolete! Use zeldovich_wrapper.cpp instead **
 // ====================================================================================
-// This module provides power spectrum evaluation and complex Gaussian random field
+// Power spectrum evaluation and complex Gaussian random field
 // generation similar to zeldovich-PLT's PowerSpectrum::cgauss<2>() function.
 //
 // Dependencies: rng.h (for PCG RNG), math.h

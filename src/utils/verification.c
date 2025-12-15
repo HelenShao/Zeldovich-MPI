@@ -1,5 +1,5 @@
 // ====================================================================================
-// HERMITIAN 3D MATRIX MPI - VERIFICATION UTILITIES
+// VERIFICATION UTILITIES
 // ====================================================================================
 
 #include "utils/verification.h"

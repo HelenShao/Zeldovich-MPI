@@ -1,5 +1,5 @@
 // ====================================================================================
-// HERMITIAN 3D MATRIX MPI - Z-STREAMING MODULE
+// Z-STREAMING MODULE
 // ====================================================================================
 
 #include "z_streaming.h"
@@ -10,7 +10,13 @@
 #include <mpi.h>
 
 // ====================================================================================
-// FUNCTION IMPLEMENTATIONS
+// Z-slab stream unpacking for Abcus-compatible output (?)
+// Unpacks one Z-slab (cuz of mem) from the MPI receive buffer
+// Applies 1D FFT along the Y-direction
+// Put into format for zeldovich-PLT writing interface 
+
+// ** NOTE: Batch-aware unpacking: The receive buffer is organized by batches, 
+// so the function computes cumulative batch offsets to find the correct data location
 // ====================================================================================
 
 void z_streaming_unpack(
@@ -18,21 +24,21 @@ void z_streaming_unpack(
     int z_global,                          // Which Z-slab to process
     GridBounds my_bounds,                  // My (X,Z) region bounds
     int my_pencils,                        // Total pencils in my region
-    fftw_complex_t *recv_buffer,            // Source data (source-grouped)
+    fftw_complex_t *recv_buffer,           // Source data (source-grouped)
     int64_t *recv_displs_src,              // Base offset per source
     int *src_total_slices,                 // Total slices per source (unused, kept for API)
-    int *y_owner_src,                      // Y → src mapping
-    int *y_src_local_idx,                  // Y → local_idx mapping (unused, kept for API)
-    int *y_batch_idx,                      // Y → batch mapping
-    int *y_slice_idx_in_batch,             // Y → slice_idx in batch mapping
-    int **src_batch_slice_counts,           // [src][batch] → slice count
+    int *y_owner_src,                      // Y -> src mapping
+    int *y_src_local_idx,                  // Y -> local_idx mapping (unused, kept for API)
+    int *y_batch_idx,                      // Y -> batch mapping
+    int *y_slice_idx_in_batch,             // Y -> slice_idx in batch mapping
+    int **src_batch_slice_counts,          // [src][batch] -> slice count
     int global_max_batches,                // Total number of batches
     fftw_complex_t *local_z_slab,          // Destination buffer (one Z-slab)
-    fftw_plan_t plan_1d_y)                  // FFT plan for Y-direction
+    fftw_plan_t plan_1d_y)                 // FFT plan for Y-direction
 {
-    (void)rank;  // Unused
-    (void)src_total_slices;  // Unused but kept for API consistency
-    (void)y_src_local_idx;  // Unused but kept for API consistency
+    (void)rank;                // Unused
+    (void)src_total_slices;    // Unused but kept for API consistency
+    (void)y_src_local_idx;     // Unused but kept for API consistency
     (void)global_max_batches;  // Unused but kept for API consistency
     
     int x_count = my_bounds.x_end - my_bounds.x_start;
@@ -56,7 +62,9 @@ void z_streaming_unpack(
     for (int x_idx = 0; x_idx < x_count; x_idx++) {
         for (int y = 0; y < N; y++) {
             for (int array_idx = 0; array_idx < narray; array_idx++) {
-                // Find source for this Y
+
+                // Use pre-built lookup arrays to find which rank owns
+                // this Y-slice and which batch it came from
                 int src = y_owner_src[y];
                 int batch = y_batch_idx[y];
                 int slice_idx = y_slice_idx_in_batch[y];

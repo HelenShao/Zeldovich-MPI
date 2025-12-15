@@ -4,7 +4,7 @@
 // ====================================================================================
 // PCG RANDOM NUMBER GENERATOR MODULE - HEADER
 // ====================================================================================
-// This module provides PCG-based random number generation for Hermitian matrix generation.
+// PCG-based random number generation for Hermitian matrix generation
 //
 // Dependencies: stdint.h (for uint64_t)
 // ====================================================================================
@@ -19,8 +19,7 @@ extern "C" {
 // FUNCTION DECLARATIONS
 // ====================================================================================
 
-// Initialize global PCG generators array
-// L, M, N: Grid dimensions (typically all equal to N)
+// Initialize global PCG generators array (NxNxN)
 // seed: Base seed for reproducibility
 //
 // Allocates one generator per Y-slice index (0 to L/2, inclusive)
@@ -42,12 +41,12 @@ double random_real_pcg_global(int slice_index);
 // n: Number of steps to advance (each step = 1 random number)
 //
 // Used for skipping RNG calls when N < MAX_PPD to maintain consistency
-// with what a full MAX_PPD × MAX_PPD grid would generate
+// with what a full MAX_PPD x MAX_PPD grid would generate
 void advance_pcg_global(int slice_index, uint64_t n);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // RNG_H
+#endif
 

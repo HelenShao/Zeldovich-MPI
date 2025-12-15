@@ -2,9 +2,9 @@
 #define HERMITIAN_CONFIG_H
 
 // ====================================================================================
-// HERMITIAN 3D MATRIX MPI - CONFIGURATION
+// CONFIGURATION
 // ====================================================================================
-// This file centralizes all compile-time configuration options.
+// Centralizes all compile-time configuration options.
 // Modify these flags or override them at compile time using -D flags.
 //
 // Example: make CFLAGS="-DUSE_DOUBLE_PRECISION -DDEBUG_PRINTS=0"
@@ -295,7 +295,7 @@
 #define SKIP_FILE_WRITE 1
 #endif
 
-// PRODUCTION MODE (Minimal output, maximum performance)
+// PRODUCTION MODE (Minimal output)
 // #define PRODUCTION_MODE
 #ifdef PRODUCTION_MODE
     #undef PRINT_MATRICES
@@ -356,5 +356,5 @@
     } \
 } while(0)
 
-#endif // HERMITIAN_CONFIG_H
+#endif 
 

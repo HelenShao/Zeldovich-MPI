@@ -2,12 +2,11 @@
 #define MPI_EXCHANGE_H
 
 // ====================================================================================
-// HERMITIAN 3D MATRIX MPI - MPI COMMUNICATION MODULE
+// MPI COMMUNICATION MODULE
 // ====================================================================================
 // This module handles MPI communication for Y-slice distribution and pencil assembly.
 //
 // Depends on: config.h, precision.h, types.h, utils/decomposition.h
-// External: MPI
 // ====================================================================================
 
 #include "../config.h"
@@ -70,5 +69,5 @@ void unpack_recv_buffer_to_pencils(
 }
 #endif
 
-#endif // MPI_EXCHANGE_H
+#endif
 

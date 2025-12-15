@@ -46,3 +46,8 @@ docs/internal/
 docs/*.internal.md
 config/secrets/
 docs/INTERNAL_DOCS.md
+STATUS_REFRESHER.md
+POWER_SPECTRUM_LOADING.md
+RNG_SKIP_COMPARISON.md
+v15_3_tests/README_RNG_CONSISTENCY.md
+v15_3_tests/README_RNG_CONSISTENCY.md

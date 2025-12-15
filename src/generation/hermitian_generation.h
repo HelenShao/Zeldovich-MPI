@@ -2,11 +2,8 @@
 #define HERMITIAN_GENERATION_H
 
 // ====================================================================================
-// HERMITIAN 3D MATRIX MPI - HERMITIAN GENERATION MODULE
+// HERMITIAN Y-SLICES GENERATION+FFT MODULE
 // ====================================================================================
-// This module handles the generation of Hermitian Y-slice pairs with proper symmetry
-// constraints for real-valued inverse FFT.
-//
 // Depends on: config.h, precision.h, types.h, fft/fft_setup.h, utils/verification.h
 // External: PCG RNG, OpenMP, FFTW3
 // ====================================================================================
@@ -27,22 +24,25 @@ extern "C" {
 #endif
 
 // ====================================================================================
-// FUNCTION DECLARATIONS
+// Generate one pair of Hermitian Y-slices (primary + conjugate) 
+// with 2D FFT and returns slices as flat arrays
+// Arguments:
+//      - N: Grid size
+//      - global_y: Primary Y-index
+//      - y_mirror: Mirror Y-index (N-y for conjugate pairs, y for self-conjugate)
+//      - primary_slices: Output buffer for primary slice [narray][N][N]
+//      - conjugate_slices: Output buffer for conjugate slice [narray][N][N] (same as primary if self-conjugate)
+//      - narray: Number of arrays per slice
+//      - plan_2d: Precomputed 2D FFT plan
+//      - rank: MPI rank (for debug output only)
+//      - ps_params: Legacy power spectrum parameters (NULL = use uniform RNG)
+//      - ps_handle: zeldovich-PLT PowerSpectrum handle (NULL = use legacy or uniform RNG)
+//      - params_handle: zeldovich-PLT Parameters handle (needed for fundamental wavenumber)
+//
+// Uses OpenMP to parallelize X-Z loops within the rank (not recommended)
+// Uses global_y for deterministic RNG seeding (thread-safe)
 // ====================================================================================
 
-// Generate one pair of Hermitian Y-slices (primary + conjugate) with 2D FFT
-// - N: Grid size
-// - global_y: Primary Y-index
-// - y_mirror: Mirror Y-index (N-y for conjugate pairs, y for self-conjugate)
-// - primary_slices: Output buffer for primary slice [narray][N][N]
-// - conjugate_slices: Output buffer for conjugate slice [narray][N][N] (same as primary if self-conjugate)
-// - narray: Number of arrays (1, 2, or 4)
-// - plan_2d: Precomputed 2D FFT plan
-// - rank: MPI rank (for debug output only)
-//
-// Uses OpenMP to parallelize X-Z loops within the rank
-// Uses global_y for deterministic RNG seeding (thread-safe)
-// Applies 2D FFT to transform from Fourier space to real space (X,Z)
 void generate_hermitian_slice_pair_local(
     int N,
     int global_y,
@@ -60,5 +60,4 @@ void generate_hermitian_slice_pair_local(
 }
 #endif
 
-#endif // HERMITIAN_GENERATION_H
-
+#endif

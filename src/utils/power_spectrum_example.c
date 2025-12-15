@@ -28,16 +28,16 @@ void example_usage() {
     //   normalization = includes box volume factor (1/BoxSize^3)
     //   Pk_smooth = 0.0 (no smoothing) or small value for testing
     double powerlaw_index = -2.0;  // P(k) ~ k^-2
-    double normalization = 1.0;   // Adjust based on desired amplitude
+    double normalization = 1.0;    // Adjust amplitude
     double Pk_smooth = 0.0;        // No smoothing
-    int fixed_power = 0;            // Random amplitude (not fixed)
+    int fixed_power = 0;           // Random amplitude (not fixed)
     
     init_power_spectrum_params(&ps_params, powerlaw_index, normalization, 
                                Pk_smooth, fixed_power);
     
     // Example: Generate a complex Gaussian mode for a specific wavenumber
     double kx = 10.0, ky = 5.0, kz = 3.0;
-    double kmag = sqrt(kx*kx + ky*ky + kz*kz);  // Magnitude of k-vector
+    double kmag = sqrt(kx*kx + ky*ky + kz*kz); 
     
     fftw_complex D;
     cgauss(&ps_params, kmag, slice_index, &D);
