@@ -4,7 +4,6 @@
 #PBS -l select=2:ncpus=64:mpiprocs=32:ompthreads=2
 #PBS -l walltime=01:00:00
 #PBS -l filesystems=home
-#PBS -q debug
 #PBS -M helenshao0904@gmail.com
 #PBS -m abe
 #PBS -j oe
@@ -24,8 +23,16 @@ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production
 # Compile with double precision, RNG consistency debugging, and RNG skip debugging
 echo "Compiling hermitian_3d_matrix with double precision, RNG consistency debugging, and RNG skip debugging..."
 echo "FIX: Skip logic: skip at Nyquist boundary instead of end of row"
+echo "Using SPLINE_RESOLUTION=512 for higher interpolation accuracy"
 make clean
-make CFLAGS="-DUSE_DOUBLE_PRECISION -DDEBUG_RNG_CONSISTENCY=1 -DDEBUG_RNG_SKIP=1"
+make CFLAGS="-DUSE_DOUBLE_PRECISION -DDEBUG_RNG_CONSISTENCY=1 -DDEBUG_RNG_SKIP=1 -DSPLINE_RESOLUTION=2048"
+
+# Verify executable was created
+if [ ! -f "./hermitian_3d_matrix" ]; then
+    echo "ERROR: Compilation failed - executable not found!"
+    exit 1
+fi
+echo "Compilation successful - executable found"
 
 # Job parameters
 NNODES=$(sort -u $PBS_NODEFILE | wc -l)
@@ -52,6 +59,7 @@ echo "=========================================="
 echo "Test: v15.3 Power Spectrum Mode - N=512"
 echo "Double Precision Build with RNG Consistency Debugging"
 echo "RNG Skip Debugging: ENABLED (DEBUG_RNG_SKIP=1)"
+echo "Spline Resolution: 2048 (very high accuracy)"
 echo "FIX: Skip at Nyquist boundary (x/z == Nhalf+1) instead of end of row"
 echo "N=$N, ranks=$NTOTRANKS (2 nodes, 32 ranks/node)"
 echo "Parameter file: $PARAM_FILE"

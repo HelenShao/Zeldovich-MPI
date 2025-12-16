@@ -36,8 +36,16 @@ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production
 # Makefile auto selects correct FFTW libs based on CFLAGS
 echo "Compiling hermitian_3d_matrix with double precision, RNG consistency debugging, RNG skip debugging, and RNG verification..."
 echo "FIX: Skip logic now matches zeldovich.cpp (skip at Nyquist boundary instead of end of row)"
+echo "Using SPLINE_RESOLUTION=512 for higher interpolation accuracy"
 make clean
-make CFLAGS="-DUSE_DOUBLE_PRECISION -DDEBUG_RNG_CONSISTENCY=1 -DDEBUG_RNG_SKIP=1 -DVERIFY_RNG_CALLS=1"
+make CFLAGS="-DUSE_DOUBLE_PRECISION -DDEBUG_RNG_CONSISTENCY=1 -DDEBUG_RNG_SKIP=1 -DVERIFY_RNG_CALLS=1 -DSPLINE_RESOLUTION=2048"
+
+# Verify executable was created
+if [ ! -f "./hermitian_3d_matrix" ]; then
+    echo "ERROR: Compilation failed - executable not found!"
+    exit 1
+fi
+echo "Compilation successful - executable found"
 
 # Job parameters
 NNODES=$(sort -u $PBS_NODEFILE | wc -l)
@@ -65,6 +73,7 @@ echo "Test: v15.3 Power Spectrum Mode"
 echo "Double Precision Build with RNG Consistency Debugging"
 echo "RNG Skip Debugging: ENABLED (DEBUG_RNG_SKIP=1)"
 echo "RNG Verification: ENABLED (VERIFY_RNG_CALLS=1)"
+echo "Spline Resolution: 2048 (very high accuracy)"
 echo "FIX: Skip at Nyquist boundary (x/z == Nhalf+1) instead of end of row"
 echo "N=$N, ranks=$NTOTRANKS"
 echo "Parameter file: $PARAM_FILE"

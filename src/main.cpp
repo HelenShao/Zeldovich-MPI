@@ -6,16 +6,13 @@
 // - 2D grid decomposition for redistribution to pencil layout
 // - ** NEW in v15**: Power Spectrum Integration
 //   * Use zeldovich-PLT to generate power spectrum
-//   * Use power spectrum to generate initial conditions
-//   * Use initial conditions to generate power spectrum
-//   * Use power spectrum to generate initial conditions
+//   * Use power spectrum in cgauss<>
 // - Retained from v14: PERIODIC BOUNDARY CONDITIONS FOR PADDING
 //   * Padding uses periodic boundaries (wrap-around) instead of clamping
 //   * Example: rank 0: [0,100] core --> [-10,110] padded (wraps from right side!)
-//             rank 1: [100,200] core --> [90,210] padded (normal overlap)
-//   * X=-10 wraps to X=N-10, X=N+5 wraps to X=5 (modulo arithmetic)
+//              rank 1: [100,200] core --> [90,210] padded (normal overlap)
 //   * Efficient indexing: PERIODIC_X macro with fast-path for common case
-// - **RETAINED from v13**: OVERLAPPING X-REGIONS FOR PADDING
+// - **RETAINED from v13**: (optional) OVERLAPPING X-REGIONS FOR PADDING
 //   * Each rank stores extra X-values beyond its core region (X_PADDING on each side)
 //   * Creates redundant storage at boundaries for seamless integration
 //   * File output includes padded regions (some X-values written by multiple ranks)
@@ -64,9 +61,8 @@ extern "C" {
 #include "types.h"
 
 // ====================================================================================
-// UTILITY MODULES
+// UTILITIES
 // ====================================================================================
-// Utility functions extracted to separate modules
 #include "utils/printing.h"
 #include "utils/verification.h"
 #include "utils/decomposition.h"
@@ -75,7 +71,6 @@ extern "C" {
 // ====================================================================================
 // CORE MODULES
 // ====================================================================================
-// Core algorithm modules extracted in Phase 5
 #include "fft/fft_setup.h"
 #include "generation/hermitian_generation.h"
 #include "communication/mpi_exchange.h"
@@ -85,10 +80,7 @@ extern "C" {
 // PCG RNG MODULE
 // ====================================================================================
 
-// NOTE: Using local RNG module (src/utils/rng.c)
-// The RNG module uses pcg64 with advance() for sequential initialization
-// This matches the original approach used in other versions
-
+// Using zeldovich-PLT to generate power spectrum and call cgauss<> 
 #include "utils/rng.h"
 #include "utils/power_spectrum.h"
 #include "utils/zeldovich_wrapper.h"  // For zeldovich-PLT integration
@@ -97,67 +89,6 @@ extern "C" {
 // Note: Data structures (GridBounds, ExtendedGridBounds) now defined in types.h
 // Note: Indexing macros (Y_SLICE, PENCIL, ZSLAB) now defined in types.h
 // Note: Periodic boundary macros (PERIODIC_X, PERIODIC_Z) now defined in types.h
-
-// ====================================================================================
-// HELPER FUNCTION PROTOTYPES
-// ====================================================================================
-// Note: All function prototypes are now in module headers:
-//   - FFT functions: fft/fft_setup.h
-//   - Generation functions: generation/hermitian_generation.h
-//   - Communication functions: communication/mpi_exchange.h
-//   - Streaming functions: streaming/z_streaming.h
-//   - Utility functions: utils/*.h
-// ====================================================================================
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
-#include <stdint.h>
-#include <assert.h>
-#include <limits.h>  // For INT_MAX
-#include <mpi.h>
-#include <omp.h>  // For hybrid MPI+OpenMP within each rank
-#include <fftw3.h>
-#include <sys/stat.h>
-#include <errno.h>
-
-// Include PCG RNG and STimer
-#include "pcg-rng/pcg_random.hpp"
-#ifdef __cplusplus
-extern "C" {
-#endif
-#include "STimer.h"
-#ifdef __cplusplus
-}
-#endif
-
-// ====================================================================================
-// CONFIGURATION AND TYPES
-// ====================================================================================
-// All compile-time flags and constants are now in config.h
-// All type definitions and precision handling are in precision.h and types.h
-#include "config.h"
-#include "precision.h"
-#include "types.h"
-
-// ====================================================================================
-// UTILITY MODULES
-// ====================================================================================
-// Utility functions extracted to separate modules
-#include "utils/printing.h"
-#include "utils/verification.h"
-#include "utils/decomposition.h"
-#include "utils/batch_helpers.h"
-
-// ====================================================================================
-// CORE MODULES
-// ====================================================================================
-// Core algorithm modules extracted in Phase 5
-#include "fft/fft_setup.h"
-#include "generation/hermitian_generation.h"
-#include "communication/mpi_exchange.h"
-#include "streaming/z_streaming.h"
 
 // ====================================================================================
 // MAIN FUNCTION
@@ -176,7 +107,7 @@ int main(int argc, char **argv)
     MPI_Comm_size(MPI_COMM_WORLD, &num_ranks);
     
     // ========================================================================
-    // PARSE ARGUMENTS
+    // PARSE RESOLUTION, PARAMETER FILE
     // ========================================================================
     
     int N = 64;
@@ -202,7 +133,7 @@ int main(int argc, char **argv)
         return 1; 
     }
     
-    // Optional parameter file (enables power spectrum mode)
+    // Optional parameter file (enables zeldovich-PLT ps handle)
     if (argc >= 3) {
         param_file = argv[2];
     }
@@ -223,7 +154,7 @@ int main(int argc, char **argv)
         return 1;
     }
     
-    // Calculate pair distribution for informational purposes
+    // Calculate pair distribution
     int pairs_per_rank_base = total_pairs / num_ranks;
     int remainder_pairs = total_pairs % num_ranks;
     
@@ -240,7 +171,7 @@ int main(int argc, char **argv)
     
     if (rank == 0) {
         printf("====================================================================================\n");
-        printf("VERSION 14: PERIODIC BOUNDARY CONDITIONS FOR PADDING\n");
+        printf("VERSION 15: POWER SPECTRUM INTEGRATION\n");
         printf("====================================================================================\n");
         printf("Precision: %s (%d bytes per complex number)\n", PRECISION_NAME, BYTES_PER_COMPLEX);
         printf("Matrix size: N = %d³, Total elements: %zu\n", N, (size_t)N * (size_t)N * (size_t)N);
@@ -248,14 +179,8 @@ int main(int argc, char **argv)
         printf("Multi-batch processing: Each rank processes multiple Y-slice pairs\n");
 #if USE_X_PADDING
         printf("V14 feature: Periodic boundary conditions (X_PADDING=%d per side)\n", X_PADDING);
-        printf("            Physics-correct wrap-around at boundaries (not clamped!)\n");
-        printf("            Example: rank 0 core [0,100] --> padded [-10,110] (wraps from right!)\n");
-        printf("                     rank 1 core [100,200] --> padded [90,210] (normal overlap)\n");
-        printf("                     X=-10 wraps to X=N-10, X=N+5 wraps to X=5\n");
-        printf("            Efficient PERIODIC_X macro: fast-path for common case x∈[0,N)\n");
 #else
         printf("Grid decomposition: Core grid only (no padding, X_PADDING=0)\n");
-        printf("            Each rank owns non-overlapping X-region\n");
         printf("            No periodic boundary wrapping - standard decomposition\n");
 #endif
         printf("V12 feature: Z-slab streaming (Zeldovich-compatible output)\n");
@@ -279,7 +204,7 @@ int main(int argc, char **argv)
     } YSlicePair;
     
     // STEP 1: Calculate total number of pairs to distribute
-    // Pairs: (0,0), (1,N-1), (2,N-2), ..., up to (N/2, N/2)
+    // Conjugate pairs: (0,0), (1,N-1), (2,N-2), ..., up to N/2 self-conj.
     // Note: total_pairs already calculated above in rank verification
     
     // STEP 2: Distribute pairs across ranks
@@ -455,8 +380,9 @@ int main(int argc, char **argv)
         }
         
         // Create PowerSpectrum object (each rank creates its own)
-        // Spline resolution: typically 128 for good accuracy
-        ps = zeldovich_ps_create(128, params);
+        // Spline resolution: configured via SPLINE_RESOLUTION (default 128)
+        // Higher resolution (256, 512) may reduce numerical differences between N values
+        ps = zeldovich_ps_create(SPLINE_RESOLUTION, params);
         if (!ps) {
             if (rank == 0) {
                 fprintf(stderr, "ERROR: Failed to create PowerSpectrum object\n");

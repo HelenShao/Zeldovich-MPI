@@ -251,6 +251,14 @@
 #define MAX_PPD 4096  // Adjust based on maximum expected N
 #endif
 
+// Power spectrum spline interpolation resolution
+// Higher values = more accurate interpolation, but more memory
+// 128 = default (good accuracy for most cases)
+// 256 or 512 = higher accuracy (may reduce numerical differences between N values)
+#ifndef SPLINE_RESOLUTION
+#define SPLINE_RESOLUTION 128
+#endif
+
 // Memory alignment for FFTW (bytes)
 // FFTW recommends 4096-byte alignment for best performance
 #define ALIGN_BYTES 4096

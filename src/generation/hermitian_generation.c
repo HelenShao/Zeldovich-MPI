@@ -558,35 +558,34 @@ void generate_hermitian_slice_pair_local(
                 } else if (ps_handle != NULL && params_handle != NULL) {
                     // v15.2: Use zeldovich-PLT power spectrum-weighted Gaussian
                     // If ps_handle is available, we ALWAYS use power spectrum mode (cgauss)
-                        // Convert k indices to physical wavenumber: k_phys = k_index * fundamental
-                        double fundamental = zeldovich_params_get_fundamental(params_handle);
-                        double k2_phys = k2 * fundamental * fundamental;
-                        double kmag = sqrt(k2_phys);
-                        
-                        // zeldovich_ps_cgauss returns double precision, convert to real_t
-                        // zeldovich-PLT's v2rng array is sized to ppd/2, so valid indices are 0 to (N/2 - 1)
-                        // Since we've already handled global_y == N/2 above, global_y is now < N/2
-                        int64_t rng_index = global_y;
-                        
-                        // Advance zeldovich-PLT's RNG when crossing Nyquist boundaries
-                        #if !PARALLELIZE_XZ_WITHIN_SLICE
-                        if (nskip > 0) {
-                            zeldovich_ps_advance_rng(ps_handle, params_handle, rng_index, nskip);
+                    // Convert k indices to physical wavenumber: k_phys = k_index * fundamental
+                    double fundamental = zeldovich_params_get_fundamental(params_handle);
+                    double k2_phys = k2 * fundamental * fundamental;
+                    double kmag = sqrt(k2_phys);
+                    
+                    // zeldovich_ps_cgauss returns double precision, convert to real_t
+                    // zeldovich-PLT's v2rng array is sized to ppd/2, so valid indices are 0 to (N/2 - 1)
+                    // Since we've already handled global_y == N/2 above, global_y is now < N/2
+                    int64_t rng_index = global_y;
+                    
+                    // Advance zeldovich-PLT's RNG when crossing Nyquist boundaries
+                    #if !PARALLELIZE_XZ_WITHIN_SLICE
+                    if (nskip > 0) {
+                        zeldovich_ps_advance_rng(ps_handle, params_handle, rng_index, nskip);
                         #if VERIFY_RNG_CALLS
                         total_rng_skips += nskip;
                         #endif
-                            nskip = 0;  // Reset after advancing
-                        }
-                        #endif
-                        
-                        double D_real, D_imag;
-                        zeldovich_ps_cgauss(ps_handle, kmag, rng_index, &D_real, &D_imag);
-                        #if VERIFY_RNG_CALLS
-                        total_rng_calls++;  // Each cgauss() call uses 2 random numbers
-                        #endif
-                        D[0] = (real_t)D_real;
-                        D[1] = (real_t)D_imag;
+                        nskip = 0;  // Reset after advancing
                     }
+                    #endif
+                    
+                    double D_real, D_imag;
+                    zeldovich_ps_cgauss(ps_handle, kmag, rng_index, &D_real, &D_imag);
+                    #if VERIFY_RNG_CALLS
+                    total_rng_calls++;  // Each cgauss() call uses 2 random numbers
+                    #endif
+                    D[0] = (real_t)D_real;
+                    D[1] = (real_t)D_imag;
                 } else if (ps_params != NULL) {
                     // Legacy: Use standalone power spectrum-weighted Gaussian (cgauss)
                     double fundamental = 1.0;  // TODO: Add to power_spectrum_params_t
@@ -726,6 +725,42 @@ void generate_hermitian_slice_pair_local(
                 
             }
             
+            // RNG consistency FIX: After processing z=0 row, skip missing x-values
+            // z=0 only processes x=0 to Nhalf, but MAX_PPD grid processes x=0 to MAX_PPD/2
+            // This skip was MISSING, causing k=(0,0,z) modes to differ between N values!
+            // Skip needed: (MAX_PPD/2) - Nhalf = (MAX_PPD - N) / 2
+            #if !PARALLELIZE_XZ_WITHIN_SLICE
+            if (z == 0 && N < MAX_PPD) {
+                int64_t skip_amount = (MAX_PPD / 2) - Nhalf;
+                nskip += skip_amount;
+                
+                #if DEBUG_RNG_SKIP
+                if (global_y <= MAX_DEBUG_COORD) {
+                    fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d z=0: ADDING missing x-skip for z=0 row: +%lld (x from %d to %d), total nskip=%lld\n",
+                            N, global_y, (long long)skip_amount, Nhalf + 1, MAX_PPD / 2, (long long)nskip);
+                    fflush(stderr);
+                }
+                #endif
+                
+                // Apply skip immediately to ensure RNG state is consistent at start of z=1
+                if (nskip > 0) {
+                    if (ps_handle != NULL && params_handle != NULL) {
+                        int64_t rng_index = global_y;
+                        zeldovich_ps_advance_rng(ps_handle, params_handle, rng_index, nskip);
+                        #if VERIFY_RNG_CALLS
+                        total_rng_skips += nskip;
+                        #endif
+                    } else if (params_handle == NULL) {
+                        advance_pcg_global(global_y, 2 * nskip);
+                        #if VERIFY_RNG_CALLS
+                        total_rng_skips += nskip;
+                        #endif
+                    }
+                    nskip = 0;
+                }
+            }
+            #endif
+            
             // RNG consistency: After processing last z-row (z == Nhalf),
             // skip missing z-rows (z = N to MAX_PPD-1, each containing MAX_PPD x-values)
             // This matches zeldovich.cpp: conceptually skip at Nyquist boundary (z == Nhalf + 1)
@@ -852,65 +887,66 @@ void generate_hermitian_slice_pair_local(
                     // v15.2: Use zeldovich-PLT power spectrum-weighted Gaussian
                     // If ps_handle is available, we ALWAYS use power spectrum mode (cgauss)
                     // Convert k indices to physical wavenumber: k_phys = k_index * fundamental
-                        double fundamental = zeldovich_params_get_fundamental(params_handle);
-                        double k2_phys = k2 * fundamental * fundamental;
-                        double kmag = sqrt(k2_phys);
-                        
-                        // zeldovich_ps_cgauss returns double precision, convert to real_t
-                        // zeldovich-PLT's v2rng array is sized to ppd/2, so valid indices are 0 to (N/2 - 1)
-                        // Since we've already handled global_y == N/2 above, global_y is now < N/2
-                        int64_t rng_index = global_y;
-                        
-                        // RNG consistency: Apply accumulated skip before calling cgauss
-                        // This matches zeldovich.cpp behavior: advance before calling cgauss
-                        #if !PARALLELIZE_XZ_WITHIN_SLICE
-                        #if DEBUG_RNG_SKIP
-                        int log_skip = (x <= MAX_DEBUG_COORD && global_y <= MAX_DEBUG_COORD && z <= MAX_DEBUG_COORD) ||
-                                       (x == Nhalf - 1 && global_y == Nhalf - 1 && z == Nhalf - 1);
-                        if (log_skip && nskip > 0) {
-                            fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d (x,z)=(%d,%d): APPLYING skip=%lld BEFORE cgauss (self-conj)\n",
-                                    N, global_y, x, z, (long long)nskip);
-                            fflush(stderr);
-                        }
-                        #endif
-                        if (nskip > 0) {
-                            zeldovich_ps_advance_rng(ps_handle, params_handle, rng_index, nskip);
-                            #if VERIFY_RNG_CALLS
-                            total_rng_skips += nskip;
-                            #endif
-                            #if DEBUG_RNG_SKIP
-                            if (log_skip) {
-                                fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d (x,z)=(%d,%d): RNG advanced, nskip reset to 0 (self-conj)\n",
-                                        N, global_y, x, z);
-                                fflush(stderr);
-                            }
-                            #endif
-                            nskip = 0;  // Reset after advancing
-                        }
-                        #endif
-                        
-                        double D_real, D_imag;
-                        #if DEBUG_RNG_SKIP
-                        int log_cgauss_sc = (x <= MAX_DEBUG_COORD && global_y <= MAX_DEBUG_COORD && z <= MAX_DEBUG_COORD) ||
-                                            (x == Nhalf - 1 && global_y == Nhalf - 1 && z == Nhalf - 1);
-                        if (log_cgauss_sc) {
-                            fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d (x,z)=(%d,%d): CALLING cgauss (self-conj, nskip=%lld, kmag=%.6e)\n",
-                                    N, global_y, x, z, (long long)nskip, kmag);
-                            fflush(stderr);
-                        }
-                        #endif
-                        #if PARALLELIZE_XZ_WITHIN_SLICE
-                        // Lock protects generator access
-                        #else
-                        // Sequential access: no locks needed
-                        #endif
-                        zeldovich_ps_cgauss(ps_handle, kmag, rng_index, &D_real, &D_imag);
-                        #if VERIFY_RNG_CALLS
-                        total_rng_calls++;  // Each cgauss() call uses 2 random numbers
-                        #endif
-                        D[0] = (real_t)D_real;
-                        D[1] = (real_t)D_imag;
+                    double fundamental = zeldovich_params_get_fundamental(params_handle);
+                    double k2_phys = k2 * fundamental * fundamental;
+                    double kmag = sqrt(k2_phys);
+                    
+                    // zeldovich_ps_cgauss returns double precision, convert to real_t
+                    // zeldovich-PLT's v2rng array is sized to ppd/2, so valid indices are 0 to (N/2 - 1)
+                    // Since we've already handled global_y == N/2 above, global_y is now < N/2
+                    int64_t rng_index = global_y;
+                    
+                    // RNG consistency: Apply accumulated skip before calling cgauss
+                    // This matches zeldovich.cpp behavior: advance before calling cgauss
+                    #if !PARALLELIZE_XZ_WITHIN_SLICE
+                    #if DEBUG_RNG_SKIP
+                    int log_skip = (x <= MAX_DEBUG_COORD && global_y <= MAX_DEBUG_COORD && z <= MAX_DEBUG_COORD) ||
+                                   (x == Nhalf - 1 && global_y == Nhalf - 1 && z == Nhalf - 1);
+                    if (log_skip && nskip > 0) {
+                        fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d (x,z)=(%d,%d): APPLYING skip=%lld BEFORE cgauss (self-conj)\n",
+                                N, global_y, x, z, (long long)nskip);
+                        fflush(stderr);
                     }
+                    #else
+                    int log_skip = 0;  // Dummy variable when DEBUG_RNG_SKIP is disabled
+                    #endif
+                    if (nskip > 0) {
+                        zeldovich_ps_advance_rng(ps_handle, params_handle, rng_index, nskip);
+                        #if VERIFY_RNG_CALLS
+                        total_rng_skips += nskip;
+                        #endif
+                        #if DEBUG_RNG_SKIP
+                        if (log_skip) {
+                            fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d (x,z)=(%d,%d): RNG advanced, nskip reset to 0 (self-conj)\n",
+                                    N, global_y, x, z);
+                            fflush(stderr);
+                        }
+                        #endif
+                        nskip = 0;  // Reset after advancing
+                    }
+                    #endif
+                    
+                    double D_real, D_imag;
+                    #if DEBUG_RNG_SKIP
+                    int log_cgauss_sc = (x <= MAX_DEBUG_COORD && global_y <= MAX_DEBUG_COORD && z <= MAX_DEBUG_COORD) ||
+                                        (x == Nhalf - 1 && global_y == Nhalf - 1 && z == Nhalf - 1);
+                    if (log_cgauss_sc) {
+                        fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d (x,z)=(%d,%d): CALLING cgauss (self-conj, nskip=%lld, kmag=%.6e)\n",
+                                N, global_y, x, z, (long long)nskip, kmag);
+                        fflush(stderr);
+                    }
+                    #endif
+                    #if PARALLELIZE_XZ_WITHIN_SLICE
+                    // Lock protects generator access
+                    #else
+                    // Sequential access: no locks needed
+                    #endif
+                    zeldovich_ps_cgauss(ps_handle, kmag, rng_index, &D_real, &D_imag);
+                    #if VERIFY_RNG_CALLS
+                    total_rng_calls++;  // Each cgauss() call uses 2 random numbers
+                    #endif
+                    D[0] = (real_t)D_real;
+                    D[1] = (real_t)D_imag;
                 } else if (ps_params != NULL) {
                     // Legacy: Use standalone power spectrum-weighted Gaussian (cgauss)
                     // Convert k indices to physical wavenumber: k_phys = k_index * fundamental
