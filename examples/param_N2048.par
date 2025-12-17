@@ -1,13 +1,13 @@
 # zeldovich-PLT Parameter File
-# For N=512 grid with power law power spectrum
-# Usage: ./hermitian_3d_matrix 512 examples/param_N512.par
+# For N=2048 grid with power law power spectrum
+# Usage: ./hermitian_3d_matrix 2048 examples/param_N2048.par
 
 BoxSize = 100.0
-CPD = 4                            # Node grid size (4x4 = 16 ranks)
+CPD = 9                         # Cells per dimension (= N)
 ICFormat = "RV"
 InitialConditionsDirectory = "./output"
 InitialRedshift = 99.0
-NP = 134217728                     # N^3 = 512^3
+NP = 8589934592                    # N^3 = 2048^3
 ZD_NumBlock = 2
 ZD_Seed = 4                        # Random seed
 ZD_Pk_scale = 1.0
@@ -17,4 +17,3 @@ ZD_Pk_smooth = 0.0
 ZD_Pk_powerlaw_index = -2.0        # Power law: P(k) ~ k^-2
 ZD_Version = 2                     # Use version 2 (recommended)
 ZD_qPk_fix_to_mean = 0            # Random amplitude (not fixed)
-
