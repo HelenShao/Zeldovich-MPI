@@ -51,27 +51,79 @@ void print_3d_matrix_visual(int N, fftw_complex_t *global_matrix, const char* ti
 
 void print_z_slab(int rank, int z, fftw_complex_t *local_z_slab, int x_count, int N, int narray, int x_start) {
     #if PRINT_Z_SLABS
-    if (N > 16) return;  // Only print for small N
+    if (N > 64) return;  // Only print for N <= 64 (increased from 16 for testing)
     
     printf("\n[RANK %d] Z-slab Z=%d (X=[%d,%d), after 3D FFT):\n", rank, z, x_start, x_start + x_count);
-    // Print only first array (array_idx=0)
-    int array_idx = 0;
-    printf("  Array %d:\n", array_idx);
-    for (int y = 0; y < N; y++) {
-        printf("    Y=%d: ", y);
-        for (int x_idx = 0; x_idx < x_count; x_idx++) {
-            int x_global = x_start + x_idx;
-            // Access using ZSLAB macro formula: y + N * (array_idx + narray * x_idx)
-            int64_t idx = (int64_t)y + (int64_t)N * ((int64_t)array_idx + (int64_t)narray * (int64_t)x_idx);
-            double re = local_z_slab[idx][0];
-            double im = local_z_slab[idx][1];
-            if (fabs_t(im) < 1e-10) {
-                printf("X%d=%7.3f ", x_global, re);
-            } else {
-                printf("X%d=%6.2f%+5.2fi ", x_global, re, im);
+    
+    // Print all arrays
+    for (int array_idx = 0; array_idx < narray; array_idx++) {
+        printf("  Array %d:\n", array_idx);
+        
+        // For large N, print summary statistics first
+        if (N > 16) {
+            double max_real = 0.0, max_imag = 0.0;
+            double min_real = 0.0, min_imag = 0.0;
+            int non_zero_imag_count = 0;
+            for (int y = 0; y < N; y++) {
+                for (int x_idx = 0; x_idx < x_count; x_idx++) {
+                    int64_t idx = (int64_t)y + (int64_t)N * ((int64_t)array_idx + (int64_t)narray * (int64_t)x_idx);
+                    double re = local_z_slab[idx][0];
+                    double im = local_z_slab[idx][1];
+                    if (y == 0 && x_idx == 0) {
+                        max_real = min_real = re;
+                        max_imag = min_imag = im;
+                    } else {
+                        if (re > max_real) max_real = re;
+                        if (re < min_real) min_real = re;
+                        if (im > max_imag) max_imag = im;
+                        if (im < min_imag) min_imag = im;
+                    }
+                    if (fabs_t(im) > 1e-10) non_zero_imag_count++;
+                }
             }
+            printf("    Summary: re=[%.6e, %.6e], im=[%.6e, %.6e], non-zero imag: %d/%d\n",
+                   min_real, max_real, min_imag, max_imag, non_zero_imag_count, N * x_count);
         }
-        printf("\n");
+        
+        // Print full matrix for small N, or sample for large N
+        if (N <= 16) {
+            // Print full matrix
+            for (int y = 0; y < N; y++) {
+                printf("    Y=%d: ", y);
+                for (int x_idx = 0; x_idx < x_count; x_idx++) {
+                    int x_global = x_start + x_idx;
+                    int64_t idx = (int64_t)y + (int64_t)N * ((int64_t)array_idx + (int64_t)narray * (int64_t)x_idx);
+                    double re = local_z_slab[idx][0];
+                    double im = local_z_slab[idx][1];
+                    if (fabs_t(im) < 1e-10) {
+                        printf("X%d=%7.3f ", x_global, re);
+                    } else {
+                        printf("X%d=%6.2f%+5.2fi ", x_global, re, im);
+                    }
+                }
+                printf("\n");
+            }
+        } else {
+            // For large N, print first few rows and a sample
+            printf("    First 4 rows (Y=0-3):\n");
+            for (int y = 0; y < 4 && y < N; y++) {
+                printf("      Y=%d: ", y);
+                for (int x_idx = 0; x_idx < x_count && x_idx < 8; x_idx++) {
+                    int x_global = x_start + x_idx;
+                    int64_t idx = (int64_t)y + (int64_t)N * ((int64_t)array_idx + (int64_t)narray * (int64_t)x_idx);
+                    double re = local_z_slab[idx][0];
+                    double im = local_z_slab[idx][1];
+                    if (fabs_t(im) < 1e-10) {
+                        printf("X%d=%7.3f ", x_global, re);
+                    } else {
+                        printf("X%d=%6.2f%+5.2fi ", x_global, re, im);
+                    }
+                }
+                if (x_count > 8) printf("...");
+                printf("\n");
+            }
+            printf("    ... (showing first 4 rows, first 8 X values)\n");
+        }
     }
     printf("\n");
     #else

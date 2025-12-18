@@ -178,7 +178,7 @@ int main(int argc, char **argv)
         printf("MPI ranks: %d (total_pairs: %d for N=%d)\n", num_ranks, total_pairs, N);
         printf("Multi-batch processing: Each rank processes multiple Y-slice pairs\n");
 #if USE_X_PADDING
-        printf("V14 feature: Periodic boundary conditions (X_PADDING=%d per side)\n", X_PADDING);
+        printf("V14: Periodic boundary conditions (X_PADDING=%d per side)\n", X_PADDING);
 #else
         printf("Grid decomposition: Core grid only (no padding, X_PADDING=0)\n");
         printf("            No periodic boundary wrapping - standard decomposition\n");
@@ -777,7 +777,7 @@ int main(int argc, char **argv)
     // ========================================================================
     // Write cursors to track progress across batches for each source
     //
-    // HOW WRITE CURSORS WORK:
+    // WRITE CURSORS:
     //   - recv_displs_src[src] = base offset in recv_buffer for each source (computed once)
     //   - src_write_cursor[src] = current write position within each source's region (starts at 0)
     //   - Each batch, displacement = recv_displs_src[src] + src_write_cursor[src]
@@ -811,7 +811,7 @@ int main(int argc, char **argv)
     y_batch_idx = (int*)malloc(sizeof(int) * N);
     y_slice_idx_in_batch = (int*)malloc(sizeof(int) * N);
     
-    // Initialize to invalid
+    // Initialize 
     for (int y = 0; y < N; y++) {
         y_owner_src[y] = -1;
         y_src_local_idx[y] = -1;
@@ -1296,7 +1296,7 @@ int main(int argc, char **argv)
     // ========================================================================
     // MEMORY: x_count x narray x N x 16 bytes (ONE Z-SLAB ONLY, e.g, ~4 GB for N=32K, narray=4)
     // Memory reduced by processing one Z-slab at a time instead of storing all pencils
-    // Memory layout: [Array][Y][X] for one Z-slab (x_count X-values, all Y, all arrays)
+    // Memory layout: [Array][Y][X] for one Z-slab (x_count X-values, all Y, all arrays) - fix this!!
     
     STimer t_streaming;
     t_streaming.Start();
@@ -1305,7 +1305,7 @@ int main(int argc, char **argv)
         printf("\n[Stage 3] Z-slab streaming: Unpack --> FFT --> Write (Zeldovich format)...\n");
     }
     
-    // V12: Allocate local_z_slab for ONE Z-SLAB ONLY (active ranks only)
+    // V12: Allocate local_z_slab for ONE Z-SLAB ONLY
     // V13: Use appropriate bounds for allocation (padded if enabled, core otherwise)
     int64_t elements_per_z_slab = 0;
     if (!is_idle_rank) {

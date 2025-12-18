@@ -285,6 +285,7 @@ void generate_hermitian_slice_pair_local(
                     #endif
                     D[0] = (real_t)D_real;
                     D[1] = (real_t)D_imag;
+                    // Note: For VERIFY_HERMITIAN_SYMMETRY==2, we set D=0 AFTER computing F and H
                 } else if (ps_params != NULL) {
                     // Legacy: Use my own power spectrum-weighted Gaussian (cgauss)
                     // Convert k indices to physical wavenumber: k_phys = k_index * fundamental
@@ -309,6 +310,7 @@ void generate_hermitian_slice_pair_local(
                     #if VERIFY_RNG_CALLS
                     total_rng_calls++;  // Each cgauss() call uses 2 random numbers
                     #endif
+                    // Note: For VERIFY_HERMITIAN_SYMMETRY==2, we set D=0 AFTER computing F and H
                 } else {
                     // Fallback: use uniform random numbers (white noise mode, no power spectrum)
                     // This should only happen when ps_handle is NULL (no parameter file provided)
@@ -334,12 +336,43 @@ void generate_hermitian_slice_pair_local(
                     #endif
                     D[0] = D_re;
                     D[1] = D_im;
+                    // Note: For VERIFY_HERMITIAN_SYMMETRY==2, we set D=0 AFTER computing F and H
                 }
                 
                 // ========== STEP 3: Compute F, G, H from D ==========
                 fftw_complex F, G, H;
                 double ik2 = 1.0 / k2;
                 
+                #if VERIFY_HERMITIAN_SYMMETRY == 1
+                // Verification mode 1: Set F=0 and H=0 to test Hermitian symmetry
+                // With F=0 and H=0, conjugate slices should be true conjugates of primary slices
+                // After 3D FFT, the result should be purely real
+                F[0] = 0.0;
+                F[1] = 0.0;
+                
+                G[0] = -ky * ik2 * D[1];
+                G[1] =  ky * ik2 * D[0];
+                
+                H[0] = 0.0;
+                H[1] = 0.0;
+                #elif VERIFY_HERMITIAN_SYMMETRY == 2
+                // Verification mode 2: Compute F and H from D, then set D=0 and G=0
+                // This makes Array 0 and Array 1 purely imaginary (real parts = 0)
+                // After 3D FFT, the result should be purely imaginary (real parts = 0)
+                F[0] = -kx * ik2 * D[1];
+                F[1] =  kx * ik2 * D[0];
+                
+                G[0] = 0.0;  // Set G=0
+                G[1] = 0.0;
+                
+                H[0] = -kz * ik2 * D[1];
+                H[1] =  kz * ik2 * D[0];
+                
+                // Now set D=0 (after F and H are computed)
+                D[0] = 0.0;
+                D[1] = 0.0;
+                #else
+                // Normal operation: Compute F, G, H from D
                 // F = i x kx/k^2 x D = i x kx x ik2 x (D_re + ixD_im)
                 //   = i x kx x ik2 x D_re - kx x ik2 x D_im
                 //   = -kx x ik2 x D_im + i x kx x ik2 x D_re
@@ -351,6 +384,7 @@ void generate_hermitian_slice_pair_local(
                 
                 H[0] = -kz * ik2 * D[1];
                 H[1] =  kz * ik2 * D[0];
+                #endif
                 
                 // ========== DEBUG: Print RNG values for consistency checking ==========
                 #if DEBUG_RNG_CONSISTENCY
@@ -395,35 +429,49 @@ void generate_hermitian_slice_pair_local(
                 }
                 #endif
                 
-                // ========== STEP 4: Store in arrays ==========
+                // ========== STEP 4: Store in arrays (Zeldovich packing scheme) ==========
                 // Array 0: D + i*F (density + X-displacement)
-                PRIM_SLICE(0, x, z)[0] = D[0];  // Real = D_re
-                PRIM_SLICE(0, x, z)[1] = F[0];  // Imag = F_re (X-displacement)
+                // D + i*F = (D[0] + i*D[1]) + i*(F[0] + i*F[1]) = (D[0] - F[1]) + i*(D[1] + F[0])
+                PRIM_SLICE(0, x, z)[0] = D[0] - F[1];  // Real = D_re - F_im
+                PRIM_SLICE(0, x, z)[1] = D[1] + F[0];  // Imag = D_im + F_re
                 
                 // Array 1: G + i*H (Y-displacement + Z-displacement)
-                PRIM_SLICE(1, x, z)[0] = G[0];  // Real = G_re (Y-displacement)
-                PRIM_SLICE(1, x, z)[1] = H[0];  // Imag = H_re (Z-displacement)
+                // G + i*H = (G[0] + i*G[1]) + i*(H[0] + i*H[1]) = (G[0] - H[1]) + i*(G[1] + H[0])
+                PRIM_SLICE(1, x, z)[0] = G[0] - H[1];  // Real = G_re - H_im
+                PRIM_SLICE(1, x, z)[1] = G[1] + H[0];  // Imag = G_im + H_re
                 
                 if (narray >= 4) {
                     // Array 2: 0 + i*F*f (X-velocity)
+                    // 0 + i*(F*f) = 0 + i*((F[0] + i*F[1])*f) = -F[1]*f + i*(F[0]*f)
                     double f = 1.0;  // PLT growth rate (placeholder for now)
-                    PRIM_SLICE(2, x, z)[0] = 0.0;
-                    PRIM_SLICE(2, x, z)[1] = F[0] * f;
+                    PRIM_SLICE(2, x, z)[0] = -F[1] * f;  // Real = -F_im * f
+                    PRIM_SLICE(2, x, z)[1] = F[0] * f;   // Imag = F_re * f
                     
                     // Array 3: G*f + i*H*f (Y-velocity + Z-velocity)
-                    PRIM_SLICE(3, x, z)[0] = G[0] * f;
-                    PRIM_SLICE(3, x, z)[1] = H[0] * f;
+                    // (G*f) + i*(H*f) = (G[0] - H[1])*f + i*((G[1] + H[0])*f)
+                    PRIM_SLICE(3, x, z)[0] = (G[0] - H[1]) * f;  // Real = (G_re - H_im) * f
+                    PRIM_SLICE(3, x, z)[1] = (G[1] + H[0]) * f;  // Imag = (G_im + H_re) * f
                 }
                 
-                // ========== STEP 5: Store Hermitian conjugates ==========
-                // For ALL arrays independently
-                for (int a = 0; a < narray; a++) {
-                    double re = PRIM_SLICE(a, x, z)[0];
-                    double im = PRIM_SLICE(a, x, z)[1];
+                // ========== STEP 5: Store conjugates (Zeldovich scheme: conj(D) + i*conj(F)) ==========
+                // For mode -k, store conj(D) + i*conj(F), NOT the conjugate of (D + i*F)!
+                // conj(D) + i*conj(F) = (D[0] - i*D[1]) + i*(F[0] - i*F[1]) = (D[0] + F[1]) + i*(F[0] - D[1])
+                CONJ_SLICE(0, x_mirror, z_mirror)[0] = D[0] + F[1];  // Real = D_re + F_im
+                CONJ_SLICE(0, x_mirror, z_mirror)[1] = F[0] - D[1];  // Imag = F_re - D_im
+                
+                // conj(G) + i*conj(H) = (G[0] - i*G[1]) + i*(H[0] - i*H[1]) = (G[0] + H[1]) + i*(H[0] - G[1])
+                CONJ_SLICE(1, x_mirror, z_mirror)[0] = G[0] + H[1];  // Real = G_re + H_im
+                CONJ_SLICE(1, x_mirror, z_mirror)[1] = H[0] - G[1];  // Imag = H_re - G_im
+                
+                if (narray >= 4) {
+                    double f = 1.0;
+                    // Array 2: conj(0) + i*conj(F*f) = 0 + i*conj(F)*f = (F[1]*f) + i*(-F[0]*f)
+                    CONJ_SLICE(2, x_mirror, z_mirror)[0] = F[1] * f;   // Real = F_im * f
+                    CONJ_SLICE(2, x_mirror, z_mirror)[1] = -F[0] * f;  // Imag = -F_re * f
                     
-                    // Store conjugate at mirror location
-                    CONJ_SLICE(a, x_mirror, z_mirror)[0] = re;
-                    CONJ_SLICE(a, x_mirror, z_mirror)[1] = -im;
+                    // Array 3: conj(G*f) + i*conj(H*f) = (G[0] + H[1])*f + i*((H[0] - G[1])*f)
+                    CONJ_SLICE(3, x_mirror, z_mirror)[0] = (G[0] + H[1]) * f;  // Real = (G_re + H_im) * f
+                    CONJ_SLICE(3, x_mirror, z_mirror)[1] = (H[0] - G[1]) * f;  // Imag = (H_re - G_im) * f
                 }
                 
             }
@@ -586,6 +634,7 @@ void generate_hermitian_slice_pair_local(
                     #endif
                     D[0] = (real_t)D_real;
                     D[1] = (real_t)D_imag;
+                    // Note: For VERIFY_HERMITIAN_SYMMETRY==2, we set D=0 AFTER computing F and H
                 } else if (ps_params != NULL) {
                     // Legacy: Use standalone power spectrum-weighted Gaussian (cgauss)
                     double fundamental = 1.0;  // TODO: Add to power_spectrum_params_t
@@ -608,6 +657,7 @@ void generate_hermitian_slice_pair_local(
                     #if VERIFY_RNG_CALLS
                     total_rng_calls++;  // Each cgauss() call uses 2 random numbers
                     #endif
+                    // Note: For VERIFY_HERMITIAN_SYMMETRY==2, we set D=0 AFTER computing F and H
                 } else {
                     // Fallback: use uniform random numbers (white noise mode, no power spectrum)
                     // This should only happen when ps_handle is NULL (no parameter file provided)
@@ -631,6 +681,7 @@ void generate_hermitian_slice_pair_local(
                     #endif
                     D[0] = D_re;
                     D[1] = D_im;
+                    // Note: For VERIFY_HERMITIAN_SYMMETRY==2, we set D=0 AFTER computing F and H
                 }
                 
                 // Compute F, G, H from D
@@ -639,12 +690,39 @@ void generate_hermitian_slice_pair_local(
                     F[0] = F[1] = G[0] = G[1] = H[0] = H[1] = 0.0;
                 } else {
                     double ik2 = 1.0 / k2;
+                    #if VERIFY_HERMITIAN_SYMMETRY == 1
+                    // Verification mode 1: Set F=0 and H=0 to test Hermitian symmetry
+                    F[0] = 0.0;
+                    F[1] = 0.0;
+                    G[0] = -ky * ik2 * D[1];
+                    G[1] =  ky * ik2 * D[0];
+                    H[0] = 0.0;
+                    H[1] = 0.0;
+                    #elif VERIFY_HERMITIAN_SYMMETRY == 2
+                    // Verification mode 2: Compute F and H from D, then set D=0 and G=0
+                    // This makes Array 0 and Array 1 purely imaginary (real parts = 0)
+                    // After 3D FFT, the result should be purely imaginary (real parts = 0)
+                    F[0] = -kx * ik2 * D[1];
+                    F[1] =  kx * ik2 * D[0];
+                    
+                    G[0] = 0.0;  // Set G=0
+                    G[1] = 0.0;
+                    
+                    H[0] = -kz * ik2 * D[1];
+                    H[1] =  kz * ik2 * D[0];
+                    
+                    // Now set D=0 (after F and H are computed)
+                    D[0] = 0.0;
+                    D[1] = 0.0;
+                    #else
+                    // Normal operation: Compute F, G, H from D
                     F[0] = -kx * ik2 * D[1];
                     F[1] =  kx * ik2 * D[0];
                     G[0] = -ky * ik2 * D[1];
                     G[1] =  ky * ik2 * D[0];
                     H[0] = -kz * ik2 * D[1];
                     H[1] =  kz * ik2 * D[0];
+                    #endif
                 }
                 
                 // ========== DEBUG: Print RNG values for consistency checking ==========
@@ -699,27 +777,43 @@ void generate_hermitian_slice_pair_local(
                 }
                 #endif
                 
-                // Store in arrays (all arrays in primary_slices, self-conjugate uses same buffer)
-                PRIM_SLICE(0, x, z)[0] = D[0];
-                PRIM_SLICE(0, x, z)[1] = F[0];
-                PRIM_SLICE(1, x, z)[0] = G[0];
-                PRIM_SLICE(1, x, z)[1] = H[0];
+                // Store in arrays (Zeldovich packing scheme, self-conjugate uses same buffer)
+                // Array 0: D + i*F = (D[0] - F[1]) + i*(D[1] + F[0])
+                PRIM_SLICE(0, x, z)[0] = D[0] - F[1];
+                PRIM_SLICE(0, x, z)[1] = D[1] + F[0];
+                
+                // Array 1: G + i*H = (G[0] - H[1]) + i*(G[1] + H[0])
+                PRIM_SLICE(1, x, z)[0] = G[0] - H[1];
+                PRIM_SLICE(1, x, z)[1] = G[1] + H[0];
                 
                 if (narray >= 4) {
                     double f = 1.0;  // PLT growth rate (placeholder)
-                    PRIM_SLICE(2, x, z)[0] = 0.0;
+                    // Array 2: 0 + i*F*f = -F[1]*f + i*(F[0]*f)
+                    PRIM_SLICE(2, x, z)[0] = -F[1] * f;
                     PRIM_SLICE(2, x, z)[1] = F[0] * f;
-                    PRIM_SLICE(3, x, z)[0] = G[0] * f;
-                    PRIM_SLICE(3, x, z)[1] = H[0] * f;
+                    // Array 3: G*f + i*H*f = (G[0] - H[1])*f + i*((G[1] + H[0])*f)
+                    PRIM_SLICE(3, x, z)[0] = (G[0] - H[1]) * f;
+                    PRIM_SLICE(3, x, z)[1] = (G[1] + H[0]) * f;
                 }
                 
-                // Mirror for self-conjugate
+                // Mirror for self-conjugate (Zeldovich scheme: store conj(D) + i*conj(F))
                 if (x != x_mirror || z != z_mirror) {
-                    for (int a = 0; a < narray; a++) {
-                        double re = PRIM_SLICE(a, x, z)[0];
-                        double im = PRIM_SLICE(a, x, z)[1];
-                        PRIM_SLICE(a, x_mirror, z_mirror)[0] = re;
-                        PRIM_SLICE(a, x_mirror, z_mirror)[1] = -im;
+                    // Array 0: conj(D) + i*conj(F) = (D[0] + F[1]) + i*(F[0] - D[1])
+                    PRIM_SLICE(0, x_mirror, z_mirror)[0] = D[0] + F[1];
+                    PRIM_SLICE(0, x_mirror, z_mirror)[1] = F[0] - D[1];
+                    
+                    // Array 1: conj(G) + i*conj(H) = (G[0] + H[1]) + i*(H[0] - G[1])
+                    PRIM_SLICE(1, x_mirror, z_mirror)[0] = G[0] + H[1];
+                    PRIM_SLICE(1, x_mirror, z_mirror)[1] = H[0] - G[1];
+                    
+                    if (narray >= 4) {
+                        double f = 1.0;
+                        // Array 2: conj(0) + i*conj(F*f) = F[1]*f + i*(-F[0]*f)
+                        PRIM_SLICE(2, x_mirror, z_mirror)[0] = F[1] * f;
+                        PRIM_SLICE(2, x_mirror, z_mirror)[1] = -F[0] * f;
+                        // Array 3: conj(G*f) + i*conj(H*f) = (G[0] + H[1])*f + i*((H[0] - G[1])*f)
+                        PRIM_SLICE(3, x_mirror, z_mirror)[0] = (G[0] + H[1]) * f;
+                        PRIM_SLICE(3, x_mirror, z_mirror)[1] = (H[0] - G[1]) * f;
                     }
                 }
                 
@@ -947,6 +1041,7 @@ void generate_hermitian_slice_pair_local(
                     #endif
                     D[0] = (real_t)D_real;
                     D[1] = (real_t)D_imag;
+                    // Note: For VERIFY_HERMITIAN_SYMMETRY==2, we set D=0 AFTER computing F and H
                 } else if (ps_params != NULL) {
                     // Legacy: Use standalone power spectrum-weighted Gaussian (cgauss)
                     // Convert k indices to physical wavenumber: k_phys = k_index * fundamental
@@ -986,12 +1081,39 @@ void generate_hermitian_slice_pair_local(
                     F[0] = F[1] = G[0] = G[1] = H[0] = H[1] = 0.0;
                 } else {
                     double ik2 = 1.0 / k2;
+                    #if VERIFY_HERMITIAN_SYMMETRY == 1
+                    // Verification mode 1: Set F=0 and H=0 to test Hermitian symmetry
+                    F[0] = 0.0;
+                    F[1] = 0.0;
+                    G[0] = -ky * ik2 * D[1];
+                    G[1] =  ky * ik2 * D[0];
+                    H[0] = 0.0;
+                    H[1] = 0.0;
+                    #elif VERIFY_HERMITIAN_SYMMETRY == 2
+                    // Verification mode 2: Compute F and H from D, then set D=0 and G=0
+                    // This makes Array 0 and Array 1 purely imaginary (real parts = 0)
+                    // After 3D FFT, the result should be purely imaginary (real parts = 0)
+                    F[0] = -kx * ik2 * D[1];
+                    F[1] =  kx * ik2 * D[0];
+                    
+                    G[0] = 0.0;  // Set G=0
+                    G[1] = 0.0;
+                    
+                    H[0] = -kz * ik2 * D[1];
+                    H[1] =  kz * ik2 * D[0];
+                    
+                    // Now set D=0 (after F and H are computed)
+                    D[0] = 0.0;
+                    D[1] = 0.0;
+                    #else
+                    // Normal operation: Compute F, G, H from D
                     F[0] = -kx * ik2 * D[1];
                     F[1] =  kx * ik2 * D[0];
                     G[0] = -ky * ik2 * D[1];
                     G[1] =  ky * ik2 * D[0];
                     H[0] = -kz * ik2 * D[1];
                     H[1] =  kz * ik2 * D[0];
+                    #endif
                 }
                 
                 // Handle special points
@@ -1002,40 +1124,59 @@ void generate_hermitian_slice_pair_local(
                         PRIM_SLICE(a, x, z)[1] = 0.0;
                     }
                 } else if ((x == 0 || x == Nhalf) && (z == 0 || z == Nhalf)) {
-                    // Self-symmetric points: imaginary = 0
-                    PRIM_SLICE(0, x, z)[0] = D[0];
-                    PRIM_SLICE(0, x, z)[1] = 0.0;
-                    PRIM_SLICE(1, x, z)[0] = G[0];
-                    PRIM_SLICE(1, x, z)[1] = 0.0;
+                    // Self-symmetric points: use Zeldovich packing (imag may be non-zero)
+                    // Array 0: D + i*F = (D[0] - F[1]) + i*(D[1] + F[0])
+                    PRIM_SLICE(0, x, z)[0] = D[0] - F[1];
+                    PRIM_SLICE(0, x, z)[1] = D[1] + F[0];
+                    // Array 1: G + i*H = (G[0] - H[1]) + i*(G[1] + H[0])
+                    PRIM_SLICE(1, x, z)[0] = G[0] - H[1];
+                    PRIM_SLICE(1, x, z)[1] = G[1] + H[0];
                     if (narray >= 4) {
                         double f = 1.0;
-                        PRIM_SLICE(2, x, z)[0] = 0.0;
-                        PRIM_SLICE(2, x, z)[1] = 0.0;
-                        PRIM_SLICE(3, x, z)[0] = G[0] * f;
-                        PRIM_SLICE(3, x, z)[1] = 0.0;
+                        // Array 2: 0 + i*F*f = -F[1]*f + i*(F[0]*f)
+                        PRIM_SLICE(2, x, z)[0] = -F[1] * f;
+                        PRIM_SLICE(2, x, z)[1] = F[0] * f;
+                        // Array 3: G*f + i*H*f = (G[0] - H[1])*f + i*((G[1] + H[0])*f)
+                        PRIM_SLICE(3, x, z)[0] = (G[0] - H[1]) * f;
+                        PRIM_SLICE(3, x, z)[1] = (G[1] + H[0]) * f;
                     }
                 } else {
-                    // Normal points
-                    PRIM_SLICE(0, x, z)[0] = D[0];
-                    PRIM_SLICE(0, x, z)[1] = F[0];
-                    PRIM_SLICE(1, x, z)[0] = G[0];
-                    PRIM_SLICE(1, x, z)[1] = H[0];
+                    // Normal points (Zeldovich packing scheme)
+                    // Array 0: D + i*F = (D[0] - F[1]) + i*(D[1] + F[0])
+                    PRIM_SLICE(0, x, z)[0] = D[0] - F[1];
+                    PRIM_SLICE(0, x, z)[1] = D[1] + F[0];
+                    // Array 1: G + i*H = (G[0] - H[1]) + i*(G[1] + H[0])
+                    PRIM_SLICE(1, x, z)[0] = G[0] - H[1];
+                    PRIM_SLICE(1, x, z)[1] = G[1] + H[0];
                     if (narray >= 4) {
                         double f = 1.0;
-                        PRIM_SLICE(2, x, z)[0] = 0.0;
+                        // Array 2: 0 + i*F*f = -F[1]*f + i*(F[0]*f)
+                        PRIM_SLICE(2, x, z)[0] = -F[1] * f;
                         PRIM_SLICE(2, x, z)[1] = F[0] * f;
-                        PRIM_SLICE(3, x, z)[0] = G[0] * f;
-                        PRIM_SLICE(3, x, z)[1] = H[0] * f;
+                        // Array 3: G*f + i*H*f = (G[0] - H[1])*f + i*((G[1] + H[0])*f)
+                        PRIM_SLICE(3, x, z)[0] = (G[0] - H[1]) * f;
+                        PRIM_SLICE(3, x, z)[1] = (G[1] + H[0]) * f;
                     }
                 }
                 
-                // Mirror
+                // Mirror (Zeldovich scheme: store conj(D) + i*conj(F))
                 if (x != x_mirror || z != z_mirror) {
-                    for (int a = 0; a < narray; a++) {
-                        double re = PRIM_SLICE(a, x, z)[0];
-                        double im = PRIM_SLICE(a, x, z)[1];
-                        PRIM_SLICE(a, x_mirror, z_mirror)[0] = re;
-                        PRIM_SLICE(a, x_mirror, z_mirror)[1] = -im;
+                    // Array 0: conj(D) + i*conj(F) = (D[0] + F[1]) + i*(F[0] - D[1])
+                    PRIM_SLICE(0, x_mirror, z_mirror)[0] = D[0] + F[1];
+                    PRIM_SLICE(0, x_mirror, z_mirror)[1] = F[0] - D[1];
+                    
+                    // Array 1: conj(G) + i*conj(H) = (G[0] + H[1]) + i*(H[0] - G[1])
+                    PRIM_SLICE(1, x_mirror, z_mirror)[0] = G[0] + H[1];
+                    PRIM_SLICE(1, x_mirror, z_mirror)[1] = H[0] - G[1];
+                    
+                    if (narray >= 4) {
+                        double f = 1.0;
+                        // Array 2: conj(0) + i*conj(F*f) = F[1]*f + i*(-F[0]*f)
+                        PRIM_SLICE(2, x_mirror, z_mirror)[0] = F[1] * f;
+                        PRIM_SLICE(2, x_mirror, z_mirror)[1] = -F[0] * f;
+                        // Array 3: conj(G*f) + i*conj(H*f) = (G[0] + H[1])*f + i*((H[0] - G[1])*f)
+                        PRIM_SLICE(3, x_mirror, z_mirror)[0] = (G[0] + H[1]) * f;
+                        PRIM_SLICE(3, x_mirror, z_mirror)[1] = (H[0] - G[1]) * f;
                     }
                 }
             }

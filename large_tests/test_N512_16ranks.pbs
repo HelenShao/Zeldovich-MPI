@@ -1,0 +1,95 @@
+#!/bin/bash
+#PBS -N sgl_N512_16ranks
+#PBS -A AbacusAurora
+#PBS -l select=1:ncpus=64:mpiprocs=16:ompthreads=4
+#PBS -l walltime=01:00:00
+#PBS -l filesystems=home
+#PBS -M helenshao0904@gmail.com
+#PBS -m abe
+#PBS -j oe
+#PBS -o /home/helenshao/InitialConditions/hermitian_3d_matrix_production/large_tests/test_N512_16ranks.out
+
+cd $PBS_O_WORKDIR
+
+# Load modules
+# Note: frameworks module provides MPI and OpenMP
+# fftw module provides FFTW libraries
+echo "Loading frameworks module..."
+module load frameworks
+echo "Loading FFTW module..."
+module load fftw/3.3.10
+
+# Check what's available after loading modules
+echo "Checking MPI compiler..."
+which mpicc
+mpicc --version || echo "mpicc not found or error"
+
+echo "Checking C++ compiler..."
+which mpicxx
+mpicxx --version || echo "mpicxx not found or error"
+
+# Go to hermitian_3d_matrix_production directory
+cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production
+
+# Compile with single precision (default)
+# Makefile auto selects correct FFTW libs based on CFLAGS
+echo "Compiling hermitian_3d_matrix with single precision..."
+echo "Using SPLINE_RESOLUTION=512 for higher interpolation accuracy"
+make clean
+make CFLAGS="-DSPLINE_RESOLUTION=512 -DSKIP_FILE_WRITE=0"
+
+# Verify executable was created
+if [ ! -f "./hermitian_3d_matrix" ]; then
+    echo "ERROR: Compilation failed - executable not found!"
+    exit 1
+fi
+echo "Compilation successful - executable found"
+
+# Job parameters
+NNODES=$(sort -u $PBS_NODEFILE | wc -l)
+NRANKS_PER_NODE=16
+NTHREADS_PER_RANK=4
+NTOTRANKS=16  # 4x4 grid = 16 ranks
+
+# OpenMP settings
+export OMP_NUM_THREADS=$NTHREADS_PER_RANK
+export OMP_PLACES=cores
+export OMP_PROC_BIND=close
+
+# Test parameters
+N=512
+PARAM_FILE="examples/param_N512.par"
+
+# Check if parameter file exists
+if [ ! -f "$PARAM_FILE" ]; then
+    echo "ERROR: Parameter file not found: $PARAM_FILE"
+    exit 1
+fi
+
+echo "=========================================="
+echo "Test: v15.3 Power Spectrum Mode - Medium Scale Test"
+echo "Single Precision Build"
+echo "Spline Resolution: 512 (high accuracy)"
+echo "N=$N, ranks=$NTOTRANKS, threads per rank=$NTHREADS_PER_RANK"
+echo "Total threads: $((NTOTRANKS * NTHREADS_PER_RANK))"
+echo "Parameter file: $PARAM_FILE"
+echo "Output directory: large_tests/"
+echo "=========================================="
+echo ""
+
+# Create output directory if it doesn't exist
+mkdir -p large_tests
+
+# Run the program with parameter file
+# Redirect all output to large_tests directory
+mpiexec -n $NTOTRANKS \
+        -ppn $NRANKS_PER_NODE \
+        --depth=$NTHREADS_PER_RANK \
+        --cpu-bind depth \
+        ./hermitian_3d_matrix $N $PARAM_FILE 2>&1 | tee large_tests/test_N512_16ranks.log
+
+echo ""
+echo "=========================================="
+echo "Job completed!"
+echo "Output files saved to: large_tests/"
+echo "=========================================="

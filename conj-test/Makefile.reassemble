@@ -1,0 +1,56 @@
+# ====================================================================================
+# MAKEFILE FOR REASSEMBLE Z-SLABS PROGRAM
+# ====================================================================================
+# Builds reassemble_z_slabs.cpp to read rank files and call WriteParticlesSlab
+# ====================================================================================
+
+# Compiler
+CXX = g++
+
+# Base directory (parent of conj-test)
+BASE_DIR = ..
+
+# zeldovich-PLT directory
+ZELDOVICH_DIR = $(BASE_DIR)/../zeldovich-PLT
+
+# Include paths
+INCLUDES = -I$(ZELDOVICH_DIR)/include \
+           -I$(ZELDOVICH_DIR)/subprojects/ParseHeader/include \
+           -I$(ZELDOVICH_DIR)/build/subprojects/ParseHeader \
+           -I$(ZELDOVICH_DIR)/subprojects/fmt-11.2.0/include
+
+# Compiler flags
+CXXFLAGS = -std=c++17 -Wall -Wextra -O3
+
+# Library directories
+LIB_DIRS = -L$(ZELDOVICH_DIR)/build \
+           -L$(ZELDOVICH_DIR)/build/subprojects/ParseHeader \
+           -L$(ZELDOVICH_DIR)/build/subprojects/fmt-11.2.0
+
+# Libraries (including OpenMP for omp_set_num_threads)
+LIBS = -lzeldovich -lparseheader -lfmt -lm -lstdc++ -fopenmp
+
+# RPATH for runtime library loading
+RPATH = -Wl,-rpath,$(shell cd $(ZELDOVICH_DIR)/build && pwd):$(shell cd $(ZELDOVICH_DIR)/build/subprojects/ParseHeader && pwd):$(shell cd $(ZELDOVICH_DIR)/build/subprojects/fmt-11.2.0 && pwd)
+
+# Targets
+TARGET1 = reassemble_z_slabs
+TARGET2 = write_particles_from_reassembled
+
+# Sources
+SRC1 = reassemble_z_slabs.cpp
+SRC2 = write_particles_from_reassembled.cpp
+
+# Default target
+all: $(TARGET1) $(TARGET2)
+
+$(TARGET1): $(SRC1)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $(TARGET1) $(SRC1) $(LIB_DIRS) $(LIBS) $(RPATH)
+
+$(TARGET2): $(SRC2)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $(TARGET2) $(SRC2) $(LIB_DIRS) $(LIBS) $(RPATH)
+
+clean:
+	rm -f $(TARGET1) $(TARGET2)
+
+.PHONY: all clean

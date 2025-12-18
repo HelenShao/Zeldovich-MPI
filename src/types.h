@@ -1,23 +1,14 @@
 #ifndef HERMITIAN_TYPES_H
 #define HERMITIAN_TYPES_H
 
-// ====================================================================================
-// HERMITIAN 3D MATRIX MPI - TYPE DEFINITIONS
-// ====================================================================================
-// This file contains all struct definitions and type aliases used throughout
-// the Hermitian 3D matrix generation and FFT code.
-//
-// Depends on: precision.h (for fftw_complex_t)
-// ====================================================================================
-
 #include "precision.h"
 
 // ====================================================================================
-// GRID DECOMPOSITION TYPES
+// GRID DECOMPOSITION
 // ====================================================================================
 
 // Grid bounds structure for 2D decomposition
-// Represents a rectangular region in (X,Z) space
+// Rectangular region in (X,Z) 
 // Ranges: [x_start, x_end) and [z_start, z_end) - half-open intervals
 typedef struct {
     int x_start, x_end;  // X-direction range [x_start, x_end)
@@ -25,7 +16,7 @@ typedef struct {
 } GridBounds;
 
 // Extended grid bounds with overlapping regions for Abacus compatibility
-// Core region: Non-overlapping, primary responsibility of this rank
+// Core region  : Non-overlapping, primary responsibility of this rank
 // Padded region: Extended with X_PADDING on each side, may overlap with neighbors
 //
 // Example (N=1024, 3×3 grid, X_PADDING=10):
@@ -44,32 +35,26 @@ typedef struct {
 // ====================================================================================
 // INDEXING MACROS
 // ====================================================================================
-// These macros provide efficient access to multi-dimensional arrays stored in
-// contiguous 1D memory. They encapsulate the memory layout conventions.
-
-// Y-slice indexing macro: Access array 'array_idx' in slice 'slice_idx' at (x, z)
+// Y-slice indexing: Access array 'array_idx' in slice 'slice_idx' at (x, z)
 // Memory order: [Slice][Array][Z][X] (X is stride-1, fastest varying)
 // Formula: x + N * (z + N * (array_idx + narray * slice_idx))
 //
-// Example: For N=8, narray=4, slice_idx=2, array_idx=1, x=3, z=5:
+// Ex: N=8, narray=4, slice_idx=2, array_idx=1, x=3, z=5:
 //   Index = 3 + 8*(5 + 8*(1 + 4*2)) = 3 + 8*(5 + 8*9) = 3 + 8*77 = 619
 #define Y_SLICE(slice_idx, array_idx, x, z, N, narray) \
     local_y_slices[(int64_t)(x) + (N) * ((z) + (N) * ((array_idx) + (narray) * (slice_idx)))]
 
-// Pencil indexing macro: Access array 'array_idx' in pencil 'pencil_idx' at Y position 'y'
+// Pencil indexing: Access array 'array_idx' in pencil 'pencil_idx' at Y position 'y'
 // Memory order: [Pencil][Array][Y] (Y is stride-1 for FFT)
 // Formula: y + N * (array_idx + narray * pencil_idx)
 //
-// This layout ensures Y-direction data is contiguous for efficient 1D FFT along Y.
+// Y-direction data is contiguous for 1D FFT along Y
 #define PENCIL(pencil_idx, array_idx, y, N, narray) \
     local_pencils[(int64_t)(y) + (N) * ((array_idx) + (narray) * (pencil_idx))]
 
 // Z-slab indexing macro: Access array 'array_idx' at (x_idx, y) for one Z-slab
-// Memory order: [X][Array][Y] (Y is stride-1 for FFT, matches Zeldovich AZYX format)
+// Memory order: [X][Array][Y] (Y is stride-1 for FFT)
 // Formula: y + N * (array_idx + narray * x_idx)
-//
-// This layout matches Zeldovich code output format for easy integration.
-// Each Z-slab contains all X-positions for a single Z-value.
 #define ZSLAB(x_idx, array_idx, y, N, narray) \
     local_z_slab[(int64_t)(y) + (N) * ((array_idx) + (narray) * (x_idx))]
 
@@ -166,5 +151,5 @@ static inline void print_extended_grid_bounds(const ExtendedGridBounds *ext_boun
            rank, ext_bounds->num_pencils_core, ext_bounds->num_pencils_padded);
 }
 
-#endif // HERMITIAN_TYPES_H
+#endif
 
