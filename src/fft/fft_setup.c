@@ -1,15 +1,11 @@
 // ====================================================================================
-// HERMITIAN 3D MATRIX MPI - FFT SETUP MODULE
+// FFT SETUP MODULE
 // ====================================================================================
 
 #include "fft_setup.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <mpi.h>
-
-// ====================================================================================
-// FUNCTION IMPLEMENTATIONS
-// ====================================================================================
 
 void setup_fftw_plans_full(int N, fftw_plan_t *plan_2d_out, fftw_plan_t *plan_1d_out)
 {
@@ -43,7 +39,7 @@ void setup_fftw_plans_full(int N, fftw_plan_t *plan_2d_out, fftw_plan_t *plan_1d
     // CRITICAL: Free dummy memory immediately after plan creation
     free(dummy_1d);
     
-    // Verify plan creation succeeded
+    // Verify plan creation
     if (*plan_2d_out == NULL || *plan_1d_out == NULL) {
         fprintf(stderr, "[ERROR] Failed to create FFT plans (one or both plans are NULL)\n");
         MPI_Abort(MPI_COMM_WORLD, 1);

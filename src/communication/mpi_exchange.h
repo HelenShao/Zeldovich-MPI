@@ -4,7 +4,7 @@
 // ====================================================================================
 // MPI COMMUNICATION MODULE
 // ====================================================================================
-// This module handles MPI communication for Y-slice distribution and pencil assembly.
+// MPI communication for Y-slice distribution and z-slab assembly
 //
 // Depends on: config.h, precision.h, types.h, utils/decomposition.h
 // ====================================================================================
@@ -19,7 +19,7 @@ extern "C" {
 #endif
 
 // ====================================================================================
-// FUNCTION DECLARATIONS
+// FUNCTIONS
 // ====================================================================================
 
 // Exchange metadata between all ranks: num_my_slices and y_global_map

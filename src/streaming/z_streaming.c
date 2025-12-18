@@ -13,7 +13,7 @@
 // Z-slab stream unpacking for Abcus-compatible output (?)
 // Unpacks one Z-slab (cuz of mem) from the MPI receive buffer
 // Applies 1D FFT along the Y-direction
-// Put into format for zeldovich-PLT writing interface 
+// ** To-do: Put into format for zeldovich-PLT writing interface 
 
 // ** NOTE: Batch-aware unpacking: The receive buffer is organized by batches, 
 // so the function computes cumulative batch offsets to find the correct data location
@@ -54,8 +54,8 @@ void z_streaming_unpack(
     
     // ========== UNPACKING: Extract this Z-slab from recv_buffer ==========
     // Loop over all X in my region (can include periodic wrap), all Y, all arrays
-    // V14: x_idx represents LOGICAL X (may be negative or >= N), use PERIODIC_X for actual access
-    // FIXED: Use batch and slice_idx information to compute correct offset
+    // v14: use PERIODIC_X for actual x_idx access
+    // Fixed bug: Use batch and slice_idx information to compute correct offset
     // Data arrives as [array][slice_batch_local][pencil] per batch
     // We need to compute cumulative offset of all previous batches + current batch offset
     #pragma omp parallel for collapse(3)

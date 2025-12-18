@@ -241,4 +241,3 @@ void verify_real_space_symmetry(int N, fftw_complex_t *global_matrix)
         printf("  :( NOT OK: Matrix has non-zero imaginary parts\n");
     }
 }
-

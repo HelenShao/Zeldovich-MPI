@@ -77,9 +77,6 @@ double zeldovich_params_get_Pk_powerlaw_index(ParametersHandle params) {
 // POWER SPECTRUM INTERFACE
 // ====================================================================================
 
-// Track destroyed objects to prevent double-free
-// Use a simple set-like structure: store pointers in a static array
-// For MPI, each rank has its own static variables, so this is safe
 static const int MAX_TRACKED_OBJECTS = 1024;
 static PowerSpectrum* destroyed_objects[MAX_TRACKED_OBJECTS];
 static int num_destroyed = 0;
