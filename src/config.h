@@ -176,7 +176,12 @@
 
 // Check Hermitian symmetry during generation
 // 0 = Skip Hermitian symmetry checks (production mode)
-// 1 = Verify Hermitian symmetry (adds overhead)
+// 1 = Verify Hermitian symmetry (adds overhead) AND set F=0, H=0 for test
+//     When enabled: Sets F=0 and H=0 so conjugate slices are true conjugates of primary slices
+//     After 3D FFT, the result should be purely real (imaginary parts ≈ 0)
+// 2 = Verify Hermitian symmetry (adds overhead) AND set D=0, G=0 for test
+//     When enabled: Sets D=0 and G=0 so the matrix is purely imaginary
+//     After 3D FFT, the result should be purely imaginary (real parts ≈ 0)
 #ifndef VERIFY_HERMITIAN_SYMMETRY
 #define VERIFY_HERMITIAN_SYMMETRY 1
 #endif
@@ -298,9 +303,12 @@
 // Uncomment one of these to quickly switch between configurations:
 
 // TEMPORARY: Disable Z-slab file output to avoid running out of storage
-// When SKIP_FILE_WRITE is defined, Stage 3 will skip writing rank_*/z*_slab_N*.bin
+// When SKIP_FILE_WRITE is defined and non-zero, Stage 3 will skip writing rank_*/z*_slab_N*.bin
+// Use -DSKIP_FILE_WRITE=0 to enable file writes, or -USKIP_FILE_WRITE to undefine it
 #ifndef SKIP_FILE_WRITE
 #define SKIP_FILE_WRITE 1
+#elif SKIP_FILE_WRITE == 0
+#undef SKIP_FILE_WRITE
 #endif
 
 // PRODUCTION MODE (Minimal output)

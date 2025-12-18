@@ -36,7 +36,7 @@ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production
 echo "Compiling hermitian_3d_matrix with single precision..."
 echo "Using SPLINE_RESOLUTION=2048 for higher interpolation accuracy"
 make clean
-make CFLAGS="-DSPLINE_RESOLUTION=512"
+make CFLAGS="-DSPLINE_RESOLUTION=512 -DSKIP_FILE_WRITE=0"
 
 # Verify executable was created
 if [ ! -f "./hermitian_3d_matrix" ]; then

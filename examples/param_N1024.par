@@ -3,7 +3,7 @@
 # Usage: ./hermitian_3d_matrix 1024 examples/param_N1024.par
 
 BoxSize = 100.0
-CPD = 1024                         # Cells per dimension (= N)
+CPD = 4                            # Node grid size (4x8 = 32 ranks for 2 nodes)
 ICFormat = "RV"
 InitialConditionsDirectory = "./output"
 InitialRedshift = 99.0
