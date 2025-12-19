@@ -51,6 +51,35 @@ double zeldovich_params_get_Pk_powerlaw_index(ParametersHandle params);
 // Get fundamental wavenumber (2π/BoxSize)
 double zeldovich_params_get_fundamental(ParametersHandle params);
 
+// Get f_cluster (fraction of matter that is clustering)
+double zeldovich_params_get_f_cluster(ParametersHandle params);
+
+// Get z_initial (initial redshift)
+double zeldovich_params_get_z_initial(ParametersHandle params);
+
+// Get qPLT (PLT flag: non-zero if using Particle Linear Theory modes)
+int zeldovich_params_get_qPLT(ParametersHandle params);
+
+// Get PLT_filename (file containing PLT eigenmodes)
+// Returns: C string (caller should not free). Returns NULL if empty.
+// Note: The string is valid only while Parameters object exists.
+const char* zeldovich_params_get_PLT_filename(ParametersHandle params);
+
+// Get qPLTrescale (rescaling flag: non-zero to rescale initial amplitudes)
+int zeldovich_params_get_qPLTrescale(ParametersHandle params);
+
+// Get PLT_target_z (target redshift for PLT rescaling)
+double zeldovich_params_get_PLT_target_z(ParametersHandle params);
+
+// Get ICFormat (output format string, e.g., "RV", "RVDoubleZel", etc.)
+// Returns: C string (caller should not free). Returns NULL if empty.
+// Note: The string is valid only while Parameters object exists.
+const char* zeldovich_params_get_ICFormat(ParametersHandle params);
+
+// Get qdensity (density output mode)
+// Returns: 0 = normal mode, 1 = normal + density file, 2 = density only (no displacements)
+int zeldovich_params_get_qdensity(ParametersHandle params);
+
 // ====================================================================================
 // POWER SPECTRUM INTERFACE
 // ====================================================================================

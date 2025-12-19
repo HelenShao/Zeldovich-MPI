@@ -5,6 +5,7 @@
 #include "hermitian_generation.h"
 #include "../utils/verification.h"
 #include "../utils/zeldovich_wrapper.h" 
+#include "../utils/plt_eigenmodes.h"  // For PLT eigenmode support
 #include "../config.h"  // For DEBUG_PRINTS, SKIP_VERIFICATION, MAX_PPD
 #include "../precision.h"  // For real_t, fabs_t, fmax_t
 #include <stdio.h>
@@ -44,6 +45,39 @@ void generate_hermitian_slice_pair_local(
 
     // Precompute N/2 to avoid repeated division in loops
     int Nhalf = N / 2;
+    
+    // ========== Check for density-only mode (qdensity == 2) ==========
+    // In density-only mode, we skip computing F, G, H (displacements) and only store D (density)
+    int just_density = 0;
+    if (params_handle != NULL) {
+        int qdensity = zeldovich_params_get_qdensity(params_handle);
+        just_density = (qdensity == 2);
+    }
+    
+    // ========== PLT Rescaling factors (computed once per function call) ==========
+    // These are used to rescale F, G, H when qPLTrescale is enabled
+    // target_f: continuum linear theory growth rate
+    // a_NL: scale factor at target redshift
+    // a0: scale factor at initial redshift
+    double target_f = 1.0;
+    double a_NL = 1.0;
+    double a0 = 1.0;
+    int qPLTrescale = 0;
+    
+    if (params_handle != NULL && !just_density) {
+        // Only compute rescaling factors if we're computing displacements
+        double f_cluster = zeldovich_params_get_f_cluster(params_handle);
+        // target_f is the continuum linear theory growth rate (fluid limit)
+        target_f = (sqrt(1. + 24. * f_cluster) - 1.) * 0.25;
+        
+        qPLTrescale = zeldovich_params_get_qPLTrescale(params_handle);
+        if (qPLTrescale) {
+            double z_initial = zeldovich_params_get_z_initial(params_handle);
+            double PLT_target_z = zeldovich_params_get_PLT_target_z(params_handle);
+            a_NL = 1. / (1. + PLT_target_z);  // Scale factor at target redshift
+            a0 = 1. / (1. + z_initial);       // Scale factor at initial redshift
+        }
+    }
 
     // Create local aliases for macro compatibility
     // primary_slices points to slice 0, conjugate_slices points to slice 1
@@ -340,7 +374,15 @@ void generate_hermitian_slice_pair_local(
                 }
                 
                 // ========== STEP 3: Compute F, G, H from D ==========
+                // Skip F, G, H computation in density-only mode (qdensity == 2)
                 fftw_complex F, G, H;
+                int use_plt = 0;  // Declare outside to use in f computation
+                eigenmode e;      // Declare outside to use in f computation
+                
+                if (just_density) {
+                    // Density-only mode: Set F, G, H to zero (not used)
+                    F[0] = F[1] = G[0] = G[1] = H[0] = H[1] = 0.0;
+                } else {
                 double ik2 = 1.0 / k2;
                 
                 #if VERIFY_HERMITIAN_SYMMETRY == 1
@@ -373,18 +415,100 @@ void generate_hermitian_slice_pair_local(
                 D[1] = 0.0;
                 #else
                 // Normal operation: Compute F, G, H from D
-                // F = i x kx/k^2 x D = i x kx x ik2 x (D_re + ixD_im)
-                //   = i x kx x ik2 x D_re - kx x ik2 x D_im
-                //   = -kx x ik2 x D_im + i x kx x ik2 x D_re
-                F[0] = -kx * ik2 * D[1];  // Real part
-                F[1] =  kx * ik2 * D[0];  // Imaginary part
+                // Check if PLT is enabled
+                int qPLT = 0;
+                // Default fundamental = 1.0 
+                double fundamental = 1.0;
                 
-                G[0] = -ky * ik2 * D[1];
-                G[1] =  ky * ik2 * D[0];
+                // Get fundamental wavenumber (needed for both PLT and non-PLT cases)
+                if (params_handle != NULL) {
+                    fundamental = zeldovich_params_get_fundamental(params_handle);
+                    qPLT = zeldovich_params_get_qPLT(params_handle);
+                    if (qPLT) {
+                        // Get PLT eigenmode for this k-vector
+                        // Convert kx, ky, kz to array indices for plt_get_eigenmode
+                        int ikx = (kx < 0) ? N + kx : kx;
+                        int iky = (ky < 0) ? N + ky : ky;
+                        int ikz = (kz < 0) ? N + kz : kz;
+                        // Handle z index (only positive half-space stored)
+                        if (ikz > N / 2) ikz = N - ikz;
+                        
+                        if (plt_get_eigenmode(ikx, iky, ikz, (int64_t)N, &e) == 0) {
+                            use_plt = 1;
+                        } else {
+                            // If eigenmode lookup fails, fall back to normal computation
+                            if (rank == 0 && x == 0 && z == 0) {
+                                fprintf(stderr, "[WARNING] Failed to get PLT eigenmode for (kx=%d, ky=%d, kz=%d), using normal computation\n",
+                                        kx, ky, kz);
+                            }
+                        }
+                    }
+                }
                 
-                H[0] = -kz * ik2 * D[1];
-                H[1] =  kz * ik2 * D[0];
+                // ========== STEP 3.5: Compute PLT growth rate f and rescale (before computing F, G, H) ==========
+                // f is the logarithmic derivative of the growth factor that scales velocities
+                // When PLT is enabled: f = (sqrt(1. + 24 * e.val * f_cluster) - 1) / 4.
+                // When PLT is not enabled: f = 1.0 (default)
+                // Skip in density-only mode (qdensity == 2)
+                double f = 1.0;
+                double rescale = 1.0;
+                
+                if (!just_density && use_plt && params_handle != NULL) {
+                    double f_cluster = zeldovich_params_get_f_cluster(params_handle);
+                    // PLT growth rate: f = (sqrt(1. + 24 * e.val * f_cluster) - 1) / 4.
+                    // This is f_growth, the logarithmic derivative of the growth factor
+                    // that scales the velocities. The corrections are sourced from:
+                    // 1) PLT growth rate 2) Addition of a smooth, non-clustering component
+                    // to the background (<= NOT A PLT EFFECT)
+                    // If PLT is turned on, we have to combine the effects here.
+                    // If not, we apply f_cluster during output.
+                    f = (sqrt(1. + 24. * e.val * f_cluster) - 1.) * 0.25;
+                    
+                    // Compute rescaling if qPLTrescale is enabled
+                    // rescale = pow(a_NL/a0, target_f - plt_f)
+                    // where plt_f = f (PLT growth rate) and target_f is the continuum growth rate
+                    if (qPLTrescale) {
+                        double plt_f = f;  // PLT growth rate for this mode
+                        rescale = pow(a_NL / a0, target_f - plt_f);
+                    }
+                }
+                
+                // Compute factor (used identically in both PLT and non-PLT cases)
+                // F = rescale * i * vec * fundamental * ik2 * D
+                // where vec is either e.vec[i] (PLT) or k[i] (non-PLT)
+                double factor = rescale * fundamental * ik2;
+                
+                if (use_plt) {
+                    // PLT mode: Use eigenvector instead of k-vector
+                    // F = rescale * i * e.vec[0] * fundamental * ik2 * D
+                    //   = rescale * i * e.vec[0] * fundamental * ik2 * (D_re + i*D_im)
+                    //   = rescale * (-e.vec[0] * fundamental * ik2 * D_im + i * e.vec[0] * fundamental * ik2 * D_re)
+                    F[0] = -e.vec[0] * factor * D[1];  // Real part
+                    F[1] =  e.vec[0] * factor * D[0];  // Imaginary part
+                    
+                    G[0] = -e.vec[1] * factor * D[1];
+                    G[1] =  e.vec[1] * factor * D[0];
+                    
+                    H[0] = -e.vec[2] * factor * D[1];
+                    H[1] =  e.vec[2] * factor * D[0];
+                } else {
+                    // Normal operation: Compute F, G, H from D using k-vector
+                    // In zeldovich.cpp: k2 includes fundamental^2, so F = I * kx * fundamental * ik2 * D
+                    // In our code: k2 doesn't include fundamental^2, so we need to multiply by fundamental
+                    // F = rescale * i * kx * fundamental * ik2 * D
+                    //   = rescale * i * kx * fundamental * ik2 * (D_re + i*D_im)
+                    //   = rescale * (-kx * fundamental * ik2 * D_im + i * kx * fundamental * ik2 * D_re)
+                    F[0] = -kx * factor * D[1];  // Real part
+                    F[1] =  kx * factor * D[0];  // Imaginary part
+                    
+                    G[0] = -ky * factor * D[1];
+                    G[1] =  ky * factor * D[0];
+                    
+                    H[0] = -kz * factor * D[1];
+                    H[1] =  kz * factor * D[0];
+                }
                 #endif
+                }  // End of else block for !just_density
                 
                 // ========== DEBUG: Print RNG values for consistency checking ==========
                 #if DEBUG_RNG_CONSISTENCY
@@ -430,48 +554,66 @@ void generate_hermitian_slice_pair_local(
                 #endif
                 
                 // ========== STEP 4: Store in arrays (Zeldovich packing scheme) ==========
-                // Array 0: D + i*F (density + X-displacement)
-                // D + i*F = (D[0] + i*D[1]) + i*(F[0] + i*F[1]) = (D[0] - F[1]) + i*(D[1] + F[0])
-                PRIM_SLICE(0, x, z)[0] = D[0] - F[1];  // Real = D_re - F_im
-                PRIM_SLICE(0, x, z)[1] = D[1] + F[0];  // Imag = D_im + F_re
-                
-                // Array 1: G + i*H (Y-displacement + Z-displacement)
-                // G + i*H = (G[0] + i*G[1]) + i*(H[0] + i*H[1]) = (G[0] - H[1]) + i*(G[1] + H[0])
-                PRIM_SLICE(1, x, z)[0] = G[0] - H[1];  // Real = G_re - H_im
-                PRIM_SLICE(1, x, z)[1] = G[1] + H[0];  // Imag = G_im + H_re
-                
-                if (narray >= 4) {
-                    // Array 2: 0 + i*F*f (X-velocity)
-                    // 0 + i*(F*f) = 0 + i*((F[0] + i*F[1])*f) = -F[1]*f + i*(F[0]*f)
-                    double f = 1.0;  // PLT growth rate (placeholder for now)
-                    PRIM_SLICE(2, x, z)[0] = -F[1] * f;  // Real = -F_im * f
-                    PRIM_SLICE(2, x, z)[1] = F[0] * f;   // Imag = F_re * f
+                if (just_density) {
+                    // Density-only mode: Only store D (density) in Array 0
+                    // Array 0: D (density only, no displacement)
+                    PRIM_SLICE(0, x, z)[0] = D[0];  // Real = D_re
+                    PRIM_SLICE(0, x, z)[1] = D[1];  // Imag = D_im
+                } else {
+                    // Normal mode: Store D+iF, G+iH, and optionally velocities
+                    // Array 0: D + i*F (density + X-displacement)
+                    // D + i*F = (D[0] + i*D[1]) + i*(F[0] + i*F[1]) = (D[0] - F[1]) + i*(D[1] + F[0])
+                    PRIM_SLICE(0, x, z)[0] = D[0] - F[1];  // Real = D_re - F_im
+                    PRIM_SLICE(0, x, z)[1] = D[1] + F[0];  // Imag = D_im + F_re
                     
-                    // Array 3: G*f + i*H*f (Y-velocity + Z-velocity)
-                    // (G*f) + i*(H*f) = (G[0] - H[1])*f + i*((G[1] + H[0])*f)
-                    PRIM_SLICE(3, x, z)[0] = (G[0] - H[1]) * f;  // Real = (G_re - H_im) * f
-                    PRIM_SLICE(3, x, z)[1] = (G[1] + H[0]) * f;  // Imag = (G_im + H_re) * f
+                    // Array 1: G + i*H (Y-displacement + Z-displacement)
+                    // G + i*H = (G[0] + i*G[1]) + i*(H[0] + i*H[1]) = (G[0] - H[1]) + i*(G[1] + H[0])
+                    PRIM_SLICE(1, x, z)[0] = G[0] - H[1];  // Real = G_re - H_im
+                    PRIM_SLICE(1, x, z)[1] = G[1] + H[0];  // Imag = G_im + H_re
+                    
+                    if (narray >= 4) {
+                        // Array 2: 0 + i*F*f (X-velocity)
+                        // 0 + i*(F*f) = 0 + i*((F[0] + i*F[1])*f) = -F[1]*f + i*(F[0]*f)
+                        // f is computed above (PLT growth rate if PLT enabled, else 1.0)
+                        PRIM_SLICE(2, x, z)[0] = -F[1] * f;  // Real = -F_im * f
+                        PRIM_SLICE(2, x, z)[1] = F[0] * f;   // Imag = F_re * f
+                        
+                        // Array 3: G*f + i*H*f (Y-velocity + Z-velocity)
+                        // (G*f) + i*(H*f) = (G[0] - H[1])*f + i*((G[1] + H[0])*f)
+                        PRIM_SLICE(3, x, z)[0] = (G[0] - H[1]) * f;  // Real = (G_re - H_im) * f
+                        PRIM_SLICE(3, x, z)[1] = (G[1] + H[0]) * f;  // Imag = (G_im + H_re) * f
+                    }
                 }
                 
                 // ========== STEP 5: Store conjugates (Zeldovich scheme: conj(D) + i*conj(F)) ==========
-                // For mode -k, store conj(D) + i*conj(F), NOT the conjugate of (D + i*F)!
-                // conj(D) + i*conj(F) = (D[0] - i*D[1]) + i*(F[0] - i*F[1]) = (D[0] + F[1]) + i*(F[0] - D[1])
-                CONJ_SLICE(0, x_mirror, z_mirror)[0] = D[0] + F[1];  // Real = D_re + F_im
-                CONJ_SLICE(0, x_mirror, z_mirror)[1] = F[0] - D[1];  // Imag = F_re - D_im
-                
-                // conj(G) + i*conj(H) = (G[0] - i*G[1]) + i*(H[0] - i*H[1]) = (G[0] + H[1]) + i*(H[0] - G[1])
-                CONJ_SLICE(1, x_mirror, z_mirror)[0] = G[0] + H[1];  // Real = G_re + H_im
-                CONJ_SLICE(1, x_mirror, z_mirror)[1] = H[0] - G[1];  // Imag = H_re - G_im
-                
-                if (narray >= 4) {
-                    double f = 1.0;
-                    // Array 2: conj(0) + i*conj(F*f) = 0 + i*conj(F)*f = (F[1]*f) + i*(-F[0]*f)
-                    CONJ_SLICE(2, x_mirror, z_mirror)[0] = F[1] * f;   // Real = F_im * f
-                    CONJ_SLICE(2, x_mirror, z_mirror)[1] = -F[0] * f;  // Imag = -F_re * f
+                if (just_density) {
+                    // Density-only mode: Only store D (density) in Array 0
+                    // For conjugate, store conj(D) = (D[0], -D[1])
+                    CONJ_SLICE(0, x_mirror, z_mirror)[0] = D[0];   // Real = D_re
+                    CONJ_SLICE(0, x_mirror, z_mirror)[1] = -D[1];  // Imag = -D_im (conjugate)
+                } else {
+                    // Normal mode: Store conj(D)+i*conj(F), conj(G)+i*conj(H), and optionally velocities
+                    // For mode -k, store conj(D) + i*conj(F), NOT the conjugate of (D + i*F)!
+                    // conj(D) + i*conj(F) = (D[0] - i*D[1]) + i*(F[0] - i*F[1]) = (D[0] + F[1]) + i*(F[0] - D[1])
+                    CONJ_SLICE(0, x_mirror, z_mirror)[0] = D[0] + F[1];  // Real = D_re + F_im
+                    CONJ_SLICE(0, x_mirror, z_mirror)[1] = F[0] - D[1];  // Imag = F_re - D_im
                     
-                    // Array 3: conj(G*f) + i*conj(H*f) = (G[0] + H[1])*f + i*((H[0] - G[1])*f)
-                    CONJ_SLICE(3, x_mirror, z_mirror)[0] = (G[0] + H[1]) * f;  // Real = (G_re + H_im) * f
-                    CONJ_SLICE(3, x_mirror, z_mirror)[1] = (H[0] - G[1]) * f;  // Imag = (H_re - G_im) * f
+                    // conj(G) + i*conj(H) = (G[0] - i*G[1]) + i*(H[0] - i*H[1]) = (G[0] + H[1]) + i*(H[0] - G[1])
+                    CONJ_SLICE(1, x_mirror, z_mirror)[0] = G[0] + H[1];  // Real = G_re + H_im
+                    CONJ_SLICE(1, x_mirror, z_mirror)[1] = H[0] - G[1];  // Imag = H_re - G_im
+                    
+                    if (narray >= 4) {
+                        // Array 2: 0 + i*conj(F*f) = i*conj(F*f)
+                        // conj(F*f) = F_re*f - i*F_im*f
+                        // i*conj(F*f) = i*(F_re*f - i*F_im*f) = F_im*f + i*F_re*f
+                        // f is computed above (PLT growth rate if PLT enabled, else 1.0)
+                        CONJ_SLICE(2, x_mirror, z_mirror)[0] = F[1] * f;   // Real = F_im * f
+                        CONJ_SLICE(2, x_mirror, z_mirror)[1] = F[0] * f;   // Imag = F_re * f
+                        
+                        // Array 3: conj(G*f) + i*conj(H*f) = (G[0] + H[1])*f + i*((H[0] - G[1])*f)
+                        CONJ_SLICE(3, x_mirror, z_mirror)[0] = (G[0] + H[1]) * f;  // Real = (G_re + H_im) * f
+                        CONJ_SLICE(3, x_mirror, z_mirror)[1] = (H[0] - G[1]) * f;  // Imag = (H_re - G_im) * f
+                    }
                 }
                 
             }
@@ -685,8 +827,12 @@ void generate_hermitian_slice_pair_local(
                 }
                 
                 // Compute F, G, H from D
+                // Skip F, G, H computation in density-only mode (qdensity == 2)
                 fftw_complex F, G, H;
-                if (k2 == 0.0) {
+                if (just_density) {
+                    // Density-only mode: Set F, G, H to zero (not used)
+                    F[0] = F[1] = G[0] = G[1] = H[0] = H[1] = 0.0;
+                } else if (k2 == 0.0) {
                     F[0] = F[1] = G[0] = G[1] = H[0] = H[1] = 0.0;
                 } else {
                     double ik2 = 1.0 / k2;
@@ -716,12 +862,91 @@ void generate_hermitian_slice_pair_local(
                     D[1] = 0.0;
                     #else
                     // Normal operation: Compute F, G, H from D
-                    F[0] = -kx * ik2 * D[1];
-                    F[1] =  kx * ik2 * D[0];
-                    G[0] = -ky * ik2 * D[1];
-                    G[1] =  ky * ik2 * D[0];
-                    H[0] = -kz * ik2 * D[1];
-                    H[1] =  kz * ik2 * D[0];
+                    // Skip F, G, H computation in density-only mode (qdensity == 2)
+                    if (just_density) {
+                        // Density-only mode: Set F, G, H to zero (not used)
+                        F[0] = F[1] = G[0] = G[1] = H[0] = H[1] = 0.0;
+                    } else {
+                    double ik2 = 1.0 / k2;
+                    // Check if PLT is enabled
+                    int qPLT_sc = 0;
+                    // Default fundamental = 1.0 
+                    double fundamental_sc = 1.0;
+                    eigenmode e_sc;
+                    int use_plt_sc = 0;
+                    
+                    // ========== STEP 3.5: Compute PLT growth rate f and rescale (before computing F, G, H) ==========
+                    // f is the logarithmic derivative of the growth factor that scales velocities
+                    // When PLT is enabled: f = (sqrt(1. + 24 * e.val * f_cluster) - 1) / 4.
+                    // When PLT is not enabled: f = 1.0 (default)
+                    // Skip in density-only mode (qdensity == 2)
+                    double f_sc = 1.0;
+                    double rescale_sc = 1.0;
+                    
+                    // Get fundamental wavenumber (needed for both PLT and non-PLT cases)
+                    if (!just_density && params_handle != NULL) {
+                        fundamental_sc = zeldovich_params_get_fundamental(params_handle);
+                        qPLT_sc = zeldovich_params_get_qPLT(params_handle);
+                        if (qPLT_sc) {
+                            // Get PLT eigenmode for this k-vector
+                            // Convert kx, ky, kz to array indices for plt_get_eigenmode
+                            int ikx = (kx < 0) ? N + kx : kx;
+                            int iky = (ky < 0) ? N + ky : ky;
+                            int ikz = (kz < 0) ? N + kz : kz;
+                            // Handle z index (only positive half-space stored)
+                            if (ikz > N / 2) ikz = N - ikz;
+                            
+                            if (plt_get_eigenmode(ikx, iky, ikz, (int64_t)N, &e_sc) == 0) {
+                                use_plt_sc = 1;
+                                
+                                // Compute f and rescale before computing F, G, H
+                                double f_cluster = zeldovich_params_get_f_cluster(params_handle);
+                                // PLT growth rate: f = (sqrt(1. + 24 * e.val * f_cluster) - 1) / 4.
+                                f_sc = (sqrt(1. + 24. * e_sc.val * f_cluster) - 1.) * 0.25;
+                                
+                                // Compute rescaling if qPLTrescale is enabled
+                                if (qPLTrescale) {
+                                    double plt_f = f_sc;  // PLT growth rate for this mode
+                                    rescale_sc = pow(a_NL / a0, target_f - plt_f);
+                                }
+                            } else {
+                                // If eigenmode lookup fails, fall back to normal computation
+                                if (rank == 0 && x == 0 && z == 0) {
+                                    fprintf(stderr, "[WARNING] Failed to get PLT eigenmode for (kx=%d, ky=%d, kz=%d), using normal computation\n",
+                                            kx, ky, kz);
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Compute factor (used identically in both PLT and non-PLT cases)
+                    // F = rescale * i * vec * fundamental * ik2 * D
+                    // where vec is either e.vec[i] (PLT) or k[i] (non-PLT)
+                    double factor = rescale_sc * fundamental_sc * ik2;
+                    
+                    if (use_plt_sc) {
+                        // PLT mode: Use eigenvector instead of k-vector
+                        // F = rescale * i * e.vec[0] * fundamental * ik2 * D
+                        F[0] = -e_sc.vec[0] * factor * D[1];
+                        F[1] =  e_sc.vec[0] * factor * D[0];
+                        
+                        G[0] = -e_sc.vec[1] * factor * D[1];
+                        G[1] =  e_sc.vec[1] * factor * D[0];
+                        
+                        H[0] = -e_sc.vec[2] * factor * D[1];
+                        H[1] =  e_sc.vec[2] * factor * D[0];
+                    } else {
+                        // Normal operation: Compute F, G, H from D using k-vector
+                        // In zeldovich.cpp: k2 includes fundamental^2, so F = I * kx * fundamental * ik2 * D
+                        // In our code: k2 doesn't include fundamental^2, so we need to multiply by fundamental
+                        F[0] = -kx * factor * D[1];
+                        F[1] =  kx * factor * D[0];
+                        G[0] = -ky * factor * D[1];
+                        G[1] =  ky * factor * D[0];
+                        H[0] = -kz * factor * D[1];
+                        H[1] =  kz * factor * D[0];
+                    }
+                    }  // End of else block (if !just_density)
                     #endif
                 }
                 
@@ -778,42 +1003,59 @@ void generate_hermitian_slice_pair_local(
                 #endif
                 
                 // Store in arrays (Zeldovich packing scheme, self-conjugate uses same buffer)
-                // Array 0: D + i*F = (D[0] - F[1]) + i*(D[1] + F[0])
-                PRIM_SLICE(0, x, z)[0] = D[0] - F[1];
-                PRIM_SLICE(0, x, z)[1] = D[1] + F[0];
-                
-                // Array 1: G + i*H = (G[0] - H[1]) + i*(G[1] + H[0])
-                PRIM_SLICE(1, x, z)[0] = G[0] - H[1];
-                PRIM_SLICE(1, x, z)[1] = G[1] + H[0];
-                
-                if (narray >= 4) {
-                    double f = 1.0;  // PLT growth rate (placeholder)
-                    // Array 2: 0 + i*F*f = -F[1]*f + i*(F[0]*f)
-                    PRIM_SLICE(2, x, z)[0] = -F[1] * f;
-                    PRIM_SLICE(2, x, z)[1] = F[0] * f;
-                    // Array 3: G*f + i*H*f = (G[0] - H[1])*f + i*((G[1] + H[0])*f)
-                    PRIM_SLICE(3, x, z)[0] = (G[0] - H[1]) * f;
-                    PRIM_SLICE(3, x, z)[1] = (G[1] + H[0]) * f;
+                if (just_density) {
+                    // Density-only mode: Only store D (density) in Array 0
+                    PRIM_SLICE(0, x, z)[0] = D[0];  // Real = D_re
+                    PRIM_SLICE(0, x, z)[1] = D[1];  // Imag = D_im
+                } else {
+                    // Normal mode: Store D+iF, G+iH, and optionally velocities
+                    // Array 0: D + i*F = (D[0] - F[1]) + i*(D[1] + F[0])
+                    PRIM_SLICE(0, x, z)[0] = D[0] - F[1];
+                    PRIM_SLICE(0, x, z)[1] = D[1] + F[0];
+                    
+                    // Array 1: G + i*H = (G[0] - H[1]) + i*(G[1] + H[0])
+                    PRIM_SLICE(1, x, z)[0] = G[0] - H[1];
+                    PRIM_SLICE(1, x, z)[1] = G[1] + H[0];
+                    
+                    if (narray >= 4) {
+                        // Array 2: 0 + i*F*f = -F[1]*f + i*(F[0]*f)
+                        // f_sc is computed above (PLT growth rate if PLT enabled, else 1.0)
+                        PRIM_SLICE(2, x, z)[0] = -F[1] * f_sc;
+                        PRIM_SLICE(2, x, z)[1] = F[0] * f_sc;
+                        // Array 3: G*f + i*H*f = (G[0] - H[1])*f + i*((G[1] + H[0])*f)
+                        PRIM_SLICE(3, x, z)[0] = (G[0] - H[1]) * f_sc;
+                        PRIM_SLICE(3, x, z)[1] = (G[1] + H[0]) * f_sc;
+                    }
                 }
                 
                 // Mirror for self-conjugate (Zeldovich scheme: store conj(D) + i*conj(F))
                 if (x != x_mirror || z != z_mirror) {
-                    // Array 0: conj(D) + i*conj(F) = (D[0] + F[1]) + i*(F[0] - D[1])
-                    PRIM_SLICE(0, x_mirror, z_mirror)[0] = D[0] + F[1];
-                    PRIM_SLICE(0, x_mirror, z_mirror)[1] = F[0] - D[1];
-                    
-                    // Array 1: conj(G) + i*conj(H) = (G[0] + H[1]) + i*(H[0] - G[1])
-                    PRIM_SLICE(1, x_mirror, z_mirror)[0] = G[0] + H[1];
-                    PRIM_SLICE(1, x_mirror, z_mirror)[1] = H[0] - G[1];
-                    
-                    if (narray >= 4) {
-                        double f = 1.0;
-                        // Array 2: conj(0) + i*conj(F*f) = F[1]*f + i*(-F[0]*f)
-                        PRIM_SLICE(2, x_mirror, z_mirror)[0] = F[1] * f;
-                        PRIM_SLICE(2, x_mirror, z_mirror)[1] = -F[0] * f;
-                        // Array 3: conj(G*f) + i*conj(H*f) = (G[0] + H[1])*f + i*((H[0] - G[1])*f)
-                        PRIM_SLICE(3, x_mirror, z_mirror)[0] = (G[0] + H[1]) * f;
-                        PRIM_SLICE(3, x_mirror, z_mirror)[1] = (H[0] - G[1]) * f;
+                    if (just_density) {
+                        // Density-only mode: Only store D (density) in Array 0
+                        // For conjugate, store conj(D) = (D[0], -D[1])
+                        PRIM_SLICE(0, x_mirror, z_mirror)[0] = D[0];   // Real = D_re
+                        PRIM_SLICE(0, x_mirror, z_mirror)[1] = -D[1];  // Imag = -D_im (conjugate)
+                    } else {
+                        // Normal mode: Store conj(D)+i*conj(F), conj(G)+i*conj(H), and optionally velocities
+                        // Array 0: conj(D) + i*conj(F) = (D[0] + F[1]) + i*(F[0] - D[1])
+                        PRIM_SLICE(0, x_mirror, z_mirror)[0] = D[0] + F[1];
+                        PRIM_SLICE(0, x_mirror, z_mirror)[1] = F[0] - D[1];
+                        
+                        // Array 1: conj(G) + i*conj(H) = (G[0] + H[1]) + i*(H[0] - G[1])
+                        PRIM_SLICE(1, x_mirror, z_mirror)[0] = G[0] + H[1];
+                        PRIM_SLICE(1, x_mirror, z_mirror)[1] = H[0] - G[1];
+                        
+                        if (narray >= 4) {
+                            // Array 2: 0 + i*conj(F*f) = i*conj(F*f)
+                            // conj(F*f) = F_re*f - i*F_im*f
+                            // i*conj(F*f) = i*(F_re*f - i*F_im*f) = F_im*f + i*F_re*f
+                            // f_sc is computed above (PLT growth rate if PLT enabled, else 1.0)
+                            PRIM_SLICE(2, x_mirror, z_mirror)[0] = F[1] * f_sc;   // Real = F_im * f
+                            PRIM_SLICE(2, x_mirror, z_mirror)[1] = F[0] * f_sc;   // Imag = F_re * f
+                            // Array 3: conj(G*f) + i*conj(H*f) = (G[0] + H[1])*f + i*((H[0] - G[1])*f)
+                            PRIM_SLICE(3, x_mirror, z_mirror)[0] = (G[0] + H[1]) * f_sc;
+                            PRIM_SLICE(3, x_mirror, z_mirror)[1] = (H[0] - G[1]) * f_sc;
+                        }
                     }
                 }
                 
@@ -1107,14 +1349,93 @@ void generate_hermitian_slice_pair_local(
                     D[1] = 0.0;
                     #else
                     // Normal operation: Compute F, G, H from D
-                    F[0] = -kx * ik2 * D[1];
-                    F[1] =  kx * ik2 * D[0];
-                    G[0] = -ky * ik2 * D[1];
-                    G[1] =  ky * ik2 * D[0];
-                    H[0] = -kz * ik2 * D[1];
-                    H[1] =  kz * ik2 * D[0];
+                    // Skip F, G, H computation in density-only mode (qdensity == 2)
+                    int use_plt_sc2 = 0;  // Declare outside to use in f computation
+                    eigenmode e_sc2;      // Declare outside to use in f computation
+                    
+                    if (just_density) {
+                        // Density-only mode: Set F, G, H to zero (not used)
+                        F[0] = F[1] = G[0] = G[1] = H[0] = H[1] = 0.0;
+                    } else {
+                    double ik2 = 1.0 / k2;
+                    // ========== STEP 3.5: Compute PLT growth rate f and rescale (before computing F, G, H) ==========
+                    // f is the logarithmic derivative of the growth factor that scales velocities
+                    // When PLT is enabled: f = (sqrt(1. + 24 * e.val * f_cluster) - 1) / 4.
+                    // When PLT is not enabled: f = 1.0 (default)
+                    // Skip in density-only mode (qdensity == 2)
+                    double f_sc2 = 1.0;
+                    double rescale_sc2 = 1.0;
+                    
+                    // Get fundamental wavenumber (needed for both PLT and non-PLT cases)
+                    int qPLT_sc2 = 0;
+                    double fundamental_sc2 = 1.0;
+                    
+                    if (!just_density && params_handle != NULL) {
+                        fundamental_sc2 = zeldovich_params_get_fundamental(params_handle);
+                        qPLT_sc2 = zeldovich_params_get_qPLT(params_handle);
+                        if (qPLT_sc2) {
+                            // Get PLT eigenmode for this k-vector
+                            // Convert kx, ky, kz to array indices for plt_get_eigenmode
+                            int ikx = (kx < 0) ? N + kx : kx;
+                            int iky = (ky < 0) ? N + ky : ky;
+                            int ikz = (kz < 0) ? N + kz : kz;
+                            // Handle z index (only positive half-space stored)
+                            if (ikz > N / 2) ikz = N - ikz;
+                            
+                            if (plt_get_eigenmode(ikx, iky, ikz, (int64_t)N, &e_sc2) == 0) {
+                                use_plt_sc2 = 1;
+                                
+                                // Compute f and rescale before computing F, G, H
+                                double f_cluster = zeldovich_params_get_f_cluster(params_handle);
+                                // PLT growth rate: f = (sqrt(1. + 24 * e.val * f_cluster) - 1) / 4.
+                                f_sc2 = (sqrt(1. + 24. * e_sc2.val * f_cluster) - 1.) * 0.25;
+                                
+                                // Compute rescaling if qPLTrescale is enabled
+                                if (qPLTrescale) {
+                                    double plt_f = f_sc2;  // PLT growth rate for this mode
+                                    rescale_sc2 = pow(a_NL / a0, target_f - plt_f);
+                                }
+                            } else {
+                                // If eigenmode lookup fails, fall back to normal computation
+                                if (rank == 0 && x == 0 && z == 0) {
+                                    fprintf(stderr, "[WARNING] Failed to get PLT eigenmode for (kx=%d, ky=%d, kz=%d), using normal computation\n",
+                                            kx, ky, kz);
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Compute factor (used identically in both PLT and non-PLT cases)
+                    // F = rescale * i * vec * fundamental * ik2 * D
+                    // where vec is either e.vec[i] (PLT) or k[i] (non-PLT)
+                    double factor = rescale_sc2 * fundamental_sc2 * ik2;
+                    
+                    if (use_plt_sc2) {
+                        // PLT mode: Use eigenvector instead of k-vector
+                        // F = rescale * i * e.vec[0] * fundamental * ik2 * D
+                        F[0] = -e_sc2.vec[0] * factor * D[1];
+                        F[1] =  e_sc2.vec[0] * factor * D[0];
+                        
+                        G[0] = -e_sc2.vec[1] * factor * D[1];
+                        G[1] =  e_sc2.vec[1] * factor * D[0];
+                        
+                        H[0] = -e_sc2.vec[2] * factor * D[1];
+                        H[1] =  e_sc2.vec[2] * factor * D[0];
+                    } else {
+                        // Normal operation: Compute F, G, H from D using k-vector
+                        // In zeldovich.cpp: k2 includes fundamental^2, so F = I * kx * fundamental * ik2 * D
+                        // In our code: k2 doesn't include fundamental^2, so we need to multiply by fundamental
+                        F[0] = -kx * factor * D[1];
+                        F[1] =  kx * factor * D[0];
+                        G[0] = -ky * factor * D[1];
+                        G[1] =  ky * factor * D[0];
+                        H[0] = -kz * factor * D[1];
+                        H[1] =  kz * factor * D[0];
+                    }
+                    }  // End of else block (if !just_density)
                     #endif
                 }
+                }  // End of else block (if !just_density)
                 
                 // Handle special points
                 if (global_y == 0 && x == 0 && z == 0) {
@@ -1125,58 +1446,82 @@ void generate_hermitian_slice_pair_local(
                     }
                 } else if ((x == 0 || x == Nhalf) && (z == 0 || z == Nhalf)) {
                     // Self-symmetric points: use Zeldovich packing (imag may be non-zero)
-                    // Array 0: D + i*F = (D[0] - F[1]) + i*(D[1] + F[0])
-                    PRIM_SLICE(0, x, z)[0] = D[0] - F[1];
-                    PRIM_SLICE(0, x, z)[1] = D[1] + F[0];
-                    // Array 1: G + i*H = (G[0] - H[1]) + i*(G[1] + H[0])
-                    PRIM_SLICE(1, x, z)[0] = G[0] - H[1];
-                    PRIM_SLICE(1, x, z)[1] = G[1] + H[0];
-                    if (narray >= 4) {
-                        double f = 1.0;
-                        // Array 2: 0 + i*F*f = -F[1]*f + i*(F[0]*f)
-                        PRIM_SLICE(2, x, z)[0] = -F[1] * f;
-                        PRIM_SLICE(2, x, z)[1] = F[0] * f;
-                        // Array 3: G*f + i*H*f = (G[0] - H[1])*f + i*((G[1] + H[0])*f)
-                        PRIM_SLICE(3, x, z)[0] = (G[0] - H[1]) * f;
-                        PRIM_SLICE(3, x, z)[1] = (G[1] + H[0]) * f;
+                    if (just_density) {
+                        // Density-only mode: Only store D (density) in Array 0
+                        PRIM_SLICE(0, x, z)[0] = D[0];  // Real = D_re
+                        PRIM_SLICE(0, x, z)[1] = D[1];  // Imag = D_im
+                    } else {
+                        // Normal mode: Store D+iF, G+iH, and optionally velocities
+                        // Array 0: D + i*F = (D[0] - F[1]) + i*(D[1] + F[0])
+                        PRIM_SLICE(0, x, z)[0] = D[0] - F[1];
+                        PRIM_SLICE(0, x, z)[1] = D[1] + F[0];
+                        // Array 1: G + i*H = (G[0] - H[1]) + i*(G[1] + H[0])
+                        PRIM_SLICE(1, x, z)[0] = G[0] - H[1];
+                        PRIM_SLICE(1, x, z)[1] = G[1] + H[0];
+                        if (narray >= 4) {
+                            // Array 2: 0 + i*F*f = -F[1]*f + i*(F[0]*f)
+                            // f_sc2 is computed above (PLT growth rate if PLT enabled, else 1.0)
+                            PRIM_SLICE(2, x, z)[0] = -F[1] * f_sc2;
+                            PRIM_SLICE(2, x, z)[1] = F[0] * f_sc2;
+                            // Array 3: G*f + i*H*f = (G[0] - H[1])*f + i*((G[1] + H[0])*f)
+                            PRIM_SLICE(3, x, z)[0] = (G[0] - H[1]) * f_sc2;
+                            PRIM_SLICE(3, x, z)[1] = (G[1] + H[0]) * f_sc2;
+                        }
                     }
                 } else {
                     // Normal points (Zeldovich packing scheme)
-                    // Array 0: D + i*F = (D[0] - F[1]) + i*(D[1] + F[0])
-                    PRIM_SLICE(0, x, z)[0] = D[0] - F[1];
-                    PRIM_SLICE(0, x, z)[1] = D[1] + F[0];
-                    // Array 1: G + i*H = (G[0] - H[1]) + i*(G[1] + H[0])
-                    PRIM_SLICE(1, x, z)[0] = G[0] - H[1];
-                    PRIM_SLICE(1, x, z)[1] = G[1] + H[0];
-                    if (narray >= 4) {
-                        double f = 1.0;
-                        // Array 2: 0 + i*F*f = -F[1]*f + i*(F[0]*f)
-                        PRIM_SLICE(2, x, z)[0] = -F[1] * f;
-                        PRIM_SLICE(2, x, z)[1] = F[0] * f;
-                        // Array 3: G*f + i*H*f = (G[0] - H[1])*f + i*((G[1] + H[0])*f)
-                        PRIM_SLICE(3, x, z)[0] = (G[0] - H[1]) * f;
-                        PRIM_SLICE(3, x, z)[1] = (G[1] + H[0]) * f;
+                    if (just_density) {
+                        // Density-only mode: Only store D (density) in Array 0
+                        PRIM_SLICE(0, x, z)[0] = D[0];  // Real = D_re
+                        PRIM_SLICE(0, x, z)[1] = D[1];  // Imag = D_im
+                    } else {
+                        // Normal mode: Store D+iF, G+iH, and optionally velocities
+                        // Array 0: D + i*F = (D[0] - F[1]) + i*(D[1] + F[0])
+                        PRIM_SLICE(0, x, z)[0] = D[0] - F[1];
+                        PRIM_SLICE(0, x, z)[1] = D[1] + F[0];
+                        // Array 1: G + i*H = (G[0] - H[1]) + i*(G[1] + H[0])
+                        PRIM_SLICE(1, x, z)[0] = G[0] - H[1];
+                        PRIM_SLICE(1, x, z)[1] = G[1] + H[0];
+                        if (narray >= 4) {
+                            // Array 2: 0 + i*F*f = -F[1]*f + i*(F[0]*f)
+                            // f_sc2 is computed above (PLT growth rate if PLT enabled, else 1.0)
+                            PRIM_SLICE(2, x, z)[0] = -F[1] * f_sc2;
+                            PRIM_SLICE(2, x, z)[1] = F[0] * f_sc2;
+                            // Array 3: G*f + i*H*f = (G[0] - H[1])*f + i*((G[1] + H[0])*f)
+                            PRIM_SLICE(3, x, z)[0] = (G[0] - H[1]) * f_sc2;
+                            PRIM_SLICE(3, x, z)[1] = (G[1] + H[0]) * f_sc2;
+                        }
                     }
                 }
                 
                 // Mirror (Zeldovich scheme: store conj(D) + i*conj(F))
                 if (x != x_mirror || z != z_mirror) {
-                    // Array 0: conj(D) + i*conj(F) = (D[0] + F[1]) + i*(F[0] - D[1])
-                    PRIM_SLICE(0, x_mirror, z_mirror)[0] = D[0] + F[1];
-                    PRIM_SLICE(0, x_mirror, z_mirror)[1] = F[0] - D[1];
-                    
-                    // Array 1: conj(G) + i*conj(H) = (G[0] + H[1]) + i*(H[0] - G[1])
-                    PRIM_SLICE(1, x_mirror, z_mirror)[0] = G[0] + H[1];
-                    PRIM_SLICE(1, x_mirror, z_mirror)[1] = H[0] - G[1];
-                    
-                    if (narray >= 4) {
-                        double f = 1.0;
-                        // Array 2: conj(0) + i*conj(F*f) = F[1]*f + i*(-F[0]*f)
-                        PRIM_SLICE(2, x_mirror, z_mirror)[0] = F[1] * f;
-                        PRIM_SLICE(2, x_mirror, z_mirror)[1] = -F[0] * f;
-                        // Array 3: conj(G*f) + i*conj(H*f) = (G[0] + H[1])*f + i*((H[0] - G[1])*f)
-                        PRIM_SLICE(3, x_mirror, z_mirror)[0] = (G[0] + H[1]) * f;
-                        PRIM_SLICE(3, x_mirror, z_mirror)[1] = (H[0] - G[1]) * f;
+                    if (just_density) {
+                        // Density-only mode: Only store D (density) in Array 0
+                        // For conjugate, store conj(D) = (D[0], -D[1])
+                        PRIM_SLICE(0, x_mirror, z_mirror)[0] = D[0];   // Real = D_re
+                        PRIM_SLICE(0, x_mirror, z_mirror)[1] = -D[1];  // Imag = -D_im (conjugate)
+                    } else {
+                        // Normal mode: Store conj(D)+i*conj(F), conj(G)+i*conj(H), and optionally velocities
+                        // Array 0: conj(D) + i*conj(F) = (D[0] + F[1]) + i*(F[0] - D[1])
+                        PRIM_SLICE(0, x_mirror, z_mirror)[0] = D[0] + F[1];
+                        PRIM_SLICE(0, x_mirror, z_mirror)[1] = F[0] - D[1];
+                        
+                        // Array 1: conj(G) + i*conj(H) = (G[0] + H[1]) + i*(H[0] - G[1])
+                        PRIM_SLICE(1, x_mirror, z_mirror)[0] = G[0] + H[1];
+                        PRIM_SLICE(1, x_mirror, z_mirror)[1] = H[0] - G[1];
+                        
+                        if (narray >= 4) {
+                            // Array 2: 0 + i*conj(F*f) = i*conj(F*f)
+                            // conj(F*f) = F_re*f - i*F_im*f
+                            // i*conj(F*f) = i*(F_re*f - i*F_im*f) = F_im*f + i*F_re*f
+                            // f_sc2 is computed above (PLT growth rate if PLT enabled, else 1.0)
+                            PRIM_SLICE(2, x_mirror, z_mirror)[0] = F[1] * f_sc2;   // Real = F_im * f
+                            PRIM_SLICE(2, x_mirror, z_mirror)[1] = F[0] * f_sc2;   // Imag = F_re * f
+                            // Array 3: conj(G*f) + i*conj(H*f) = (G[0] + H[1])*f + i*((H[0] - G[1])*f)
+                            PRIM_SLICE(3, x_mirror, z_mirror)[0] = (G[0] + H[1]) * f_sc2;
+                            PRIM_SLICE(3, x_mirror, z_mirror)[1] = (H[0] - G[1]) * f_sc2;
+                        }
                     }
                 }
             }

@@ -73,6 +73,57 @@ double zeldovich_params_get_Pk_powerlaw_index(ParametersHandle params) {
     return p->Pk_powerlaw_index;
 }
 
+double zeldovich_params_get_f_cluster(ParametersHandle params) {
+    if (!params) return 0.0;
+    Parameters* p = static_cast<Parameters*>(params);
+    return p->f_cluster;
+}
+
+double zeldovich_params_get_z_initial(ParametersHandle params) {
+    if (!params) return 0.0;
+    Parameters* p = static_cast<Parameters*>(params);
+    return p->z_initial;
+}
+
+int zeldovich_params_get_qPLT(ParametersHandle params) {
+    if (!params) return 0;
+    Parameters* p = static_cast<Parameters*>(params);
+    return p->qPLT;
+}
+
+const char* zeldovich_params_get_PLT_filename(ParametersHandle params) {
+    if (!params) return NULL;
+    Parameters* p = static_cast<Parameters*>(params);
+    if (p->PLT_filename.empty()) return NULL;
+    // Return C string from fs::path (valid while Parameters object exists)
+    // Note: Caller should copy the string if they need to keep it beyond the Parameters lifetime
+    return p->PLT_filename.c_str();
+}
+
+int zeldovich_params_get_qPLTrescale(ParametersHandle params) {
+    if (!params) return 0;
+    Parameters* p = static_cast<Parameters*>(params);
+    return p->qPLTrescale;
+}
+
+double zeldovich_params_get_PLT_target_z(ParametersHandle params) {
+    if (!params) return 0.0;
+    Parameters* p = static_cast<Parameters*>(params);
+    return p->PLT_target_z;
+}
+
+const char* zeldovich_params_get_ICFormat(ParametersHandle params) {
+    if (!params) return NULL;
+    Parameters* p = static_cast<Parameters*>(params);
+    return p->ICFormat.c_str();
+}
+
+int zeldovich_params_get_qdensity(ParametersHandle params) {
+    if (!params) return 0;
+    Parameters* p = static_cast<Parameters*>(params);
+    return p->qdensity;
+}
+
 // ====================================================================================
 // POWER SPECTRUM INTERFACE
 // ====================================================================================

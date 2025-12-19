@@ -152,7 +152,8 @@ UTILS_SRC = src/utils/printing.c \
             src/utils/decomposition.c \
             src/utils/batch_helpers.c \
             src/utils/rng.c \
-            src/utils/power_spectrum.c
+            src/utils/power_spectrum.c \
+            src/utils/plt_eigenmodes.c
 
 # C++ wrapper for zeldovich-PLT (Option B: C wrappers)
 # v15.2: Enabled for direct zeldovich-PLT integration

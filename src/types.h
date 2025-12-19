@@ -4,6 +4,17 @@
 #include "precision.h"
 
 // ====================================================================================
+// PLT EIGENMODE STRUCTURE
+// ====================================================================================
+// Structure for Particle Linear Theory (PLT) eigenmodes
+// Used when qPLT is enabled to get correct growth rates and eigenvectors
+// Matches zeldovich-PLT's eigenmode structure
+typedef struct {
+    double vec[3];  // Eigenvector components [x, y, z]
+    double val;     // Eigenvalue (growth rate factor)
+} eigenmode;
+
+// ====================================================================================
 // GRID DECOMPOSITION
 // ====================================================================================
 

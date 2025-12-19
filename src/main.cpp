@@ -84,6 +84,7 @@ extern "C" {
 #include "utils/rng.h"
 #include "utils/power_spectrum.h"
 #include "utils/zeldovich_wrapper.h"  // For zeldovich-PLT integration
+#include "utils/plt_eigenmodes.h"    // For PLT eigenmode loading
 
 // Note: Precision types (real_t, fftw_complex_t, etc.) now defined in precision.h
 // Note: Data structures (GridBounds, ExtendedGridBounds) now defined in types.h
@@ -410,6 +411,52 @@ int main(int argc, char **argv)
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
         
+        // ========================================================================
+        // PLT PARAMETER VALIDATION
+        // ========================================================================
+        int qPLT = zeldovich_params_get_qPLT(params);
+        if (qPLT) {
+            // Validate PLT_filename is set when qPLT is enabled
+            const char* PLT_filename = zeldovich_params_get_PLT_filename(params);
+            if (!PLT_filename || strlen(PLT_filename) == 0) {
+                if (rank == 0) {
+                    fprintf(stderr, "ERROR: qPLT is enabled but PLT_filename is not set\n");
+                    fprintf(stderr, "       Add 'ZD_PLT_filename = <path_to_eigenmode_file>' to parameter file\n");
+                }
+                MPI_Abort(MPI_COMM_WORLD, 1);
+            }
+            
+            // Validate ICFormat starts with "RV" when qPLT is enabled
+            // PLT requires velocity arrays, so output format must support velocities
+            const char* ICFormat = zeldovich_params_get_ICFormat(params);
+            if (!ICFormat || strncmp(ICFormat, "RV", 2) != 0) {
+                if (rank == 0) {
+                    fprintf(stderr, "ERROR: qPLT is enabled but ICFormat does not start with 'RV'\n");
+                    fprintf(stderr, "       PLT requires velocity arrays, so ICFormat must be 'RV' or 'RV*'\n");
+                    fprintf(stderr, "       Current ICFormat: '%s'\n", ICFormat ? ICFormat : "(empty)");
+                    fprintf(stderr, "       Set 'ICFormat = RV' or 'ICFormat = RVDoubleZel' in parameter file\n");
+                }
+                MPI_Abort(MPI_COMM_WORLD, 1);
+            }
+            
+            // Load PLT eigenmodes from file
+            if (plt_load_eigenmodes(PLT_filename) != 0) {
+                if (rank == 0) {
+                    fprintf(stderr, "ERROR: Failed to load PLT eigenmodes from: %s\n", PLT_filename);
+                    fprintf(stderr, "       Check that file exists and has correct format\n");
+                }
+                MPI_Abort(MPI_COMM_WORLD, 1);
+            }
+            
+            if (rank == 0) {
+                printf("[INIT] PLT validation passed:\n");
+                printf("       PLT_filename: %s\n", PLT_filename);
+                printf("       ICFormat: %s\n", ICFormat);
+                int64_t eig_ppd = plt_get_eigenmode_ppd();
+                printf("       Eigenmode ppd: %ld\n", (long)eig_ppd);
+            }
+        }
+        
         if (rank == 0) {
             double boxsize = zeldovich_params_get_boxsize(params);
             double fundamental = zeldovich_params_get_fundamental(params);
@@ -459,11 +506,40 @@ int main(int argc, char **argv)
     // ========================================================================
     // SETUP NARRAY (number of arrays per slice)
     // ========================================================================
-    
-    int narray = NARRAY;  // Use the constant defined above (available throughout main)
+    // narray determines how many arrays are stored per Y-slice:
+    //   - narray = 1: density only (if qdensity == 2)
+    //   - narray = 2: density + displacement (D+iF, G+iH) - standard Zeldovich
+    //   - narray = 4: density + displacement + velocity (D+iF, G+iH, vx, vy+vz) - PLT mode
+    // When PLT is enabled, we need 4 arrays to store velocities (arrays 2 and 3)
+    int narray;
+    if (params != NULL) {
+        int qdensity = zeldovich_params_get_qdensity(params);
+        
+        if (qdensity == 2) {
+            // Density-only mode: only Array 0 (density)
+            narray = 1;
+        } else {
+            // Normal mode: Set narray based on PLT
+            int qPLT = zeldovich_params_get_qPLT(params);
+            narray = qPLT ? 4 : 2;
+        }
+    } else {
+        // No parameter file: use compile-time default
+        narray = NARRAY;
+    }
     
     if (rank == 0 && DEBUG_PRINTS) {
-        printf("[SETUP] narray = %d (arrays per Y-slice)\n", narray);
+        printf("[SETUP] narray = %d (arrays per Y-slice)", narray);
+        if (params != NULL) {
+            int qdensity = zeldovich_params_get_qdensity(params);
+            int qPLT = zeldovich_params_get_qPLT(params);
+            if (qdensity == 2) {
+                printf(" [density-only mode]");
+            } else {
+                printf(" [PLT %s]", qPLT ? "enabled" : "disabled");
+            }
+        }
+        printf("\n");
     }
     
     // ========================================================================
@@ -488,75 +564,6 @@ int main(int argc, char **argv)
         printf("[SETUP] FFT plans created successfully (2D and 1D)\n");
     }
     
-    // ========================================================================
-    // ALLOCATE MY Y-SLICES (active ranks only)
-    // ========================================================================
-    
-    if (!is_idle_rank) {
-        // MEMORY: num_my_slices x narray x N² x 16 bytes (e.g, 131.2 GB for N=32K, 2 slices, narray=4)
-        // Can free after Stage 3 packing complete (after send_buffer filled)
-        // NEW: Single flat allocation for all arrays
-        int64_t total_size = (int64_t)num_my_slices * narray * N * N;
-        
-        if (posix_memalign((void**)&local_y_slices, ALIGN_BYTES, 
-                           sizeof(fftw_complex_t) * total_size) != 0) {
-            fprintf(stderr, "Rank %d: posix_memalign failed for local_y_slices\n", rank);
-            MPI_Abort(MPI_COMM_WORLD, 1);
-        }
-        memset(local_y_slices, 0, sizeof(fftw_complex_t) * total_size);
-        
-        if (rank == 0 && DEBUG_PRINTS) {
-            size_t total_bytes = (size_t)total_size * sizeof(fftw_complex_t);
-            printf("[MEMORY] Allocated local_y_slices: %zu bytes (%.2f GB) for %d slices, %d arrays\n",
-                   total_bytes, total_bytes / (1024.0 * 1024.0 * 1024.0), num_my_slices, narray);
-        }
-        
-        // ========================================================================
-        // STEP 1d: VERIFY MACRO INDEXING
-        // ========================================================================
-        #if DEBUG_PRINTS
-        // Test macro indexing (add after allocation, before generation)
-        if (rank < 3) {  // Only test on first few ranks to reduce output
-            // Fill test pattern
-            for (int s = 0; s < num_my_slices; s++) {
-                for (int a = 0; a < narray; a++) {
-                    Y_SLICE(s, a, 5, 3, N, narray)[0] = s * 100 + a * 10;
-                    Y_SLICE(s, a, 5, 3, N, narray)[1] = s * 100 + a * 10 + 1;
-                }
-            }
-            
-            // Verify
-            bool indexing_ok = true;
-            for (int s = 0; s < num_my_slices; s++) {
-                for (int a = 0; a < narray; a++) {
-                    double expected_re = s * 100 + a * 10;
-                    double expected_im = s * 100 + a * 10 + 1;
-                    double actual_re = Y_SLICE(s, a, 5, 3, N, narray)[0];
-                    double actual_im = Y_SLICE(s, a, 5, 3, N, narray)[1];
-                    
-                    if (fabs_t(expected_re - actual_re) > 1e-10 || 
-                        fabs_t(expected_im - actual_im) > 1e-10) {
-                        printf("[ERROR] Rank %d: Macro indexing failed at (slice=%d, array=%d)\n", 
-                               rank, s, a);
-                        printf("        Expected: %.2f + %.2fi, Got: %.2f + %.2fi\n",
-                               expected_re, expected_im, actual_re, actual_im);
-                        indexing_ok = false;
-                    }
-                }
-            }
-            if (indexing_ok) {
-                printf("[OK] Rank %d: Macro indexing verified (slices=%d, arrays=%d)\n", 
-                       rank, num_my_slices, narray);
-            } else {
-                fprintf(stderr, "[ERROR] Rank %d: Macro indexing test FAILED!\n", rank);
-                MPI_Abort(MPI_COMM_WORLD, 1);
-            }
-            
-            // Clear test pattern
-            memset(local_y_slices, 0, sizeof(fftw_complex_t) * total_size);
-        }
-        #endif
-    }
     
     // ========================================================================
     // STAGE 1: GENERATE MY PAIR (with 2D FFT)
@@ -905,6 +912,52 @@ int main(int argc, char **argv)
             printf("[MEMORY] Allocated local_y_slices (reusable): %zu bytes (%.2f GB)\n",
                    slice_bytes, slice_bytes / (1024.0 * 1024.0 * 1024.0));
         }
+        
+        // ========================================================================
+        // VERIFY MACRO INDEXING
+        // ========================================================================
+        #if DEBUG_PRINTS
+        // Test macro indexing (add after allocation, before generation)
+        if (rank < 3) {  // Only test on first few ranks to reduce output
+            // Fill test pattern for 2 slices (max_slices_per_batch)
+            for (int s = 0; s < max_slices_per_batch; s++) {
+                for (int a = 0; a < narray; a++) {
+                    Y_SLICE(s, a, 5, 3, N, narray)[0] = s * 100 + a * 10;
+                    Y_SLICE(s, a, 5, 3, N, narray)[1] = s * 100 + a * 10 + 1;
+                }
+            }
+            
+            // Verify pattern
+            bool indexing_ok = true;
+            for (int s = 0; s < max_slices_per_batch; s++) {
+                for (int a = 0; a < narray; a++) {
+                    double expected_re = s * 100 + a * 10;
+                    double expected_im = s * 100 + a * 10 + 1;
+                    double actual_re = Y_SLICE(s, a, 5, 3, N, narray)[0];
+                    double actual_im = Y_SLICE(s, a, 5, 3, N, narray)[1];
+                    
+                    if (fabs_t(expected_re - actual_re) > 1e-10 || 
+                        fabs_t(expected_im - actual_im) > 1e-10) {
+                        printf("[ERROR] Rank %d: Macro indexing failed at (slice=%d, array=%d)\n", 
+                               rank, s, a);
+                        printf("        Expected: %.2f + %.2fi, Got: %.2f + %.2fi\n",
+                               expected_re, expected_im, actual_re, actual_im);
+                        indexing_ok = false;
+                    }
+                }
+            }
+            if (indexing_ok) {
+                printf("[OK] Rank %d: Macro indexing verified (slices=%d, arrays=%d)\n", 
+                       rank, max_slices_per_batch, narray);
+            } else {
+                fprintf(stderr, "[ERROR] Rank %d: Macro indexing test FAILED!\n", rank);
+                MPI_Abort(MPI_COMM_WORLD, 1);
+            }
+            
+            // Clear test pattern
+            memset(local_y_slices, 0, sizeof(fftw_complex_t) * slice_buffer_size);
+        }
+        #endif
     }
     
     // ========================================================================
@@ -1242,7 +1295,7 @@ int main(int argc, char **argv)
         printf("              Communication time: %.6f s\n", t_comm.Elapsed());
     }
     
-    // Free local_y_slices (no longer needed)
+    // Free local_y_slices (no longer needed after all batches complete)
     if (local_y_slices != NULL) {
         free(local_y_slices);
         local_y_slices = NULL;
@@ -1684,7 +1737,8 @@ int main(int argc, char **argv)
     // FREE: Y-slices (already freed after packing, but check for safety)
     // Note: local_y_slices is freed immediately after packing (Stage 3) to reduce peak memory
     if (!is_idle_rank && local_y_slices != NULL) {
-        free(local_y_slices);  // Safety check (should already be NULL)
+        fprintf(stderr, "[WARNING] Rank %d: local_y_slices was not freed earlier!\n", rank);
+        free(local_y_slices);
         local_y_slices = NULL;
     }
     // V11: No y_global_map, recv_buffer_accumulator, or y_to_local_idx to free
@@ -1743,6 +1797,9 @@ int main(int argc, char **argv)
         zeldovich_params_destroy(params);
         params = NULL;
     }
+    
+    // Free PLT eigenmodes if they were loaded
+    plt_free_eigenmodes();
     
     MPI_Finalize();
     
