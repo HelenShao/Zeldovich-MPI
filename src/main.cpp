@@ -1349,7 +1349,8 @@ int main(int argc, char **argv)
     // ========================================================================
     // MEMORY: x_count x narray x N x 16 bytes (ONE Z-SLAB ONLY, e.g, ~4 GB for N=32K, narray=4)
     // Memory reduced by processing one Z-slab at a time instead of storing all pencils
-    // Memory layout: [Array][Y][X] for one Z-slab (x_count X-values, all Y, all arrays) - fix this!!
+    // Memory layout: [Array][X][Y] for one Z-slab (narray arrays, x_count X-values, N Y-values)
+    // Note: Y stride-1 is optimal for FFT. For output, we transpose to [Array][Y][X]
     
     STimer t_streaming;
     t_streaming.Start();
@@ -1369,7 +1370,8 @@ int main(int argc, char **argv)
         int x_count = my_extended_bounds.core.x_end - my_extended_bounds.core.x_start;
         int z_count = my_extended_bounds.core.z_end - my_extended_bounds.core.z_start;
 #endif
-        elements_per_z_slab = (int64_t)x_count * narray * N;
+        // Allocate for [Array][X][Y] format: narray * x_count * N (Y stride-1 for FFT)
+        elements_per_z_slab = (int64_t)narray * x_count * N;
         
         if (posix_memalign((void**)&local_z_slab, ALIGN_BYTES, 
                            sizeof(fftw_complex_t) * elements_per_z_slab) != 0) {
@@ -1384,18 +1386,18 @@ int main(int argc, char **argv)
                    total_bytes, total_bytes / (1024.0 * 1024.0 * 1024.0));
             printf("         Processing %d Z-slabs sequentially (Z=[%d,%d))\n", 
                    z_count, my_extended_bounds.padded.z_start, my_extended_bounds.padded.z_end);
-            printf("         Each Z-slab: %d X-values (PADDED) x %d arrays x %d Y-values\n",
-                   x_count, narray, N);
-            printf("         Output format: [Z][Array][Y][X] (Zeldovich-compatible)\n");
+            printf("         Each Z-slab: %d arrays x %d X-values (PADDED) x %d Y-values\n",
+                   narray, x_count, N);
+            printf("         Memory layout: [Array][X][Y] (Y stride-1 for FFT, transpose for output)\n");
             printf("         NOTE: X-count includes %d padding values\n", X_PADDING);
 #else
             printf("[MEMORY] Allocated local_z_slab (one Z-slab, core grid): %zu bytes (%.2f GB)\n",
                    total_bytes, total_bytes / (1024.0 * 1024.0 * 1024.0));
             printf("         Processing %d Z-slabs sequentially (Z=[%d,%d))\n", 
                    z_count, my_extended_bounds.core.z_start, my_extended_bounds.core.z_end);
-            printf("         Each Z-slab: %d X-values (CORE) x %d arrays x %d Y-values\n",
-                   x_count, narray, N);
-            printf("         Output format: [Z][Array][Y][X] (Zeldovich-compatible)\n");
+            printf("         Each Z-slab: %d arrays x %d X-values (CORE) x %d Y-values\n",
+                   narray, x_count, N);
+            printf("         Memory layout: [Array][X][Y] (Y stride-1 for FFT, transpose for output)\n");
 #endif
         }
     } else {
@@ -1465,11 +1467,11 @@ int main(int argc, char **argv)
             if (rank == 0 && z == my_extended_bounds.core.z_start) {
                 real_t debug_max_real[4] = {0, 0, 0, 0};
                 real_t debug_max_imag[4] = {0, 0, 0, 0};
-                for (int x_idx = 0; x_idx < x_count; x_idx++) {
-                    for (int array_idx = 0; array_idx < narray; array_idx++) {
+                for (int array_idx = 0; array_idx < narray; array_idx++) {
+                    for (int x_idx = 0; x_idx < x_count; x_idx++) {
                         for (int y = 0; y < N; y++) {
-                            double re = fabs_t(ZSLAB(x_idx, array_idx, y, N, narray)[0]);
-                            double im = fabs_t(ZSLAB(x_idx, array_idx, y, N, narray)[1]);
+                            double re = fabs_t(ZSLAB(array_idx, x_idx, y, N, narray, x_count)[0]);
+                            double im = fabs_t(ZSLAB(array_idx, x_idx, y, N, narray, x_count)[1]);
                             debug_max_real[array_idx] = fmax_t(debug_max_real[array_idx], re);
                             debug_max_imag[array_idx] = fmax_t(debug_max_imag[array_idx], im);
                         }
@@ -1485,11 +1487,11 @@ int main(int argc, char **argv)
             
             // ========== VERIFICATION: Check this Z-slab after FFT ==========
             #if !SKIP_VERIFICATION
-            for (int x_idx = 0; x_idx < x_count; x_idx++) {
-                for (int array_idx = 0; array_idx < narray; array_idx++) {
+            for (int array_idx = 0; array_idx < narray; array_idx++) {
+                for (int x_idx = 0; x_idx < x_count; x_idx++) {
                     for (int y = 0; y < N; y++) {
-                        double re = fabs_t(ZSLAB(x_idx, array_idx, y, N, narray)[0]);
-                        double im = fabs_t(ZSLAB(x_idx, array_idx, y, N, narray)[1]);
+                        double re = fabs_t(ZSLAB(array_idx, x_idx, y, N, narray, x_count)[0]);
+                        double im = fabs_t(ZSLAB(array_idx, x_idx, y, N, narray, x_count)[1]);
                         local_max_real[array_idx] = fmax_t(local_max_real[array_idx], re);
                         local_max_imag[array_idx] = fmax_t(local_max_imag[array_idx], im);
                     }
@@ -1507,15 +1509,15 @@ int main(int argc, char **argv)
                 // So the overlapping region should match up to overlap_N (not just overlap_N/2)
                 // For N=256: x,y,z = 0 to 255 should match N=512: x,y,z = 0 to 255
                 
-                for (int x_idx = 0; x_idx < x_count; x_idx++) {
-                    // Get actual x coordinate (accounting for rank's X region)
-                    int x_global = my_extended_bounds.core.x_start + x_idx;
-                    bool x_in_overlap = (x_global < overlap_N);
-                    
-                    for (int array_idx = 0; array_idx < narray; array_idx++) {
+                for (int array_idx = 0; array_idx < narray; array_idx++) {
+                    for (int x_idx = 0; x_idx < x_count; x_idx++) {
+                        // Get actual x coordinate (accounting for rank's X region)
+                        int x_global = my_extended_bounds.core.x_start + x_idx;
+                        bool x_in_overlap = (x_global < overlap_N);
+                        
                         for (int y = 0; y < N; y++) {
-                            double re = fabs_t(ZSLAB(x_idx, array_idx, y, N, narray)[0]);
-                            double im = fabs_t(ZSLAB(x_idx, array_idx, y, N, narray)[1]);
+                            double re = fabs_t(ZSLAB(array_idx, x_idx, y, N, narray, x_count)[0]);
+                            double im = fabs_t(ZSLAB(array_idx, x_idx, y, N, narray, x_count)[1]);
                             first_slab_max_real[array_idx] = fmax_t(first_slab_max_real[array_idx], re);
                             first_slab_max_imag[array_idx] = fmax_t(first_slab_max_imag[array_idx], im);
                             
@@ -1560,6 +1562,7 @@ int main(int argc, char **argv)
             
             // V12: Write this Z-slab in Zeldovich order: [Array][Y][X]
             // Each file contains all (X,Y) for one Z-slab (matches ZeldovichXY output)
+            // Data is in [Array][X][Y] format, transpose to [Array][Y][X] for output
             #ifndef SKIP_FILE_WRITE
             char filename[256];
             snprintf(filename, sizeof(filename), "rank_%d/z%d_slab_N%d.bin", 
@@ -1567,12 +1570,15 @@ int main(int argc, char **argv)
             
             FILE *fp = fopen(filename, "wb");
             if (fp) {
-                // Write in Zeldovich AZYX order: [Array][Y][X]
+                // Transpose from [Array][X][Y] to [Array][Y][X] and write
+                // This is done element-by-element during write (acceptable overhead once per Z-slab)
                 for (int array_idx = 0; array_idx < narray; array_idx++) {
                     for (int y = 0; y < N; y++) {
                         for (int x_idx = 0; x_idx < x_count; x_idx++) {
-                            size_t written = fwrite(&ZSLAB(x_idx, array_idx, y, N, narray), 
-                                                   sizeof(fftw_complex_t), 1, fp);
+                            // Read from [Array][X][Y] format
+                            fftw_complex_t *src = &ZSLAB(array_idx, x_idx, y, N, narray, x_count);
+                            // Write in [Array][Y][X] order
+                            size_t written = fwrite(src, sizeof(fftw_complex_t), 1, fp);
                             if (written != 1) {
                                 fprintf(stderr, "Rank %d: Write error in %s at (array=%d,y=%d,x_idx=%d)\n",
                                        rank, filename, array_idx, y, x_idx);

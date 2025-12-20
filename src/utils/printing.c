@@ -51,7 +51,12 @@ void print_3d_matrix_visual(int N, fftw_complex_t *global_matrix, const char* ti
 
 void print_z_slab(int rank, int z, fftw_complex_t *local_z_slab, int x_count, int N, int narray, int x_start) {
     #if PRINT_Z_SLABS
-    if (N > 64) return;  // Only print for N <= 64 (increased from 16 for testing)
+    // For large N (>64), only print selected z-slabs: z=0, z=1, z=N/2, z=N-1
+    if (N > 64) {
+        if (z != 0 && z != 1 && z != N/2 && z != N-1) {
+            return;  // Skip most slabs for large N
+        }
+    }
     
     printf("\n[RANK %d] Z-slab Z=%d (X=[%d,%d), after 3D FFT):\n", rank, z, x_start, x_start + x_count);
     
@@ -81,8 +86,9 @@ void print_z_slab(int rank, int z, fftw_complex_t *local_z_slab, int x_count, in
                     if (fabs_t(im) > 1e-10) non_zero_imag_count++;
                 }
             }
-            printf("    Summary: re=[%.6e, %.6e], im=[%.6e, %.6e], non-zero imag: %d/%d\n",
-                   min_real, max_real, min_imag, max_imag, non_zero_imag_count, N * x_count);
+            printf("    Summary: re=[%.6e, %.6e], im=[%.6e, %.6e], non-zero imag: %d/%d (%.2f%%)\n",
+                   min_real, max_real, min_imag, max_imag, non_zero_imag_count, N * x_count,
+                   100.0 * non_zero_imag_count / (N * x_count));
         }
         
         // Print full matrix for small N, or sample for large N

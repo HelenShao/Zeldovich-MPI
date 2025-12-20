@@ -1,5 +1,5 @@
 #!/bin/bash
-#PBS -N test_hermitian_N1024_mode2_plt
+#PBS -N test_hermitian_N1024_mode1_plt
 #PBS -A AbacusAurora
 #PBS -l select=2:ncpus=64:mpiprocs=16:ompthreads=2
 #PBS -l walltime=01:00:00
@@ -7,7 +7,7 @@
 #PBS -M helenshao0904@gmail.com
 #PBS -m abe
 #PBS -j oe
-#PBS -o /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_hermitian/test_hermitian_mode2_plt.out
+#PBS -o /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_hermitian/test_hermitian_mode1_plt.out
 
 cd $PBS_O_WORKDIR
 
@@ -31,15 +31,15 @@ mpicxx --version || echo "mpicxx not found or error"
 # Go to hermitian_3d_matrix_production directory
 cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production
 
-# Compile with double precision, VERIFY_HERMITIAN_SYMMETRY=2 flag, and verification enabled
+# Compile with double precision, VERIFY_HERMITIAN_SYMMETRY=1 flag, and verification enabled
 # Makefile auto selects correct FFTW libs based on CFLAGS
 echo "Compiling hermitian_3d_matrix with double precision..."
-echo "VERIFY_HERMITIAN_SYMMETRY: MODE 2 (D=0, G=0 for purely imaginary test + verification checks)"
+echo "VERIFY_HERMITIAN_SYMMETRY: MODE 1 (F=0, H=0 for purely real test + verification checks)"
 echo "Verification: ENABLED (PRINT_DETAILED_SLICES, VERIFY_HERMITIAN_SYMMETRY)"
 echo "Using SPLINE_RESOLUTION=512 for higher interpolation accuracy"
 echo "PRINT_Z_SLABS=1: Will print selected Z-slabs (Z=0, 1, N/2, N-1) for verification"
 make clean
-make CFLAGS="-DUSE_DOUBLE_PRECISION -DVERIFY_HERMITIAN_SYMMETRY=2 -DPRINT_DETAILED_SLICES=1 -DPRINT_Z_SLABS=1 -DSKIP_VERIFICATION=0 -DSPLINE_RESOLUTION=512"
+make CFLAGS="-DUSE_DOUBLE_PRECISION -DVERIFY_HERMITIAN_SYMMETRY=1 -DPRINT_DETAILED_SLICES=1 -DPRINT_Z_SLABS=1 -DSKIP_VERIFICATION=0 -DSPLINE_RESOLUTION=512"
 
 # Verify executable was created
 if [ ! -f "./hermitian_3d_matrix" ]; then
@@ -70,17 +70,17 @@ if [ ! -f "$PARAM_FILE" ]; then
 fi
 
 echo "=========================================="
-echo "Test: Hermitian Symmetry Test Mode 2 (D=0, G=0) with PLT ENABLED"
+echo "Test: Hermitian Symmetry Test Mode 1 (F=0, H=0) with PLT ENABLED"
 echo "Double Precision Build"
-echo "VERIFY_HERMITIAN_SYMMETRY: MODE 2 (sets D=0, G=0 + enables verification)"
+echo "VERIFY_HERMITIAN_SYMMETRY: MODE 1 (sets F=0, H=0 + enables verification)"
 echo "Verification: ENABLED"
 echo "Spline Resolution: 512 (high accuracy)"
 echo "PLT: ENABLED (using eigenmodes from zeldovich-PLT)"
 echo "PLT Rescaling: ENABLED (target_z = 0.0)"
 echo "N=$N, ranks=$NTOTRANKS, threads per rank=$NTHREADS_PER_RANK"
 echo "Parameter file: $PARAM_FILE"
-echo "Expected: With D=0 and G=0, F and H are computed from original D"
-echo "Expected: After 3D FFT, final matrix should be purely imaginary (real parts ≈ 0)"
+echo "Expected: With F=0 and H=0, only D and G remain"
+echo "Expected: After 3D FFT, final matrix should be purely real (imaginary parts ≈ 0)"
 echo "=========================================="
 echo ""
 
@@ -93,27 +93,27 @@ mpiexec -n $NTOTRANKS \
         -ppn $NRANKS_PER_NODE \
         --depth=$NTHREADS_PER_RANK \
         --cpu-bind depth \
-        ./hermitian_3d_matrix $N $PARAM_FILE 2>&1 | tee test_hermitian/test_hermitian_mode2_plt.log
+        ./hermitian_3d_matrix $N $PARAM_FILE 2>&1 | tee test_hermitian/test_hermitian_mode1_plt.log
 
 echo ""
 echo "=========================================="
 echo "Checking Hermitian Symmetry Verification Results..."
 echo "=========================================="
-grep -i "hermitian\|symmetry\|imaginary\|real" test_hermitian/test_hermitian_mode2_plt.log | tail -20
+grep -i "hermitian\|symmetry\|imaginary\|real" test_hermitian/test_hermitian_mode1_plt.log | tail -20
 
 echo ""
 echo "Checking for verification errors..."
-VERIFY_ERRORS=$(grep -i "ERROR.*hermitian\|ERROR.*symmetry" test_hermitian/test_hermitian_mode2_plt.log | wc -l)
+VERIFY_ERRORS=$(grep -i "ERROR.*hermitian\|ERROR.*symmetry" test_hermitian/test_hermitian_mode1_plt.log | wc -l)
 if [ "$VERIFY_ERRORS" -gt 0 ]; then
     echo "WARNING: Found $VERIFY_ERRORS Hermitian symmetry verification errors!"
-    grep -i "ERROR.*hermitian\|ERROR.*symmetry" test_hermitian/test_hermitian_mode2_plt.log | head -10
+    grep -i "ERROR.*hermitian\|ERROR.*symmetry" test_hermitian/test_hermitian_mode1_plt.log | head -10
 else
     echo "SUCCESS: No Hermitian symmetry verification errors found!"
 fi
 
 echo ""
 echo "Checking final real-space verification..."
-grep -i "max_real\|max_imag\|rms_imag\|purely imaginary\|purely real\|NOT OK" test_hermitian/test_hermitian_mode2_plt.log | tail -10
+grep -i "max_real\|max_imag\|rms_imag\|purely imaginary\|purely real\|NOT OK" test_hermitian/test_hermitian_mode1_plt.log | tail -10
 
 echo ""
 echo "Job completed!"

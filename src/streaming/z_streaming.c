@@ -53,15 +53,16 @@ void z_streaming_unpack(
     }
     
     // ========== UNPACKING: Extract this Z-slab from recv_buffer ==========
-    // Loop over all X in my region (can include periodic wrap), all Y, all arrays
+    // Loop over all arrays, all X in my region, all Y
     // v14: use PERIODIC_X for actual x_idx access
     // Fixed bug: Use batch and slice_idx information to compute correct offset
     // Data arrives as [array][slice_batch_local][pencil] per batch
     // We need to compute cumulative offset of all previous batches + current batch offset
+    // Write to local_z_slab in [Array][X][Y] format (Y stride-1 for FFT, better cache locality)
     #pragma omp parallel for collapse(3)
-    for (int x_idx = 0; x_idx < x_count; x_idx++) {
-        for (int y = 0; y < N; y++) {
-            for (int array_idx = 0; array_idx < narray; array_idx++) {
+    for (int array_idx = 0; array_idx < narray; array_idx++) {
+        for (int x_idx = 0; x_idx < x_count; x_idx++) {
+            for (int y = 0; y < N; y++) {
 
                 // Use pre-built lookup arrays to find which rank owns
                 // this Y-slice and which batch it came from
@@ -95,9 +96,9 @@ void z_streaming_unpack(
                 // No periodic needed here since ZSLAB uses local x_idx (not global X)
                 // The periodic wrapping was already handled during packing
                 
-                // Extract to local_z_slab: [X][Array][Y] (Zeldovich order!)
-                ZSLAB(x_idx, array_idx, y, N, narray)[0] = recv_buffer[recv_offset][0];
-                ZSLAB(x_idx, array_idx, y, N, narray)[1] = recv_buffer[recv_offset][1];
+                // Extract to local_z_slab: [Array][X][Y] format (Y stride-1 for FFT)
+                ZSLAB(array_idx, x_idx, y, N, narray, x_count)[0] = recv_buffer[recv_offset][0];
+                ZSLAB(array_idx, x_idx, y, N, narray, x_count)[1] = recv_buffer[recv_offset][1];
             }
         }
     }
@@ -107,11 +108,11 @@ void z_streaming_unpack(
     if (rank == 0 && z_global == my_bounds.z_start) {
         real_t debug_max_real_before[4] = {0, 0, 0, 0};
         real_t debug_max_imag_before[4] = {0, 0, 0, 0};
-        for (int x_idx = 0; x_idx < x_count; x_idx++) {
-            for (int array_idx = 0; array_idx < narray; array_idx++) {
+        for (int array_idx = 0; array_idx < narray; array_idx++) {
+            for (int x_idx = 0; x_idx < x_count; x_idx++) {
                 for (int y = 0; y < N; y++) {
-                    double re = fabs_t(ZSLAB(x_idx, array_idx, y, N, narray)[0]);
-                    double im = fabs_t(ZSLAB(x_idx, array_idx, y, N, narray)[1]);
+                    double re = fabs_t(ZSLAB(array_idx, x_idx, y, N, narray, x_count)[0]);
+                    double im = fabs_t(ZSLAB(array_idx, x_idx, y, N, narray, x_count)[1]);
                     debug_max_real_before[array_idx] = fmax_t(debug_max_real_before[array_idx], re);
                     debug_max_imag_before[array_idx] = fmax_t(debug_max_imag_before[array_idx], im);
                 }
@@ -125,11 +126,12 @@ void z_streaming_unpack(
     }
     #endif
     
-    // ========== 1D FFT: Apply along Y-direction for each (X, Array) ==========
+    // ========== 1D FFT: Apply along Y-direction for each (Array, X) ==========
+    // In [Array][X][Y] format, Y is stride-1 for fixed (array_idx, x_idx) - correct for FFTW
     #pragma omp parallel for collapse(2)
-    for (int x_idx = 0; x_idx < x_count; x_idx++) {
-        for (int array_idx = 0; array_idx < narray; array_idx++) {
-            fftw_complex_t *y_data = &ZSLAB(x_idx, array_idx, 0, N, narray);
+    for (int array_idx = 0; array_idx < narray; array_idx++) {
+        for (int x_idx = 0; x_idx < x_count; x_idx++) {
+            fftw_complex_t *y_data = &ZSLAB(array_idx, x_idx, 0, N, narray, x_count);
             FFTW_EXECUTE_DFT(plan_1d_y, y_data, y_data);
         }
     }

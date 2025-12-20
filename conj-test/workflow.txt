@@ -1,0 +1,77 @@
+How to use WriteParticleSslab after writing outputs from each rank
+1. Assemble the z slabs across ranks to get range of z's (instead of individual z values which were written during stream unpacking)
+    - Assembly depends on grid decomposition and which ranks were responsible for which z values
+    - Run: 
+        $ python3 reassemble_z_slabs_N16.py /home/helenshao/InitialConditions/hermitian_3d_matrix_production
+        (will look for N16 bin files in rank_* directories)
+    - Output saved to: 
+        /home/helenshao/InitialConditions/hermitian_3d_matrix_production/reassembled_z_slabs/
+        ├── z0_slab_N16_full.bin
+        ├── z1_slab_N16_full.bin
+        ├── z2_slab_N16_full.bin
+        ...
+        └── z15_slab_N16_full.bin
+2. Use WriteParticlesSlab() c++ function to write IC's as 32-byte particles
+    $ cd <directory where your reassembled files are>
+    $ ./write_particles_from_reassembled reassembled_z_slabs 16 param_N16.par 0 16
+    - output saved to:
+        $ ./output/
+
+====== Particle Files: ic_0, ic_1, ic_2, ic_3 ====== 
+** The number of particle files depends on CPD ** 
+file assignment:
+    z=0,1,2,3 → ic_0 (when CPD=4)
+    z=4,5,6,7 → ic_1
+    z=8,9,10,11 → ic_2
+    z=12,13,14,15 → ic_3
+Formula: ic_{z * cpd / ppd}
+4 z-slabs per file, with 4 files written
+
+1. Particle data in RVZel format
+- Each file contains 1,024 particles (for N=16 with CPD=4)
+- Each particle is 32 bytes with:
+    - Grid indices: i, j, k (3 × uint16 = 6 bytes + 2 padding)
+    - Displacement vector: displ[3] (3 × float = 12 bytes)
+        displ[0] = z-displacement
+        displ[1] = y-displacement
+        displ[2] = x-displacement
+    - Velocity vector: vel[3] (3 × float = 12 bytes)
+        vel[0] = z-velocity
+        vel[1] = y-velocity
+        vel[2] = x-velocity
+- File organization:
+    ic_0: Z-slabs z=0,1,2,3 (1,024 particles)
+    ic_1: Z-slabs z=4,5,6,7 (1,024 particles)
+    ic_2: Z-slabs z=8,9,10,11 (1,024 particles)
+    ic_3: Z-slabs z=12,13,14,15 (1,024 particles)
+- File size: 32,768 bytes (32 KB) per file
+
+2. Density File (if qdensity=1)
+- If the parameter file has ZD_qdensity = 1, there's also a density file:
+    - Contains density values for each particle
+        Format: float array
+        Location: param->density_filename (typically in the same ./output/ directory)
+
+"RVZel":
+Single precision (float)
+Includes: grid indices (i,j,k), displacements, velocities
+Structure: {uint16 i,j,k; float displ[3]; float vel[3]}
+32 bytes per particle
+
+"RVdoubleZel":
+Double precision (double)
+Includes: grid indices, displacements, velocities
+Structure: {uint16 i,j,k; double displ[3]; double vel[3]}
+54 bytes per particle
+
+"Zeldovich":
+Double precision
+Includes: grid indices, displacements only (no velocities)
+Structure: {uint16 i,j,k; double displ[3]}
+30 bytes per particle
+
+"ZelSimple":
+Single precision
+Includes: displacements only (no grid indices, no velocities)
+Structure: {float displ[3]}
+12 bytes per particle

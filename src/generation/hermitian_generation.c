@@ -379,6 +379,9 @@ void generate_hermitian_slice_pair_local(
                 int use_plt = 0;  // Declare outside to use in f computation
                 eigenmode e;      // Declare outside to use in f computation
                 
+                // Declare f before if/else blocks (needed for velocity arrays in all modes)
+                double f = 1.0;
+                
                 if (just_density) {
                     // Density-only mode: Set F, G, H to zero (not used)
                     F[0] = F[1] = G[0] = G[1] = H[0] = H[1] = 0.0;
@@ -608,7 +611,7 @@ void generate_hermitian_slice_pair_local(
                         // i*conj(F*f) = i*(F_re*f - i*F_im*f) = F_im*f + i*F_re*f
                         // f is computed above (PLT growth rate if PLT enabled, else 1.0)
                         CONJ_SLICE(2, x_mirror, z_mirror)[0] = F[1] * f;   // Real = F_im * f
-                        CONJ_SLICE(2, x_mirror, z_mirror)[1] = F[0] * f;   // Imag = F_re * f
+                        CONJ_SLICE(2, x_mirror, z_mirror)[1] = F[0] * f;   // Imag = F_re * f (FIXED: was -F[0])
                         
                         // Array 3: conj(G*f) + i*conj(H*f) = (G[0] + H[1])*f + i*((H[0] - G[1])*f)
                         CONJ_SLICE(3, x_mirror, z_mirror)[0] = (G[0] + H[1]) * f;  // Real = (G_re + H_im) * f
@@ -829,6 +832,10 @@ void generate_hermitian_slice_pair_local(
                 // Compute F, G, H from D
                 // Skip F, G, H computation in density-only mode (qdensity == 2)
                 fftw_complex F, G, H;
+                
+                // Declare f_sc before if/else blocks (needed for velocity arrays in all modes)
+                double f_sc = 1.0;
+                
                 if (just_density) {
                     // Density-only mode: Set F, G, H to zero (not used)
                     F[0] = F[1] = G[0] = G[1] = H[0] = H[1] = 0.0;
@@ -836,6 +843,7 @@ void generate_hermitian_slice_pair_local(
                     F[0] = F[1] = G[0] = G[1] = H[0] = H[1] = 0.0;
                 } else {
                     double ik2 = 1.0 / k2;
+                    
                     #if VERIFY_HERMITIAN_SYMMETRY == 1
                     // Verification mode 1: Set F=0 and H=0 to test Hermitian symmetry
                     F[0] = 0.0;
@@ -880,7 +888,7 @@ void generate_hermitian_slice_pair_local(
                     // When PLT is enabled: f = (sqrt(1. + 24 * e.val * f_cluster) - 1) / 4.
                     // When PLT is not enabled: f = 1.0 (default)
                     // Skip in density-only mode (qdensity == 2)
-                    double f_sc = 1.0;
+                    // f_sc already declared above, update it here if PLT is enabled
                     double rescale_sc = 1.0;
                     
                     // Get fundamental wavenumber (needed for both PLT and non-PLT cases)
@@ -1051,7 +1059,7 @@ void generate_hermitian_slice_pair_local(
                             // i*conj(F*f) = i*(F_re*f - i*F_im*f) = F_im*f + i*F_re*f
                             // f_sc is computed above (PLT growth rate if PLT enabled, else 1.0)
                             PRIM_SLICE(2, x_mirror, z_mirror)[0] = F[1] * f_sc;   // Real = F_im * f
-                            PRIM_SLICE(2, x_mirror, z_mirror)[1] = F[0] * f_sc;   // Imag = F_re * f
+                            PRIM_SLICE(2, x_mirror, z_mirror)[1] = F[0] * f_sc;   // Imag = F_re * f (FIXED: was -F[0])
                             // Array 3: conj(G*f) + i*conj(H*f) = (G[0] + H[1])*f + i*((H[0] - G[1])*f)
                             PRIM_SLICE(3, x_mirror, z_mirror)[0] = (G[0] + H[1]) * f_sc;
                             PRIM_SLICE(3, x_mirror, z_mirror)[1] = (H[0] - G[1]) * f_sc;
@@ -1319,10 +1327,15 @@ void generate_hermitian_slice_pair_local(
                 }
                 
                 fftw_complex F, G, H;
+                
+                // Declare f_sc2 before if/else blocks (needed for velocity arrays in all modes)
+                double f_sc2 = 1.0;
+                
                 if (k2 == 0.0) {
                     F[0] = F[1] = G[0] = G[1] = H[0] = H[1] = 0.0;
                 } else {
                     double ik2 = 1.0 / k2;
+                    
                     #if VERIFY_HERMITIAN_SYMMETRY == 1
                     // Verification mode 1: Set F=0 and H=0 to test Hermitian symmetry
                     F[0] = 0.0;
@@ -1357,13 +1370,13 @@ void generate_hermitian_slice_pair_local(
                         // Density-only mode: Set F, G, H to zero (not used)
                         F[0] = F[1] = G[0] = G[1] = H[0] = H[1] = 0.0;
                     } else {
-                    double ik2 = 1.0 / k2;
+                    // ik2 already declared above
                     // ========== STEP 3.5: Compute PLT growth rate f and rescale (before computing F, G, H) ==========
                     // f is the logarithmic derivative of the growth factor that scales velocities
                     // When PLT is enabled: f = (sqrt(1. + 24 * e.val * f_cluster) - 1) / 4.
                     // When PLT is not enabled: f = 1.0 (default)
                     // Skip in density-only mode (qdensity == 2)
-                    double f_sc2 = 1.0;
+                    f_sc2 = 1.0;
                     double rescale_sc2 = 1.0;
                     
                     // Get fundamental wavenumber (needed for both PLT and non-PLT cases)
@@ -1517,7 +1530,7 @@ void generate_hermitian_slice_pair_local(
                             // i*conj(F*f) = i*(F_re*f - i*F_im*f) = F_im*f + i*F_re*f
                             // f_sc2 is computed above (PLT growth rate if PLT enabled, else 1.0)
                             PRIM_SLICE(2, x_mirror, z_mirror)[0] = F[1] * f_sc2;   // Real = F_im * f
-                            PRIM_SLICE(2, x_mirror, z_mirror)[1] = F[0] * f_sc2;   // Imag = F_re * f
+                            PRIM_SLICE(2, x_mirror, z_mirror)[1] = F[0] * f_sc2;   // Imag = F_re * f (FIXED: was -F[0])
                             // Array 3: conj(G*f) + i*conj(H*f) = (G[0] + H[1])*f + i*((H[0] - G[1])*f)
                             PRIM_SLICE(3, x_mirror, z_mirror)[0] = (G[0] + H[1]) * f_sc2;
                             PRIM_SLICE(3, x_mirror, z_mirror)[1] = (H[0] - G[1]) * f_sc2;

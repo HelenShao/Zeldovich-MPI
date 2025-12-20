@@ -1,0 +1,89 @@
+#!/bin/bash
+#PBS -N rng_conj_N256
+#PBS -A AbacusAurora
+#PBS -l select=2:ncpus=64:mpiprocs=16:ompthreads=2
+#PBS -l walltime=00:30:00
+#PBS -l filesystems=home
+#PBS -q debug
+#PBS -M helenshao0904@gmail.com
+#PBS -m abe
+#PBS -j oe
+#PBS -o /home/helenshao/InitialConditions/hermitian_3d_matrix_production/conj-test/rng-consistency/test_rng_N256.out
+
+cd $PBS_O_WORKDIR
+
+# Load modules
+echo "Loading frameworks module..."
+module load frameworks
+echo "Loading FFTW module..."
+module load fftw/3.3.10
+
+# Go to hermitian_3d_matrix_production directory
+cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production
+
+# Compile with double precision, RNG consistency debugging, RNG skip debugging, and RNG verification
+# Makefile auto selects correct FFTW libs based on CFLAGS
+echo "Compiling hermitian_3d_matrix with double precision, RNG consistency debugging..."
+echo "Branch: zeldovich-conj (Zeldovich packing scheme)"
+echo "Using SPLINE_RESOLUTION=512 for interpolation accuracy"
+echo "NOTE: Enabling file writes for final output comparison (SKIP_FILE_WRITE=0)"
+make clean
+make CFLAGS="-DUSE_DOUBLE_PRECISION -DDEBUG_RNG_CONSISTENCY=1 -DDEBUG_RNG_SKIP=1 -DVERIFY_RNG_CALLS=1 -DSPLINE_RESOLUTION=512 -DSKIP_FILE_WRITE=0"
+
+# Verify executable was created
+if [ ! -f "./hermitian_3d_matrix" ]; then
+    echo "ERROR: Compilation failed - executable not found!"
+    exit 1
+fi
+echo "Compilation successful - executable found"
+
+# Job parameters
+NNODES=$(sort -u $PBS_NODEFILE | wc -l)
+NRANKS_PER_NODE=16
+NTHREADS_PER_RANK=2
+NTOTRANKS=$((NNODES * NRANKS_PER_NODE))
+
+# OpenMP settings
+export OMP_NUM_THREADS=$NTHREADS_PER_RANK
+export OMP_PLACES=cores
+export OMP_PROC_BIND=close
+
+# Test parameters
+N=256
+PARAM_FILE="examples/param_N256.par"
+
+# Check if parameter file exists
+if [ ! -f "$PARAM_FILE" ]; then
+    echo "ERROR: Parameter file not found: $PARAM_FILE"
+    exit 1
+fi
+
+echo "=========================================="
+echo "RNG Consistency Test: N=256"
+echo "Branch: zeldovich-conj (Zeldovich packing)"
+echo "Double Precision Build with RNG Consistency Debugging"
+echo "RNG Skip Debugging: ENABLED (DEBUG_RNG_SKIP=1)"
+echo "RNG Verification: ENABLED (VERIFY_RNG_CALLS=1)"
+echo "Spline Resolution: 512"
+echo "N=$N, ranks=$NTOTRANKS"
+echo "Parameter file: $PARAM_FILE"
+echo "RNG debug: Tests coordinates <= 127 (overlapping region boundary)"
+echo "=========================================="
+echo ""
+
+# Run the program with parameter file
+mpiexec -n $NTOTRANKS \
+        -ppn $NRANKS_PER_NODE \
+        --depth=$NTHREADS_PER_RANK \
+        --cpu-bind depth \
+        ./hermitian_3d_matrix $N $PARAM_FILE 2>&1 | tee conj-test/rng-consistency/test_rng_N256.log
+
+echo ""
+echo "=========================================="
+echo "Checking RNG Verification Results..."
+echo "=========================================="
+grep -i "RNG-VERIFY" conj-test/rng-consistency/test_rng_N256.log | head -20
+
+echo ""
+echo "Job completed!"
+

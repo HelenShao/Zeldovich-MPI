@@ -51,3 +51,18 @@ POWER_SPECTRUM_LOADING.md
 RNG_SKIP_COMPARISON.md
 v15_3_tests/README_RNG_CONSISTENCY.md
 v15_3_tests/README_RNG_CONSISTENCY.md
+
+# External folders
+../plt_ics_lehman/
+../zeldovich-PLT/
+zeldovich-PLT/
+../abacus/
+abacus/
+
+# External folders
+../plt_ics_lehman/
+../zeldovich-PLT/
+zeldovich-PLT/
+
+# Documentation files (temporary notes)
+AXIS_NOTATION_MAPPING.md

@@ -1,0 +1,67 @@
+================================================================================
+Final Output Matrix Comparison (RNG Consistency Test)
+================================================================================
+
+Comparing Z-slabs 0 to 255 in overlapping region (y,x < 256)
+N=256 directory: /home/helenshao/InitialConditions/hermitian_3d_matrix_production
+N=512 directory: /home/helenshao/InitialConditions/hermitian_3d_matrix_production
+
+Reading and comparing Z-slabs...
+  Z=0: Compared successfully
+  Z=50: Compared successfully
+  Z=100: Compared successfully
+  Z=150: Compared successfully
+  Z=200: Compared successfully
+  Z=250: Compared successfully
+
+Aggregating results across 256 Z-slabs...
+================================================================================
+Results:
+================================================================================
+
+Array 0 (Density+X-disp):
+  Real part:
+    Max difference: 6.453100e+01
+    Mean difference: 8.912372e+00
+    Matches (< 1e-10): 0/16777216 (0.00%)
+  Imaginary part:
+    Max difference: 1.966952e+00
+    Mean difference: 3.488756e-01
+    Matches (< 1e-10): 0/16777216 (0.00%)
+
+Array 1 (Y-disp+Z-disp):
+  Real part:
+    Max difference: 2.292738e+00
+    Mean difference: 5.585479e-01
+    Matches (< 1e-10): 0/16777216 (0.00%)
+  Imaginary part:
+    Max difference: 1.871820e+00
+    Mean difference: 3.765123e-01
+    Matches (< 1e-10): 0/16777216 (0.00%)
+
+Array 2 (X-velocity):
+  Real part:
+    Max difference: 1.189905e+00
+    Mean difference: 2.137244e-01
+    Matches (< 1e-10): 1/16777216 (0.00%)
+  Imaginary part:
+    Max difference: 1.404628e+00
+    Mean difference: 2.795777e-01
+    Matches (< 1e-10): 1/16777216 (0.00%)
+
+Array 3 (Y-velocity+Z-velocity):
+  Real part:
+    Max difference: 2.292738e+00
+    Mean difference: 5.585479e-01
+    Matches (< 1e-10): 0/16777216 (0.00%)
+  Imaginary part:
+    Max difference: 1.871820e+00
+    Mean difference: 3.765123e-01
+    Matches (< 1e-10): 0/16777216 (0.00%)
+
+================================================================================
+Summary:
+  Real part matches: 1/67108864 (0.00%)
+  Imaginary part matches: 1/67108864 (0.00%)
+================================================================================
+WARNING: Some differences found. Check max differences above.

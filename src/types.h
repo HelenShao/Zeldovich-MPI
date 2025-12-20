@@ -64,10 +64,12 @@ typedef struct {
     local_pencils[(int64_t)(y) + (N) * ((array_idx) + (narray) * (pencil_idx))]
 
 // Z-slab indexing macro: Access array 'array_idx' at (x_idx, y) for one Z-slab
-// Memory order: [X][Array][Y] (Y is stride-1 for FFT)
-// Formula: y + N * (array_idx + narray * x_idx)
-#define ZSLAB(x_idx, array_idx, y, N, narray) \
-    local_z_slab[(int64_t)(y) + (N) * ((array_idx) + (narray) * (x_idx))]
+// Memory order: [Array][X][Y] (Y is stride-1 for FFT)
+// Formula: y + N * (x_idx + x_count * array_idx)
+// Note: This format has better cache locality than [X][Array][Y] for unpacking
+// For final output, transpose to [Array][Y][X] format during write!
+#define ZSLAB(array_idx, x_idx, y, N, narray, x_count) \
+    local_z_slab[(int64_t)(y) + (N) * ((x_idx) + (x_count) * (array_idx))]
 
 // ====================================================================================
 // PERIODIC BOUNDARY CONDITION MACROS
