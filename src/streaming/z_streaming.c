@@ -127,7 +127,7 @@ void z_streaming_unpack(
     #endif
     
     // ========== 1D FFT: Apply along Y-direction for each (Array, X) ==========
-    // In [Array][X][Y] format, Y is stride-1 for fixed (array_idx, x_idx) - correct for FFTW
+    // In [Array][X][Y] format, Y is stride-1 for fixed (array_idx, x_idx)
     #pragma omp parallel for collapse(2)
     for (int array_idx = 0; array_idx < narray; array_idx++) {
         for (int x_idx = 0; x_idx < x_count; x_idx++) {

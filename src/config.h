@@ -225,6 +225,19 @@
 #define WRITE_PENCILS 0
 #endif
 
+// Particle output method (when param_file is provided)
+// 0 = Option A: Transpose [array][x][y] → [y][x] and call WriteParticlesSlab_range
+//     - Allocates transposed slabs (2× memory peak)
+//     - ~100-200 ms transpose overhead per Z-slab for large N
+//     - Recommended for N ≤ 8192
+// 1 = Option B: Direct access with WriteParticlesSlab_range_from_zslab
+//     - No transpose, no extra allocation (0× memory overhead)
+//     - Works directly with [array][x][y] layout
+//     - Recommended for N ≥ 8192 (saves ~0.85 GB + 60s per rank for N=32K)
+#ifndef USE_PARTICLE_OUTPUT_OPTION_B
+#define USE_PARTICLE_OUTPUT_OPTION_B 0  // Default: Option A (transpose)
+#endif
+
 // ====================================================================================
 // COMMUNICATION METHOD
 // ====================================================================================

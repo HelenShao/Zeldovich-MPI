@@ -26,6 +26,8 @@
     #define FFTW_PLAN_DFT_1D fftw_plan_dft_1d
     #define FFTW_EXECUTE_DFT fftw_execute_dft
     #define FFTW_DESTROY_PLAN fftw_destroy_plan
+    #define FFTW_MALLOC fftw_malloc
+    #define FFTW_FREE fftw_free
     
     // MPI datatypes
     #define MPI_COMPLEX_TYPE MPI_C_DOUBLE_COMPLEX
@@ -53,6 +55,8 @@
     #define FFTW_PLAN_DFT_1D fftwf_plan_dft_1d
     #define FFTW_EXECUTE_DFT fftwf_execute_dft
     #define FFTW_DESTROY_PLAN fftwf_destroy_plan
+    #define FFTW_MALLOC fftwf_malloc
+    #define FFTW_FREE fftwf_free
     
     // MPI datatypes
     #define MPI_COMPLEX_TYPE MPI_C_FLOAT_COMPLEX

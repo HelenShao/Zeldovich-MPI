@@ -4,7 +4,7 @@
 
 BoxSize = 100.0
 CPD = 256                          # Cells per dimension (= N)
-ICFormat = "RV"
+ICFormat = "RVZel"
 InitialConditionsDirectory = "./output"
 InitialRedshift = 99.0
 NP = 16777216                      # N^3 = 256^3
@@ -18,3 +18,8 @@ ZD_Pk_powerlaw_index = -2.0        # Power law: P(k) ~ k^-2
 ZD_Version = 2                     # Use version 2 (recommended)
 ZD_qPk_fix_to_mean = 0            # Random amplitude (not fixed)
 
+# PLT (Particle Linear Theory) settings
+ZD_qPLT = 1                        # Enable PLT mode
+ZD_PLT_filename = "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128"  # Path to eigenmode file
+ZD_qPLTrescale = 1                 # Enable PLT rescaling
+ZD_PLT_target_z = 0.0              # Target redshift for PLT rescaling (rescale to z=0)

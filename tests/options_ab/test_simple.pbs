@@ -1,0 +1,17 @@
+#!/bin/bash
+#PBS -N test_simple
+#PBS -A AbacusAurora
+#PBS -l select=1:ncpus=1
+#PBS -l walltime=00:01:00
+#PBS -l filesystems=home
+#PBS -j oe
+#PBS -o /home/helenshao/InitialConditions/hermitian_3d_matrix_production/tests/options_ab/test_simple.out
+
+# Create log file immediately
+LOG_FILE="/home/helenshao/InitialConditions/hermitian_3d_matrix_production/tests/options_ab/test_simple.log"
+echo "Job started at: $(date)" > "$LOG_FILE"
+echo "PBS_O_WORKDIR: $PBS_O_WORKDIR" >> "$LOG_FILE"
+echo "Current directory: $(pwd)" >> "$LOG_FILE"
+echo "This is a test" >> "$LOG_FILE"
+echo "Job completed at: $(date)" >> "$LOG_FILE"
+

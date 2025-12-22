@@ -85,7 +85,7 @@ INCLUDES = -I../zeldovich-PLT/include \
            -I../zeldovich-PLT/subprojects/ParseHeader/include \
            -I../zeldovich-PLT/build/subprojects/ParseHeader \
            -I../zeldovich-PLT/subprojects/fmt-11.2.0/include \
-           -Isrc -Isrc/utils -Isrc/fft -Isrc/generation -Isrc/communication -Isrc/streaming \
+           -Isrc -Isrc/utils -Isrc/fft -Isrc/generation -Isrc/communication -Isrc/streaming -Isrc/output \
            -Ideps -I../.. -I../../../.. \
            $(MPI_INCLUDES) $(FFTW_INCLUDES)
 
@@ -163,6 +163,7 @@ MODULE_SRC = src/fft/fft_setup.c \
              src/generation/hermitian_generation.c \
              src/communication/mpi_exchange.c \
              src/streaming/z_streaming.c
+OUTPUT_SRC = src/output/output_new.cpp
 
 # Output binary
 TARGET = hermitian_3d_matrix
@@ -175,8 +176,8 @@ TARGET = hermitian_3d_matrix
 
 all: $(TARGET)
 
-$(TARGET): $(SRC) $(UTILS_SRC) $(MODULE_SRC) $(STIMER_CC) $(ZELDOVICH_WRAPPER_SRC) src/config.h
-	$(CXX) $(ALL_CXXFLAGS) $(INCLUDES) -o $(TARGET) $(SRC) $(UTILS_SRC) $(MODULE_SRC) $(STIMER_CC) $(ZELDOVICH_WRAPPER_SRC) $(LDFLAGS)
+$(TARGET): $(SRC) $(UTILS_SRC) $(MODULE_SRC) $(STIMER_CC) $(ZELDOVICH_WRAPPER_SRC) $(OUTPUT_SRC) src/config.h
+	$(CXX) $(ALL_CXXFLAGS) $(INCLUDES) -o $(TARGET) $(SRC) $(UTILS_SRC) $(MODULE_SRC) $(STIMER_CC) $(ZELDOVICH_WRAPPER_SRC) $(OUTPUT_SRC) $(LDFLAGS)
 	@echo ""
 	@echo "Build successful!"
 	@echo "Binary: $(TARGET)"
