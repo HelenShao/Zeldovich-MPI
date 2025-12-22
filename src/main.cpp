@@ -1023,6 +1023,41 @@ int main(int argc, char **argv)
                 params          // v15.2: zeldovich-PLT Parameters handle (NULL = use legacy)
             );
             
+            // DEBUG: Check for Inf/NaN values in generated Y-slices
+            // Known problematic locations: x=126,127,0 and z values in conjugate Y-slices
+            if (rank == 0) {
+                int inf_count_gen[4] = {0, 0, 0, 0};
+                for (int slice_idx = 0; slice_idx < my_batch_slice_count; slice_idx++) {
+                    for (int array_idx = 0; array_idx < narray; array_idx++) {
+                        for (int x = 0; x < N; x++) {
+                            for (int z = 0; z < N; z++) {
+                                // Y_SLICE macro: local_y_slices[x + N * (z + N * (array_idx + narray * slice_idx))]
+                                real_t re = Y_SLICE(slice_idx, array_idx, x, z, N, narray)[0];
+                                real_t im = Y_SLICE(slice_idx, array_idx, x, z, N, narray)[1];
+                                if (isinf(re) || isinf(im) || isnan(re) || isnan(im)) {
+                                    inf_count_gen[array_idx]++;
+                                    // Print first few Inf locations
+                                    if (inf_count_gen[array_idx] <= 3) {
+                                        fprintf(stderr, "[INF-DEBUG GEN] Y_primary=%d Y_mirror=%d slice=%d array=%d x=%d z=%d: re=%.6e im=%.6e\n",
+                                                y_batch_primary, y_batch_mirror, slice_idx, array_idx, x, z, (double)re, (double)im);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                int total_inf_gen = 0;
+                for (int a = 0; a < narray; a++) total_inf_gen += inf_count_gen[a];
+                if (total_inf_gen > 0) {
+                    fprintf(stderr, "[INF-DEBUG GEN] Y_primary=%d Y_mirror=%d: Total Inf/NaN count per array: ",
+                            y_batch_primary, y_batch_mirror);
+                    for (int a = 0; a < narray; a++) {
+                        fprintf(stderr, "A%d=%d ", a, inf_count_gen[a]);
+                    }
+                    fprintf(stderr, "\n");
+                }
+            }
+            
             // DEBUG: Memory guard after generation + 2D FFT
             // Silent error checks (always active) - verbose output controlled by VERBOSE_MPI_BUFFER_CHECKS
             {
