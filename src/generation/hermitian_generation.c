@@ -477,9 +477,13 @@ void generate_hermitian_slice_pair_local(
                 }
                 
                 // Compute factor (used identically in both PLT and non-PLT cases)
-                // F = rescale * i * vec * fundamental * ik2 * D
+                // In zeldovich.cpp: k2 includes fundamental^2, so ik2 = 1/(k2_index * fundamental^2)
+                // F = rescale * I * vec * fundamental * ik2 * D
+                //   = rescale * I * vec * fundamental / (k2_index * fundamental^2) * D
+                //   = rescale * I * vec / (k2_index * fundamental) * D
                 // where vec is either e.vec[i] (PLT) or k[i] (non-PLT)
-                double factor = rescale * fundamental * ik2;
+                // Note: our ik2 = 1/k2_index (no fundamental), so we use 1/(k2*fundamental)
+                double factor = rescale / (k2 * fundamental);
                 
                 if (use_plt) {
                     // PLT mode: Use eigenvector instead of k-vector
@@ -928,9 +932,9 @@ void generate_hermitian_slice_pair_local(
                     }
                     
                     // Compute factor (used identically in both PLT and non-PLT cases)
-                    // F = rescale * i * vec * fundamental * ik2 * D
+                    // In zeldovich.cpp: k2 includes fundamental^2, so factor = rescale / (k2 * fundamental)
                     // where vec is either e.vec[i] (PLT) or k[i] (non-PLT)
-                    double factor = rescale_sc * fundamental_sc * ik2;
+                    double factor = rescale_sc / (k2 * fundamental_sc);
                     
                     if (use_plt_sc) {
                         // PLT mode: Use eigenvector instead of k-vector
@@ -1419,9 +1423,9 @@ void generate_hermitian_slice_pair_local(
                     }
                     
                     // Compute factor (used identically in both PLT and non-PLT cases)
-                    // F = rescale * i * vec * fundamental * ik2 * D
+                    // In zeldovich.cpp: k2 includes fundamental^2, so factor = rescale / (k2 * fundamental)
                     // where vec is either e.vec[i] (PLT) or k[i] (non-PLT)
-                    double factor = rescale_sc2 * fundamental_sc2 * ik2;
+                    double factor = rescale_sc2 / (k2 * fundamental_sc2);
                     
                     if (use_plt_sc2) {
                         // PLT mode: Use eigenvector instead of k-vector

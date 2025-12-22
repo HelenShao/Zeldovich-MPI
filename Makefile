@@ -164,20 +164,29 @@ MODULE_SRC = src/fft/fft_setup.c \
              src/communication/mpi_exchange.c \
              src/streaming/z_streaming.c
 OUTPUT_SRC = src/output/output_new.cpp
+REASSEMBLY_SRC = src/write_particles_from_reassembled_mpi.cpp
 
-# Output binary
+# Output binaries
 TARGET = hermitian_3d_matrix
+REASSEMBLY_TARGET = write_particles_from_reassembled_mpi
 
 # ====================================================================================
 # BUILD RULES
 # ====================================================================================
 
-.PHONY: all clean
+.PHONY: all clean reassembly
 
 all: $(TARGET)
 
+# Main executable (does not include reassembly tool due to main() conflict)
 $(TARGET): $(SRC) $(UTILS_SRC) $(MODULE_SRC) $(STIMER_CC) $(ZELDOVICH_WRAPPER_SRC) $(OUTPUT_SRC) src/config.h
 	$(CXX) $(ALL_CXXFLAGS) $(INCLUDES) -o $(TARGET) $(SRC) $(UTILS_SRC) $(MODULE_SRC) $(STIMER_CC) $(ZELDOVICH_WRAPPER_SRC) $(OUTPUT_SRC) $(LDFLAGS)
+
+# Reassembly tool (separate executable)
+reassembly: $(REASSEMBLY_TARGET)
+
+$(REASSEMBLY_TARGET): $(REASSEMBLY_SRC) $(UTILS_SRC) $(STIMER_CC) $(OUTPUT_SRC) src/config.h
+	$(CXX) $(ALL_CXXFLAGS) $(INCLUDES) -o $(REASSEMBLY_TARGET) $(REASSEMBLY_SRC) $(UTILS_SRC) $(STIMER_CC) $(OUTPUT_SRC) $(LDFLAGS)
 	@echo ""
 	@echo "Build successful!"
 	@echo "Binary: $(TARGET)"
@@ -185,7 +194,7 @@ $(TARGET): $(SRC) $(UTILS_SRC) $(MODULE_SRC) $(STIMER_CC) $(ZELDOVICH_WRAPPER_SR
 	@echo ""
 
 clean:
-	rm -f $(TARGET) *.o
+	rm -f $(TARGET) $(REASSEMBLY_TARGET) *.o
 
 # ====================================================================================
 # HELP
@@ -195,7 +204,8 @@ help:
 	@echo "Hermitian 3D Matrix MPI - Build System"
 	@echo ""
 	@echo "Targets:"
-	@echo "  make              - Build with default settings"
+	@echo "  make              - Build main executable (hermitian_3d_matrix)"
+	@echo "  make reassembly   - Build reassembly tool (write_particles_from_reassembled_mpi)"
 	@echo "  make clean        - Remove build artifacts"
 	@echo "  make help         - Show this help message"
 	@echo ""

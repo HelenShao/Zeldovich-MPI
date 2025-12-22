@@ -1,7 +1,7 @@
 #!/bin/bash
 #PBS -N test_option_b_N256
 #PBS -A AbacusAurora
-#PBS -l select=1:ncpus=64:mpiprocs=81:ompthreads=16
+#PBS -l select=1:ncpus=64:mpiprocs=4:ompthreads=16
 #PBS -l walltime=00:30:00
 #PBS -l filesystems=home
 #PBS -M helenshao0904@gmail.com
@@ -22,10 +22,10 @@ module load fftw/3.3.10
 # Go to hermitian_3d_matrix_production directory
 cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production
 
-# Compile Option B (direct WriteParticlesSlab_range_from_zslab)
-echo "Compiling with Option B (USE_PARTICLE_OUTPUT_OPTION_B=1)..."
+# Compile Option B (now same as Option A - both use PARTICLE_OUTPUT_MODE=0)
+echo "Compiling with Option B (PARTICLE_OUTPUT_MODE=0, same as Option A now)..."
 make clean
-make CFLAGS="-DUSE_PARTICLE_OUTPUT_OPTION_B=1 -DVERIFY_HERMITIAN_SYMMETRY=0 -DSKIP_FILE_WRITE=0" -B
+make CFLAGS="-DPARTICLE_OUTPUT_MODE=0 -DVERIFY_HERMITIAN_SYMMETRY=0 -DSKIP_FILE_WRITE=0" -B
 
 # Verify executable was created
 if [ ! -f "./hermitian_3d_matrix" ]; then
@@ -36,7 +36,7 @@ echo "Compilation successful - executable found"
 
 # Job parameters
 NNODES=$(sort -u $PBS_NODEFILE | wc -l)
-NRANKS_PER_NODE=81
+NRANKS_PER_NODE=4
 NTHREADS_PER_RANK=16
 NTOTRANKS=$((NNODES * NRANKS_PER_NODE))
 

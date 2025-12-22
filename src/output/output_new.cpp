@@ -41,6 +41,17 @@ namespace fs = std::filesystem;
 #define YX(_slab, _y, _x, _ppd) JK(_slab, _y, _x, _ppd)
 #define YX_LOCAL(_slab, _j, _k_local, _k_extent) JK(_slab, _j, _k_local, _k_extent)
 
+// Unified slab indexing macro - handles both [x][y] and [y][x] layouts
+// Parameters:
+//   _slab: pointer to slab data
+//   _j: Y coordinate (j index)
+//   _k_local: X coordinate local index (k_local)
+//   _use_xy: true for [x][y] layout (ZSLAB), false for [y][x] layout (JK)
+//   _stride: stride for [y][x] layout (param.ppd for full range, k_extent for local range)
+//   _N: grid size (param.ppd) for [x][y] layout
+#define INDEX_SLAB(_slab, _j, _k_local, _use_xy, _stride, _N) \
+    ((_use_xy) ? &(_slab)[(_k_local) * (_N) + (_j)] : &JK(_slab, _j, _k_local, _stride))
+
 // Global maxima of the particle displacements
 double max_disp[3];
 
@@ -67,6 +78,8 @@ size_t sizeof_outputtype;
 //   - rank: MPI rank (used for per-rank file naming, -1 for full-range mode)
 //   - k_start_global: Global X start (0 for full range, rank's X start for local range)
 //   - k_extent: Number of X values (ppd for full range, rank's X extent for local range)
+//   - use_x_y_layout: true for [x][y] layout (ZSLAB format), false for [y][x] layout (JK format)
+//                      For [x][y] layout, uses param.ppd for indexing: slab[k_local * param.ppd + j]
 // ====================================================================================
 
 static void WriteParticlesSlab_unified(
@@ -80,7 +93,8 @@ static void WriteParticlesSlab_unified(
    bool use_global_buffers, // true: use global buffers, false: allocate local
    int rank,               // MPI rank (-1 for full-range mode)
    int k_start_global,     // Global X start
-   int k_extent            // Number of X values
+   int k_extent,           // Number of X values
+   bool use_x_y_layout     // true: [x][y] layout (ZSLAB), false: [y][x] layout (JK)
 ) {
     STimer thisouttimer;
     thisouttimer.Start();
@@ -156,13 +170,14 @@ static void WriteParticlesSlab_unified(
                 k_value = k_start_global + k_local;  // Local range: calculate global k
             }
 
-            // Access data using unified indexing macro
-            // Stride is determined by mode: ppd for full range, k_extent for local range
+            // Access data using layout-appropriate indexing macro
+            // [x][y] layout: slab[k_local * param.ppd + j] (ZSLAB format)
+            // [y][x] layout: slab[k_local + stride * j] (JK format)
             int stride = is_full_range ? param.ppd : k_extent;
-            Complx *slab1_val = &JK(slab1, j, k_local, stride);
-            Complx *slab2_val = &JK(slab2, j, k_local, stride);
-            Complx *slab3_val = &JK(slab3, j, k_local, stride);
-            Complx *slab4_val = &JK(slab4, j, k_local, stride);
+            Complx *slab1_val = INDEX_SLAB(slab1, j, k_local, use_x_y_layout, stride, param.ppd);
+            Complx *slab2_val = INDEX_SLAB(slab2, j, k_local, use_x_y_layout, stride, param.ppd);
+            Complx *slab3_val = slab3 ? INDEX_SLAB(slab3, j, k_local, use_x_y_layout, stride, param.ppd) : NULL;
+            Complx *slab4_val = slab4 ? INDEX_SLAB(slab4, j, k_local, use_x_y_layout, stride, param.ppd) : NULL;
 
             dens = real(*slab1_val) * densitynorm;
             if (!just_density) {
@@ -170,9 +185,9 @@ static void WriteParticlesSlab_unified(
                 pos[1] = real(*slab2_val) * norm;
                 pos[2] = imag(*slab1_val) * norm;
                 if (param.qPLT) {
-                    vel[0] = imag(*slab4_val) * vnorm;
-                    vel[1] = real(*slab4_val) * vnorm;
-                    vel[2] = imag(*slab3_val) * vnorm;
+                    vel[0] = slab4_val ? imag(*slab4_val) * vnorm : 0.0;
+                    vel[1] = slab4_val ? real(*slab4_val) * vnorm : 0.0;
+                    vel[2] = slab3_val ? imag(*slab3_val) * vnorm : 0.0;
                 } else {
                     vel[0] = imag(*slab2_val) * vnorm;
                     vel[1] = real(*slab2_val) * vnorm;
@@ -383,7 +398,8 @@ void WriteParticlesSlab_new(
         true,   // use_global_buffers = true
         -1,     // rank = -1 (not used in full-range mode)
         0,      // k_start_global = 0 (full range starts at 0)
-        param.ppd  // k_extent = ppd (full range)
+        param.ppd,  // k_extent = ppd (full range)
+        false   // use_x_y_layout = false ([y][x] layout, JK format)
     );
     (void)output;  // Unused in unified function (handled internally)
 }
@@ -411,6 +427,43 @@ void WriteParticlesSlab_new(
 // (consistent with per-rank file strategy used in the MPI module).
 // ====================================================================================
 
+// ====================================================================================
+// WriteParticlesSlab_range - Overloaded versions
+// ====================================================================================
+// Version 1: Accepts data in [array][x][y] layout (ZSLAB format) - NO TRANSPOSE NEEDED
+// Version 2: Accepts data in [y][x] layout (JK format) - for backward compatibility
+// ====================================================================================
+
+// Version 1: [array][x][y] layout (ZSLAB format) - eliminates transpose
+void WriteParticlesSlab_range(
+   int rank,
+   int i,                  // i = Z index (legacy z)
+   int k_start_global,     // global X start for this rank's extent
+   int k_extent,           // number of X values for this rank
+   Complx *slab_data,      // Data in [array][x_local][y] layout (ZSLAB format)
+   int N,                  // Grid size (ppd)
+   int narray,             // Number of arrays (typically 4)
+   Parameters &param
+) {
+    // Extract pointers to each array's data (each array is [x][y] layout)
+    Complx *slab1 = &slab_data[0 * k_extent * N];
+    Complx *slab2 = &slab_data[1 * k_extent * N];
+    Complx *slab3 = (narray > 2) ? &slab_data[2 * k_extent * N] : NULL;
+    Complx *slab4 = (narray > 3) ? &slab_data[3 * k_extent * N] : NULL;
+    
+    // Call unified function with [x][y] layout
+    WriteParticlesSlab_unified(
+        i, slab1, slab2, slab3, slab4, param,
+        false,  // is_full_range = false (local range: ppd x k_extent)
+        false,  // use_global_buffers = false (allocate local buffers)
+        rank,   // rank = MPI rank (for per-rank file naming)
+        k_start_global,  // k_start_global = rank's X start
+        k_extent,  // k_extent = rank's X extent
+        true    // use_x_y_layout = true ([x][y] layout, ZSLAB format)
+    );
+}
+
+// Version 2: [y][x] layout (JK format) - for backward compatibility
 void WriteParticlesSlab_range(
    int rank,
    int i,                  // i = Z index (legacy z)
@@ -422,14 +475,15 @@ void WriteParticlesSlab_range(
    Complx *slab4,
    Parameters &param
 ) {
-    // Call unified function with local-range parameters
+    // Call unified function with [y][x] layout
     WriteParticlesSlab_unified(
         i, slab1, slab2, slab3, slab4, param,
         false,  // is_full_range = false (local range: ppd x k_extent)
         false,  // use_global_buffers = false (allocate local buffers)
         rank,   // rank = MPI rank (for per-rank file naming)
         k_start_global,  // k_start_global = rank's X start
-        k_extent  // k_extent = rank's X extent
+        k_extent,  // k_extent = rank's X extent
+        false   // use_x_y_layout = false ([y][x] layout, JK format)
     );
 }
 

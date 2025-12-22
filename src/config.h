@@ -183,7 +183,7 @@
 //     When enabled: Sets D=0 and G=0 so the matrix is purely imaginary
 //     After 3D FFT, the result should be purely imaginary (real parts ≈ 0)
 #ifndef VERIFY_HERMITIAN_SYMMETRY
-#define VERIFY_HERMITIAN_SYMMETRY 1
+#define VERIFY_HERMITIAN_SYMMETRY 0
 #endif
 
 // Skip verification checks entirely
@@ -225,17 +225,22 @@
 #define WRITE_PENCILS 0
 #endif
 
-// Particle output method (when param_file is provided)
-// 0 = Option A: Transpose [array][x][y] → [y][x] and call WriteParticlesSlab_range
-//     - Allocates transposed slabs (2× memory peak)
-//     - ~100-200 ms transpose overhead per Z-slab for large N
-//     - Recommended for N ≤ 8192
-// 1 = Option B: Direct access with WriteParticlesSlab_range_from_zslab
-//     - No transpose, no extra allocation (0× memory overhead)
-//     - Works directly with [array][x][y] layout
-//     - Recommended for N ≥ 8192 (saves ~0.85 GB + 60s per rank for N=32K)
-#ifndef USE_PARTICLE_OUTPUT_OPTION_B
-#define USE_PARTICLE_OUTPUT_OPTION_B 0  // Default: Option A (transpose)
+// Particle output mode (unified flag for all output paths)
+// 0 = Write particle ICs directly (no transpose needed)
+//     - Uses WriteParticlesSlab_range with [array][x][y] layout (ZSLAB format)
+//     - No transpose overhead, no extra allocation
+//     - Works directly with main.cpp's data layout
+//     - Writes particle ICs directly
+// 1 = Write .bin files for later re-assembly
+//     - Writes complex .bin files (rank_*/i*_slab_N*.bin)
+//     - Files can be reassembled by write_particles_from_reassembled_mpi.cpp
+//     - No particle IC writing in main.cpp
+// 2 = Write .bin files then immediately read back and write particle ICs
+//     - Writes .bin files first (same as Mode 1)
+//     - Then reads them back and calls WriteParticlesSlab_range on local data
+//     - Writes particle ICs from .bin file data (useful for verifying .bin format)
+#ifndef PARTICLE_OUTPUT_MODE
+#define PARTICLE_OUTPUT_MODE 1  // Default: Write .bin files for later re-assembly
 #endif
 
 // ====================================================================================
@@ -266,7 +271,7 @@
 // When N < MAX_PPD, we skip RNG calls for missing grid points to maintain
 // consistency with what a full MAX_PPD × MAX_PPD grid would generate
 #ifndef MAX_PPD
-#define MAX_PPD 4096  // Adjust based on maximum expected N
+#define MAX_PPD 65536  // Adjust based on maximum expected N
 #endif
 
 // Power spectrum spline interpolation resolution

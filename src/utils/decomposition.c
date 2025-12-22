@@ -6,6 +6,10 @@
 #include <math.h>
 #include <stdio.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // ====================================================================================
 // Calculate grid factors (grid_x × grid_z = num_ranks)
 // ====================================================================================
@@ -185,3 +189,6 @@ int validate_abacus_compatibility(int N, int num_ranks, int grid_x, int grid_z)
     return valid;
 }
 
+#ifdef __cplusplus
+}
+#endif

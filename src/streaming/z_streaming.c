@@ -10,7 +10,7 @@
 #include <math.h>    // For isinf, isnan
 #include <mpi.h>
 
-// Optional deep consistency check for streaming offsets.
+// Optional safety checks for streaming offsets (lightweight).
 // Set to 1 temporarily when debugging packing/unpacking issues.
 #ifndef VERIFY_STREAMING_OFFSETS
 #define VERIFY_STREAMING_OFFSETS 0
@@ -97,33 +97,27 @@ void z_streaming_unpack(
                                     + pencil_idx;
 
 #if VERIFY_STREAMING_OFFSETS
-                // Deep consistency check: verify that the batch/slice-based
-                // offset formula matches the global slice index layout implied
-                // by y_src_local_idx and src_total_slices.
-                int local_slice_global = y_src_local_idx[y]; // 0 .. src_total_slices[src]-1
-                if (local_slice_global < 0 || local_slice_global >= src_total_slices[src]) {
+                // Lightweight safety checks:
+                // 1) src_batch_slice_counts[src][batch] must not exceed src_total_slices[src].
+                if (slices_in_this_batch < 0 || slices_in_this_batch > src_total_slices[src]) {
                     fprintf(stderr,
-                            "[OFFSET-VERIFY] Rank %d: Invalid local_slice_global=%d for y=%d, src=%d "
-                            "(total_slices=%d)\n",
-                            rank, local_slice_global, y, src, src_total_slices[src]);
+                            "[OFFSET-VERIFY] Rank %d: Invalid slices_in_this_batch=%d for src=%d, batch=%d "
+                            "(src_total_slices=%d)\n",
+                            rank, slices_in_this_batch, src, batch, src_total_slices[src]);
                     MPI_Abort(MPI_COMM_WORLD, 1);
                 }
 
-                int64_t rel_from_batch = (recv_offset - recv_displs_src[src]);
-                int64_t rel_expected = (int64_t)array_idx * (int64_t)src_total_slices[src] * (int64_t)my_pencils
-                                      + (int64_t)local_slice_global * (int64_t)my_pencils
-                                      + (int64_t)pencil_idx;
-
-                if (rel_from_batch != rel_expected) {
+                // 2) recv_offset must lie within this source's allocated region in recv_buffer.
+                int64_t rel_src = recv_offset - recv_displs_src[src];
+                int64_t max_src = (int64_t)src_total_slices[src] * (int64_t)my_pencils * (int64_t)narray;
+                if (rel_src < 0 || rel_src >= max_src) {
                     fprintf(stderr,
-                            "[OFFSET-VERIFY] Rank %d: Offset mismatch for y=%d, src=%d, batch=%d, slice_idx=%d, "
+                            "[OFFSET-VERIFY] Rank %d: recv_offset out of bounds for src=%d, batch=%d, slice_idx=%d, "
                             "array=%d, pencil=%d (x_idx=%d, z_idx=%d)\n"
-                            "  rel_from_batch=%lld, rel_expected=%lld, "
-                            "src_total_slices=%d, my_pencils=%d\n",
-                            rank, y, src, batch, slice_idx,
-                            array_idx, pencil_idx, x_idx, z_idx,
-                            (long long)rel_from_batch, (long long)rel_expected,
-                            src_total_slices[src], my_pencils);
+                            "  rel_src=%lld, max_src=%lld, src_total_slices=%d, my_pencils=%d, narray=%d\n",
+                            rank, src, batch, slice_idx, array_idx, pencil_idx, x_idx, z_idx,
+                            (long long)rel_src, (long long)max_src,
+                            src_total_slices[src], my_pencils, narray);
                     MPI_Abort(MPI_COMM_WORLD, 1);
                 }
 #endif

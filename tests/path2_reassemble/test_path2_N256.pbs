@@ -1,0 +1,228 @@
+#!/bin/bash
+#PBS -N test_path2_N256
+#PBS -A AbacusAurora
+#PBS -l select=1:ncpus=64:mpiprocs=4:ompthreads=16
+#PBS -l walltime=00:30:00
+#PBS -l filesystems=home
+#PBS -M helenshao0904@gmail.com
+#PBS -m abe
+#PBS -j oe
+#PBS -o /home/helenshao/InitialConditions/hermitian_3d_matrix_production/tests/path2_reassemble/test_path2_N256.out
+#PBS -e /home/helenshao/InitialConditions/hermitian_3d_matrix_production/tests/path2_reassemble/test_path2_N256.err
+
+# Set absolute path for log file - create immediately
+LOG_FILE="/home/helenshao/InitialConditions/hermitian_3d_matrix_production/tests/path2_reassemble/test_path2_N256.log"
+echo "=== PBS Job Started ===" > "$LOG_FILE" 2>&1
+echo "Job ID: $PBS_JOBID" >> "$LOG_FILE" 2>&1
+echo "PBS_O_WORKDIR: $PBS_O_WORKDIR" >> "$LOG_FILE" 2>&1
+echo "Current directory: $(pwd)" >> "$LOG_FILE" 2>&1
+echo "Date: $(date)" >> "$LOG_FILE" 2>&1
+
+# Change to PBS working directory if set
+if [ -n "$PBS_O_WORKDIR" ]; then
+    cd "$PBS_O_WORKDIR" >> "$LOG_FILE" 2>&1 || {
+        echo "ERROR: Failed to cd to PBS_O_WORKDIR=$PBS_O_WORKDIR" >> "$LOG_FILE" 2>&1
+        exit 1
+    }
+    echo "Changed to: $(pwd)" >> "$LOG_FILE" 2>&1
+fi
+
+# Load modules
+echo "Loading frameworks module..." >> "$LOG_FILE" 2>&1
+module load frameworks >> "$LOG_FILE" 2>&1
+echo "Loading FFTW module..." >> "$LOG_FILE" 2>&1
+module load fftw/3.3.10 >> "$LOG_FILE" 2>&1
+
+# Go to hermitian_3d_matrix_production directory
+cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production
+echo "Changed to project directory: $(pwd)" >> "$LOG_FILE" 2>&1
+
+# ====================================================================================
+# STEP 1: Generate .bin files using main.cpp (without param_file to get .bin files)
+# ====================================================================================
+echo "" >> "$LOG_FILE" 2>&1
+echo "==========================================" >> "$LOG_FILE" 2>&1
+echo "STEP 1: Generating .bin files" >> "$LOG_FILE" 2>&1
+echo "==========================================" >> "$LOG_FILE" 2>&1
+
+# Compile main.cpp with Mode 1 (Write .bin files for re-assembly)
+echo "Compiling main.cpp with Mode 1 (PARTICLE_OUTPUT_MODE=1)..." >> "$LOG_FILE" 2>&1
+make clean >> "$LOG_FILE" 2>&1
+make CFLAGS="-DPARTICLE_OUTPUT_MODE=1 -DVERIFY_HERMITIAN_SYMMETRY=0 -DSKIP_FILE_WRITE=0" -B >> "$LOG_FILE" 2>&1
+
+# Verify executable was created
+if [ ! -f "./hermitian_3d_matrix" ]; then
+    echo "ERROR: Compilation failed - executable not found!" >> "$LOG_FILE" 2>&1
+    exit 1
+fi
+echo "Compilation successful" >> "$LOG_FILE" 2>&1
+
+# Job parameters for main.cpp
+NNODES=$(sort -u $PBS_NODEFILE | wc -l)
+NRANKS_PER_NODE=4
+NTHREADS_PER_RANK=16
+NTOTRANKS=4  # 2×2 grid for N=256
+
+# OpenMP settings
+export OMP_NUM_THREADS=$NTHREADS_PER_RANK
+export OMP_PLACES=cores
+export OMP_PROC_BIND=close
+
+# Test parameters
+N=256
+BIN_OUTPUT_DIR="tests/path2_reassemble/bin_files"
+
+# Create directory for .bin files
+mkdir -p "$BIN_OUTPUT_DIR"
+rm -rf "$BIN_OUTPUT_DIR"/rank_* "$BIN_OUTPUT_DIR"/rank_* 2>/dev/null || true
+
+echo "Running main.cpp to generate .bin files (N=$N, ranks=$NTOTRANKS)..." >> "$LOG_FILE" 2>&1
+echo "Output directory: $BIN_OUTPUT_DIR" >> "$LOG_FILE" 2>&1
+
+# Run main.cpp with Mode 2 (param_file is optional for mode 2, but we can pass it)
+# Change to output directory first so .bin files are written there
+cd "$BIN_OUTPUT_DIR" || {
+    echo "ERROR: Failed to cd to $BIN_OUTPUT_DIR" >> "$LOG_FILE" 2>&1
+    exit 1
+}
+
+# Note: Mode 2 writes .bin files regardless of param_file presence
+# We can pass param_file if needed for other settings, but .bin writing is enabled by mode 2
+mpiexec -n $NTOTRANKS \
+        -ppn $NRANKS_PER_NODE \
+        --depth=$NTHREADS_PER_RANK \
+        --cpu-bind depth \
+        ../../hermitian_3d_matrix $N 2>&1 | tee -a "$LOG_FILE"
+
+# Return to project root
+cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production
+
+# Verify .bin files were created
+BIN_COUNT=$(find "$BIN_OUTPUT_DIR" -name "*.bin" 2>/dev/null | wc -l)
+echo "" >> "$LOG_FILE" 2>&1
+echo "Generated $BIN_COUNT .bin files" >> "$LOG_FILE" 2>&1
+
+if [ "$BIN_COUNT" -eq 0 ]; then
+    echo "ERROR: No .bin files were generated!" >> "$LOG_FILE" 2>&1
+    exit 1
+fi
+
+# ====================================================================================
+# STEP 2: Compile write_particles_from_reassembled_mpi.cpp
+# ====================================================================================
+echo "" >> "$LOG_FILE" 2>&1
+echo "==========================================" >> "$LOG_FILE" 2>&1
+echo "STEP 2: Compiling write_particles_from_reassembled_mpi.cpp" >> "$LOG_FILE" 2>&1
+echo "==========================================" >> "$LOG_FILE" 2>&1
+
+cd conj-test
+
+# Compile write_particles_from_reassembled_mpi.cpp
+# Using similar flags as Makefile.reassemble
+BASE_DIR="/home/helenshao/InitialConditions/hermitian_3d_matrix_production"
+ZELDOVICH_DIR="$BASE_DIR/../zeldovich-PLT"
+
+CXX=g++
+CXXFLAGS="-std=c++17 -Wall -Wextra -O3 -fopenmp"
+
+INCLUDES="-I$ZELDOVICH_DIR/include \
+          -I$ZELDOVICH_DIR/subprojects/ParseHeader/include \
+          -I$ZELDOVICH_DIR/build/subprojects/ParseHeader \
+          -I$ZELDOVICH_DIR/subprojects/fmt-11.2.0/include \
+          -I$BASE_DIR/src/utils"
+
+LIB_DIRS="-L$ZELDOVICH_DIR/build \
+          -L$ZELDOVICH_DIR/build/subprojects/ParseHeader \
+          -L$ZELDOVICH_DIR/build/subprojects/fmt-11.2.0"
+
+LIBS="-lzeldovich -lparseheader -lfmt -lm -lstdc++ -fopenmp"
+
+RPATH="-Wl,-rpath,$(cd $ZELDOVICH_DIR/build && pwd):$(cd $ZELDOVICH_DIR/build/subprojects/ParseHeader && pwd):$(cd $ZELDOVICH_DIR/build/subprojects/fmt-11.2.0 && pwd)"
+
+echo "Compiling write_particles_from_reassembled_mpi.cpp..." >> "$LOG_FILE" 2>&1
+# Compile decomposition.c first if needed
+# Reason: write_particles_from_reassembled_mpi.cpp is C++ code that needs to link with
+#         decomposition.c (C code). Since C and C++ have different name mangling, we need
+#         to compile decomposition.c separately as an object file and link it.
+#         The decomposition functions are used to determine the grid layout (grid_x, grid_z)
+#         for reassembling the per-rank i-slabs into full i-slabs.
+if [ ! -f "$BASE_DIR/src/utils/decomposition.o" ]; then
+    echo "Compiling decomposition.c..." >> "$LOG_FILE" 2>&1
+    gcc -c -O3 -fPIC -o "$BASE_DIR/src/utils/decomposition.o" \
+        "$BASE_DIR/src/utils/decomposition.c" >> "$LOG_FILE" 2>&1
+fi
+
+$CXX $CXXFLAGS $INCLUDES \
+     -o write_particles_from_reassembled_mpi \
+     write_particles_from_reassembled_mpi.cpp \
+     "$BASE_DIR/src/utils/decomposition.o" \
+     $LIB_DIRS $LIBS $RPATH \
+     >> "$LOG_FILE" 2>&1
+
+if [ ! -f "./write_particles_from_reassembled_mpi" ]; then
+    echo "ERROR: Compilation of write_particles_from_reassembled_mpi.cpp failed!" >> "$LOG_FILE" 2>&1
+    exit 1
+fi
+echo "Compilation successful" >> "$LOG_FILE" 2>&1
+
+# ====================================================================================
+# STEP 3: Run write_particles_from_reassembled_mpi to reassemble and write particle ICs
+# ====================================================================================
+echo "" >> "$LOG_FILE" 2>&1
+echo "==========================================" >> "$LOG_FILE" 2>&1
+echo "STEP 3: Reassembling and writing particle ICs" >> "$LOG_FILE" 2>&1
+echo "==========================================" >> "$LOG_FILE" 2>&1
+
+cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production
+
+# Parameters for write_particles_from_reassembled_mpi
+PARAM_FILE="examples/param_N256.par"
+PARTICLE_OUTPUT_DIR="tests/path2_reassemble/particle_ics"
+I_START=0
+I_END=$N
+
+# Create output directory for particle ICs
+mkdir -p "$PARTICLE_OUTPUT_DIR"
+
+# Run write_particles_from_reassembled_mpi
+# Usage: <output_dir> <N> <num_ranks> [param_file] [i_start] [i_end]
+echo "Running write_particles_from_reassembled_mpi..." >> "$LOG_FILE" 2>&1
+echo "  output_dir: $BIN_OUTPUT_DIR" >> "$LOG_FILE" 2>&1
+echo "  N: $N" >> "$LOG_FILE" 2>&1
+echo "  num_ranks: $NTOTRANKS" >> "$LOG_FILE" 2>&1
+echo "  param_file: $PARAM_FILE" >> "$LOG_FILE" 2>&1
+echo "  i_range: [$I_START, $I_END)" >> "$LOG_FILE" 2>&1
+
+# Set output directory in parameter file or use environment variable
+# The write_particles_from_reassembled_mpi will write to param.output_dir
+# We need to modify the param file or pass it correctly
+
+./conj-test/write_particles_from_reassembled_mpi \
+    "$BIN_OUTPUT_DIR" \
+    $N \
+    $NTOTRANKS \
+    "$PARAM_FILE" \
+    $I_START \
+    $I_END \
+    2>&1 | tee -a "$LOG_FILE"
+
+# Check for output files
+IC_COUNT=$(find . -name "ic_*" -not -name "*.bin" 2>/dev/null | wc -l)
+echo "" >> "$LOG_FILE" 2>&1
+echo "Generated $IC_COUNT particle IC files" >> "$LOG_FILE" 2>&1
+
+# Move particle IC files to output directory if they're in the current directory
+if [ -d "output" ]; then
+    echo "Moving particle IC files to $PARTICLE_OUTPUT_DIR..." >> "$LOG_FILE" 2>&1
+    mv output/ic_* "$PARTICLE_OUTPUT_DIR/" 2>/dev/null || true
+    mv output/dens* "$PARTICLE_OUTPUT_DIR/" 2>/dev/null || true
+fi
+
+# Final summary
+echo "" >> "$LOG_FILE" 2>&1
+echo "==========================================" >> "$LOG_FILE" 2>&1
+echo "Path 2 Test Complete" >> "$LOG_FILE" 2>&1
+echo "  .bin files: $BIN_COUNT (in $BIN_OUTPUT_DIR)" >> "$LOG_FILE" 2>&1
+echo "  Particle IC files: $IC_COUNT (in $PARTICLE_OUTPUT_DIR)" >> "$LOG_FILE" 2>&1
+echo "==========================================" >> "$LOG_FILE" 2>&1
+

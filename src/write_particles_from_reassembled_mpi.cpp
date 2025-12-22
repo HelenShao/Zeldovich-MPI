@@ -4,7 +4,6 @@
 // Reassembles per-rank i-slabs written by main.cpp and calls WriteParticlesSlab_new
 // to write complete particle data (matching serial Zeldovich output).
 //
-// This program:
 // 1. Reads command-line arguments
 // 2. Loads or creates simulation parameters
 // 3. Initializes output buffers
@@ -27,10 +26,20 @@
 #include <iostream>
 #include <algorithm>
 
+// Avoid MPI C++ binding conflicts
+#define MPICH_SKIP_MPICXX
+
 // Include zeldovich-PLT headers
 #include <output.h>
 #include <parameters.h>
 #include <omp.h>
+
+// Include output_new.h for WriteParticlesSlab_new
+// Undefine MAX_PPD to avoid conflict
+#ifdef MAX_PPD
+#undef MAX_PPD
+#endif
+#include "output/output_new.h"
 
 // Include grid decomposition utilities
 extern "C" {
@@ -38,7 +47,16 @@ extern "C" {
 }
 
 namespace fs = std::filesystem;
-using Complx = std::complex<double>;
+
+// Precision selection: match the precision used in main.cpp
+// Use BinComplx to avoid conflict with zeldovich.h's Complx (which is always double)
+#ifdef USE_DOUBLE_PRECISION
+    using BinComplx = std::complex<double>;
+    constexpr size_t EXPECTED_BYTES_PER_COMPLEX = 16;
+#else
+    using BinComplx = std::complex<float>;
+    constexpr size_t EXPECTED_BYTES_PER_COMPLEX = 8;
+#endif
 
 // ====================================================================================
 // REASSEMBLE I-SLAB FROM RANKS
@@ -51,18 +69,18 @@ using Complx = std::complex<double>;
 // This uses the grid decomposition to determine each rank's X-range.
 // ====================================================================================
 
-std::vector<Complx> ReassembleISlabFromRanks(
+std::vector<BinComplx> ReassembleISlabFromRanks(
     const std::string &output_dir,
     int i,          // i index (Z slab)
     int N,
     int narray,
     int num_ranks
 ) {
-    std::vector<Complx> full_slab;
+    std::vector<BinComplx> full_slab;
     full_slab.resize((size_t)narray * (size_t)N * (size_t)N);
 
     // Zero-initialize
-    std::fill(full_slab.begin(), full_slab.end(), Complx(0.0, 0.0));
+    std::fill(full_slab.begin(), full_slab.end(), BinComplx(0.0, 0.0));
 
     // Determine 2D grid factors for domain decomposition
     int grid_x = 0;
@@ -109,14 +127,14 @@ std::vector<Complx> ReassembleISlabFromRanks(
         }
         rewind(fp);
 
-        size_t elem_size = sizeof(Complx);
+        size_t elem_size = sizeof(BinComplx);
         if (file_size % (long)elem_size != 0) {
             fprintf(stderr,
                     "Warning: file %s size %ld not multiple of complex size %zu.\n",
                     filename.c_str(), file_size, elem_size);
         }
 
-        // Infer x_count from file size: narray * N * x_count * sizeof(Complx)
+        // Infer x_count from file size: narray * N * x_count * sizeof(BinComplx)
         int64_t num_elems = file_size / (long)elem_size;
         int64_t denom = (int64_t)narray * (int64_t)N;
         if (denom == 0) {
@@ -132,7 +150,7 @@ std::vector<Complx> ReassembleISlabFromRanks(
                     filename.c_str(), x_count, x_count_expected, rank);
         }
 
-        std::vector<Complx> local_slab;
+        std::vector<BinComplx> local_slab;
         local_slab.resize((size_t)narray * (size_t)N * (size_t)x_count);
 
         size_t read_count = fread(local_slab.data(), elem_size,
@@ -175,7 +193,7 @@ std::vector<Complx> ReassembleISlabFromRanks(
 }
 
 // ====================================================================================
-// MAIN PROGRAM
+// MAIN
 // ====================================================================================
 
 int main(int argc, char* argv[]) {
@@ -301,20 +319,28 @@ int main(int argc, char* argv[]) {
     // Process each i-slab
     int processed = 0;
     for (int i = i_start; i < i_end; i++) {
-        // Reassemble full i-slab from all ranks
-        std::vector<Complx> full_slab = ReassembleISlabFromRanks(
+        // Reassemble full i-slab from all ranks (as BinComplx - matches .bin file precision)
+        std::vector<BinComplx> full_slab_bin = ReassembleISlabFromRanks(
             output_dir, i, N, narray, num_ranks
         );
         
-        if (full_slab.empty()) {
+        if (full_slab_bin.empty()) {
             printf("  i=%d: Skipping (reassembly failed or no data)\n", i);
             continue;
         }
         
         // Verify we have the right amount of data
-        if (full_slab.size() != (size_t)(narray * N * N)) {
-            fprintf(stderr, "ERROR: i=%d wrong size: %zu != %d\n", i, full_slab.size(), narray * N * N);
+        if (full_slab_bin.size() != (size_t)(narray * N * N)) {
+            fprintf(stderr, "ERROR: i=%d wrong size: %zu != %d\n", i, full_slab_bin.size(), narray * N * N);
             continue;
+        }
+        
+        // Convert from BinComplx (float or double, matches .bin file) to Complx (double, required by WriteParticlesSlab_new)
+        // WriteParticlesSlab_new always expects Complx = std::complex<double>
+        std::vector<Complx> full_slab;
+        full_slab.reserve(full_slab_bin.size());
+        for (const auto& val : full_slab_bin) {
+            full_slab.push_back(Complx(static_cast<double>(val.real()), static_cast<double>(val.imag())));
         }
         
         // Create 2D slab pointers for WriteParticlesSlab_new

@@ -1622,142 +1622,128 @@ int main(int argc, char **argv)
             // Use i,j,k notation for output writing (Zeldovich convention)
             int i = z;  // i = Z coordinate (Zeldovich i)
             
-            // Debug: Check why particle writing might be skipped
+            // Debug: Check output mode
             if (rank == 0 && z == 0) {
-                printf("[OUTPUT-DEBUG] z=%d: param_file=%p, params=%p, condition=%d\n", 
-                       z, (void*)param_file, (void*)params, 
-                       (param_file != NULL && params != NULL) ? 1 : 0);
+                printf("[OUTPUT-DEBUG] z=%d: param_file=%p, params=%p, PARTICLE_OUTPUT_MODE=%d\n", 
+                       z, (void*)param_file, (void*)params, PARTICLE_OUTPUT_MODE);
                 fflush(stdout);
             }
             
-            if (param_file != NULL && params != NULL) {
-                if (rank == 0 && z == 0) {
-                    printf("[OUTPUT-DEBUG] z=%d: Taking particle IC writing path\n", z);
-                    fflush(stdout);
-                }
-                // Particle IC writing (Option A or B selected by flag)
-#if USE_PARTICLE_OUTPUT_OPTION_B
-                // =======================================================================================
-                // OPTION B: Direct access (no transpose) - WriteParticlesSlab_range_from_zslab
-                // =======================================================================================
-                // Works directly with [array][x][y] layout (ZSLAB format)
-                // No transpose, no extra allocation (0× memory overhead)
-                // Recommended for N ≥ 8192 (saves ~0.85 GB + 60s per rank for N=32K)
-                // =======================================================================================
-                
-                int k_start_global = my_extended_bounds.core.x_start;
-                int k_extent = x_count;
-                
-                // Direct call with local_z_slab in [array][x][y] layout
-                WriteParticlesSlab_range_from_zslab(
-                    rank,
-                    i,                     // i = Z index
-                    k_start_global,        // Global X start
-                    k_extent,              // Number of X values
-                    (Complx*)local_z_slab, // [array][x][y] layout (no transpose needed)
-                    N,                     // Grid size
-                    narray,                // Number of arrays
-                    *static_cast<Parameters*>(params)
-                );
-                
-                files_written++;
-                
-                if (DEBUG_PRINTS && rank == 0 && files_written <= 3) {
-                    printf("[DEBUG] Rank %d: Wrote particles for i=%d, X=[%d,%d) (Option B, no transpose)\n", 
-                           rank, i, k_start_global, k_start_global + k_extent);
-                }
-#else
-                // =======================================================================================
-                // OPTION A: Transpose and write particles - WriteParticlesSlab_range
-                // =======================================================================================
-                // Transposes [array][x][y] → [y][x] and calls WriteParticlesSlab_range
-                // Allocates transposed slabs (2× memory peak)
-                // ~100-200 ms transpose overhead per Z-slab for large N
-                // Recommended for N ≤ 8192
-                // =======================================================================================
-                
-                int k_start_global = my_extended_bounds.core.x_start;
-                int k_extent = x_count;
-                
-                // Allocate transposed slabs: [y][x] layout for WriteParticlesSlab_range
-                fftw_complex_t *T_slab1 = (fftw_complex_t*)FFTW_MALLOC(x_count * N * sizeof(fftw_complex_t));
-                fftw_complex_t *T_slab2 = (fftw_complex_t*)FFTW_MALLOC(x_count * N * sizeof(fftw_complex_t));
-                fftw_complex_t *T_slab3 = (fftw_complex_t*)FFTW_MALLOC(x_count * N * sizeof(fftw_complex_t));
-                fftw_complex_t *T_slab4 = (fftw_complex_t*)FFTW_MALLOC(x_count * N * sizeof(fftw_complex_t));
-                
-                if (!T_slab1 || !T_slab2 || !T_slab3 || !T_slab4) {
-                    fprintf(stderr, "Rank %d: ERROR: Failed to allocate transposed slabs for i=%d\n", rank, i);
-                    MPI_Abort(MPI_COMM_WORLD, 1);
-                }
-                
-                // Transpose from [array][x][y] to [y][x] for each array
-                // Source: ZSLAB(array_idx, x_idx, y, N, narray, x_count) = local_z_slab[array_idx * x_count * N + x_idx * N + y]
-                // Dest: T_slab[y * x_count + x_idx]
-                for (int array_idx = 0; array_idx < narray; array_idx++) {
-                    fftw_complex_t *dest = (array_idx == 0) ? T_slab1 :
-                                           (array_idx == 1) ? T_slab2 :
-                                           (array_idx == 2) ? T_slab3 : T_slab4;
-                    
-                    for (int x_idx = 0; x_idx < x_count; x_idx++) {
-                        for (int y = 0; y < N; y++) {
-                            // Source: [array][x][y]
-                            fftw_complex_t *src = &ZSLAB(array_idx, x_idx, y, N, narray, x_count);
-                            // Dest: [y][x]
-                            dest[y * x_count + x_idx][0] = (*src)[0];  // real
-                            dest[y * x_count + x_idx][1] = (*src)[1];  // imag
+            // Unified output mode selection
+            switch (PARTICLE_OUTPUT_MODE) {
+                case 0: {
+                    // =======================================================================================
+                    // MODE 0: Write particle ICs directly (no transpose needed)
+                    // =======================================================================================
+                    // Uses WriteParticlesSlab_range with [array][x][y] layout (ZSLAB format)
+                    if (param_file == NULL || params == NULL) {
+                        if (rank == 0 && z == 0) {
+                            printf("[OUTPUT-DEBUG] z=%d: Mode 0 requires param_file, skipping\n", z);
                         }
+                        break;
                     }
+                    
+                    if (rank == 0 && z == 0) {
+                        printf("[OUTPUT-DEBUG] z=%d: Mode 0 (Write particle ICs directly, no transpose)\n", z);
+                        fflush(stdout);
+                    }
+                    
+                    int k_start_global = my_extended_bounds.core.x_start;
+                    int k_extent = x_count;
+                    
+                    // Call WriteParticlesSlab_range directly with [array][x][y] layout (ZSLAB format)
+                    // No transpose - function handles [x][y] indexing internally
+                    WriteParticlesSlab_range(
+                        rank, i, k_start_global, k_extent,
+                        (Complx*)local_z_slab, N, narray,
+                        *static_cast<Parameters*>(params)
+                    );
+                    
+                    files_written++;
+                    if (DEBUG_PRINTS && rank == 0 && files_written <= 3) {
+                        printf("[DEBUG] Rank %d: Mode 0 - Wrote particles for i=%d, X=[%d,%d)\n", 
+                               rank, i, k_start_global, k_start_global + k_extent);
+                    }
+                    break;
                 }
                 
-                // Call WriteParticlesSlab_range to write particle ICs
-                WriteParticlesSlab_range(
-                    rank,
-                    i,                     // i = Z index
-                    k_start_global,        // Global X start
-                    k_extent,              // Number of X values
-                    (Complx*)T_slab1,
-                    (Complx*)T_slab2,
-                    (Complx*)T_slab3,
-                    (Complx*)T_slab4,
-                    *static_cast<Parameters*>(params)
-                );
-                
-                // Free transposed slabs
-                FFTW_FREE(T_slab1);
-                FFTW_FREE(T_slab2);
-                FFTW_FREE(T_slab3);
-                FFTW_FREE(T_slab4);
-                
-                files_written++;
-                
-                if (DEBUG_PRINTS && rank == 0 && files_written <= 3) {
-                    printf("[DEBUG] Rank %d: Wrote particles for i=%d, X=[%d,%d), transposed and called WriteParticlesSlab_range\n", 
-                           rank, i, k_start_global, k_start_global + k_extent);
+                case 1: {
+                    // =======================================================================================
+                    // MODE 1: Write .bin files for later re-assembly
+                    // =======================================================================================
+                    if (rank == 0 && z == 0) {
+                        printf("[OUTPUT-DEBUG] z=%d: Mode 1 (Write .bin files for re-assembly)\n", z);
+                        fflush(stdout);
+                    }
+                    
+                    char filename[256];
+                    snprintf(filename, sizeof(filename), "rank_%d/i%d_slab_N%d.bin", rank, i, N);
+                    
+                    FILE *fp = fopen(filename, "wb");
+                    if (fp) {
+                        // Transpose from [Array][X][Y] to [Array][Y][X] and write
+                        for (int array_idx = 0; array_idx < narray; array_idx++) {
+                            for (int j = 0; j < N; j++) {
+                                for (int k_idx = 0; k_idx < x_count; k_idx++) {
+                                    fftw_complex_t *src = &ZSLAB(array_idx, k_idx, j, N, narray, x_count);
+                                    size_t written = fwrite(src, sizeof(fftw_complex_t), 1, fp);
+                                    if (written != 1) {
+                                        fprintf(stderr, "Rank %d: Write error in %s at (array=%d,j=%d,k_idx=%d)\n",
+                                               rank, filename, array_idx, j, k_idx);
+                                    }
+                                }
+                            }
+                        }
+                        fclose(fp);
+                        
+                        files_written++;
+                        size_t slab_bytes = (size_t)x_count * narray * N * sizeof(fftw_complex_t);
+                        total_bytes_written += slab_bytes;
+                        
+                        if (DEBUG_PRINTS && rank == 0 && files_written <= 3) {
+                            printf("[DEBUG] Rank %d: Mode 1 - Wrote %s (%.2f MB)\n", 
+                                   rank, filename, slab_bytes / (1024.0 * 1024.0));
+                        }
+                    } else {
+                        fprintf(stderr, "Rank %d: ERROR opening %s for writing (errno=%d)\n", 
+                               rank, filename, errno);
+                    }
+                    break;
                 }
-#endif  // USE_PARTICLE_OUTPUT_OPTION_B
-            } else {
-                // =======================================================================================
-                // FALLBACK: Write complex .bin files (when no param_file provided)
-                // =======================================================================================
-                if (rank == 0 && z == 0) {
-                    printf("[OUTPUT-DEBUG] z=%d: Taking FALLBACK path (param_file=%p, params=%p)\n", 
-                           z, (void*)param_file, (void*)params);
-                    fflush(stdout);
-                }
-                char filename[256];
-                snprintf(filename, sizeof(filename), "rank_%d/i%d_slab_N%d.bin", 
-                        rank, i, N);
                 
-                FILE *fp = fopen(filename, "wb");
-                if (fp) {
-                    // Transpose from [Array][X][Y] to [Array][Y][X] and write
-                    // Equiv: [Array][k][j] (memory) -> [Array][j][k] (output) and write
+                case 2: {
+                    // =======================================================================================
+                    // MODE 2: Write .bin files then immediately read back and write particle ICs
+                    // =======================================================================================
+                    // Useful for verifying .bin file format and re-assembly logic
+                    if (param_file == NULL || params == NULL) {
+                        if (rank == 0 && z == 0) {
+                            printf("[OUTPUT-DEBUG] z=%d: Mode 2 requires param_file, skipping\n", z);
+                        }
+                        break;
+                    }
+                    
+                    if (rank == 0 && z == 0) {
+                        printf("[OUTPUT-DEBUG] z=%d: Mode 2 (Write .bin then read back and write particle ICs)\n", z);
+                        fflush(stdout);
+                    }
+                    
+                    // Step 1: Write .bin file (same as Mode 2)
+                    char filename[256];
+                    snprintf(filename, sizeof(filename), "rank_%d/i%d_slab_N%d.bin", rank, i, N);
+                    
+                    FILE *fp = fopen(filename, "wb");
+                    if (!fp) {
+                        fprintf(stderr, "Rank %d: ERROR opening %s for writing (errno=%d)\n", 
+                               rank, filename, errno);
+                        break;
+                    }
+                    
+                    // Transpose from [Array][X][Y] to [Array][Y][X] and write to .bin file
                     for (int array_idx = 0; array_idx < narray; array_idx++) {
-                        for (int j = 0; j < N; j++) {  // j = Y coordinate (loop over all Y)
-                            for (int k_idx = 0; k_idx < x_count; k_idx++) {  // k = X coordinate (local X range)
-                                // Read from [Array][k][j] format (memory layout: [Array][X][Y])
+                        for (int j = 0; j < N; j++) {
+                            for (int k_idx = 0; k_idx < x_count; k_idx++) {
                                 fftw_complex_t *src = &ZSLAB(array_idx, k_idx, j, N, narray, x_count);
-                                // Write in [Array][j][k] order (Zeldovich output format)
                                 size_t written = fwrite(src, sizeof(fftw_complex_t), 1, fp);
                                 if (written != 1) {
                                     fprintf(stderr, "Rank %d: Write error in %s at (array=%d,j=%d,k_idx=%d)\n",
@@ -1768,18 +1754,73 @@ int main(int argc, char **argv)
                     }
                     fclose(fp);
                     
-                    files_written++;
-                    size_t slab_bytes = (size_t)x_count * narray * N * sizeof(fftw_complex_t);
-                    total_bytes_written += slab_bytes;
-                    
-                    if (DEBUG_PRINTS && rank == 0 && files_written <= 3) {
-                        printf("[DEBUG] Rank %d: Wrote %s (%d arrays x %d j x %d k, %.2f MB)\n", 
-                               rank, filename, narray, N, x_count, 
-                               slab_bytes / (1024.0 * 1024.0));
+                    // Step 2: Read .bin file back into [y][x] format and call WriteParticlesSlab_range
+                    fp = fopen(filename, "rb");
+                    if (!fp) {
+                        fprintf(stderr, "Rank %d: ERROR opening %s for reading (errno=%d)\n", 
+                               rank, filename, errno);
+                        break;
                     }
-                } else {
-                    fprintf(stderr, "Rank %d: ERROR opening %s for writing (errno=%d)\n", 
-                           rank, filename, errno);
+                    
+                    // Allocate buffers in [y][x] format (same as Option A)
+                    fftw_complex_t *T_slab1 = (fftw_complex_t*)FFTW_MALLOC(x_count * N * sizeof(fftw_complex_t));
+                    fftw_complex_t *T_slab2 = (fftw_complex_t*)FFTW_MALLOC(x_count * N * sizeof(fftw_complex_t));
+                    fftw_complex_t *T_slab3 = (fftw_complex_t*)FFTW_MALLOC(x_count * N * sizeof(fftw_complex_t));
+                    fftw_complex_t *T_slab4 = (fftw_complex_t*)FFTW_MALLOC(x_count * N * sizeof(fftw_complex_t));
+                    
+                    if (!T_slab1 || !T_slab2 || !T_slab3 || !T_slab4) {
+                        fprintf(stderr, "Rank %d: ERROR: Failed to allocate read buffers for i=%d\n", rank, i);
+                        fclose(fp);
+                        break;
+                    }
+                    
+                    // Read in [Array][Y][X] order (as written)
+                    for (int array_idx = 0; array_idx < narray; array_idx++) {
+                        fftw_complex_t *dest = (array_idx == 0) ? T_slab1 :
+                                               (array_idx == 1) ? T_slab2 :
+                                               (array_idx == 2) ? T_slab3 : T_slab4;
+                        
+                        for (int j = 0; j < N; j++) {
+                            for (int k_idx = 0; k_idx < x_count; k_idx++) {
+                                size_t read = fread(&dest[j * x_count + k_idx], sizeof(fftw_complex_t), 1, fp);
+                                if (read != 1) {
+                                    fprintf(stderr, "Rank %d: Read error in %s at (array=%d,j=%d,k_idx=%d)\n",
+                                           rank, filename, array_idx, j, k_idx);
+                                }
+                            }
+                        }
+                    }
+                    fclose(fp);
+                    
+                    // Step 3: Call WriteParticlesSlab_range
+                    int k_start_global = my_extended_bounds.core.x_start;
+                    int k_extent = x_count;
+                    
+                    WriteParticlesSlab_range(
+                        rank, i, k_start_global, k_extent,
+                        (Complx*)T_slab1, (Complx*)T_slab2, (Complx*)T_slab3, (Complx*)T_slab4,
+                        *static_cast<Parameters*>(params)
+                    );
+                    
+                    FFTW_FREE(T_slab1);
+                    FFTW_FREE(T_slab2);
+                    FFTW_FREE(T_slab3);
+                    FFTW_FREE(T_slab4);
+                    
+                    files_written++;
+                    if (DEBUG_PRINTS && rank == 0 && files_written <= 3) {
+                        printf("[DEBUG] Rank %d: Mode 2 - Wrote .bin and particles for i=%d, X=[%d,%d)\n", 
+                               rank, i, k_start_global, k_start_global + k_extent);
+                    }
+                    break;
+                }
+                
+                default: {
+                    if (rank == 0 && z == 0) {
+                        fprintf(stderr, "[OUTPUT-DEBUG] z=%d: Invalid PARTICLE_OUTPUT_MODE=%d (must be 0-2)\n", 
+                               z, PARTICLE_OUTPUT_MODE);
+                    }
+                    break;
                 }
             }
             #else

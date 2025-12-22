@@ -1,0 +1,280 @@
+#!/bin/bash
+#PBS -N 16_assembly
+#PBS -A AbacusAurora
+#PBS -l select=1:ncpus=64:mpiprocs=4:ompthreads=2
+#PBS -l walltime=01:00:00
+#PBS -l filesystems=home
+#PBS -M helenshao0904@gmail.com
+#PBS -m abe
+#PBS -j oe
+#PBS -o /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_assembly/N16_test.out
+
+# Remove old outputs, .out and .log files
+cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_assembly
+if [ -d "bin_files" ]; then
+    rm -rf bin_files/rank_*
+fi
+if [ -d "particle_ics" ]; then
+    rm -rf particle_ics/ic_*
+    rm -rf particle_ics/dens*
+fi
+if [ -f "*.log" ]; then
+    rm *.log
+fi
+if [ -f "*.out" ]; then
+    rm *.out
+fi
+
+# Go to working directory
+cd $PBS_O_WORKDIR
+
+# Load modules
+# Note: frameworks module provides MPI and OpenMP
+echo "Loading frameworks module..."
+module load frameworks
+echo "Loading FFTW module..."
+module load fftw/3.3.10
+
+# Check what's available after loading modules
+echo "Checking MPI compiler..."
+which mpicc
+mpicc --version || echo "mpicc not found or error"
+
+echo "Checking C++ compiler..."
+which mpicxx
+mpicxx --version || echo "mpicxx not found or error"
+
+# Go to hermitian_3d_matrix_production directory
+cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production
+
+# ====================================================================================
+# STEP 1: Compile both main executable and reassembly tool with Path 2 mode
+# This will generate .bin files for later reassembly
+# ====================================================================================
+echo "=========================================="
+echo "STEP 1: Compiling hermitian_3d_matrix and write_particles_from_reassembled_mpi"
+echo "=========================================="
+echo "Compiling with Path 2 (PARTICLE_OUTPUT_MODE=2) and single precision"
+echo "This will generate .bin files for reassembly"
+make clean
+# Build both executables with same CFLAGS to ensure matching precision
+make CFLAGS="-DPARTICLE_OUTPUT_MODE=2 -DVERIFY_HERMITIAN_SYMMETRY=0 -DSKIP_FILE_WRITE=0" -B
+make CFLAGS="-DPARTICLE_OUTPUT_MODE=2 -DVERIFY_HERMITIAN_SYMMETRY=0 -DSKIP_FILE_WRITE=0" reassembly
+
+# Verify executables were created
+if [ ! -f "./hermitian_3d_matrix" ]; then
+    echo "ERROR: Compilation failed - hermitian_3d_matrix executable not found!"
+    exit 1
+fi
+if [ ! -f "./write_particles_from_reassembled_mpi" ]; then
+    echo "ERROR: Compilation failed - write_particles_from_reassembled_mpi executable not found!"
+    exit 1
+fi
+echo "Compilation successful - both executables found"
+
+# Job parameters
+NNODES=$(sort -u $PBS_NODEFILE | wc -l)
+NRANKS_PER_NODE=4
+NTHREADS_PER_RANK=2
+NTOTRANKS=$((NNODES * NRANKS_PER_NODE))
+
+# OpenMP settings
+export OMP_NUM_THREADS=$NTHREADS_PER_RANK
+export OMP_PLACES=cores
+export OMP_PROC_BIND=close
+
+# Test parameters
+N=16
+PARAM_FILE="/home/helenshao/InitialConditions/hermitian_3d_matrix_production/examples/param_N16.par"
+BIN_OUTPUT_DIR="test_assembly/bin_files"
+PARTICLE_OUTPUT_DIR="test_assembly/particle_ics"
+
+# Check if parameter file exists
+if [ ! -f "$PARAM_FILE" ]; then
+    echo "ERROR: Parameter file not found: $PARAM_FILE"
+    exit 1
+fi
+
+# Create output directories
+mkdir -p test_assembly
+mkdir -p "$BIN_OUTPUT_DIR"
+mkdir -p "$PARTICLE_OUTPUT_DIR"
+rm -rf "$BIN_OUTPUT_DIR"/rank_* 2>/dev/null || true
+
+# ====================================================================================
+# STEP 2: Run main.cpp to generate .bin files (Path 2 mode)
+# ====================================================================================
+echo ""
+echo "=========================================="
+echo "STEP 2: Generating .bin files (N=$N, ranks=$NTOTRANKS)"
+echo "=========================================="
+echo "Output directory: $BIN_OUTPUT_DIR"
+
+# Change to bin output directory so .bin files are written there
+cd "$BIN_OUTPUT_DIR" || {
+    echo "ERROR: Failed to cd to $BIN_OUTPUT_DIR"
+    exit 1
+}
+
+# Get absolute path to executable (from project root)
+EXECUTABLE_PATH="/home/helenshao/InitialConditions/hermitian_3d_matrix_production/hermitian_3d_matrix"
+
+# Verify executable exists
+if [ ! -f "$EXECUTABLE_PATH" ]; then
+    echo "ERROR: Executable not found: $EXECUTABLE_PATH"
+    exit 1
+fi
+
+# Run main.cpp with Path 2 mode (writes .bin files)
+# IMPORTANT: Must pass param_file to use zeldovich-PLT power spectrum with proper normalization
+# Without param_file, the code runs in "uniform random mode" which produces different amplitudes
+echo "Running: $EXECUTABLE_PATH $N $PARAM_FILE"
+mpiexec -n $NTOTRANKS \
+        -ppn $NRANKS_PER_NODE \
+        --depth=$NTHREADS_PER_RANK \
+        --cpu-bind depth \
+        "$EXECUTABLE_PATH" $N "$PARAM_FILE" 2>&1 | tee ../N16_bin_generation.log
+
+# Return to project root
+cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production
+
+# Verify .bin files were created
+# Note: .bin files are written to rank_*/ subdirectories within BIN_OUTPUT_DIR
+BIN_COUNT=$(find "$BIN_OUTPUT_DIR" -name "*.bin" 2>/dev/null | wc -l)
+echo ""
+echo "Generated $BIN_COUNT .bin files in $BIN_OUTPUT_DIR"
+
+if [ "$BIN_COUNT" -eq 0 ]; then
+    echo "ERROR: No .bin files were generated!"
+    echo "Checking directory structure..."
+    ls -la "$BIN_OUTPUT_DIR" || echo "BIN_OUTPUT_DIR does not exist"
+    exit 1
+fi
+
+# Verify we have .bin files for expected number of ranks
+RANK_DIRS=$(find "$BIN_OUTPUT_DIR" -type d -name "rank_*" 2>/dev/null | wc -l)
+echo "Found .bin files in $RANK_DIRS rank directories"
+
+# ====================================================================================
+# STEP 3: Reassembly tool already compiled in STEP 1
+# ====================================================================================
+echo ""
+echo "=========================================="
+echo "STEP 3: Reassembly tool compilation"
+echo "=========================================="
+echo "Reassembly tool (write_particles_from_reassembled_mpi) was already compiled in STEP 1"
+echo "Both executables use the same CFLAGS, ensuring matching precision"
+echo ""
+
+# ====================================================================================
+# STEP 4: Run write_particles_from_reassembled_mpi to reassemble and write particle ICs
+# ====================================================================================
+echo ""
+echo "=========================================="
+echo "STEP 4: Reassembling and writing particle ICs"
+echo "=========================================="
+
+cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production
+
+# Parameters for write_particles_from_reassembled_mpi
+# Usage: <output_dir> <N> <num_ranks> [param_file] [i_start] [i_end]
+I_START=0
+I_END=$N
+
+# Verify parameter file exists (we're in project root)
+if [ ! -f "$PARAM_FILE" ]; then
+    echo "ERROR: Parameter file not found: $PARAM_FILE"
+    exit 1
+fi
+
+echo "Running write_particles_from_reassembled_mpi..."
+echo "  output_dir: $BIN_OUTPUT_DIR"
+echo "  N: $N"
+echo "  num_ranks: $NTOTRANKS"
+echo "  param_file: $PARAM_FILE"
+echo "  i_range: [$I_START, $I_END)"
+
+# Run reassembly script
+REASSEMBLY_EXIT_CODE=0
+./write_particles_from_reassembled_mpi \
+    "$BIN_OUTPUT_DIR" \
+    $N \
+    $NTOTRANKS \
+    "$PARAM_FILE" \
+    $I_START \
+    $I_END \
+    2>&1 | tee test_assembly/N16_reassembly.log
+REASSEMBLY_EXIT_CODE=${PIPESTATUS[0]}
+
+if [ "$REASSEMBLY_EXIT_CODE" -ne 0 ]; then
+    echo "ERROR: write_particles_from_reassembled_mpi failed with exit code $REASSEMBLY_EXIT_CODE"
+    exit 1
+fi
+
+# Check for output files
+# The reassembly script writes to the directory specified in param file (usually "./output")
+IC_COUNT=0
+if [ -d "output" ]; then
+    echo "Moving particle IC files from output/ to $PARTICLE_OUTPUT_DIR..."
+    mkdir -p "$PARTICLE_OUTPUT_DIR"
+    mv output/ic_* "$PARTICLE_OUTPUT_DIR/" 2>/dev/null || true
+    mv output/dens* "$PARTICLE_OUTPUT_DIR/" 2>/dev/null || true
+    IC_COUNT=$(find "$PARTICLE_OUTPUT_DIR" -name "ic_*" 2>/dev/null | wc -l)
+else
+    echo "WARNING: output/ directory not found. Checking current directory..."
+    IC_COUNT=$(find . -maxdepth 1 -name "ic_*" -not -name "*.bin" 2>/dev/null | wc -l)
+    if [ "$IC_COUNT" -gt 0 ]; then
+        echo "Found $IC_COUNT IC files in current directory, moving to $PARTICLE_OUTPUT_DIR..."
+        mkdir -p "$PARTICLE_OUTPUT_DIR"
+        mv ic_* "$PARTICLE_OUTPUT_DIR/" 2>/dev/null || true
+        IC_COUNT=$(find "$PARTICLE_OUTPUT_DIR" -name "ic_*" 2>/dev/null | wc -l)
+    fi
+fi
+
+echo ""
+echo "Generated $IC_COUNT particle IC files in $PARTICLE_OUTPUT_DIR"
+
+# ====================================================================================
+# STEP 5: Summary and verification
+# ====================================================================================
+echo ""
+echo "=========================================="
+echo "Path 2 Test Summary"
+echo "=========================================="
+echo "  .bin files: $BIN_COUNT (in $BIN_OUTPUT_DIR)"
+echo "  Particle IC files: $IC_COUNT (in $PARTICLE_OUTPUT_DIR)"
+echo ""
+
+# Check for errors in logs
+if [ -f "test_assembly/N16_bin_generation.log" ]; then
+    echo "Checking .bin generation log for errors..."
+    ERRORS=$(grep -i "ERROR\|FATAL\|ABORT" test_assembly/N16_bin_generation.log | wc -l)
+    if [ "$ERRORS" -gt 0 ]; then
+        echo "WARNING: Found $ERRORS errors in bin generation log"
+        grep -i "ERROR\|FATAL\|ABORT" test_assembly/N16_bin_generation.log | head -5
+    else
+        echo "SUCCESS: No errors in bin generation log"
+    fi
+else
+    echo "WARNING: Bin generation log file not found: test_assembly/N16_bin_generation.log"
+fi
+
+if [ -f "test_assembly/N16_reassembly.log" ]; then
+    echo "Checking reassembly log for errors..."
+    ERRORS=$(grep -i "ERROR\|FATAL\|ABORT" test_assembly/N16_reassembly.log | wc -l)
+    if [ "$ERRORS" -gt 0 ]; then
+        echo "WARNING: Found $ERRORS errors in reassembly log"
+        grep -i "ERROR\|FATAL\|ABORT" test_assembly/N16_reassembly.log | head -5
+    else
+        echo "SUCCESS: No errors in reassembly log"
+    fi
+fi
+
+echo ""
+echo "=========================================="
+echo "Job completed!"
+echo "=========================================="
+echo "Output files:"
+echo "  .bin files: $BIN_OUTPUT_DIR"
+echo "  Particle IC files: $PARTICLE_OUTPUT_DIR"
+echo "  Logs: test_assembly/"

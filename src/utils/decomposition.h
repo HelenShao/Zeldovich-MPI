@@ -13,6 +13,10 @@
 #include "config.h"
 #include "types.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Calculate (X,Z) grid bounds for a given destination rank in pencil decomposition
 // Returns GridBounds struct ("bounds") with x_start, x_end, z_start, z_end attributes
 // Handles remainder distribution (first 'remainder' ranks get one extra element)
@@ -40,6 +44,10 @@ int validate_abacus_compatibility(int N, int num_ranks, int grid_x, int grid_z);
 // Calculate grid factors (grid_x x grid_z = num_ranks)
 // Returns grid_x and grid_z via output parameters
 void calculate_grid_factors(int num_ranks, int *grid_x_out, int *grid_z_out);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif 
 
