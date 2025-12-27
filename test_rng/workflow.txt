@@ -1,0 +1,56 @@
+# RNG Comparison Test (Serial: 1 MPI rank, 1 OMP thread)
+# Compare random number draws between hermitian_3d_matrix_production and zeldovich-PLT
+# Both codes print [RNG-DEBUG] output before any FFT for coordinates x,y,z <= 10
+# NOTE: The two codes process Y-slices in different orders, so logs must be sorted before comparison
+
+0. (First time only) Rebuild zeldovich-PLT to include RNG debug code:
+$ cd /home/helenshao/InitialConditions/zeldovich-PLT
+$ meson compile -C build
+
+1. Run hermitian_3d_matrix (serial: 1 rank, 1 thread):
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_rng
+$ qsub N16_rng_test.pbs
+
+2. Run zeldovich-PLT (serial, single-threaded):
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_rng
+$ ./run_zeldovich_rng.sh
+# OR manually:
+# $ cd /home/helenshao/InitialConditions/zeldovich-PLT
+# $ ./build/zeldovich /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_rng/param_N16_rng.par
+
+3. Sort and compare RNG debug output (files have different Y ordering):
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_rng
+# Option A: Sort and save diff in one step
+$ python3 sort_rng_logs.py --diff-output rng_logs/rng_diff.txt
+# OR Option B: Sort first, then diff manually
+$ python3 sort_rng_logs.py
+$ cd rng_logs
+$ diff hermitian_rng_debug_sorted.txt zeldovich_rng_debug_sorted.txt > rng_diff.txt 2>&1
+# Differences saved to rng_logs/rng_diff.txt
+# If files match, rng_diff.txt will be empty (check with: wc -l rng_logs/rng_diff.txt)
+# View differences: cat rng_logs/rng_diff.txt
+
+4. Count RNG debug lines (should match):
+$ wc -l hermitian_rng_debug_filtered.txt zeldovich_rng_debug_filtered.txt
+$ wc -l hermitian_rng_debug_sorted.txt zeldovich_rng_debug_sorted.txt
+# Line counts should match between filtered and sorted versions
+
+5. Compare specific coordinates (e.g., Y=0, x=0, z=0):
+$ grep "Y=0.*(x,z)=(0,0)" hermitian_rng_debug_filtered.txt
+$ grep "Y=0.*(x,z)=(0,0)" zeldovich_rng_debug_filtered.txt
+
+6. Compare D values (random Gaussian draws) - Detailed comparison:
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_rng
+$ python3 compare_rng_d_values.py
+# This creates a detailed report showing D value differences for each coordinate
+# Report saved to: rng_logs/d_value_comparison.txt
+# 
+# Quick check for specific coordinates:
+$ grep "Y=0.*(x,z)=(0,1)" rng_logs/hermitian_rng_debug_filtered.txt | head -1
+$ grep "Y=0.*(x,z)=(0,1)" rng_logs/zeldovich_rng_debug_filtered.txt | head -1
+# D values should match exactly if same random numbers are drawn
+
+7. (Optional) Compare particle ICs to verify end-to-end:
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production
+$ python3 test_assembly/compare_ic_files.py test_rng/particle_ics /home/helenshao/InitialConditions/zeldovich-PLT/output_rng > test_rng/comparison_analysis.txt 2>&1
+
