@@ -274,5 +274,86 @@ STEP 2: Generating .bin files (N=16, ranks=1, threads=1)
 Running: /home/helenshao/InitialConditions/hermitian_3d_matrix_production/hermitian_3d_matrix 16 /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_rng/k2_cutoff/param_N16_rng.par
 RNG debug output will be in: test_rng/k2_cutoff/rng_logs/hermitian_rng_debug.log
 
-Generated 0 .bin files
-ERROR: No .bin files were generated!
+Generated 16 .bin files in test_rng/k2_cutoff/bin_files
+Extracting RNG-DEBUG lines from log...
+Found 1089 RNG-DEBUG lines
+
+==========================================
+STEP 3: Reassembling and writing particle ICs
+==========================================
+Running write_particles_from_reassembled_mpi...
+Generating ICs for ppd = 16
+Warning: test_rng/k2_cutoff/bin_files/rank_0/i0_slab_N16.bin x_count=8 differs from expected 16 (rank=0).
+Warning: test_rng/k2_cutoff/bin_files/rank_0/i1_slab_N16.bin x_count=8 differs from expected 16 (rank=0).
+Warning: test_rng/k2_cutoff/bin_files/rank_0/i2_slab_N16.bin x_count=8 differs from expected 16 (rank=0).
+Warning: test_rng/k2_cutoff/bin_files/rank_0/i3_slab_N16.bin x_count=8 differs from expected 16 (rank=0).
+Warning: test_rng/k2_cutoff/bin_files/rank_0/i4_slab_N16.bin x_count=8 differs from expected 16 (rank=0).
+Warning: test_rng/k2_cutoff/bin_files/rank_0/i5_slab_N16.bin x_count=8 differs from expected 16 (rank=0).
+Warning: test_rng/k2_cutoff/bin_files/rank_0/i6_slab_N16.bin x_count=8 differs from expected 16 (rank=0).
+Warning: test_rng/k2_cutoff/bin_files/rank_0/i7_slab_N16.bin x_count=8 differs from expected 16 (rank=0).
+Warning: test_rng/k2_cutoff/bin_files/rank_0/i8_slab_N16.bin x_count=8 differs from expected 16 (rank=0).
+Warning: test_rng/k2_cutoff/bin_files/rank_0/i9_slab_N16.bin x_count=8 differs from expected 16 (rank=0).
+Warning: test_rng/k2_cutoff/bin_files/rank_0/i10_slab_N16.bin x_count=8 differs from expected 16 (rank=0).
+Warning: test_rng/k2_cutoff/bin_files/rank_0/i11_slab_N16.bin x_count=8 differs from expected 16 (rank=0).
+Warning: test_rng/k2_cutoff/bin_files/rank_0/i12_slab_N16.bin x_count=8 differs from expected 16 (rank=0).
+Warning: test_rng/k2_cutoff/bin_files/rank_0/i13_slab_N16.bin x_count=8 differs from expected 16 (rank=0).
+Warning: test_rng/k2_cutoff/bin_files/rank_0/i14_slab_N16.bin x_count=8 differs from expected 16 (rank=0).
+Warning: test_rng/k2_cutoff/bin_files/rank_0/i15_slab_N16.bin x_count=8 differs from expected 16 (rank=0).
+WriteParticlesSlab took 0.0603 sec to write 0.131 MB ==> 2.17 MB/sec
+================================================================================
+WRITE PARTICLES FROM REASSEMBLED MPI Z-SLABS
+================================================================================
+Output directory: test_rng/k2_cutoff/bin_files
+Grid size N: 16
+Number of MPI ranks: 1
+Number of arrays: 4
+i-slab range: [0, 16)
+Parameter file: /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_rng/k2_cutoff/param_N16_rng.par
+================================================================================
+
+Loaded parameters from: /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_rng/k2_cutoff/param_N16_rng.par
+  ppd: 16
+  boxsize: 100.000000
+  separation: 6.250000
+Initializing output...
+  Output directory: ./output
+  Buffer size: 0.000 GiB
+
+Processing i-slabs...
+Grid decomposition: 1 x 1 = 1 ranks
+  i=0: OK
+  i=1: OK
+  i=2: OK
+  i=3: OK
+  i=4: OK
+  i=5: OK
+  i=6: OK
+  i=7: OK
+  i=8: OK
+  i=9: OK
+  i=10: OK
+  i=11: OK
+  i=12: OK
+  i=13: OK
+  i=14: OK
+  i=15: OK
+
+================================================================================
+COMPLETE: Processed 16 i-slabs
+Output files written to: ./output
+  Files: ic_* (complete particle data, matches serial Zeldovich)
+================================================================================
+Generated 4 particle IC files
+
+==========================================
+RNG Test Summary (Serial: 1 rank, 1 thread)
+==========================================
+  .bin files: 16
+  Particle IC files: 4
+  RNG debug lines: 1089
+  Logs: test_rng/k2_cutoff/
+  RNG debug output: test_rng/k2_cutoff/rng_logs/hermitian_rng_debug_filtered.txt
+
+Next steps:
+  1. Run zeldovich-PLT with same parameters: ./run_zeldovich_rng.sh
+  2. Compare RNG outputs: see workflow.txt

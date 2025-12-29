@@ -1,0 +1,61 @@
+Reading particles from both locations...
+
+Directory 1 (./particle_ics):
+  ic_0: 1024 particles
+  ic_1: 1024 particles
+  ic_2: 1024 particles
+  ic_3: 1024 particles
+
+Directory 2 (/home/helenshao/InitialConditions/zeldovich-PLT/output_rng_k2cutoff):
+  ic_0: 1024 particles
+  ic_1: 1024 particles
+  ic_2: 1024 particles
+  ic_3: 1024 particles
+
+================================================================================
+COMPARISON: hermitian_3d_matrix_production vs zeldovich-PLT
+================================================================================
+Total particles in hermitian_3d_matrix_production: 4096
+Total particles in zeldovich-PLT: 4096
+Common particles (same i,j,k): 4096
+Only in hermitian_3d_matrix_production: 0
+Only in zeldovich-PLT: 0
+
+Value comparison (first 100 common particles):
+  Exact matches: 0
+  Close matches (diff < 1e-5): 0
+  Different values: 100
+
+Maximum differences found:
+  Displacement: [16.155565, 15.115908, 8.558773]
+  Velocity: [16.155565, 15.115908, 8.558773]
+
+Example particle with large difference (i=0, j=0, k=0):
+  hermitian_3d_matrix_production: displ=[0.764017641544342, 1.7288353443145752, 0.8574454188346863], vel=[0.764017641544342, 1.7288353443145752, 0.8574454188346863]
+  zeldovich-PLT: displ=[-6.658880710601807, 5.816802978515625, -2.1986217498779297], vel=[-6.658880710601807, 5.816802978515625, -2.1986217498779297]
+
+Checking for normalization/scaling factors...
+  Average displacement ratio (hermitian_3d_matrix_production/zeldovich-PLT): 0.954879
+  Average velocity ratio (hermitian_3d_matrix_production/zeldovich-PLT): 0.954879
+
+First 5 particles with different values:
+  Particle (i=0, j=0, k=0):
+    hermitian_3d_matrix_production: displ=[0.764017641544342, 1.7288353443145752, 0.8574454188346863], vel=[0.764017641544342, 1.7288353443145752, 0.8574454188346863]
+    zeldovich-PLT: displ=[-6.658880710601807, 5.816802978515625, -2.1986217498779297], vel=[-6.658880710601807, 5.816802978515625, -2.1986217498779297]
+    Diff: displ=[7.422898352146149, 4.08796763420105, 3.056067168712616], vel=[7.422898352146149, 4.08796763420105, 3.056067168712616]
+  Particle (i=0, j=0, k=1):
+    hermitian_3d_matrix_production: displ=[0.43546342849731445, 4.224758625030518, -0.1567244529724121], vel=[0.43546342849731445, 4.224758625030518, -0.1567244529724121]
+    zeldovich-PLT: displ=[-7.380900859832764, 5.790501117706299, -0.26581522822380066], vel=[-7.380900859832764, 5.790501117706299, -0.26581522822380066]
+    Diff: displ=[7.816364288330078, 1.5657424926757812, 0.10909077525138855], vel=[7.816364288330078, 1.5657424926757812, 0.10909077525138855]
+  Particle (i=0, j=0, k=2):
+    hermitian_3d_matrix_production: displ=[-5.232237815856934, 4.880099773406982, -0.3512561321258545], vel=[-5.232237815856934, 4.880099773406982, -0.3512561321258545]
+    zeldovich-PLT: displ=[-8.616540908813477, 7.661482810974121, -0.5581455230712891], vel=[-8.616540908813477, 7.661482810974121, -0.5581455230712891]
+    Diff: displ=[3.384303092956543, 2.7813830375671387, 0.20688939094543457], vel=[3.384303092956543, 2.7813830375671387, 0.20688939094543457]
+  Particle (i=0, j=0, k=3):
+    hermitian_3d_matrix_production: displ=[-5.74335241317749, 5.288589000701904, 1.4667725563049316], vel=[-5.74335241317749, 5.288589000701904, 1.4667725563049316]
+    zeldovich-PLT: displ=[-9.91591739654541, 10.880661010742188, 0.1439552754163742], vel=[-9.91591739654541, 10.880661010742188, 0.1439552754163742]
+    Diff: displ=[4.17256498336792, 5.592072010040283, 1.3228172808885574], vel=[4.17256498336792, 5.592072010040283, 1.3228172808885574]
+  Particle (i=0, j=0, k=4):
+    hermitian_3d_matrix_production: displ=[-3.4837942123413086, 3.924588680267334, 1.7455626726150513], vel=[-3.4837942123413086, 3.924588680267334, 1.7455626726150513]
+    zeldovich-PLT: displ=[-10.204195022583008, 12.97422981262207, 2.5646469593048096], vel=[-10.204195022583008, 12.97422981262207, 2.5646469593048096]
+    Diff: displ=[6.720400810241699, 9.049641132354736, 0.8190842866897583], vel=[6.720400810241699, 9.049641132354736, 0.8190842866897583]

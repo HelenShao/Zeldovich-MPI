@@ -20,6 +20,7 @@ $ ./run_zeldovich_rng.sh
 # $ ./build/zeldovich /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_rng/k2_cutoff/param_N16_rng.par
 
 2.5 Extract rng-debug lines into filtered txt file:
+$ cd rng_logs
 $ grep "\[RNG-DEBUG\]" hermitian_rng_debug.log > hermitian_rng_debug_filtered.txt
 
 3. Sort and compare RNG debug output (files have different Y ordering):
@@ -61,8 +62,28 @@ $ grep "k2=7[2-9]\|k2=[89][0-9]\|k2=[1-9][0-9][0-9]" rng_logs/hermitian_rng_debu
 $ grep "k2=7[2-9]\|k2=[89][0-9]\|k2=[1-9][0-9][0-9]" rng_logs/zeldovich_rng_debug_sorted.txt | grep -v "D=(0.000000e+00,0.000000e+00)"
 # Both commands should return no results (all high-k modes should be zeroed)
 
-8. (Optional) Compare particle ICs to verify end-to-end:
-$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production
-$ python3 test_assembly/compare_ic_files.py test_rng/k2_cutoff/particle_ics /home/helenshao/InitialConditions/zeldovich-PLT/output_rng_k2cutoff > test_rng/k2_cutoff/comparison_analysis.txt 2>&1
+8. Reassemble .bin files and write particle ICs (hermitian):
+$ bash write_ic.sh
+# This will:
+#   - Read .bin files from: ./bin_files/rank_0/i*_slab_N16.bin
+#   - Reassemble into full i-slabs
+#   - Write particle ICs to: ./particle_ics/ic_*
+#   - Log output: ./N16_reassembly.log
+
+9. Read particles ICs:
+   hermitian_3d_matrix: (assemble the IC files in particle_ics/)
+   $ for f in ./particle_ics/ic_{0..3}; do python3 /home/helenshao/InitialConditions/hermitian_3d_matrix_production/tests/options_ab/read_particles.py "$f" 10; done > ./particle_values.txt 2>&1
+
+   zeldovich-plt:
+   $ for f in /home/helenshao/InitialConditions/zeldovich-PLT/output_rng_k2cutoff/ic_*; do python3 /home/helenshao/InitialConditions/hermitian_3d_matrix_production/tests/options_ab/read_particles.py "$f" 10; done > ./particle_ics/zeldovich_PLT_k2_cutoff_particle_values.txt 2>&1
+
+10. Compare particle ICs using compare_ic_files.py (end-to-end verification):
+$ python3 /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_assembly/compare_ic_files.py ./particle_ics /home/helenshao/InitialConditions/zeldovich-PLT/output_rng_k2cutoff > ic_comparison.txt 2>&1
+
+11. visualize particle fields:
+$ mkdir -p visualizations
+$ python3 /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_assembly/visualize_particle_comparison.py ./particle_ics /home/helenshao/InitialConditions/zeldovich-PLT/output_rng_k2cutoff ./visualizations
+
+
 
 
