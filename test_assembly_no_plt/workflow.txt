@@ -1,0 +1,26 @@
+# Code IC comparison (PLT DISABLED)
+- Same parameter file: test_assembly_no_plt/param_N16_no_plt.par
+- Same MAX_PPD: 65536
+- PLT disabled: ZD_qPLT = 0
+
+1. run hermitian_3d_matrix:
+$ qsub N16_assembly_no_plt.pbs 
+
+2. run zeldovich-plt (PLT disabled):
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_assembly_no_plt && ./run_zeldovich_no_plt.sh
+# OR manually:
+# $ ./build/zeldovich /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_assembly_no_plt/param_N16_no_plt.par
+
+3. Read particles ICs:
+   hermitian_3d_matrix: (assemble the IC files in particle_ics/)
+   $ for f in ./particle_ics/ic_{0..3}; do python3 ../tests/options_ab/read_particles.py "$f" 10; done > ./particle_values.txt 2>&1
+
+   zeldovich-plt (PLT disabled):
+   $ for f in /home/helenshao/InitialConditions/zeldovich-PLT/output_no_plt/ic_*; do python3 ../tests/options_ab/read_particles.py "$f" 10; done > ./particle_ics/zeldovich_PLT_no_plt_particle_values.txt 2>&1
+
+4. Compare all ic files:
+cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production && python3 test_assembly/compare_ic_files.py test_assembly_no_plt/particle_ics /home/helenshao/InitialConditions/zeldovich-PLT/output_no_plt > test_assembly_no_plt/comparison_analysis.txt 2>&1 && tail -50 test_assembly_no_plt/comparison_analysis.txt
+
+5. visualize particle fields:
+cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production && python3 test_assembly/visualize_particle_comparison.py test_assembly_no_plt/particle_ics /home/helenshao/InitialConditions/zeldovich-PLT/output_no_plt test_assembly_no_plt/visualizations
+

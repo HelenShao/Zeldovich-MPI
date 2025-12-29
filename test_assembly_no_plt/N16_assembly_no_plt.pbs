@@ -1,0 +1,162 @@
+#!/bin/bash
+#PBS -N 16_assembly_no_plt
+#PBS -A AbacusAurora
+#PBS -l select=1:ncpus=64:mpiprocs=4:ompthreads=2
+#PBS -l walltime=01:00:00
+#PBS -l filesystems=home
+#PBS -M helenshao0904@gmail.com
+#PBS -m abe
+#PBS -j oe
+#PBS -o /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_assembly_no_plt/N16_test.out
+
+# Remove old outputs, .out and .log files
+cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_assembly_no_plt
+if [ -d "bin_files" ]; then
+    rm -rf bin_files/rank_*
+fi
+if [ -d "particle_ics" ]; then
+    rm -rf particle_ics/ic_*
+    rm -rf particle_ics/dens*
+fi
+if [ -f "*.log" ]; then
+    rm *.log
+fi
+if [ -f "*.out" ]; then
+    rm *.out
+fi
+
+# Go to working directory
+cd $PBS_O_WORKDIR
+
+# Load modules
+echo "Loading frameworks module..."
+module load frameworks
+echo "Loading FFTW module..."
+module load fftw/3.3.10
+
+# Go to hermitian_3d_matrix_production directory
+cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production
+
+# ====================================================================================
+# STEP 1: Compile with DEBUG_EIGENVECTOR enabled and PLT disabled
+# ====================================================================================
+echo "=========================================="
+echo "STEP 1: Compiling with DEBUG_EIGENVECTOR and PLT disabled"
+echo "=========================================="
+make clean
+# Build with debug eigenvector output and Mode 1
+make CFLAGS="-DPARTICLE_OUTPUT_MODE=1 -DVERIFY_HERMITIAN_SYMMETRY=0 -DSKIP_FILE_WRITE=0 -DDEBUG_EIGENVECTOR=1" -B
+make reassembly
+
+# Verify executables were created
+if [ ! -f "./hermitian_3d_matrix" ]; then
+    echo "ERROR: Compilation failed - hermitian_3d_matrix executable not found!"
+    exit 1
+fi
+if [ ! -f "./write_particles_from_reassembled_mpi" ]; then
+    echo "ERROR: Compilation failed - write_particles_from_reassembled_mpi executable not found!"
+    exit 1
+fi
+echo "Compilation successful"
+
+# Job parameters
+NNODES=$(sort -u $PBS_NODEFILE | wc -l)
+NRANKS_PER_NODE=4
+NTHREADS_PER_RANK=2
+NTOTRANKS=$((NNODES * NRANKS_PER_NODE))
+
+# OpenMP settings
+export OMP_NUM_THREADS=$NTHREADS_PER_RANK
+export OMP_PLACES=cores
+export OMP_PROC_BIND=close
+
+# Test parameters
+N=16
+PARAM_FILE="/home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_assembly_no_plt/param_N16_no_plt.par"
+BIN_OUTPUT_DIR="test_assembly_no_plt/bin_files"
+PARTICLE_OUTPUT_DIR="test_assembly_no_plt/particle_ics"
+
+# Create output directories
+mkdir -p test_assembly_no_plt
+mkdir -p "$BIN_OUTPUT_DIR"
+mkdir -p "$PARTICLE_OUTPUT_DIR"
+rm -rf "$BIN_OUTPUT_DIR"/rank_* 2>/dev/null || true
+
+# ====================================================================================
+# STEP 2: Run main.cpp to generate .bin files
+# ====================================================================================
+echo ""
+echo "=========================================="
+echo "STEP 2: Generating .bin files (N=$N, ranks=$NTOTRANKS, PLT DISABLED)"
+echo "=========================================="
+
+cd "$BIN_OUTPUT_DIR" || {
+    echo "ERROR: Failed to cd to $BIN_OUTPUT_DIR"
+    exit 1
+}
+
+EXECUTABLE_PATH="/home/helenshao/InitialConditions/hermitian_3d_matrix_production/hermitian_3d_matrix"
+
+if [ ! -f "$EXECUTABLE_PATH" ]; then
+    echo "ERROR: Executable not found: $EXECUTABLE_PATH"
+    exit 1
+fi
+
+echo "Running: $EXECUTABLE_PATH $N $PARAM_FILE"
+mpiexec -n $NTOTRANKS \
+        -ppn $NRANKS_PER_NODE \
+        --depth=$NTHREADS_PER_RANK \
+        --cpu-bind depth \
+        "$EXECUTABLE_PATH" $N "$PARAM_FILE" 2>&1 | tee ../N16_bin_generation.log
+
+cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production
+
+BIN_COUNT=$(find "$BIN_OUTPUT_DIR" -name "*.bin" 2>/dev/null | wc -l)
+echo "Generated $BIN_COUNT .bin files"
+
+if [ "$BIN_COUNT" -eq 0 ]; then
+    echo "ERROR: No .bin files were generated!"
+    exit 1
+fi
+
+# ====================================================================================
+# STEP 3: Reassemble and write particle ICs
+# ====================================================================================
+echo ""
+echo "=========================================="
+echo "STEP 3: Reassembling and writing particle ICs"
+echo "=========================================="
+
+cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production
+
+I_START=0
+I_END=$N
+
+echo "Running write_particles_from_reassembled_mpi..."
+./write_particles_from_reassembled_mpi \
+    "$BIN_OUTPUT_DIR" \
+    $N \
+    $NTOTRANKS \
+    "$PARAM_FILE" \
+    $I_START \
+    $I_END \
+    2>&1 | tee test_assembly_no_plt/N16_reassembly.log
+
+# Move output files
+if [ -d "output" ]; then
+    mkdir -p "$PARTICLE_OUTPUT_DIR"
+    mv output/ic_* "$PARTICLE_OUTPUT_DIR/" 2>/dev/null || true
+    mv output/dens* "$PARTICLE_OUTPUT_DIR/" 2>/dev/null || true
+fi
+
+IC_COUNT=$(find "$PARTICLE_OUTPUT_DIR" -name "ic_*" 2>/dev/null | wc -l)
+echo "Generated $IC_COUNT particle IC files"
+
+echo ""
+echo "=========================================="
+echo "PLT-DISABLED Test Summary"
+echo "=========================================="
+echo "  .bin files: $BIN_COUNT"
+echo "  Particle IC files: $IC_COUNT"
+echo "  Logs: test_assembly_no_plt/"
+

@@ -48,18 +48,26 @@ mpicxx --version || echo "mpicxx not found or error"
 cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production
 
 # ====================================================================================
-# STEP 1: Compile both main executable and reassembly tool with Path 2 mode
+# STEP 1: Compile both main executable and reassembly tool with Mode 1
 # This will generate .bin files for later reassembly
+# ====================================================================================
+# NOTE: This test uses PLT ENABLED (param_N16.par has ZD_qPLT=1)
+# The code now includes eigenvector normalization fix to match zeldovich-PLT
 # ====================================================================================
 echo "=========================================="
 echo "STEP 1: Compiling hermitian_3d_matrix and write_particles_from_reassembled_mpi"
 echo "=========================================="
-echo "Compiling with Path 2 (PARTICLE_OUTPUT_MODE=2) and single precision"
+echo "Compiling with Mode 1 (PARTICLE_OUTPUT_MODE=1) and single precision"
 echo "This will generate .bin files for reassembly"
+echo "PLT is ENABLED (using param_N16.par with ZD_qPLT=1)"
+echo "Rebuilding with eigenvector normalization fix..."
 make clean
-# Build both executables with same CFLAGS to ensure matching precision
-make CFLAGS="-DPARTICLE_OUTPUT_MODE=2 -DVERIFY_HERMITIAN_SYMMETRY=0 -DSKIP_FILE_WRITE=0" -B
-make CFLAGS="-DPARTICLE_OUTPUT_MODE=2 -DVERIFY_HERMITIAN_SYMMETRY=0 -DSKIP_FILE_WRITE=0" reassembly
+# Build main executable with Mode 1 (writes .bin files)
+# NOTE: Single precision (no -DUSE_DOUBLE_PRECISION) - must match reassembly tool
+make CFLAGS="-DPARTICLE_OUTPUT_MODE=1 -DVERIFY_HERMITIAN_SYMMETRY=0 -DSKIP_FILE_WRITE=0" -B
+# Build reassembly tool with SAME CFLAGS to ensure matching precision
+# (doesn't need PARTICLE_OUTPUT_MODE, but must use same precision)
+make reassembly CFLAGS="-DVERIFY_HERMITIAN_SYMMETRY=0 -DSKIP_FILE_WRITE=0"
 
 # Verify executables were created
 if [ ! -f "./hermitian_3d_matrix" ]; then
@@ -102,7 +110,7 @@ mkdir -p "$PARTICLE_OUTPUT_DIR"
 rm -rf "$BIN_OUTPUT_DIR"/rank_* 2>/dev/null || true
 
 # ====================================================================================
-# STEP 2: Run main.cpp to generate .bin files (Path 2 mode)
+# STEP 2: Run main.cpp to generate .bin files (Mode 1)
 # ====================================================================================
 echo ""
 echo "=========================================="
@@ -125,9 +133,9 @@ if [ ! -f "$EXECUTABLE_PATH" ]; then
     exit 1
 fi
 
-# Run main.cpp with Path 2 mode (writes .bin files)
-# IMPORTANT: Must pass param_file to use zeldovich-PLT power spectrum with proper normalization
-# Without param_file, the code runs in "uniform random mode" which produces different amplitudes
+# Run main.cpp with Mode 1 (writes .bin files for later re-assembly)
+# IMPORTANT: Mode 1 does not require param_file (writes .bin files regardless)
+# However, if param_file is provided, it will be used for other settings
 echo "Running: $EXECUTABLE_PATH $N $PARAM_FILE"
 mpiexec -n $NTOTRANKS \
         -ppn $NRANKS_PER_NODE \
@@ -239,7 +247,7 @@ echo "Generated $IC_COUNT particle IC files in $PARTICLE_OUTPUT_DIR"
 # ====================================================================================
 echo ""
 echo "=========================================="
-echo "Path 2 Test Summary"
+echo "Mode 1 Test Summary"
 echo "=========================================="
 echo "  .bin files: $BIN_COUNT (in $BIN_OUTPUT_DIR)"
 echo "  Particle IC files: $IC_COUNT (in $PARTICLE_OUTPUT_DIR)"

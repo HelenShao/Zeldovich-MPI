@@ -246,9 +246,11 @@ void generate_hermitian_slice_pair_local(
                 int is_nyquist = (abs_kx == Nhalf || abs_ky == Nhalf || abs_kz == Nhalf);
                 
                 fftw_complex D;
-                if ((k2 == 0.0) || (is_nyquist) || (!CornerModes && (double)k2_int >= k2_cutoff)) {
-                    // Zero D for: DC mode, Nyquist frequency, or k_cutoff filtering
-                    // This matches zeldovich.cpp line 360-364: zeroing conditions
+                // Zero D for: DC mode, Nyquist frequency, or k_cutoff filtering
+                if ((k2 == 0.0)
+                     || (is_nyquist)
+                    // Force all elements with wavenumber above k_cutoff (nominally k_Nyquist) to zero
+                     || (!CornerModes && (double)k2_int >= k2_cutoff)) {
                     D[0] = D[1] = 0.0;
                     // RNG consistency: When D=0, we skip the RNG call, so accumulate skip
                     // This matches zeldovich.cpp line 361: nskip++ (accumulate, don't advance immediately)

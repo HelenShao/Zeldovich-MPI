@@ -1,0 +1,61 @@
+Reading particles from both locations...
+
+Directory 1 (test_assembly_no_plt/particle_ics):
+  ic_0: 1024 particles
+  ic_1: 1024 particles
+  ic_2: 1024 particles
+  ic_3: 1024 particles
+
+Directory 2 (/home/helenshao/InitialConditions/zeldovich-PLT/output_no_plt):
+  ic_0: 1024 particles
+  ic_1: 1024 particles
+  ic_2: 1024 particles
+  ic_3: 1024 particles
+
+================================================================================
+COMPARISON: hermitian_3d_matrix_production vs zeldovich-PLT
+================================================================================
+Total particles in hermitian_3d_matrix_production: 4096
+Total particles in zeldovich-PLT: 4096
+Common particles (same i,j,k): 4096
+Only in hermitian_3d_matrix_production: 0
+Only in zeldovich-PLT: 0
+
+Value comparison (first 100 common particles):
+  Exact matches: 0
+  Close matches (diff < 1e-5): 0
+  Different values: 100
+
+Maximum differences found:
+  Displacement: [17.788122, 12.974230, 16.701804]
+  Velocity: [17.788122, 12.974230, 16.701804]
+
+Example particle with large difference (i=0, j=0, k=0):
+  hermitian_3d_matrix_production: displ=[-2.397880792617798, -0.40350866317749023, -1.8035656213760376], vel=[-2.397880792617798, -0.40350866317749023, -1.8035656213760376]
+  zeldovich-PLT: displ=[-6.658880710601807, 5.816802978515625, -2.1986217498779297], vel=[-6.658880710601807, 5.816802978515625, -2.1986217498779297]
+
+Checking for normalization/scaling factors...
+  Average displacement ratio (hermitian_3d_matrix_production/zeldovich-PLT): -0.744426
+  Average velocity ratio (hermitian_3d_matrix_production/zeldovich-PLT): -0.744426
+
+First 5 particles with different values:
+  Particle (i=0, j=0, k=0):
+    hermitian_3d_matrix_production: displ=[-2.397880792617798, -0.40350866317749023, -1.8035656213760376], vel=[-2.397880792617798, -0.40350866317749023, -1.8035656213760376]
+    zeldovich-PLT: displ=[-6.658880710601807, 5.816802978515625, -2.1986217498779297], vel=[-6.658880710601807, 5.816802978515625, -2.1986217498779297]
+    Diff: displ=[4.260999917984009, 6.220311641693115, 0.3950561285018921], vel=[4.260999917984009, 6.220311641693115, 0.3950561285018921]
+  Particle (i=0, j=0, k=1):
+    hermitian_3d_matrix_production: displ=[0.8623807430267334, -0.11670541763305664, 1.079119086265564], vel=[0.8623807430267334, -0.11670541763305664, 1.079119086265564]
+    zeldovich-PLT: displ=[-7.380900859832764, 5.790501117706299, -0.26581522822380066], vel=[-7.380900859832764, 5.790501117706299, -0.26581522822380066]
+    Diff: displ=[8.243281602859497, 5.9072065353393555, 1.3449343144893646], vel=[8.243281602859497, 5.9072065353393555, 1.3449343144893646]
+  Particle (i=0, j=0, k=2):
+    hermitian_3d_matrix_production: displ=[-4.289736270904541, 1.5202841758728027, -1.1796361207962036], vel=[-4.289736270904541, 1.5202841758728027, -1.1796361207962036]
+    zeldovich-PLT: displ=[-8.616540908813477, 7.661482810974121, -0.5581455230712891], vel=[-8.616540908813477, 7.661482810974121, -0.5581455230712891]
+    Diff: displ=[4.3268046379089355, 6.141198635101318, 0.6214905977249146], vel=[4.3268046379089355, 6.141198635101318, 0.6214905977249146]
+  Particle (i=0, j=0, k=3):
+    hermitian_3d_matrix_production: displ=[-6.015708923339844, -1.2467881441116333, 3.5983753204345703], vel=[-6.015708923339844, -1.2467881441116333, 3.5983753204345703]
+    zeldovich-PLT: displ=[-9.91591739654541, 10.880661010742188, 0.1439552754163742], vel=[-9.91591739654541, 10.880661010742188, 0.1439552754163742]
+    Diff: displ=[3.9002084732055664, 12.12744915485382, 3.454420045018196], vel=[3.9002084732055664, 12.12744915485382, 3.454420045018196]
+  Particle (i=0, j=0, k=4):
+    hermitian_3d_matrix_production: displ=[0.0, 0.0, 0.0], vel=[0.0, 0.0, 0.0]
+    zeldovich-PLT: displ=[-10.204195022583008, 12.97422981262207, 2.5646469593048096], vel=[-10.204195022583008, 12.97422981262207, 2.5646469593048096]
+    Diff: displ=[10.204195022583008, 12.97422981262207, 2.5646469593048096], vel=[10.204195022583008, 12.97422981262207, 2.5646469593048096]

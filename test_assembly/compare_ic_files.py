@@ -161,8 +161,14 @@ def compare_particles(particles1, particles2, label1="Set 1", label2="Set 2"):
             print(f"    Diff: displ={diff['displ_diff']}, vel={diff['vel_diff']}")
 
 def main():
-    dir1 = "/home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_assembly/particle_ics"
-    dir2 = "/home/helenshao/InitialConditions/zeldovich-PLT/output"
+    # Accept command-line arguments if provided, otherwise use defaults
+    if len(sys.argv) >= 3:
+        dir1 = sys.argv[1]
+        dir2 = sys.argv[2]
+    else:
+        # Default paths (PLT enabled)
+        dir1 = "/home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_assembly/particle_ics"
+        dir2 = "/home/helenshao/InitialConditions/zeldovich-PLT/output"
     
     print("Reading particles from both locations...")
     

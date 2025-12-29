@@ -1,0 +1,35 @@
+# zeldovich-PLT Parameter File
+# For N=16 grid with power law power spectrum
+# RNG comparison test (PLT DISABLED, serial: 1 rank, 1 thread)
+# Testing k_cutoff implementation (k_cutoff=1.0, CornerModes=0)
+# Usage: ./hermitian_3d_matrix 16 test_rng/k2_cutoff/param_N16_rng.par
+
+BoxSize = 100.0
+CPD = 4                          # Cells per dimension (= N)
+ICFormat = "RVZel"
+InitialConditionsDirectory = "./output"
+InitialRedshift = 99.0
+NP = 4096                         # N^3 = 16^3
+ZD_NumBlock = 2
+ZD_Seed = 4                        # Random seed (must match zeldovich-PLT)
+ZD_Pk_scale = 1.0
+ZD_Pk_norm = 8.0                   # Normalization scale (e.g., sigma_8)
+ZD_Pk_sigma = 1.0                  # Amplitude at normalization scale (required when Pk_norm > 0)
+ZD_Pk_smooth = 0.0
+ZD_Pk_powerlaw_index = -2.0        # Power law: P(k) ~ k^-2
+ZD_Version = 2                     # Use version 2 (recommended)
+ZD_qPk_fix_to_mean = 0             # Random amplitude (not fixed)
+ZD_f_NL = 0                        # No f_NL
+qdensity = 1                       # Output density field
+
+# k_cutoff and CornerModes settings (testing k_cutoff implementation)
+ZD_k_cutoff = 1.0                  # k_max = k_Nyquist / k_cutoff = 8 / 1.0 = 8 (full range)
+ZD_CornerModes = 0                  # Zero modes with k² >= k2_cutoff (default)
+
+# PLT (Particle Linear Theory) settings - DISABLED for RNG comparison
+ZD_qPLT = 0                        # Disable PLT mode for RNG comparison
+ZD_qPLTrescale = 0                 # Disable PLT rescaling
+ZD_PLT_target_z = 0.0              # Not used when PLT is disabled
+
+# ZD_PLT_filename not needed when PLT is disabled
+
