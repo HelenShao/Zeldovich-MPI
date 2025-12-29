@@ -124,6 +124,18 @@ int zeldovich_params_get_qdensity(ParametersHandle params) {
     return p->qdensity;
 }
 
+double zeldovich_params_get_k_cutoff(ParametersHandle params) {
+    if (!params) return 1.0;  // Default value
+    Parameters* p = static_cast<Parameters*>(params);
+    return p->k_cutoff;
+}
+
+int zeldovich_params_get_CornerModes(ParametersHandle params) {
+    if (!params) return 0;  // Default value
+    Parameters* p = static_cast<Parameters*>(params);
+    return p->CornerModes;
+}
+
 // ====================================================================================
 // POWER SPECTRUM INTERFACE
 // ====================================================================================
@@ -233,9 +245,11 @@ void zeldovich_ps_advance_rng(PowerSpectrumHandle ps, ParametersHandle params, i
     PowerSpectrum* p = static_cast<PowerSpectrum*>(ps);
     Parameters* param = static_cast<Parameters*>(params);
     // zeldovich.cpp advances by 2 * nskip (each cgauss call uses 2 random numbers)
+    // Cast to uint64_t explicitly to avoid overflow in multiplication
     int64_t ppd_half = param->ppd / 2;
     if (rng_index >= 0 && rng_index < ppd_half && p->v2rng) {
-        p->v2rng[rng_index].advance(2 * nskip);
+        uint64_t advance_amount = (uint64_t)2 * (uint64_t)nskip;
+        p->v2rng[rng_index].advance(advance_amount);
     }
 }
 
