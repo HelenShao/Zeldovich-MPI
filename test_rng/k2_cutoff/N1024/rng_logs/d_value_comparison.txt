@@ -1,0 +1,25 @@
+================================================================================
+RNG D Value Comparison Report
+================================================================================
+
+Total coordinates in hermitian: 0
+Total coordinates in zeldovich: 3521
+Total unique coordinates: 3521
+Tolerance: 1e-06
+
+WARNING: 3521 coordinates missing in hermitian:
+  Y=0 (x,z)=(0,0)
+  Y=0 (x,z)=(0,1)
+  Y=0 (x,z)=(0,2)
+  Y=0 (x,z)=(0,3)
+  Y=0 (x,z)=(0,4)
+  Y=0 (x,z)=(0,5)
+  Y=0 (x,z)=(0,6)
+  Y=0 (x,z)=(0,7)
+  Y=0 (x,z)=(0,8)
+  Y=0 (x,z)=(0,9)
+  ... and 3511 more
+
+SUCCESS: All D values match (within tolerance)!
+
+================================================================================

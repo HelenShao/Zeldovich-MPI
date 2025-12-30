@@ -1,0 +1,839 @@
+Loading frameworks module...
+Loading FFTW module...
+==========================================
+STEP 1: Compiling with DEBUG_RNG_CONSISTENCY (serial: 1 rank, 1 thread)
+==========================================
+rm -f hermitian_3d_matrix write_particles_from_reassembled_mpi *.o
+mpicxx -Wall -Wextra -Wno-cast-function-type -std=c++17 -O3 -fopenmp -DPARTICLE_OUTPUT_MODE=1 -DVERIFY_HERMITIAN_SYMMETRY=0 -DSKIP_FILE_WRITE=0 -I../zeldovich-PLT/include -I../zeldovich-PLT/subprojects/ParseHeader/include -I../zeldovich-PLT/build/subprojects/ParseHeader -I../zeldovich-PLT/subprojects/fmt-11.2.0/include -Isrc -Isrc/utils -Isrc/fft -Isrc/generation -Isrc/communication -Isrc/streaming -Isrc/output -Ideps -I../.. -I../../../..  -I/opt/aurora/25.190.0/spack/unified/0.10.1/install/linux-sles15-x86_64/oneapi-2025.2.0/fftw-3.3.10-bs6lijg/include -o hermitian_3d_matrix src/main.cpp src/utils/printing.c src/utils/verification.c src/utils/decomposition.c src/utils/batch_helpers.c src/utils/rng.c src/utils/power_spectrum.c src/utils/plt_eigenmodes.c src/fft/fft_setup.c src/generation/hermitian_generation.c src/communication/mpi_exchange.c src/streaming/z_streaming.c src/STimer.cc src/utils/zeldovich_wrapper.cpp src/output/output_new.cpp  -L/opt/aurora/25.190.0/spack/unified/0.10.1/install/linux-sles15-x86_64/oneapi-2025.2.0/fftw-3.3.10-bs6lijg/lib -lfftw3f -lfftw3f_omp -L../zeldovich-PLT/build -L../zeldovich-PLT/build/subprojects/ParseHeader -L../zeldovich-PLT/build/subprojects/fmt-11.2.0 -lzeldovich -lparseheader -lfmt  -lm -lstdc++ -Wl,-rpath,/home/helenshao/InitialConditions/zeldovich-PLT/build:/home/helenshao/InitialConditions/zeldovich-PLT/build/subprojects/ParseHeader:/home/helenshao/InitialConditions/zeldovich-PLT/build/subprojects/fmt-11.2.0
+icpx: warning: use of '-qopenmp' recommended over '-fopenmp' [-Wrecommended-option]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+src/main.cpp:947:25: warning: absolute value function 'fabsf' given an argument of type 'double' but has parameter of type 'float' which may cause truncation of value [-Wabsolute-value]
+  947 |                     if (fabs_t(expected_re - actual_re) > 1e-10 || 
+      |                         ^
+src/precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/main.cpp:947:25: note: use function 'std::abs' instead
+  947 |                     if (fabs_t(expected_re - actual_re) > 1e-10 || 
+      |                         ^~~~~~
+      |                         std::abs
+src/precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/main.cpp:948:25: warning: absolute value function 'fabsf' given an argument of type 'double' but has parameter of type 'float' which may cause truncation of value [-Wabsolute-value]
+  948 |                         fabs_t(expected_im - actual_im) > 1e-10) {
+      |                         ^
+src/precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/main.cpp:948:25: note: use function 'std::abs' instead
+  948 |                         fabs_t(expected_im - actual_im) > 1e-10) {
+      |                         ^~~~~~
+      |                         std::abs
+src/precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/main.cpp:271:9: warning: variable 'num_my_slices' set but not used [-Wunused-but-set-variable]
+  271 |     int num_my_slices = 0;  // Will be set per-batch (1 or 2)
+      |         ^
+3 warnings generated.
+src/utils/printing.c:40:21: warning: absolute value function 'fabsf' given an argument of type 'double' but has parameter of type 'float' which may cause truncation of value [-Wabsolute-value]
+   40 |                 if (fabs_t(im) < 1e-10) {
+      |                     ^
+src/precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/utils/printing.c:40:21: note: use function 'std::abs' instead
+   40 |                 if (fabs_t(im) < 1e-10) {
+      |                     ^~~~~~
+      |                     std::abs
+src/precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/utils/printing.c:86:25: warning: absolute value function 'fabsf' given an argument of type 'double' but has parameter of type 'float' which may cause truncation of value [-Wabsolute-value]
+   86 |                     if (fabs_t(im) > 1e-10) non_zero_imag_count++;
+      |                         ^
+src/precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/utils/printing.c:86:25: note: use function 'std::abs' instead
+   86 |                     if (fabs_t(im) > 1e-10) non_zero_imag_count++;
+      |                         ^~~~~~
+      |                         std::abs
+src/precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/utils/printing.c:104:25: warning: absolute value function 'fabsf' given an argument of type 'double' but has parameter of type 'float' which may cause truncation of value [-Wabsolute-value]
+  104 |                     if (fabs_t(im) < 1e-10) {
+      |                         ^
+src/precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/utils/printing.c:104:25: note: use function 'std::abs' instead
+  104 |                     if (fabs_t(im) < 1e-10) {
+      |                         ^~~~~~
+      |                         std::abs
+src/precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/utils/printing.c:122:25: warning: absolute value function 'fabsf' given an argument of type 'double' but has parameter of type 'float' which may cause truncation of value [-Wabsolute-value]
+  122 |                     if (fabs_t(im) < 1e-10) {
+      |                         ^
+src/precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/utils/printing.c:122:25: note: use function 'std::abs' instead
+  122 |                     if (fabs_t(im) < 1e-10) {
+      |                         ^~~~~~
+      |                         std::abs
+src/precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+4 warnings generated.
+src/utils/decomposition.c:146:46: warning: unused parameter 'num_ranks' [-Wunused-parameter]
+  146 | int validate_abacus_compatibility(int N, int num_ranks, int grid_x, int grid_z)
+      |                                              ^
+1 warning generated.
+src/utils/rng.c:50:39: warning: unused parameter 'M' [-Wunused-parameter]
+   50 | void initialize_global_pcg(int L, int M, int N, uint64_t seed) {
+      |                                       ^
+src/utils/rng.c:50:46: warning: unused parameter 'N' [-Wunused-parameter]
+   50 | void initialize_global_pcg(int L, int M, int N, uint64_t seed) {
+      |                                              ^
+2 warnings generated.
+src/generation/hermitian_generation.c:403:24: warning: unused variable 'ik2' [-Wunused-variable]
+  403 |                 double ik2 = 1.0 / k2;
+      |                        ^~~
+src/generation/hermitian_generation.c:927:28: warning: unused variable 'ik2' [-Wunused-variable]
+  927 |                     double ik2 = 1.0 / k2;
+      |                            ^~~
+src/generation/hermitian_generation.c:893:28: warning: unused variable 'ik2' [-Wunused-variable]
+  893 |                     double ik2 = 1.0 / k2;
+      |                            ^~~
+src/generation/hermitian_generation.c:1800:42: warning: absolute value function 'fabsf' given an argument of type 'double' but has parameter of type 'float' which may cause truncation of value [-Wabsolute-value]
+ 1800 |                         double diff_re = fabs_t(prim_re - conj_re);
+      |                                          ^
+src/generation/../precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/generation/hermitian_generation.c:1800:42: note: use function 'std::abs' instead
+ 1800 |                         double diff_re = fabs_t(prim_re - conj_re);
+      |                                          ^~~~~~
+      |                                          std::abs
+src/generation/../precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/generation/hermitian_generation.c:1801:42: warning: absolute value function 'fabsf' given an argument of type 'double' but has parameter of type 'float' which may cause truncation of value [-Wabsolute-value]
+ 1801 |                         double diff_im = fabs_t(prim_im - conj_im);
+      |                                          ^
+src/generation/../precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/generation/hermitian_generation.c:1801:42: note: use function 'std::abs' instead
+ 1801 |                         double diff_im = fabs_t(prim_im - conj_im);
+      |                                          ^~~~~~
+      |                                          std::abs
+src/generation/../precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/generation/hermitian_generation.c:1831:46: warning: absolute value function 'fabsf' given an argument of type 'double' but has parameter of type 'float' which may cause truncation of value [-Wabsolute-value]
+ 1831 |                             double diff_re = fabs_t(prim_re - conj_re);
+      |                                              ^
+src/generation/../precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/generation/hermitian_generation.c:1831:46: note: use function 'std::abs' instead
+ 1831 |                             double diff_re = fabs_t(prim_re - conj_re);
+      |                                              ^~~~~~
+      |                                              std::abs
+src/generation/../precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/generation/hermitian_generation.c:1832:46: warning: absolute value function 'fabsf' given an argument of type 'double' but has parameter of type 'float' which may cause truncation of value [-Wabsolute-value]
+ 1832 |                             double diff_im = fabs_t(prim_im - conj_im);
+      |                                              ^
+src/generation/../precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/generation/hermitian_generation.c:1832:46: note: use function 'std::abs' instead
+ 1832 |                             double diff_im = fabs_t(prim_im - conj_im);
+      |                                              ^~~~~~
+      |                                              std::abs
+src/generation/../precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+7 warnings generated.
+src/streaming/z_streaming.c:147:13: warning: variable 'found_inf_before' set but not used [-Wunused-but-set-variable]
+  147 |         int found_inf_before = 0;
+      |             ^
+src/streaming/z_streaming.c:36:10: warning: unused parameter 'src_total_slices' [-Wunused-parameter]
+   36 |     int *src_total_slices,                 // Total slices per source (unused, kept for API)
+      |          ^
+src/streaming/z_streaming.c:38:10: warning: unused parameter 'y_src_local_idx' [-Wunused-parameter]
+   38 |     int *y_src_local_idx,                  // Y -> local_idx mapping (unused, kept for API)
+      |          ^
+3 warnings generated.
+mpicxx -Wall -Wextra -Wno-cast-function-type -std=c++17 -O3 -fopenmp -DPARTICLE_OUTPUT_MODE=1 -DVERIFY_HERMITIAN_SYMMETRY=0 -DSKIP_FILE_WRITE=0 -I../zeldovich-PLT/include -I../zeldovich-PLT/subprojects/ParseHeader/include -I../zeldovich-PLT/build/subprojects/ParseHeader -I../zeldovich-PLT/subprojects/fmt-11.2.0/include -Isrc -Isrc/utils -Isrc/fft -Isrc/generation -Isrc/communication -Isrc/streaming -Isrc/output -Ideps -I../.. -I../../../..  -I/opt/aurora/25.190.0/spack/unified/0.10.1/install/linux-sles15-x86_64/oneapi-2025.2.0/fftw-3.3.10-bs6lijg/include -o write_particles_from_reassembled_mpi src/write_particles_from_reassembled_mpi.cpp src/utils/printing.c src/utils/verification.c src/utils/decomposition.c src/utils/batch_helpers.c src/utils/rng.c src/utils/power_spectrum.c src/utils/plt_eigenmodes.c src/STimer.cc src/output/output_new.cpp  -L/opt/aurora/25.190.0/spack/unified/0.10.1/install/linux-sles15-x86_64/oneapi-2025.2.0/fftw-3.3.10-bs6lijg/lib -lfftw3f -lfftw3f_omp -L../zeldovich-PLT/build -L../zeldovich-PLT/build/subprojects/ParseHeader -L../zeldovich-PLT/build/subprojects/fmt-11.2.0 -lzeldovich -lparseheader -lfmt  -lm -lstdc++ -Wl,-rpath,/home/helenshao/InitialConditions/zeldovich-PLT/build:/home/helenshao/InitialConditions/zeldovich-PLT/build/subprojects/ParseHeader:/home/helenshao/InitialConditions/zeldovich-PLT/build/subprojects/fmt-11.2.0
+icpx: warning: use of '-qopenmp' recommended over '-fopenmp' [-Wrecommended-option]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+src/write_particles_from_reassembled_mpi.cpp:58:22: warning: unused variable 'EXPECTED_BYTES_PER_COMPLEX' [-Wunused-const-variable]
+   58 |     constexpr size_t EXPECTED_BYTES_PER_COMPLEX = 8;
+      |                      ^~~~~~~~~~~~~~~~~~~~~~~~~~
+1 warning generated.
+src/utils/printing.c:40:21: warning: absolute value function 'fabsf' given an argument of type 'double' but has parameter of type 'float' which may cause truncation of value [-Wabsolute-value]
+   40 |                 if (fabs_t(im) < 1e-10) {
+      |                     ^
+src/precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/utils/printing.c:40:21: note: use function 'std::abs' instead
+   40 |                 if (fabs_t(im) < 1e-10) {
+      |                     ^~~~~~
+      |                     std::abs
+src/precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/utils/printing.c:86:25: warning: absolute value function 'fabsf' given an argument of type 'double' but has parameter of type 'float' which may cause truncation of value [-Wabsolute-value]
+   86 |                     if (fabs_t(im) > 1e-10) non_zero_imag_count++;
+      |                         ^
+src/precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/utils/printing.c:86:25: note: use function 'std::abs' instead
+   86 |                     if (fabs_t(im) > 1e-10) non_zero_imag_count++;
+      |                         ^~~~~~
+      |                         std::abs
+src/precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/utils/printing.c:104:25: warning: absolute value function 'fabsf' given an argument of type 'double' but has parameter of type 'float' which may cause truncation of value [-Wabsolute-value]
+  104 |                     if (fabs_t(im) < 1e-10) {
+      |                         ^
+src/precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/utils/printing.c:104:25: note: use function 'std::abs' instead
+  104 |                     if (fabs_t(im) < 1e-10) {
+      |                         ^~~~~~
+      |                         std::abs
+src/precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/utils/printing.c:122:25: warning: absolute value function 'fabsf' given an argument of type 'double' but has parameter of type 'float' which may cause truncation of value [-Wabsolute-value]
+  122 |                     if (fabs_t(im) < 1e-10) {
+      |                         ^
+src/precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/utils/printing.c:122:25: note: use function 'std::abs' instead
+  122 |                     if (fabs_t(im) < 1e-10) {
+      |                         ^~~~~~
+      |                         std::abs
+src/precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+4 warnings generated.
+src/utils/decomposition.c:146:46: warning: unused parameter 'num_ranks' [-Wunused-parameter]
+  146 | int validate_abacus_compatibility(int N, int num_ranks, int grid_x, int grid_z)
+      |                                              ^
+1 warning generated.
+src/utils/rng.c:50:39: warning: unused parameter 'M' [-Wunused-parameter]
+   50 | void initialize_global_pcg(int L, int M, int N, uint64_t seed) {
+      |                                       ^
+src/utils/rng.c:50:46: warning: unused parameter 'N' [-Wunused-parameter]
+   50 | void initialize_global_pcg(int L, int M, int N, uint64_t seed) {
+      |                                              ^
+2 warnings generated.
+
+Build successful!
+Binary: hermitian_3d_matrix
+Configuration: see src/config.h
+
+Compilation successful
+
+==========================================
+STEP 2: Generating .bin files (N=256, ranks=1, threads=1)
+         Capturing RNG debug output to compare with zeldovich-PLT
+==========================================
+Running: /home/helenshao/InitialConditions/hermitian_3d_matrix_production/hermitian_3d_matrix 256 /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_rng/k2_cutoff/N256/param_N256_rng.par
+RNG debug output will be in: test_rng/k2_cutoff/N256/rng_logs/hermitian_rng_debug.log
+
+Generated 256 .bin files in test_rng/k2_cutoff/N256/bin_files
+Extracting RNG-DEBUG lines from log...
+Found 3521 RNG-DEBUG lines
+
+==========================================
+STEP 3: Reassembling and writing particle ICs
+==========================================
+Running write_particles_from_reassembled_mpi...
+Generating ICs for ppd = 256
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i0_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i1_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i2_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i3_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i4_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i5_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i6_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i7_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i8_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i9_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i10_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i11_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i12_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i13_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i14_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i15_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i16_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i17_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i18_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i19_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i20_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i21_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i22_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i23_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i24_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i25_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i26_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i27_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i28_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i29_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i30_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i31_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i32_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i33_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i34_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i35_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i36_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i37_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i38_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i39_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i40_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i41_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i42_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i43_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i44_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i45_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i46_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i47_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i48_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i49_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i50_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i51_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i52_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i53_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i54_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i55_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i56_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i57_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i58_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i59_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i60_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i61_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i62_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i63_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i64_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i65_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i66_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i67_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i68_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i69_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i70_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i71_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i72_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i73_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i74_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i75_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i76_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i77_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i78_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i79_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i80_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i81_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i82_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i83_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i84_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i85_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i86_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i87_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i88_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i89_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i90_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i91_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i92_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i93_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i94_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i95_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i96_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i97_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i98_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i99_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i100_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i101_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i102_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i103_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i104_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i105_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i106_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i107_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i108_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i109_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i110_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i111_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i112_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i113_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i114_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i115_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i116_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i117_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i118_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i119_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i120_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i121_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i122_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i123_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i124_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i125_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i126_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i127_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i128_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i129_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i130_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i131_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i132_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i133_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i134_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i135_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i136_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i137_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i138_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i139_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i140_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i141_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i142_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i143_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i144_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i145_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i146_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i147_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i148_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i149_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i150_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i151_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i152_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i153_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i154_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i155_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i156_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i157_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i158_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i159_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i160_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i161_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i162_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i163_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i164_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i165_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i166_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i167_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i168_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i169_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i170_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i171_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i172_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i173_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i174_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i175_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i176_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i177_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i178_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i179_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i180_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i181_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i182_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i183_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i184_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i185_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i186_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i187_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i188_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i189_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i190_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i191_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i192_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i193_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i194_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i195_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i196_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i197_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i198_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i199_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i200_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i201_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i202_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i203_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i204_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i205_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i206_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i207_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i208_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i209_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i210_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i211_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i212_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i213_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i214_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i215_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i216_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i217_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i218_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i219_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i220_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i221_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i222_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i223_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i224_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i225_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i226_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i227_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i228_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i229_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i230_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i231_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i232_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i233_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i234_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i235_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i236_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i237_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i238_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i239_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i240_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i241_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i242_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i243_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i244_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i245_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i246_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i247_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i248_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i249_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i250_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i251_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i252_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i253_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i254_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+Warning: test_rng/k2_cutoff/N256/bin_files/rank_0/i255_slab_N256.bin x_count=128 differs from expected 256 (rank=0).
+================================================================================
+WRITE PARTICLES FROM REASSEMBLED MPI Z-SLABS
+================================================================================
+Output directory: test_rng/k2_cutoff/N256/bin_files
+Grid size N: 256
+Number of MPI ranks: 1
+Number of arrays: 4
+i-slab range: [0, 256)
+Parameter file: /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_rng/k2_cutoff/N256/param_N256_rng.par
+================================================================================
+
+Loaded parameters from: /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_rng/k2_cutoff/N256/param_N256_rng.par
+  ppd: 256
+  boxsize: 100.000000
+  separation: 0.390625
+Initializing output...
+  Output directory: ./output
+  Buffer size: 0.002 GiB
+
+Processing i-slabs...
+Grid decomposition: 1 x 1 = 1 ranks
+  i=0: OK
+  i=1: OK
+  i=2: OK
+  i=3: OK
+  i=4: OK
+  i=5: OK
+  i=6: OK
+  i=7: OK
+  i=8: OK
+  i=9: OK
+  i=10: OK
+  i=11: OK
+  i=12: OK
+  i=13: OK
+  i=14: OK
+  i=15: OK
+  i=16: OK
+  i=17: OK
+  i=18: OK
+  i=19: OK
+  i=20: OK
+  i=21: OK
+  i=22: OK
+  i=23: OK
+  i=24: OK
+  i=25: OK
+  i=26: OK
+  i=27: OK
+  i=28: OK
+  i=29: OK
+  i=30: OK
+  i=31: OK
+  i=32: OK
+  i=33: OK
+  i=34: OK
+  i=35: OK
+  i=36: OK
+  i=37: OK
+  i=38: OK
+  i=39: OK
+  i=40: OK
+  i=41: OK
+  i=42: OK
+  i=43: OK
+  i=44: OK
+  i=45: OK
+  i=46: OK
+  i=47: OK
+  i=48: OK
+  i=49: OK
+  i=50: OK
+  i=51: OK
+  i=52: OK
+  i=53: OK
+  i=54: OK
+  i=55: OK
+  i=56: OK
+  i=57: OK
+  i=58: OK
+  i=59: OK
+  i=60: OK
+  i=61: OK
+  i=62: OK
+  i=63: OK
+  i=64: OK
+  i=65: OK
+  i=66: OK
+  i=67: OK
+  i=68: OK
+  i=69: OK
+  i=70: OK
+  i=71: OK
+  i=72: OK
+  i=73: OK
+  i=74: OK
+  i=75: OK
+  i=76: OK
+  i=77: OK
+  i=78: OK
+  i=79: OK
+  i=80: OK
+  i=81: OK
+  i=82: OK
+  i=83: OK
+  i=84: OK
+  i=85: OK
+  i=86: OK
+  i=87: OK
+  i=88: OK
+  i=89: OK
+  i=90: OK
+  i=91: OK
+  i=92: OK
+  i=93: OK
+  i=94: OK
+  i=95: OK
+  i=96: OK
+  i=97: OK
+  i=98: OK
+  i=99: OK
+  i=100: OK
+  i=101: OK
+  i=102: OK
+  i=103: OK
+  i=104: OK
+  i=105: OK
+  i=106: OK
+  i=107: OK
+  i=108: OK
+  i=109: OK
+  i=110: OK
+  i=111: OK
+  i=112: OK
+  i=113: OK
+  i=114: OK
+  i=115: OK
+  i=116: OK
+  i=117: OK
+  i=118: OK
+  i=119: OK
+  i=120: OK
+  i=121: OK
+  i=122: OK
+  i=123: OK
+  i=124: OK
+  i=125: OK
+  i=126: OK
+  i=127: OK
+  i=128: OK
+  i=129: OK
+  i=130: OK
+  i=131: OK
+  i=132: OK
+  i=133: OK
+  i=134: OK
+  i=135: OK
+  i=136: OK
+  i=137: OK
+  i=138: OK
+  i=139: OK
+  i=140: OK
+  i=141: OK
+  i=142: OK
+  i=143: OK
+  i=144: OK
+  i=145: OK
+  i=146: OK
+  i=147: OK
+  i=148: OK
+  i=149: OK
+  i=150: OK
+  i=151: OK
+  i=152: OK
+  i=153: OK
+  i=154: OK
+  i=155: OK
+  i=156: OK
+  i=157: OK
+  i=158: OK
+  i=159: OK
+  i=160: OK
+  i=161: OK
+  i=162: OK
+  i=163: OK
+  i=164: OK
+  i=165: OK
+  i=166: OK
+  i=167: OK
+  i=168: OK
+  i=169: OK
+  i=170: OK
+  i=171: OK
+  i=172: OK
+  i=173: OK
+  i=174: OK
+  i=175: OK
+  i=176: OK
+  i=177: OK
+  i=178: OK
+  i=179: OK
+  i=180: OK
+  i=181: OK
+  i=182: OK
+  i=183: OK
+  i=184: OK
+  i=185: OK
+  i=186: OK
+  i=187: OK
+  i=188: OK
+  i=189: OK
+  i=190: OK
+  i=191: OK
+  i=192: OK
+  i=193: OK
+  i=194: OK
+  i=195: OK
+  i=196: OK
+  i=197: OK
+  i=198: OK
+  i=199: OK
+  i=200: OK
+  i=201: OK
+  i=202: OK
+  i=203: OK
+  i=204: OK
+  i=205: OK
+  i=206: OK
+  i=207: OK
+  i=208: OK
+  i=209: OK
+  i=210: OK
+  i=211: OK
+  i=212: OK
+  i=213: OK
+  i=214: OK
+  i=215: OK
+  i=216: OK
+  i=217: OK
+  i=218: OK
+  i=219: OK
+  i=220: OK
+  i=221: OK
+  i=222: OK
+  i=223: OK
+  i=224: OK
+  i=225: OK
+  i=226: OK
+  i=227: OK
+  i=228: OK
+  i=229: OK
+  i=230: OK
+  i=231: OK
+  i=232: OK
+  i=233: OK
+  i=234: OK
+  i=235: OK
+  i=236: OK
+  i=237: OK
+  i=238: OK
+  i=239: OK
+  i=240: OK
+  i=241: OK
+  i=242: OK
+  i=243: OK
+  i=244: OK
+  i=245: OK
+  i=246: OK
+  i=247: OK
+  i=248: OK
+  i=249: OK
+  i=250: OK
+  i=251: OK
+  i=252: OK
+  i=253: OK
+  i=254: OK
+  i=255: OK
+
+================================================================================
+COMPLETE: Processed 256 i-slabs
+Output files written to: ./output
+  Files: ic_* (complete particle data, matches serial Zeldovich)
+=================================================WriteParticlesSlab took 1.4 sec to write 537 MB ==> 385 MB/sec
+===============================
+Generated 256 particle IC files
+
+==========================================
+RNG Test Summary (Serial: 1 rank, 1 thread)
+==========================================
+  .bin files: 256
+  Particle IC files: 256
+  RNG debug lines: 3521
+  Logs: test_rng/k2_cutoff/N256/
+  RNG debug output: test_rng/k2_cutoff/N256/rng_logs/hermitian_rng_debug_filtered.txt
+
+Next steps:
+  1. Run zeldovich-PLT with same parameters: ./run_zeldovich_rng.sh
+  2. Compare RNG outputs: see workflow.txt

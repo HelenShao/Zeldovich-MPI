@@ -1,0 +1,97 @@
+# RNG Comparison Test with PLT ENABLED (Serial: 1 MPI rank, 1 OMP thread)
+# Testing k_cutoff implementation (k_cutoff=1.0, CornerModes=0)
+# PLT and PLT rescaling ENABLED
+# Compare random number draws and PLT corrections (D, F, G, H) between hermitian_3d_matrix_production and zeldovich-PLT
+# Both codes print [RNG-DEBUG] output before any FFT for coordinates x,y,z <= 10
+# NOTE: The two codes process Y-slices in different orders, so logs must be sorted before comparison
+
+0. (First time only) Rebuild zeldovich-PLT to include RNG debug code:
+$ cd /home/helenshao/InitialConditions/zeldovich-PLT
+$ meson compile -C build
+
+1. Run hermitian_3d_matrix (serial: 1 rank, 1 thread, PLT enabled):
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_rng/k2_cutoff/N1024_PLT
+$ qsub N1024_PLT_test.pbs
+
+2. Run zeldovich-PLT (serial, single-threaded, PLT enabled):
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_rng/k2_cutoff/N1024_PLT
+$ ./run_zeldovich_PLT.sh
+# OR manually:
+# $ cd /home/helenshao/InitialConditions/zeldovich-PLT
+# $ ./build/zeldovich /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_rng/k2_cutoff/N1024_PLT/param_N1024_PLT.par
+
+2.5 Extract rng-debug lines into filtered txt file:
+$ cd rng_logs
+$ grep "\[RNG-DEBUG\]" hermitian_rng_debug.log > hermitian_rng_debug_filtered.txt
+
+3. Sort and compare RNG debug output (files have different Y ordering):
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_rng/k2_cutoff/N1024_PLT
+# Option A: Sort and save diff in one step
+$ python3 sort_rng_logs.py --diff-output rng_logs/rng_diff.txt
+# OR Option B: Sort first, then diff manually
+$ python3 sort_rng_logs.py
+$ cd rng_logs
+$ diff hermitian_rng_debug_sorted.txt zeldovich_rng_debug_sorted.txt > rng_diff.txt 2>&1
+# Differences saved to rng_logs/rng_diff.txt
+# If files match, rng_diff.txt will be empty (check with: wc -l rng_logs/rng_diff.txt)
+# View differences: cat rng_logs/rng_diff.txt
+
+4. Count RNG debug lines (should match):
+$ wc -l hermitian_rng_debug_filtered.txt zeldovich_rng_debug_filtered.txt
+$ wc -l hermitian_rng_debug_sorted.txt zeldovich_rng_debug_sorted.txt
+# Line counts should match between filtered and sorted versions
+
+5. Compare specific coordinates (e.g., Y=0, x=0, z=0):
+$ grep "Y=0.*(x,z)=(0,0)" hermitian_rng_debug_filtered.txt
+$ grep "Y=0.*(x,z)=(0,0)" zeldovich_rng_debug_filtered.txt
+
+6. Compare D values (random Gaussian draws) - Detailed comparison:
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_rng/k2_cutoff/N1024_PLT
+$ python3 compare_rng_d_values.py
+# This creates a detailed report showing D value differences for each coordinate
+# Report saved to: rng_logs/d_value_comparison.txt
+# 
+# For PLT-enabled tests, compare ALL values (D, F, G, H):
+$ python3 compare_rng_all_values.py
+# This compares D, F, G, H values and creates a detailed report
+# Report saved to: rng_logs/all_values_comparison.txt
+# 
+# To compare only specific values (e.g., F and G only):
+# $ python3 compare_rng_all_values.py --compare F,G --output rng_logs/fg_comparison.txt
+# 
+# To use stricter tolerance:
+# $ python3 compare_rng_all_values.py --tolerance 1e-10
+# 
+# Quick check for specific coordinates:
+$ grep "Y=0.*(x,z)=(0,1)" rng_logs/hermitian_rng_debug_filtered.txt | head -1
+$ grep "Y=0.*(x,z)=(0,1)" rng_logs/zeldovich_rng_debug_filtered.txt | head -1
+# D, F, G, H values should match exactly if same random numbers are drawn and PLT corrections match
+
+7. Verify k_cutoff zeroing:
+# For N=1024, k_cutoff=1.0: k2_cutoff = (512)² / (1.0)² = 262144
+# All modes with k² >= 262144 should have D=0 in both codes
+$ grep "k2=262[2-9][0-9][0-9]\|k2=26[3-9][0-9][0-9][0-9]\|k2=2[7-9][0-9][0-9][0-9][0-9]\|k2=[3-9][0-9][0-9][0-9][0-9][0-9]\|k2=[1-9][0-9][0-9][0-9][0-9][0-9][0-9]" rng_logs/hermitian_rng_debug_sorted.txt | grep -v "D=(0.000000e+00,0.000000e+00)"
+$ grep "k2=262[2-9][0-9][0-9]\|k2=26[3-9][0-9][0-9][0-9]\|k2=2[7-9][0-9][0-9][0-9][0-9]\|k2=[3-9][0-9][0-9][0-9][0-9][0-9]\|k2=[1-9][0-9][0-9][0-9][0-9][0-9][0-9]" rng_logs/zeldovich_rng_debug_sorted.txt | grep -v "D=(0.000000e+00,0.000000e+00)"
+# Both commands should return no results (all high-k modes should be zeroed)
+
+8. Reassemble .bin files and write particle ICs (hermitian):
+$ bash write_ic.sh
+# This will:
+#   - Read .bin files from: ./bin_files/rank_0/i*_slab_N1024.bin
+#   - Reassemble into full i-slabs
+#   - Write particle ICs to: ./particle_ics/ic_*
+#   - Log output: ./N1024_PLT_reassembly.log
+
+9. Read particles ICs:
+   hermitian_3d_matrix: (assemble the IC files in particle_ics/)
+   $ for f in ./particle_ics/ic_{0..3}; do python3 /home/helenshao/InitialConditions/hermitian_3d_matrix_production/tests/options_ab/read_particles.py "$f" 10; done > ./particle_values.txt 2>&1
+
+   zeldovich-plt:
+   $ for f in /home/helenshao/InitialConditions/zeldovich-PLT/output_rng_k2cutoff_N1024_PLT/ic_*; do python3 /home/helenshao/InitialConditions/hermitian_3d_matrix_production/tests/options_ab/read_particles.py "$f" 10; done > ./particle_ics/zeldovich_PLT_k2_cutoff_PLT_particle_values.txt 2>&1
+
+10. Compare particle ICs using compare_ic_files.py (end-to-end verification):
+$ python3 /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_assembly/compare_ic_files.py ./particle_ics /home/helenshao/InitialConditions/zeldovich-PLT/output_rng_k2cutoff_N1024_PLT > ic_comparison.txt 2>&1
+
+11. visualize particle fields:
+$ mkdir -p visualizations
+$ python3 /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_assembly/visualize_particle_comparison.py ./particle_ics /home/helenshao/InitialConditions/zeldovich-PLT/output_rng_k2cutoff_N1024_PLT ./visualizations

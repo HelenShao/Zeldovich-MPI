@@ -1,0 +1,185 @@
+#!/bin/bash
+#PBS -N 64_rng_test
+#PBS -A AbacusAurora
+#PBS -l select=1:ncpus=1:mpiprocs=1:ompthreads=1
+#PBS -l walltime=02:00:00
+#PBS -l filesystems=home
+#PBS -M helenshao0904@gmail.com
+#PBS -m abe
+#PBS -j oe
+#PBS -o /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_rng/k2_cutoff/N64/N64_test.out
+
+# Remove old outputs, .out and .log files
+cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_rng/k2_cutoff/N64
+if [ -d "bin_files" ]; then
+    rm -rf bin_files/rank_*
+fi
+if [ -d "particle_ics" ]; then
+    rm -rf particle_ics/ic_*
+    rm -rf particle_ics/dens*
+fi
+if [ -d "rng_logs" ]; then
+    rm -f rng_logs/*.log rng_logs/*.txt 2>/dev/null || true
+fi
+if [ -f "*.log" ]; then
+    rm *.log
+fi
+if [ -f "*.out" ]; then
+    rm *.out
+fi
+
+# Go to working directory
+cd $PBS_O_WORKDIR
+
+# Load modules
+echo "Loading frameworks module..."
+module load frameworks
+echo "Loading FFTW module..."
+module load fftw/3.3.10
+
+# Go to hermitian_3d_matrix_production directory
+cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production
+
+# ====================================================================================
+# STEP 1: Compile with DEBUG_RNG_CONSISTENCY enabled (default) and PLT disabled
+# ====================================================================================
+echo "=========================================="
+echo "STEP 1: Compiling with DEBUG_RNG_CONSISTENCY (serial: 1 rank, 1 thread)"
+echo "=========================================="
+make clean
+# Build with RNG debug output and Mode 1
+# DEBUG_RNG_CONSISTENCY is enabled by default in config.h
+make CFLAGS="-DPARTICLE_OUTPUT_MODE=1 -DVERIFY_HERMITIAN_SYMMETRY=0 -DSKIP_FILE_WRITE=0" -B
+make reassembly CFLAGS="-DPARTICLE_OUTPUT_MODE=1 -DVERIFY_HERMITIAN_SYMMETRY=0 -DSKIP_FILE_WRITE=0"
+
+# Verify executables were created
+if [ ! -f "./hermitian_3d_matrix" ]; then
+    echo "ERROR: Compilation failed - hermitian_3d_matrix executable not found!"
+    exit 1
+fi
+if [ ! -f "./write_particles_from_reassembled_mpi" ]; then
+    echo "ERROR: Compilation failed - write_particles_from_reassembled_mpi executable not found!"
+    exit 1
+fi
+echo "Compilation successful"
+
+# Job parameters - SERIAL: 1 rank, 1 thread
+NNODES=1
+NRANKS_PER_NODE=1
+NTHREADS_PER_RANK=1
+NTOTRANKS=1
+
+# OpenMP settings
+export OMP_NUM_THREADS=$NTHREADS_PER_RANK
+export OMP_PLACES=cores
+export OMP_PROC_BIND=close
+
+# Test parameters
+N=64
+PARAM_FILE="/home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_rng/k2_cutoff/N64/param_N64_rng.par"
+BIN_OUTPUT_DIR="test_rng/k2_cutoff/N64/bin_files"
+PARTICLE_OUTPUT_DIR="test_rng/k2_cutoff/N64/particle_ics"
+RNG_LOG_DIR="test_rng/k2_cutoff/N64/rng_logs"
+
+# Create output directories
+mkdir -p test_rng/k2_cutoff/N64
+mkdir -p "$BIN_OUTPUT_DIR"
+mkdir -p "$PARTICLE_OUTPUT_DIR"
+mkdir -p "$RNG_LOG_DIR"
+rm -rf "$BIN_OUTPUT_DIR"/rank_* 2>/dev/null || true
+
+# ====================================================================================
+# STEP 2: Run main.cpp to generate .bin files and capture RNG debug output
+# ====================================================================================
+echo ""
+echo "=========================================="
+echo "STEP 2: Generating .bin files (N=$N, ranks=$NTOTRANKS, threads=$NTHREADS_PER_RANK)"
+echo "         Capturing RNG debug output to compare with zeldovich-PLT"
+echo "=========================================="
+
+EXECUTABLE_PATH="/home/helenshao/InitialConditions/hermitian_3d_matrix_production/hermitian_3d_matrix"
+
+if [ ! -f "$EXECUTABLE_PATH" ]; then
+    echo "ERROR: Executable not found: $EXECUTABLE_PATH"
+    exit 1
+fi
+
+echo "Running: $EXECUTABLE_PATH $N $PARAM_FILE"
+echo "RNG debug output will be in: test_rng/k2_cutoff/N64/rng_logs/hermitian_rng_debug.log"
+echo ""
+
+# Change to bin_files directory so .bin files are written to the correct location
+# The program writes files to rank_<rank>/ in the current working directory
+cd "$BIN_OUTPUT_DIR"
+
+# Run with 1 MPI rank, capture stderr (where RNG-DEBUG goes) separately
+# Note: We're now in bin_files directory, so files will be written there
+mpiexec -n $NTOTRANKS \
+        "$EXECUTABLE_PATH" $N "$PARAM_FILE" \
+        > ../N64_bin_generation.log 2> ../rng_logs/hermitian_rng_debug.log
+
+# Return to project root
+cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production
+
+BIN_COUNT=$(find "$BIN_OUTPUT_DIR" -name "*.bin" 2>/dev/null | wc -l)
+echo "Generated $BIN_COUNT .bin files in $BIN_OUTPUT_DIR"
+
+if [ "$BIN_COUNT" -eq 0 ]; then
+    echo "ERROR: No .bin files were generated!"
+    echo "Expected files in: $BIN_OUTPUT_DIR/rank_*/"
+    exit 1
+fi
+
+# Extract RNG debug lines
+echo "Extracting RNG-DEBUG lines from log..."
+grep "\[RNG-DEBUG\]" "$RNG_LOG_DIR/hermitian_rng_debug.log" > "$RNG_LOG_DIR/hermitian_rng_debug_filtered.txt" || true
+RNG_LINES=$(wc -l < "$RNG_LOG_DIR/hermitian_rng_debug_filtered.txt")
+echo "Found $RNG_LINES RNG-DEBUG lines"
+
+# ====================================================================================
+# STEP 3: Reassemble and write particle ICs
+# ====================================================================================
+echo ""
+echo "=========================================="
+echo "STEP 3: Reassembling and writing particle ICs"
+echo "=========================================="
+
+cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production
+
+I_START=0
+I_END=$N
+
+echo "Running write_particles_from_reassembled_mpi..."
+./write_particles_from_reassembled_mpi \
+    "$BIN_OUTPUT_DIR" \
+    $N \
+    $NTOTRANKS \
+    "$PARAM_FILE" \
+    $I_START \
+    $I_END \
+    2>&1 | tee test_rng/k2_cutoff/N64/N64_reassembly.log
+
+# Move output files
+if [ -d "output" ]; then
+    mkdir -p "$PARTICLE_OUTPUT_DIR"
+    mv output/ic_* "$PARTICLE_OUTPUT_DIR/" 2>/dev/null || true
+    mv output/dens* "$PARTICLE_OUTPUT_DIR/" 2>/dev/null || true
+fi
+
+IC_COUNT=$(find "$PARTICLE_OUTPUT_DIR" -name "ic_*" 2>/dev/null | wc -l)
+echo "Generated $IC_COUNT particle IC files"
+
+echo ""
+echo "=========================================="
+echo "RNG Test Summary (Serial: 1 rank, 1 thread)"
+echo "=========================================="
+echo "  .bin files: $BIN_COUNT"
+echo "  Particle IC files: $IC_COUNT"
+echo "  RNG debug lines: $RNG_LINES"
+echo "  Logs: test_rng/k2_cutoff/N64/"
+echo "  RNG debug output: test_rng/k2_cutoff/N64/rng_logs/hermitian_rng_debug_filtered.txt"
+echo ""
+echo "Next steps:"
+echo "  1. Run zeldovich-PLT with same parameters: ./run_zeldovich_rng.sh"
+echo "  2. Compare RNG outputs: see workflow.txt"
+
