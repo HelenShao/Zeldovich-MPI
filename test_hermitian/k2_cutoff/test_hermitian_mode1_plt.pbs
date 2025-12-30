@@ -1,0 +1,123 @@
+#!/bin/bash
+#PBS -N test_hermitian_N1024_mode1_plt_k2_cutoff
+#PBS -A AbacusAurora
+#PBS -l select=2:ncpus=64:mpiprocs=16:ompthreads=2
+#PBS -l walltime=01:00:00
+#PBS -l filesystems=home
+#PBS -M helenshao0904@gmail.com
+#PBS -m abe
+#PBS -j oe
+#PBS -o /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_hermitian/k2_cutoff/test_hermitian_mode1_plt.out
+
+cd $PBS_O_WORKDIR
+
+# Load modules
+# Note: frameworks module provides MPI and OpenMP
+# fftw module provides FFTW libraries
+echo "Loading frameworks module..."
+module load frameworks
+echo "Loading FFTW module..."
+module load fftw/3.3.10
+
+# Check what's available after loading modules
+echo "Checking MPI compiler..."
+which mpicc
+mpicc --version || echo "mpicc not found or error"
+
+echo "Checking C++ compiler..."
+which mpicxx
+mpicxx --version || echo "mpicxx not found or error"
+
+# Go to hermitian_3d_matrix_production directory
+cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production
+
+# Compile with double precision, VERIFY_HERMITIAN_SYMMETRY=1 flag, and verification enabled
+# Makefile auto selects correct FFTW libs based on CFLAGS
+echo "Compiling hermitian_3d_matrix with double precision..."
+echo "VERIFY_HERMITIAN_SYMMETRY: MODE 1 (F=0, H=0 for purely real test + verification checks)"
+echo "Verification: ENABLED (PRINT_DETAILED_SLICES, VERIFY_HERMITIAN_SYMMETRY)"
+echo "Using SPLINE_RESOLUTION=512 for higher interpolation accuracy"
+echo "PRINT_Z_SLABS=1: Will print selected Z-slabs (Z=0, 1, N/2, N-1) for verification"
+echo "NOTE: Testing after k2_cutoff condition fix (zeroing modes with k² >= k2_cutoff when CornerModes=0)"
+make clean
+make CFLAGS="-DUSE_DOUBLE_PRECISION -DVERIFY_HERMITIAN_SYMMETRY=1 -DPRINT_DETAILED_SLICES=1 -DPRINT_Z_SLABS=1 -DSKIP_VERIFICATION=0 -DSKIP_FILE_WRITE=1 -DSPLINE_RESOLUTION=512"
+
+# Verify executable was created
+if [ ! -f "./hermitian_3d_matrix" ]; then
+    echo "ERROR: Compilation failed - executable not found!"
+    exit 1
+fi
+echo "Compilation successful - executable found"
+
+# Job parameters
+NNODES=$(sort -u $PBS_NODEFILE | wc -l)
+NRANKS_PER_NODE=16
+NTHREADS_PER_RANK=2
+NTOTRANKS=$((NNODES * NRANKS_PER_NODE))
+
+# OpenMP settings
+export OMP_NUM_THREADS=$NTHREADS_PER_RANK
+export OMP_PLACES=cores
+export OMP_PROC_BIND=close
+
+# Test parameters
+N=1024
+PARAM_FILE="examples/param_N1024_plt.par"
+
+# Check if parameter file exists
+if [ ! -f "$PARAM_FILE" ]; then
+    echo "ERROR: Parameter file not found: $PARAM_FILE"
+    exit 1
+fi
+
+echo "=========================================="
+echo "Test: Hermitian Symmetry Test Mode 1 (F=0, H=0) with PLT ENABLED"
+echo "POST k2_cutoff IMPLEMENTATION TEST"
+echo "Double Precision Build"
+echo "VERIFY_HERMITIAN_SYMMETRY: MODE 1 (sets F=0, H=0 + enables verification)"
+echo "Verification: ENABLED"
+echo "Spline Resolution: 512 (high accuracy)"
+echo "PLT: ENABLED (using eigenmodes from zeldovich-PLT)"
+echo "PLT Rescaling: ENABLED (target_z = 0.0)"
+echo "N=$N, ranks=$NTOTRANKS, threads per rank=$NTHREADS_PER_RANK"
+echo "Parameter file: $PARAM_FILE"
+echo "Expected: With F=0 and H=0, only D and G remain"
+echo "Expected: After 3D FFT, final matrix should be purely real (imaginary parts ≈ 0)"
+echo "=========================================="
+echo ""
+
+# Create output directory if it doesn't exist
+mkdir -p test_hermitian/k2_cutoff
+
+# Run the program with parameter file
+# Redirect all output to test_hermitian/k2_cutoff directory
+mpiexec -n $NTOTRANKS \
+        -ppn $NRANKS_PER_NODE \
+        --depth=$NTHREADS_PER_RANK \
+        --cpu-bind depth \
+        ./hermitian_3d_matrix $N $PARAM_FILE 2>&1 | tee test_hermitian/k2_cutoff/test_hermitian_mode1_plt.log
+
+echo ""
+echo "=========================================="
+echo "Checking Hermitian Symmetry Verification Results..."
+echo "=========================================="
+grep -i "hermitian\|symmetry\|imaginary\|real" test_hermitian/k2_cutoff/test_hermitian_mode1_plt.log | tail -20
+
+echo ""
+echo "Checking for verification errors..."
+VERIFY_ERRORS=$(grep -i "ERROR.*hermitian\|ERROR.*symmetry" test_hermitian/k2_cutoff/test_hermitian_mode1_plt.log | wc -l)
+if [ "$VERIFY_ERRORS" -gt 0 ]; then
+    echo "WARNING: Found $VERIFY_ERRORS Hermitian symmetry verification errors!"
+    grep -i "ERROR.*hermitian\|ERROR.*symmetry" test_hermitian/k2_cutoff/test_hermitian_mode1_plt.log | head -10
+else
+    echo "SUCCESS: No Hermitian symmetry verification errors found!"
+fi
+
+echo ""
+echo "Checking final real-space verification..."
+grep -i "max_real\|max_imag\|rms_imag\|purely imaginary\|purely real\|NOT OK" test_hermitian/k2_cutoff/test_hermitian_mode1_plt.log | tail -10
+
+echo ""
+echo "Job completed!"
+echo "Output files saved to: test_hermitian/k2_cutoff/"
+
