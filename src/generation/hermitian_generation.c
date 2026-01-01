@@ -454,6 +454,37 @@ void generate_hermitian_slice_pair_local(
                         
                         if (plt_get_eigenmode(ikx, iky, ikz, (int64_t)N, &e) == 0) {
                             use_plt = 1;
+                            
+                            // Apply the same normalization as zeldovich.cpp
+                            // 1. Set sign of z component (real FFT only gives +kz half-space)
+                            // 2. Ensure |e| = 1 (normalize after interpolation, like zeldovich)
+                            // 3. Apply norm = k2 / (k * e) to get the final eigenvector
+                            
+                            // Set the sign of the z component (because the real FFT only gives the +kz half-space)
+                            // see zeldovich.cpp line 255: ehat.vec[2] *= copysign(1, kz);
+                            if (kz < 0) {
+                                e.vec[2] = -e.vec[2];
+                            }
+                            
+                            // Normalize eigenvector (interpolation might not preserve |e| = 1)
+                            // see zeldovich.cpp lines 257-263
+                            double e_mag = sqrt(e.vec[0] * e.vec[0] + e.vec[1] * e.vec[1] + e.vec[2] * e.vec[2]);
+                            if (e_mag > 0.0) {
+                                e.vec[0] /= e_mag;
+                                e.vec[1] /= e_mag;
+                                e.vec[2] /= e_mag;
+                            }
+                            
+                            // Apply normalization: norm = k2 / (k * e)
+                            // This upweights each mode by 1/(khat*ehat),see zeldovich.cpp line 266
+                            double k_dot_e = kx * e.vec[0] + ky * e.vec[1] + kz * e.vec[2];
+                            double norm = (k2 > 0.0 && k_dot_e != 0.0) ? k2 / k_dot_e : 0.0;
+                            if (!isfinite(norm)) norm = 0.0;
+                            
+                            // Scale eigenvector by norm (see zeldovich.cpp lines 268-270)
+                            e.vec[0] *= norm;
+                            e.vec[1] *= norm;
+                            e.vec[2] *= norm;
                         } else {
                             // If eigenmode lookup fails, fall back to normal computation
                             if (rank == 0 && x == 0 && z == 0) {
@@ -539,6 +570,44 @@ void generate_hermitian_slice_pair_local(
                     H[0] = -kz * factor * D[1];
                     H[1] =  kz * factor * D[0];
                 }
+                
+                // Print factor debug info while variables are in scope
+                #if DEBUG_RNG_CONSISTENCY
+                // Check if we should print debug info for this coordinate
+                int boundary_coord = Nhalf - 1;
+                int test_boundary = (boundary_coord >= 0 && 
+                                     x == boundary_coord && global_y == boundary_coord && z == boundary_coord);
+                int effective_boundary = (boundary_coord <= MAX_DEBUG_BOUNDARY_COORD) ? boundary_coord : MAX_DEBUG_BOUNDARY_COORD;
+                int max_test_coord = (MAX_DEBUG_COORD > effective_boundary) ? MAX_DEBUG_COORD : effective_boundary;
+                int in_test_range = (x <= max_test_coord && global_y <= max_test_coord && z <= max_test_coord);
+                int should_print_factor = 0;
+                if (test_boundary) {
+                    should_print_factor = 1;
+                } else if (N <= DEBUG_FULL_PRINT_MAX_N) {
+                    should_print_factor = in_test_range;
+                } else {
+                    if (x <= MAX_DEBUG_COORD && global_y <= MAX_DEBUG_COORD && z <= MAX_DEBUG_COORD) {
+                        should_print_factor = 1;
+                    } else if (in_test_range) {
+                        should_print_factor = (x % DEBUG_SAMPLE_STRIDE == 0 &&
+                                               global_y % DEBUG_SAMPLE_STRIDE == 0 &&
+                                               z % DEBUG_SAMPLE_STRIDE == 0);
+                    }
+                }
+                if (should_print_factor) {
+                    if (use_plt && params_handle != NULL) {
+                        fprintf(stderr, "[FACTOR-DEBUG] N=%d Y=%d (x,z)=(%d,%d): fundamental=%.10e rescale=%.10e "
+                                "e.vec=[%.10e,%.10e,%.10e] e.val=%.10e factor=%.10e\n",
+                                N, global_y, x, z, fundamental, rescale,
+                                e.vec[0], e.vec[1], e.vec[2], e.val, factor);
+                    } else {
+                        fprintf(stderr, "[FACTOR-DEBUG] N=%d Y=%d (x,z)=(%d,%d): fundamental=%.10e rescale=%.10e "
+                                "k=[%d,%d,%d] factor=%.10e\n",
+                                N, global_y, x, z, fundamental, rescale, kx, ky, kz, factor);
+                    }
+                    fflush(stderr);
+                }
+                #endif
                 #endif
                 }  // End of else block for !just_density
                 
@@ -955,6 +1024,29 @@ void generate_hermitian_slice_pair_local(
                             
                             if (plt_get_eigenmode(ikx, iky, ikz, (int64_t)N, &e_sc) == 0) {
                                 use_plt_sc = 1;
+        
+                                // Eigenval normalization
+                                if (kz < 0) {
+                                    e_sc.vec[2] = -e_sc.vec[2];
+                                }
+                                
+                                // Normalize eigenvector (interpolation might not preserve |e_sc| = 1)
+                                double e_sc_mag = sqrt(e_sc.vec[0] * e_sc.vec[0] + e_sc.vec[1] * e_sc.vec[1] + e_sc.vec[2] * e_sc.vec[2]);
+                                if (e_sc_mag > 0.0) {
+                                    e_sc.vec[0] /= e_sc_mag;
+                                    e_sc.vec[1] /= e_sc_mag;
+                                    e_sc.vec[2] /= e_sc_mag;
+                                }
+                                
+                                // Apply normalization: norm = k2 / (k * e_sc)
+                                double k_dot_e_sc = kx * e_sc.vec[0] + ky * e_sc.vec[1] + kz * e_sc.vec[2];
+                                double norm_sc = (k2 > 0.0 && k_dot_e_sc != 0.0) ? k2 / k_dot_e_sc : 0.0;
+                                if (!isfinite(norm_sc)) norm_sc = 0.0;
+                                
+                                // Scale eigenvector by norm
+                                e_sc.vec[0] *= norm_sc;
+                                e_sc.vec[1] *= norm_sc;
+                                e_sc.vec[2] *= norm_sc;
                                 
                                 // Compute f and rescale before computing F, G, H
                                 double f_cluster = zeldovich_params_get_f_cluster(params_handle);
@@ -1003,6 +1095,43 @@ void generate_hermitian_slice_pair_local(
                         H[0] = -kz * factor * D[1];
                         H[1] =  kz * factor * D[0];
                     }
+                    
+                    // Print factor debug info while variables are in scope (self-conjugate path)
+                    #if DEBUG_RNG_CONSISTENCY
+                    int boundary_coord_sc = Nhalf - 1;
+                    int test_boundary_sc = (boundary_coord_sc >= 0 && 
+                                             x == boundary_coord_sc && global_y == boundary_coord_sc && z == boundary_coord_sc);
+                    int effective_boundary_sc = (boundary_coord_sc <= MAX_DEBUG_BOUNDARY_COORD) ? boundary_coord_sc : MAX_DEBUG_BOUNDARY_COORD;
+                    int max_test_coord_sc = (MAX_DEBUG_COORD > effective_boundary_sc) ? MAX_DEBUG_COORD : effective_boundary_sc;
+                    int in_test_range_sc = (x <= max_test_coord_sc && global_y <= max_test_coord_sc && z <= max_test_coord_sc);
+                    int should_print_factor_sc = 0;
+                    if (test_boundary_sc) {
+                        should_print_factor_sc = 1;
+                    } else if (N <= DEBUG_FULL_PRINT_MAX_N) {
+                        should_print_factor_sc = in_test_range_sc;
+                    } else {
+                        if (x <= MAX_DEBUG_COORD && global_y <= MAX_DEBUG_COORD && z <= MAX_DEBUG_COORD) {
+                            should_print_factor_sc = 1;
+                        } else if (in_test_range_sc) {
+                            should_print_factor_sc = (x % DEBUG_SAMPLE_STRIDE == 0 &&
+                                                       global_y % DEBUG_SAMPLE_STRIDE == 0 &&
+                                                       z % DEBUG_SAMPLE_STRIDE == 0);
+                        }
+                    }
+                    if (should_print_factor_sc) {
+                        if (use_plt_sc && params_handle != NULL) {
+                            fprintf(stderr, "[FACTOR-DEBUG] N=%d Y=%d (x,z)=(%d,%d): fundamental=%.10e rescale=%.10e "
+                                    "e.vec=[%.10e,%.10e,%.10e] e.val=%.10e factor=%.10e\n",
+                                    N, global_y, x, z, fundamental_sc, rescale_sc,
+                                    e_sc.vec[0], e_sc.vec[1], e_sc.vec[2], e_sc.val, factor);
+                        } else {
+                            fprintf(stderr, "[FACTOR-DEBUG] N=%d Y=%d (x,z)=(%d,%d): fundamental=%.10e rescale=%.10e "
+                                    "k=[%d,%d,%d] factor=%.10e\n",
+                                    N, global_y, x, z, fundamental_sc, rescale_sc, kx, ky, kz, factor);
+                        }
+                        fflush(stderr);
+                    }
+                    #endif
                     }  // End of else block (if !just_density)
                     #endif
                 }
@@ -1375,6 +1504,29 @@ void generate_hermitian_slice_pair_local(
                             if (plt_get_eigenmode(ikx, iky, ikz, (int64_t)N, &e_sc2) == 0) {
                                 use_plt_sc2 = 1;
                                 
+                                // Eigenval normalization
+                                if (kz < 0) {
+                                    e_sc2.vec[2] = -e_sc2.vec[2];
+                                }
+                                
+                                // Normalize eigenvector (interpolation might not preserve |e_sc2| = 1)
+                                double e_sc2_mag = sqrt(e_sc2.vec[0] * e_sc2.vec[0] + e_sc2.vec[1] * e_sc2.vec[1] + e_sc2.vec[2] * e_sc2.vec[2]);
+                                if (e_sc2_mag > 0.0) {
+                                    e_sc2.vec[0] /= e_sc2_mag;
+                                    e_sc2.vec[1] /= e_sc2_mag;
+                                    e_sc2.vec[2] /= e_sc2_mag;
+                                }
+                                
+                                // Apply normalization: norm = k2 / (k * e_sc2)
+                                double k_dot_e_sc2 = kx * e_sc2.vec[0] + ky * e_sc2.vec[1] + kz * e_sc2.vec[2];
+                                double norm_sc2 = (k2 > 0.0 && k_dot_e_sc2 != 0.0) ? k2 / k_dot_e_sc2 : 0.0;
+                                if (!isfinite(norm_sc2)) norm_sc2 = 0.0;
+                                
+                                // Scale eigenvector by norm
+                                e_sc2.vec[0] *= norm_sc2;
+                                e_sc2.vec[1] *= norm_sc2;
+                                e_sc2.vec[2] *= norm_sc2;
+                                
                                 // Compute f and rescale before computing F, G, H
                                 double f_cluster = zeldovich_params_get_f_cluster(params_handle);
                                 // PLT growth rate: f = (sqrt(1. + 24 * e.val * f_cluster) - 1) / 4.
@@ -1635,6 +1787,45 @@ void generate_hermitian_slice_pair_local(
             fftw_complex_t *prim_array = &PRIM_SLICE(a, 0, 0);
             fftw_complex_t *conj_array = &CONJ_SLICE(a, 0, 0);
             verify_hermitian_pair(rank, global_y, y_mirror, prim_array, conj_array, N, a, false);
+        }
+    }
+    #endif
+    
+    // ========== DUMP MATRIX BEFORE FFT (Fourier space, after generation) ==========
+    #ifdef DUMP_MATRIX_BEFORE_FFT
+    if (N <= 16) {  // Only for small N
+        char dump_filename[256];
+        snprintf(dump_filename, sizeof(dump_filename), "matrix_before_fft.txt");
+        FILE *dump_fp = fopen(dump_filename, "a");
+        if (dump_fp) {
+            // Write header on first Y-slice
+            if (global_y == 0 && rank == 0) {
+                fprintf(dump_fp, "# Matrix values before FFT (Fourier space)\n");
+                fprintf(dump_fp, "# Format: Y=<y> X=<x> Z=<z> Array=<array_idx> Re=<real> Im=<imag>\n");
+            }
+            // Dump primary slice
+            for (int x = 0; x < N; x++) {
+                for (int z = 0; z < N; z++) {
+                    for (int array_idx = 0; array_idx < narray; array_idx++) {
+                        fftw_complex_t *array_ptr = &PRIM_SLICE(array_idx, x, z);
+                        fprintf(dump_fp, "Y=%d X=%d Z=%d Array=%d Re=%.15e Im=%.15e\n",
+                                global_y, x, z, array_idx, array_ptr[0], array_ptr[1]);
+                    }
+                }
+            }
+            // Dump conjugate slice if it exists
+            if (y_mirror != global_y) {
+                for (int x = 0; x < N; x++) {
+                    for (int z = 0; z < N; z++) {
+                        for (int array_idx = 0; array_idx < narray; array_idx++) {
+                            fftw_complex_t *array_ptr = &CONJ_SLICE(array_idx, x, z);
+                            fprintf(dump_fp, "Y=%d X=%d Z=%d Array=%d Re=%.15e Im=%.15e\n",
+                                    y_mirror, x, z, array_idx, array_ptr[0], array_ptr[1]);
+                        }
+                    }
+                }
+            }
+            fclose(dump_fp);
         }
     }
     #endif

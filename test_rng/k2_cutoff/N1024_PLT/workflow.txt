@@ -23,6 +23,16 @@ $ ./run_zeldovich_PLT.sh
 2.5 Extract rng-debug lines into filtered txt file:
 $ cd rng_logs
 $ grep "\[RNG-DEBUG\]" hermitian_rng_debug.log > hermitian_rng_debug_filtered.txt
+$ grep "\[RNG-DEBUG\]" zeldovich_rng_debug.log > zeldovich_rng_debug_filtered.txt
+
+2.6 (Optional) Extract factor-debug lines for detailed comparison:
+$ grep "\[FACTOR-DEBUG\]" hermitian_rng_debug.log > hermitian_factor_debug.txt
+$ grep "\[FACTOR-DEBUG\]" zeldovich_rng_debug.log > zeldovich_factor_debug.txt
+# Compare fundamental, rescale, e.vec, e.val, and factor values
+$ diff hermitian_factor_debug.txt zeldovich_factor_debug.txt > factor_diff.txt 2>&1
+# Or view side-by-side for specific coordinates:
+$ grep "Y=0.*(x,z)=(0,1)" hermitian_factor_debug.txt
+$ grep "Y=0.*(x,z)=(0,1)" zeldovich_factor_debug.txt
 
 3. Sort and compare RNG debug output (files have different Y ordering):
 $ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_rng/k2_cutoff/N1024_PLT
