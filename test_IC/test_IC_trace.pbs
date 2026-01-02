@@ -1,0 +1,28 @@
+#!/bin/bash
+#PBS -N test_IC_trace_N8
+#PBS -A AbacusAurora
+#PBS -l select=1:ncpus=1:mpiprocs=1:ompthreads=1
+#PBS -l walltime=01:00:00
+#PBS -l filesystems=home
+#PBS -M helenshao0904@gmail.com
+#PBS -m abe
+#PBS -j oe
+#PBS -o /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_IC/test_IC_trace.out
+
+cd $PBS_O_WORKDIR
+
+# Load modules
+echo "Loading frameworks module..."
+module load frameworks
+echo "Loading FFTW module..."
+module load fftw/3.3.10
+
+# Go to test_IC directory
+cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_IC
+
+# Run the trace script
+./run_hermitian_trace.sh
+
+echo ""
+echo "Job completed!"
+

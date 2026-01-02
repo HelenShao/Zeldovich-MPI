@@ -1528,6 +1528,40 @@ int main(int argc, char **argv)
             }
             #endif
             
+            // ========== DUMP MATRIX AFTER FFT (Real space, after 3D FFT) ==========
+            #ifdef DUMP_MATRIX_AFTER_FFT
+            if (N <= 16) {  // Only for small N
+                char dump_filename[256];
+                snprintf(dump_filename, sizeof(dump_filename), "matrix_after_fft.txt");
+                FILE *dump_fp = fopen(dump_filename, "a");
+                if (dump_fp) {
+                    // Write header on first Z-slab, first rank
+                    if (z == my_extended_bounds.core.z_start && rank == 0) {
+                        fprintf(dump_fp, "# Matrix values after FFT (Real space)\n");
+                        fprintf(dump_fp, "# Format: Z=<z> Y=<y> X=<x> Array=<array_idx> Re=<real> Im=<imag>\n");
+                    }
+                    // Get x_start (same logic as PRINT_Z_SLABS block)
+#if USE_X_PADDING
+                    int x_start = my_extended_bounds.padded.x_start;
+#else
+                    int x_start = my_extended_bounds.core.x_start;
+#endif
+                    // Dump this Z-slab
+                    for (int y = 0; y < N; y++) {
+                        for (int x_idx = 0; x_idx < x_count; x_idx++) {
+                            int x_global = x_start + x_idx;
+                            for (int array_idx = 0; array_idx < narray; array_idx++) {
+                                int64_t idx = (int64_t)y + (int64_t)N * ((int64_t)array_idx + (int64_t)narray * (int64_t)x_idx);
+                                fprintf(dump_fp, "Z=%d Y=%d X=%d Array=%d Re=%.15e Im=%.15e\n",
+                                        z, y, x_global, array_idx, local_z_slab[idx][0], local_z_slab[idx][1]);
+                            }
+                        }
+                    }
+                    fclose(dump_fp);
+                }
+            }
+            #endif
+            
             // ========== VERIFICATION: Check this Z-slab after FFT ==========
             #if !SKIP_VERIFICATION
             for (int array_idx = 0; array_idx < narray; array_idx++) {

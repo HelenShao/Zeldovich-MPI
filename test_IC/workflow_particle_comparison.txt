@@ -1,0 +1,87 @@
+# Particle IC Comparison Workflow for N=8 Test (No PLT)
+# Adapted from test_rng/k2_cutoff/N1024_PLT/workflow.txt steps 8-11
+# This workflow compares particle IC values between hermitian_3d_matrix_production and zeldovich-PLT
+# for the N=8 trace test (PLT disabled)
+
+# Working directory: /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_IC
+
+# QUICK START (Automated):
+# $ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_IC
+# $ ./run_particle_comparison.sh
+# This script will run all steps 8-11 automatically
+
+# MANUAL STEPS (Detailed):
+
+# ====================================================================================
+# STEP 8: Reassemble .bin files and write particle ICs (hermitian)
+# ====================================================================================
+
+# IMPORTANT: The trace test was run with SKIP_FILE_WRITE=1, so .bin files were NOT generated.
+# To generate .bin files, you need to recompile and run hermitian_3d_matrix WITHOUT SKIP_FILE_WRITE.
+
+# Option A: Generate .bin files first (if not already done):
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production
+$ make clean
+$ make CFLAGS="-DUSE_DOUBLE_PRECISION -DPRINT_DETAILED_SLICES=1 -DPRINT_Z_SLABS=1 -DSKIP_FILE_WRITE=0 -DDUMP_MATRIX_BEFORE_FFT=1 -DDUMP_MATRIX_AFTER_FFT=1"
+$ cd test_IC
+$ ./run_hermitian_trace.sh
+# This will generate .bin files in: hermitian_output/rank_0/i*_slab_N8.bin
+
+# Check if .bin files exist:
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_IC
+$ find hermitian_output/rank_0 -name "*.bin" -type f | wc -l
+# Should show 8 .bin files (one for each i-slab: i0 through i7)
+
+# Reassemble .bin files and write particle ICs:
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_IC
+$ bash write_ic_trace.sh
+# This will:
+#   - Read .bin files from: hermitian_output/rank_0/i*_slab_N8.bin
+#   - Reassemble into full i-slabs
+#   - Write particle ICs to: particle_ics/ic_*
+#   - Log output: N8_reassembly.log (in project root) or N8_trace_reassembly.log
+
+# ====================================================================================
+# STEP 9: Read particle ICs
+# ====================================================================================
+
+# For N=8, there are 8 IC files (ic_0 through ic_7)
+
+# hermitian_3d_matrix particle ICs:
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_IC
+$ mkdir -p particle_ics
+# Option A: Read all files (quick for N=8):
+$ for f in ./particle_ics/ic_*; do python3 /home/helenshao/InitialConditions/hermitian_3d_matrix_production/tests/options_ab/read_particles.py "$f" 10; done > ./particle_ics/hermitian_N8_trace_particle_values.txt 2>&1
+# Option B: Read specific files for quick check:
+# $ for f in ./particle_ics/ic_{0..2}; do python3 /home/helenshao/InitialConditions/hermitian_3d_matrix_production/tests/options_ab/read_particles.py "$f" 10; done > ./particle_ics/hermitian_N8_trace_particle_values.txt 2>&1
+
+# zeldovich-PLT particle ICs:
+# Check where zeldovich output is located (from run_zeldovich_trace.sh):
+# Default: /home/helenshao/InitialConditions/zeldovich-PLT/output_trace
+# First, verify the output directory exists:
+$ ls -la /home/helenshao/InitialConditions/zeldovich-PLT/output_trace/ic_* 2>&1 | head -5
+# For N=8, there should be 8 IC files (ic_0 through ic_7)
+$ for f in /home/helenshao/InitialConditions/zeldovich-PLT/output_trace/ic_*; do python3 /home/helenshao/InitialConditions/hermitian_3d_matrix_production/tests/options_ab/read_particles.py "$f" 10; done > ./particle_ics/zeldovich_N8_trace_particle_values.txt 2>&1
+# If output_trace doesn't exist or is empty, check the parameter file for InitialConditionsDirectory
+# and verify zeldovich-PLT was run successfully
+
+# ====================================================================================
+# STEP 10: Compare particle ICs using compare_ic_files.py
+# ====================================================================================
+
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_IC
+$ python3 /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_assembly/compare_ic_files.py ./particle_ics /home/helenshao/InitialConditions/zeldovich-PLT/output_trace > ic_comparison.txt 2>&1
+
+# View the comparison:
+$ cat ic_comparison.txt
+
+# ====================================================================================
+# STEP 11: Visualize particle fields
+# ====================================================================================
+
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_IC
+$ mkdir -p visualizations
+$ python3 /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_assembly/visualize_particle_comparison.py ./particle_ics /home/helenshao/InitialConditions/zeldovich-PLT/output_trace ./visualizations
+
+# Visualizations will be saved to ./visualizations/
+

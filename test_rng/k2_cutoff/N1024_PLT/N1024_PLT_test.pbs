@@ -2,7 +2,7 @@
 #PBS -N 1024_PLT_test
 #PBS -A AbacusAurora
 #PBS -l select=1:ncpus=1:mpiprocs=1:ompthreads=1
-#PBS -l walltime=02:00:00
+#PBS -l walltime=06:00:00
 #PBS -l filesystems=home
 #PBS -M helenshao0904@gmail.com
 #PBS -m abe
@@ -51,6 +51,8 @@ make clean
 # Build with RNG debug output and Mode 1
 # DEBUG_RNG_CONSISTENCY is enabled by default in config.h
 # IMPORTANT: Use DOUBLE PRECISION to match zeldovich-PLT (which uses double by default)
+# IMPORTANT: Use -DSKIP_FILE_WRITE=0 to enable .bin file writing
+#            (config.h has logic: if SKIP_FILE_WRITE==0, it undefines it, enabling writing)
 make CFLAGS="-DPARTICLE_OUTPUT_MODE=1 -DVERIFY_HERMITIAN_SYMMETRY=0 -DSKIP_FILE_WRITE=0 -DUSE_DOUBLE_PRECISION" -B
 make reassembly CFLAGS="-DPARTICLE_OUTPUT_MODE=1 -DVERIFY_HERMITIAN_SYMMETRY=0 -DSKIP_FILE_WRITE=0 -DUSE_DOUBLE_PRECISION"
 

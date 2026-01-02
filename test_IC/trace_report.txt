@@ -1,0 +1,30 @@
+================================================================================
+Trace Comparison Summary Report
+================================================================================
+
+BEFORE FFT (Fourier Space, after generation):
+--------------------------------------------------------------------------------
+  Total elements (hermitian): 1024
+  Total elements (zeldovich): 512
+  Common elements: 512
+  Exact matches: 168
+  Close matches: 0
+  Different values: 344
+  Max difference (real): 2.885103e+00
+  Max difference (imag): 4.296822e+00
+
+AFTER FFT (Real Space, after 3D FFT):
+--------------------------------------------------------------------------------
+  Total elements (hermitian): 1024
+  Total elements (zeldovich): 1024
+  Common elements: 1024
+  Exact matches: 0
+  Close matches: 0
+  Different values: 1024
+  Max difference (real): 2.310752e+01
+  Max difference (imag): 2.156124e+01
+
+SUMMARY:
+--------------------------------------------------------------------------------
+  ✗ Matrices differ before FFT
+  ✗ Matrices differ after FFT

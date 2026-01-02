@@ -94,10 +94,20 @@ $ bash write_ic.sh
 
 9. Read particles ICs:
    hermitian_3d_matrix: (assemble the IC files in particle_ics/)
-   $ for f in ./particle_ics/ic_{0..3}; do python3 /home/helenshao/InitialConditions/hermitian_3d_matrix_production/tests/options_ab/read_particles.py "$f" 10; done > ./particle_values.txt 2>&1
+   # For N=1024, there are 1024 IC files (ic_0 through ic_1023)
+   # Use wildcard to read all files, or sample a subset for quick check
+   # Option A: Read all files (may take a while):
+   $ for f in ./particle_ics/ic_*; do python3 /home/helenshao/InitialConditions/hermitian_3d_matrix_production/tests/options_ab/read_particles.py "$f" 10; done > ./particle_values.txt 2>&1
+   # Option B: Sample first 10 files for quick check:
+   # $ for f in ./particle_ics/ic_{0..9}; do python3 /home/helenshao/InitialConditions/hermitian_3d_matrix_production/tests/options_ab/read_particles.py "$f" 10; done > ./particle_values.txt 2>&1
 
    zeldovich-plt:
+   # For N=1024, there are 1024 IC files (ic_0 through ic_1023)
+   # Use wildcard to read all files, or sample a subset for quick check
+   # Option A: Read all files (may take a while):
    $ for f in /home/helenshao/InitialConditions/zeldovich-PLT/output_rng_k2cutoff_N1024_PLT/ic_*; do python3 /home/helenshao/InitialConditions/hermitian_3d_matrix_production/tests/options_ab/read_particles.py "$f" 10; done > ./particle_ics/zeldovich_PLT_k2_cutoff_PLT_particle_values.txt 2>&1
+   # Option B: Sample first 10 files for quick check:
+   # $ for f in /home/helenshao/InitialConditions/zeldovich-PLT/output_rng_k2cutoff_N1024_PLT/ic_{0..9}; do python3 /home/helenshao/InitialConditions/hermitian_3d_matrix_production/tests/options_ab/read_particles.py "$f" 10; done > ./particle_ics/zeldovich_PLT_k2_cutoff_PLT_particle_values.txt 2>&1
 
 10. Compare particle ICs using compare_ic_files.py (end-to-end verification):
 $ python3 /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_assembly/compare_ic_files.py ./particle_ics /home/helenshao/InitialConditions/zeldovich-PLT/output_rng_k2cutoff_N1024_PLT > ic_comparison.txt 2>&1

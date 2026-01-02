@@ -1,0 +1,36 @@
+Reading particles from both locations...
+
+Directory 1 (./particle_ics):
+  ic_0: 1048576 particles
+  ic_1: 1048576 particles
+  ic_10: 1048576 particles
+  ic_100: 1048576 particles
+  ic_1000: 1048576 particles
+  ic_1001: 1048576 particles
+  ic_1002: 1048576 particles
+  ic_1003: 1048576 particles
+  ic_1004: 1048576 particles
+  ic_1005: 1048576 particles
+  ic_1006: 1048576 particles
+  ic_1007: 1048576 particles
+  ic_1008: 1048576 particles
+  ic_1009: 1048576 particles
+  ic_101: 1048576 particles
+  ic_1010: 1048576 particles
+  ic_1011: 1048576 particles
+  ic_1012: 1048576 particles
+  ic_1013: 1048576 particles
+  ic_1014: 1048576 particles
+  ic_1015: 1048576 particles
+  ic_1016: 1048576 particles
+  ic_1017: 1048576 particles
+  ic_1018: 1048576 particles
+  ic_1019: 1048576 particles
+Traceback (most recent call last):
+  File "/home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_assembly/compare_ic_files.py", line 207, in <module>
+    main()
+  File "/home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_assembly/compare_ic_files.py", line 181, in main
+    particles, count = read_all_particles(filepath)
+  File "/home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_assembly/compare_ic_files.py", line 44, in read_all_particles
+    'vel': [vel0, vel1, vel2]
+KeyboardInterrupt

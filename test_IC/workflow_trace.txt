@@ -1,0 +1,116 @@
+# Brute Force Trace Comparison (N=8)
+# Compare matrix values before and after FFT between hermitian_3d_matrix_production and zeldovich-PLT
+# This workflow traces the full matrix through the computation pipeline
+
+# ====================================================================================
+# SETUP
+# ====================================================================================
+
+0. Create output directories:
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_IC
+$ mkdir -p hermitian_output zeldovich_output matrix_dumps comparisons
+
+# ====================================================================================
+# STEP 1: Run hermitian_3d_matrix with matrix dump enabled
+# ====================================================================================
+
+1. Compile hermitian_3d_matrix with matrix dump flags:
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production
+$ make clean
+$ make CFLAGS="-DUSE_DOUBLE_PRECISION -DPRINT_DETAILED_SLICES=1 -DPRINT_Z_SLABS=1 -DSKIP_FILE_WRITE=1 -DDUMP_MATRIX_BEFORE_FFT=1 -DDUMP_MATRIX_AFTER_FFT=1"
+
+2. Run hermitian_3d_matrix (serial: 1 rank, 1 thread):
+   
+   Option A: Submit as PBS job (recommended for Aurora):
+   $ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_IC
+   $ qsub test_IC_trace.pbs
+   
+   Option B: Interactive compute node session:
+   $ qsub -I -l select=1:ncpus=1:mpiprocs=1 -l walltime=01:00:00
+   # Once in interactive session:
+   $ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_IC
+   $ ./run_hermitian_trace.sh
+   
+   Option C: Direct run (may not work on login node - mpiexec needs compute node):
+   $ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_IC
+   $ module load frameworks fftw/3.3.10
+   $ ./run_hermitian_trace.sh
+
+# Matrix dumps will be written to:
+#   - hermitian_output/matrix_before_fft.txt (Fourier space, after generation)
+#   - hermitian_output/matrix_after_fft.txt (Real space, after 3D FFT)
+
+# ====================================================================================
+# STEP 2: Run zeldovich-PLT with matrix dump enabled
+# ====================================================================================
+
+3. Compile zeldovich-PLT with matrix dump flags (if not already done):
+$ cd /home/helenshao/InitialConditions/zeldovich-PLT
+$ module load fftw/3.3.10
+# If meson command fails (bad Python interpreter), use python3 directly:
+$ python3 -m mesonbuild.mesonmain setup build --buildtype=release -Dcpp_args='-DDUMP_MATRIX_BEFORE_FFT=1 -DDUMP_MATRIX_AFTER_FFT=1'
+# OR if meson works:
+# $ meson setup build --buildtype=release -Dcpp_args='-DDUMP_MATRIX_BEFORE_FFT=1 -DDUMP_MATRIX_AFTER_FFT=1'
+$ ninja -C build
+# OR if ninja fails, use: meson compile -C build
+
+4. Run zeldovich-PLT (serial, single-threaded):
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_IC
+$ ./run_zeldovich_trace.sh
+# OR manually:
+# $ cd /home/helenshao/InitialConditions/zeldovich-PLT
+# $ ./build/zeldovich /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_IC/param_N8_trace.par 2>&1 | tee /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_IC/zeldovich_output/zeldovich_N8_trace.log
+
+# Matrix dumps will be written to:
+#   - zeldovich_output/matrix_before_fft.txt (Fourier space, after generation)
+#   - zeldovich_output/matrix_after_fft.txt (Real space, after 3D FFT)
+
+# ====================================================================================
+# STEP 3: Extract and format matrix dumps
+# ====================================================================================
+
+5. Extract matrix values from logs (if not already in separate files):
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_IC
+$ python3 extract_matrix_dumps.py hermitian_output/hermitian_N8_trace.log hermitian_output/
+$ python3 extract_matrix_dumps.py zeldovich_output/zeldovich_N8_trace.log zeldovich_output/
+
+# This will create:
+#   - hermitian_output/matrix_before_fft.txt
+#   - hermitian_output/matrix_after_fft.txt
+#   - zeldovich_output/matrix_before_fft.txt
+#   - zeldovich_output/matrix_after_fft.txt
+
+# ====================================================================================
+# STEP 4: Compare matrices
+# ====================================================================================
+
+6. Compare matrices before FFT (Fourier space):
+$ python3 compare_matrices.py hermitian_output/matrix_before_fft.txt zeldovich_output/matrix_before_fft.txt comparisons/before_fft_comparison.txt
+
+7. Compare matrices after FFT (Real space):
+$ python3 compare_matrices.py hermitian_output/matrix_after_fft.txt zeldovich_output/matrix_after_fft.txt comparisons/after_fft_comparison.txt
+
+# ====================================================================================
+# STEP 5: Generate summary report
+# ====================================================================================
+
+8. Generate summary report:
+$ python3 generate_trace_report.py comparisons/ trace_report.txt
+
+# ====================================================================================
+# STEP 6: (Optional) Extract particle ICs for end-to-end verification
+# ====================================================================================
+
+9. Reassemble .bin files and write particle ICs (hermitian):
+$ bash write_ic_trace.sh
+
+10. Read particle ICs:
+   hermitian_3d_matrix:
+   $ for f in ./particle_ics/ic_{0..1}; do python3 /home/helenshao/InitialConditions/hermitian_3d_matrix_production/tests/options_ab/read_particles.py "$f" 10; done > ./particle_values.txt 2>&1
+
+   zeldovich-plt:
+   $ for f in /home/helenshao/InitialConditions/zeldovich-PLT/output_trace/ic_*; do python3 /home/helenshao/InitialConditions/hermitian_3d_matrix_production/tests/options_ab/read_particles.py "$f" 10; done > ./particle_ics/zeldovich_trace_particle_values.txt 2>&1
+
+11. Compare particle ICs:
+$ python3 /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_assembly/compare_ic_files.py ./particle_ics /home/helenshao/InitialConditions/zeldovich-PLT/output_trace > ic_comparison.txt 2>&1
+

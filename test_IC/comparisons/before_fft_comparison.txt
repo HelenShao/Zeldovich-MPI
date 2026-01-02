@@ -1,0 +1,133 @@
+================================================================================
+Matrix Comparison Report
+================================================================================
+
+Total elements in hermitian: 1024
+Total elements in zeldovich: 512
+Common elements: 512
+Only in hermitian: 512
+Only in zeldovich: 0
+
+Value Comparison (common elements):
+  Exact matches (diff < 1e-15): 168
+  Close matches (diff < 1e-5): 0
+  Different values: 344
+
+Maximum differences:
+  Real part: 2.885103e+00
+  Imaginary part: 4.296822e+00
+  Location: Y=3, X=0, Z=7, Array=1
+
+First 20 elements with differences:
+  Y=0, X=0, Z=0, Array=0:
+    hermitian: Re=0.000000e+00, Im=0.000000e+00
+    zeldovich: Re=-2.342869e-02, Im=-4.953623e-02
+    Diff: Re=2.342869e-02, Im=4.953623e-02
+
+  Y=0, X=0, Z=0, Array=1:
+    hermitian: Re=0.000000e+00, Im=0.000000e+00
+    zeldovich: Re=-2.627979e-01, Im=1.242931e-01
+    Diff: Re=2.627979e-01, Im=1.242931e-01
+
+  Y=0, X=0, Z=1, Array=0:
+    hermitian: Re=-6.884194e-02, Im=2.590158e-01
+    zeldovich: Re=3.493881e-02, Im=-4.798593e-03
+    Diff: Re=1.037808e-01, Im=2.638144e-01
+
+  Y=0, X=0, Z=1, Array=1:
+    hermitian: Re=1.095654e+00, Im=-4.122364e+00
+    zeldovich: Re=-7.851843e-02, Im=-1.591833e-01
+    Diff: Re=1.174172e+00, Im=3.963181e+00
+
+  Y=0, X=0, Z=2, Array=0:
+    hermitian: Re=1.134164e-01, Im=-1.913459e-02
+    zeldovich: Re=1.215737e-03, Im=-4.015940e-02
+    Diff: Re=1.122007e-01, Im=2.102481e-02
+
+  Y=0, X=0, Z=2, Array=1:
+    hermitian: Re=-9.025392e-01, Im=1.522682e-01
+    zeldovich: Re=-1.504745e-01, Im=9.386664e-02
+    Diff: Re=7.520647e-01, Im=5.840159e-02
+
+  Y=0, X=0, Z=3, Array=0:
+    hermitian: Re=-9.524319e-03, Im=-1.992562e-02
+    zeldovich: Re=0.000000e+00, Im=0.000000e+00
+    Diff: Re=9.524319e-03, Im=1.992562e-02
+
+  Y=0, X=0, Z=3, Array=1:
+    hermitian: Re=5.052808e-02, Im=1.057087e-01
+    zeldovich: Re=0.000000e+00, Im=0.000000e+00
+    Diff: Re=5.052808e-02, Im=1.057087e-01
+
+  Y=0, X=0, Z=5, Array=0:
+    hermitian: Re=-9.524319e-03, Im=1.992562e-02
+    zeldovich: Re=0.000000e+00, Im=0.000000e+00
+    Diff: Re=9.524319e-03, Im=1.992562e-02
+
+  Y=0, X=0, Z=5, Array=1:
+    hermitian: Re=5.052808e-02, Im=-1.057087e-01
+    zeldovich: Re=0.000000e+00, Im=0.000000e+00
+    Diff: Re=5.052808e-02, Im=1.057087e-01
+
+  Y=0, X=0, Z=6, Array=0:
+    hermitian: Re=1.134164e-01, Im=1.913459e-02
+    zeldovich: Re=-3.530839e-02, Im=1.072198e-02
+    Diff: Re=1.487248e-01, Im=8.412614e-03
+
+  Y=0, X=0, Z=6, Array=1:
+    hermitian: Re=-9.025392e-01, Im=-1.522682e-01
+    zeldovich: Re=-4.707418e-02, Im=1.559340e-01
+    Diff: Re=8.554650e-01, Im=3.082023e-01
+
+  Y=0, X=0, Z=7, Array=0:
+    hermitian: Re=-6.884194e-02, Im=-2.590158e-01
+    zeldovich: Re=-2.433463e-02, Im=1.202225e-02
+    Diff: Re=4.450731e-02, Im=2.710380e-01
+
+  Y=0, X=0, Z=7, Array=1:
+    hermitian: Re=1.095654e+00, Im=4.122364e+00
+    zeldovich: Re=1.867223e-02, Im=1.353233e-01
+    Diff: Re=1.076981e+00, Im=3.987041e+00
+
+  Y=0, X=1, Z=0, Array=0:
+    hermitian: Re=1.711460e+00, Im=-1.189260e+00
+    zeldovich: Re=6.947190e-02, Im=3.740169e-02
+    Diff: Re=1.641989e+00, Im=1.226661e+00
+
+  Y=0, X=1, Z=0, Array=1:
+    hermitian: Re=0.000000e+00, Im=0.000000e+00
+    zeldovich: Re=-3.018850e-01, Im=5.607374e-01
+    Diff: Re=3.018850e-01, Im=5.607374e-01
+
+  Y=0, X=1, Z=1, Array=0:
+    hermitian: Re=-8.939424e-01, Im=-3.959467e-01
+    zeldovich: Re=-8.579571e-03, Im=-1.760343e-02
+    Diff: Re=8.853628e-01, Im=3.783433e-01
+
+  Y=0, X=1, Z=1, Array=1:
+    hermitian: Re=-1.022424e+00, Im=-4.528540e-01
+    zeldovich: Re=1.432112e-01, Im=-1.403341e-01
+    Diff: Re=1.165635e+00, Im=3.125199e-01
+
+  Y=0, X=1, Z=2, Array=0:
+    hermitian: Re=1.122535e-01, Im=3.561239e-02
+    zeldovich: Re=8.042980e-03, Im=-1.863273e-03
+    Diff: Re=1.042105e-01, Im=3.747567e-02
+
+  Y=0, X=1, Z=2, Array=1:
+    hermitian: Re=3.273457e-01, Im=1.038503e-01
+    zeldovich: Re=1.801001e-01, Im=1.695198e-01
+    Diff: Re=1.472456e-01, Im=6.566945e-02
+
+
+Elements only in hermitian (first 10):
+  Y=4, X=0, Z=0, Array=0: Re=0.000000e+00, Im=0.000000e+00
+  Y=4, X=0, Z=0, Array=1: Re=0.000000e+00, Im=0.000000e+00
+  Y=4, X=0, Z=1, Array=0: Re=0.000000e+00, Im=0.000000e+00
+  Y=4, X=0, Z=1, Array=1: Re=-0.000000e+00, Im=0.000000e+00
+  Y=4, X=0, Z=2, Array=0: Re=0.000000e+00, Im=0.000000e+00
+  Y=4, X=0, Z=2, Array=1: Re=-0.000000e+00, Im=0.000000e+00
+  Y=4, X=0, Z=3, Array=0: Re=0.000000e+00, Im=0.000000e+00
+  Y=4, X=0, Z=3, Array=1: Re=-0.000000e+00, Im=0.000000e+00
+  Y=4, X=0, Z=4, Array=0: Re=0.000000e+00, Im=0.000000e+00
+  Y=4, X=0, Z=4, Array=1: Re=-0.000000e+00, Im=0.000000e+00

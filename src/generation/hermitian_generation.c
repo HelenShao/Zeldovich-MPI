@@ -1802,14 +1802,19 @@ void generate_hermitian_slice_pair_local(
             if (global_y == 0 && rank == 0) {
                 fprintf(dump_fp, "# Matrix values before FFT (Fourier space)\n");
                 fprintf(dump_fp, "# Format: Y=<y> X=<x> Z=<z> Array=<array_idx> Re=<real> Im=<imag>\n");
+                fflush(dump_fp);
             }
             // Dump primary slice
+            int count = 0;
             for (int x = 0; x < N; x++) {
                 for (int z = 0; z < N; z++) {
                     for (int array_idx = 0; array_idx < narray; array_idx++) {
-                        fftw_complex_t *array_ptr = &PRIM_SLICE(array_idx, x, z);
-                        fprintf(dump_fp, "Y=%d X=%d Z=%d Array=%d Re=%.15e Im=%.15e\n",
-                                global_y, x, z, array_idx, array_ptr[0], array_ptr[1]);
+                        int ret = fprintf(dump_fp, "Y=%d X=%d Z=%d Array=%d Re=%.15e Im=%.15e\n",
+                                global_y, x, z, array_idx, PRIM_SLICE(array_idx, x, z)[0], PRIM_SLICE(array_idx, x, z)[1]);
+                        if (ret < 0 && count == 0) {
+                            fprintf(stderr, "[DUMP-DEBUG] fprintf failed for Y=%d X=%d Z=%d\n", global_y, x, z);
+                        }
+                        count++;
                     }
                 }
             }
@@ -1818,14 +1823,23 @@ void generate_hermitian_slice_pair_local(
                 for (int x = 0; x < N; x++) {
                     for (int z = 0; z < N; z++) {
                         for (int array_idx = 0; array_idx < narray; array_idx++) {
-                            fftw_complex_t *array_ptr = &CONJ_SLICE(array_idx, x, z);
                             fprintf(dump_fp, "Y=%d X=%d Z=%d Array=%d Re=%.15e Im=%.15e\n",
-                                    y_mirror, x, z, array_idx, array_ptr[0], array_ptr[1]);
+                                    y_mirror, x, z, array_idx, CONJ_SLICE(array_idx, x, z)[0], CONJ_SLICE(array_idx, x, z)[1]);
+                            count++;
                         }
                     }
                 }
             }
+            fflush(dump_fp);  // Ensure data is written before closing
             fclose(dump_fp);
+            if (rank == 0 && global_y == 0) {
+                fprintf(stderr, "[DUMP-DEBUG] Wrote %d matrix elements for Y=%d to matrix_before_fft.txt\n", count, global_y);
+            }
+        } else {
+            // Debug: Print error if file couldn't be opened
+            if (rank == 0 && global_y == 0) {
+                fprintf(stderr, "[DUMP-DEBUG] Failed to open matrix_before_fft.txt for writing\n");
+            }
         }
     }
     #endif

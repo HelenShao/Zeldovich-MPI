@@ -1,0 +1,172 @@
+================================================================================
+Detailed FFT Difference Analysis
+================================================================================
+
+OVERALL STATISTICS:
+--------------------------------------------------------------------------------
+Total elements compared: 1024
+Mean difference (real): 5.830135e+00
+Mean difference (imag): 5.326192e+00
+Max difference (real): 2.310752e+01
+Max difference (imag): 2.156124e+01
+Std deviation (real): 4.348416e+00
+Std deviation (imag): 3.868830e+00
+
+Ratio statistics (hermitian/zeldovich):
+  Mean ratio (real): 5.301599e-01
+  Median ratio (real): 1.689974e-01
+  Std ratio (real): 8.086733e+01
+  Mean ratio (imag): 7.807401e-01
+  Median ratio (imag): 6.139394e-02
+  Std ratio (imag): 1.748191e+01
+
+DIFFERENCES BY ARRAY:
+--------------------------------------------------------------------------------
+Array 0:
+  Elements: 512
+  Mean diff (real): 5.360338e+00, (imag): 4.460524e+00
+  Max diff (real): 2.310752e+01 at Y=1, X=5, Z=2
+  Max diff (imag): 2.013695e+01 at Y=6, X=3, Z=2
+
+Array 1:
+  Elements: 512
+  Mean diff (real): 6.299932e+00, (imag): 6.191860e+00
+  Max diff (real): 2.214247e+01 at Y=1, X=5, Z=2
+  Max diff (imag): 2.156124e+01 at Y=3, X=4, Z=3
+
+TOP 20 LARGEST DIFFERENCES:
+--------------------------------------------------------------------------------
+1. Y=1, X=5, Z=2, Array=0:
+   Hermitian: Re=2.296442e+01, Im=3.729892e-01
+   Zeldovich: Re=-1.431035e-01, Im=-2.523750e+00
+   Difference: Re=2.310752e+01, Im=2.896740e+00
+   Before FFT: H(Re=1.068787e-01, Im=-2.047219e-01), Z(Re=0.000000e+00, Im=0.000000e+00), Diff(Re=1.068787e-01, Im=2.047219e-01)
+   Difference increase: Re=2.300064e+01, Im=2.692018e+00
+
+2. Y=0, X=5, Z=2, Array=0:
+   Hermitian: Re=2.231829e+01, Im=2.628376e+00
+   Zeldovich: Re=-3.061463e-01, Im=-1.567450e+00
+   Difference: Re=2.262444e+01, Im=4.195826e+00
+   Before FFT: H(Re=-3.232202e-02, Im=-1.094583e-01), Z(Re=0.000000e+00, Im=0.000000e+00), Diff(Re=3.232202e-02, Im=1.094583e-01)
+   Difference increase: Re=2.259212e+01, Im=4.086368e+00
+
+3. Y=7, X=5, Z=2, Array=0:
+   Hermitian: Re=2.114883e+01, Im=3.190716e+00
+   Zeldovich: Re=-1.116979e+00, Im=-4.436632e+00
+   Difference: Re=2.226581e+01, Im=7.627348e+00
+
+4. Y=1, X=5, Z=2, Array=1:
+   Hermitian: Re=1.787756e+01, Im=-6.135708e-01
+   Zeldovich: Re=-4.264909e+00, Im=-2.543415e+00
+   Difference: Re=2.214247e+01, Im=1.929844e+00
+   Before FFT: H(Re=-2.328951e-03, Im=1.330850e-01), Z(Re=0.000000e+00, Im=0.000000e+00), Diff(Re=2.328951e-03, Im=1.330850e-01)
+   Difference increase: Re=2.214014e+01, Im=1.796759e+00
+
+5. Y=3, X=4, Z=3, Array=1:
+   Hermitian: Re=-2.134449e+00, Im=-8.313643e+00
+   Zeldovich: Re=-6.448005e+00, Im=1.324760e+01
+   Difference: Re=4.313555e+00, Im=2.156124e+01
+   Before FFT: H(Re=-0.000000e+00, Im=0.000000e+00), Z(Re=0.000000e+00, Im=0.000000e+00), Diff(Re=0.000000e+00, Im=0.000000e+00)
+   Difference increase: Re=4.313555e+00, Im=2.156124e+01
+
+6. Y=1, X=4, Z=2, Array=1:
+   Hermitian: Re=2.156692e+01, Im=-1.169275e+00
+   Zeldovich: Re=2.207692e-01, Im=1.676258e+00
+   Difference: Re=2.134615e+01, Im=2.845533e+00
+   Before FFT: H(Re=-0.000000e+00, Im=0.000000e+00), Z(Re=0.000000e+00, Im=0.000000e+00), Diff(Re=0.000000e+00, Im=0.000000e+00)
+   Difference increase: Re=2.134615e+01, Im=2.845533e+00
+
+7. Y=2, X=4, Z=3, Array=1:
+   Hermitian: Re=6.310247e-01, Im=-8.264762e+00
+   Zeldovich: Re=-5.427715e+00, Im=1.293503e+01
+   Difference: Re=6.058739e+00, Im=2.119979e+01
+   Before FFT: H(Re=-0.000000e+00, Im=0.000000e+00), Z(Re=0.000000e+00, Im=0.000000e+00), Diff(Re=0.000000e+00, Im=0.000000e+00)
+   Difference increase: Re=6.058739e+00, Im=2.119979e+01
+
+8. Y=6, X=2, Z=3, Array=1:
+   Hermitian: Re=-4.642557e+00, Im=-4.423665e+00
+   Zeldovich: Re=4.553443e+00, Im=1.615850e+01
+   Difference: Re=9.196001e+00, Im=2.058216e+01
+
+9. Y=6, X=3, Z=2, Array=0:
+   Hermitian: Re=-6.410346e+00, Im=-4.488265e+00
+   Zeldovich: Re=-5.231002e-01, Im=1.564868e+01
+   Difference: Re=5.887245e+00, Im=2.013695e+01
+
+10. Y=7, X=4, Z=2, Array=1:
+   Hermitian: Re=2.050244e+01, Im=5.334218e+00
+   Zeldovich: Re=8.660876e-01, Im=6.290417e+00
+   Difference: Re=1.963635e+01, Im=9.561989e-01
+
+11. Y=0, X=3, Z=3, Array=1:
+   Hermitian: Re=-6.102803e-01, Im=-2.572092e+00
+   Zeldovich: Re=6.116111e+00, Im=1.702997e+01
+   Difference: Re=6.726391e+00, Im=1.960206e+01
+   Before FFT: H(Re=0.000000e+00, Im=0.000000e+00), Z(Re=0.000000e+00, Im=0.000000e+00), Diff(Re=0.000000e+00, Im=0.000000e+00)
+   Difference increase: Re=6.726391e+00, Im=1.960206e+01
+
+12. Y=7, X=2, Z=3, Array=1:
+   Hermitian: Re=-5.008400e+00, Im=-1.894064e+00
+   Zeldovich: Re=9.316977e+00, Im=1.762249e+01
+   Difference: Re=1.432538e+01, Im=1.951655e+01
+
+13. Y=7, X=5, Z=1, Array=0:
+   Hermitian: Re=1.857555e+01, Im=-9.344974e-01
+   Zeldovich: Re=-7.260007e-01, Im=-3.335815e-01
+   Difference: Re=1.930155e+01, Im=6.009159e-01
+
+14. Y=5, X=4, Z=5, Array=1:
+   Hermitian: Re=-1.284464e+01, Im=2.367924e-01
+   Zeldovich: Re=5.946834e+00, Im=2.919290e+00
+   Difference: Re=1.879147e+01, Im=2.682497e+00
+
+15. Y=2, X=5, Z=2, Array=1:
+   Hermitian: Re=1.052237e+01, Im=-5.143185e+00
+   Zeldovich: Re=-8.228560e+00, Im=-2.496563e+00
+   Difference: Re=1.875093e+01, Im=2.646622e+00
+   Before FFT: H(Re=-0.000000e+00, Im=0.000000e+00), Z(Re=3.016964e-03, Im=5.076511e-02), Diff(Re=3.016964e-03, Im=5.076511e-02)
+   Difference increase: Re=1.874791e+01, Im=2.595857e+00
+
+16. Y=3, X=6, Z=4, Array=0:
+   Hermitian: Re=-1.817570e+01, Im=3.411955e+00
+   Zeldovich: Re=2.988349e-01, Im=-4.700139e+00
+   Difference: Re=1.847453e+01, Im=8.112095e+00
+   Before FFT: H(Re=0.000000e+00, Im=0.000000e+00), Z(Re=0.000000e+00, Im=0.000000e+00), Diff(Re=0.000000e+00, Im=0.000000e+00)
+   Difference increase: Re=1.847453e+01, Im=8.112095e+00
+
+17. Y=0, X=4, Z=2, Array=1:
+   Hermitian: Re=2.285157e+01, Im=2.602224e+00
+   Zeldovich: Re=4.422434e+00, Im=4.454664e+00
+   Difference: Re=1.842914e+01, Im=1.852440e+00
+   Before FFT: H(Re=0.000000e+00, Im=0.000000e+00), Z(Re=0.000000e+00, Im=0.000000e+00), Diff(Re=0.000000e+00, Im=0.000000e+00)
+   Difference increase: Re=1.842914e+01, Im=1.852440e+00
+
+18. Y=0, X=2, Z=3, Array=1:
+   Hermitian: Re=-4.989973e+00, Im=-9.408156e-01
+   Zeldovich: Re=7.828662e+00, Im=1.721302e+01
+   Difference: Re=1.281863e+01, Im=1.815383e+01
+   Before FFT: H(Re=-6.608209e-02, Im=-5.782532e-02), Z(Re=0.000000e+00, Im=0.000000e+00), Diff(Re=6.608209e-02, Im=5.782532e-02)
+   Difference increase: Re=1.275255e+01, Im=1.809601e+01
+
+19. Y=7, X=2, Z=1, Array=1:
+   Hermitian: Re=-7.406371e+00, Im=-2.239518e+00
+   Zeldovich: Re=1.074636e+01, Im=-8.615722e+00
+   Difference: Re=1.815274e+01, Im=6.376204e+00
+
+20. Y=2, X=4, Z=2, Array=1:
+   Hermitian: Re=1.195871e+01, Im=-4.315702e+00
+   Zeldovich: Re=-6.145631e+00, Im=-1.321299e+00
+   Difference: Re=1.810434e+01, Im=2.994403e+00
+   Before FFT: H(Re=-0.000000e+00, Im=0.000000e+00), Z(Re=0.000000e+00, Im=0.000000e+00), Diff(Re=0.000000e+00, Im=0.000000e+00)
+   Difference increase: Re=1.810434e+01, Im=2.994403e+00
+
+SYSTEMATIC PATTERNS:
+--------------------------------------------------------------------------------
+Coordinates with largest average differences: Y=1, X=5, Z=2
+  Average difference: 2.262500e+01
+  Arrays at this location: 2
+
+ZERO/NEAR-ZERO ANALYSIS:
+--------------------------------------------------------------------------------
+Near-zero values (|val| < 1e-10): Hermitian=0, Zeldovich=0
+Zero mismatches (one zero, other not): 0

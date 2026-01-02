@@ -1,0 +1,121 @@
+================================================================================
+Matrix Comparison Report
+================================================================================
+
+Total elements in hermitian: 1024
+Total elements in zeldovich: 1024
+Common elements: 1024
+Only in hermitian: 0
+Only in zeldovich: 0
+
+Value Comparison (common elements):
+  Exact matches (diff < 1e-15): 0
+  Close matches (diff < 1e-5): 0
+  Different values: 1024
+
+Maximum differences:
+  Real part: 2.310752e+01
+  Imaginary part: 2.156124e+01
+  Location: Y=3, X=4, Z=3, Array=1
+
+First 20 elements with differences:
+  Y=0, X=0, Z=0, Array=0:
+    hermitian: Re=2.106505e+00, Im=2.141486e+00
+    zeldovich: Re=5.056823e-01, Im=2.546650e-01
+    Diff: Re=1.600823e+00, Im=1.886821e+00
+
+  Y=0, X=0, Z=0, Array=1:
+    hermitian: Re=5.730060e+00, Im=-2.065999e-01
+    zeldovich: Re=6.085592e+00, Im=-5.782968e+00
+    Diff: Re=3.555320e-01, Im=5.576368e+00
+
+  Y=0, X=0, Z=1, Array=0:
+    hermitian: Re=1.194963e+00, Im=-5.741575e-01
+    zeldovich: Re=-1.289974e-01, Im=-5.153919e+00
+    Diff: Re=1.323961e+00, Im=4.579761e+00
+
+  Y=0, X=0, Z=1, Array=1:
+    hermitian: Re=4.451207e+00, Im=-3.666051e-01
+    zeldovich: Re=8.580874e+00, Im=-1.104906e+01
+    Diff: Re=4.129667e+00, Im=1.068246e+01
+
+  Y=0, X=0, Z=2, Array=0:
+    hermitian: Re=2.668641e+00, Im=-5.753844e-01
+    zeldovich: Re=-1.552340e+00, Im=-6.738419e+00
+    Diff: Re=4.220981e+00, Im=6.163035e+00
+
+  Y=0, X=0, Z=2, Array=1:
+    hermitian: Re=4.978976e+00, Im=1.527808e+00
+    zeldovich: Re=6.791117e+00, Im=-6.525123e-01
+    Diff: Re=1.812141e+00, Im=2.180320e+00
+
+  Y=0, X=0, Z=3, Array=0:
+    hermitian: Re=4.829640e+00, Im=2.087064e+00
+    zeldovich: Re=-1.637688e+00, Im=-1.851388e+00
+    Diff: Re=6.467328e+00, Im=3.938452e+00
+
+  Y=0, X=0, Z=3, Array=1:
+    hermitian: Re=7.936516e+00, Im=3.612495e+00
+    zeldovich: Re=1.516725e+00, Im=8.389903e+00
+    Diff: Re=6.419791e+00, Im=4.777409e+00
+
+  Y=0, X=0, Z=4, Array=0:
+    hermitian: Re=4.541849e+00, Im=3.809858e+00
+    zeldovich: Re=-8.559478e-01, Im=1.749068e+00
+    Diff: Re=5.397797e+00, Im=2.060790e+00
+
+  Y=0, X=0, Z=4, Array=1:
+    hermitian: Re=4.182924e+00, Im=8.400699e-01
+    zeldovich: Re=-1.099575e+00, Im=1.534777e+01
+    Diff: Re=5.282499e+00, Im=1.450770e+01
+
+  Y=0, X=0, Z=5, Array=0:
+    hermitian: Re=7.243677e+00, Im=5.314847e+00
+    zeldovich: Re=2.539071e+00, Im=3.145578e+00
+    Diff: Re=4.704606e+00, Im=2.169268e+00
+
+  Y=0, X=0, Z=5, Array=1:
+    hermitian: Re=3.271914e+00, Im=-4.228099e+00
+    zeldovich: Re=-3.093574e+00, Im=9.667515e+00
+    Diff: Re=6.365488e+00, Im=1.389561e+01
+
+  Y=0, X=0, Z=6, Array=0:
+    hermitian: Re=6.196608e+00, Im=4.251691e+00
+    zeldovich: Re=1.587604e+00, Im=2.695643e+00
+    Diff: Re=4.609004e+00, Im=1.556048e+00
+
+  Y=0, X=0, Z=6, Array=1:
+    hermitian: Re=4.965844e+00, Im=-3.876136e+00
+    zeldovich: Re=-2.012139e+00, Im=-8.912285e+00
+    Diff: Re=6.977982e+00, Im=5.036149e+00
+
+  Y=0, X=0, Z=7, Array=0:
+    hermitian: Re=2.245323e+00, Im=2.799898e+00
+    zeldovich: Re=-1.087387e+00, Im=1.820686e+00
+    Diff: Re=3.332711e+00, Im=9.792120e-01
+
+  Y=0, X=0, Z=7, Array=1:
+    hermitian: Re=4.198166e+00, Im=-7.326483e-01
+    zeldovich: Re=2.760971e+00, Im=-7.008354e+00
+    Diff: Re=1.437196e+00, Im=6.275706e+00
+
+  Y=0, X=1, Z=0, Array=0:
+    hermitian: Re=5.108234e+00, Im=4.987524e-01
+    zeldovich: Re=9.965815e-01, Im=-8.959154e-01
+    Diff: Re=4.111653e+00, Im=1.394668e+00
+
+  Y=0, X=1, Z=0, Array=1:
+    hermitian: Re=4.449059e-01, Im=8.712207e-01
+    zeldovich: Re=9.128166e+00, Im=-8.835698e+00
+    Diff: Re=8.683260e+00, Im=9.706918e+00
+
+  Y=0, X=1, Z=1, Array=0:
+    hermitian: Re=4.979479e+00, Im=8.297758e-01
+    zeldovich: Re=-1.026210e+00, Im=-9.491142e-01
+    Diff: Re=6.005689e+00, Im=1.778890e+00
+
+  Y=0, X=1, Z=1, Array=1:
+    hermitian: Re=1.144841e+00, Im=9.373576e-01
+    zeldovich: Re=1.193570e+01, Im=-1.334328e+01
+    Diff: Re=1.079085e+01, Im=1.428064e+01
+
