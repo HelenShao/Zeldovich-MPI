@@ -1,0 +1,40 @@
+================================================================================
+VERIFICATION: All displ[X] values appear in matrix dump
+================================================================================
+
+Total unique displ[X] values: 40
+displ[X] values in Array0 Im: 20
+displ[X] values in Array1 Im: 20
+displ[X] values in either Array0 Im or Array1 Im: 40
+displ[X] values NOT in matrix: 0
+
+✓ ALL displ[X] values appear in the matrix dump (Array0 Im or Array1 Im)
+
+================================================================================
+SPECIFIC VALUES MENTIONED BY USER:
+================================================================================
+
+Value -0.206600:
+  In displ[X]: True
+  In Array0 Im: False
+  In Array1 Im: True
+  ✓ MATCHES (appears in matrix dump)
+
+Value 0.498752:
+  In displ[X]: True
+  In Array0 Im: True
+  In Array1 Im: False
+  ✓ MATCHES (appears in matrix dump)
+
+Value 0.871221:
+  In displ[X]: True
+  In Array0 Im: False
+  In Array1 Im: True
+  ✓ MATCHES (appears in matrix dump)
+
+Value 2.224051:
+  In displ[X]: True
+  In Array0 Im: True
+  In Array1 Im: False
+  ✓ MATCHES (appears in matrix dump)
+

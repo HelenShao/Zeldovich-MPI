@@ -1,0 +1,61 @@
+================================================================================
+ROOT CAUSE: COORDINATE SHIFT ISSUE
+================================================================================
+
+PROBLEM IDENTIFIED:
+  The matrix dump uses a DIFFERENT indexing formula than the ZSLAB macro,
+  and also different from how .bin files are written.
+
+1. MATRIX DUMP (main.cpp line 1554):
+   Formula: idx = y + N * (array_idx + narray * x_idx)
+   Loop: for y, for x_idx, for array_idx
+   Writes: Z=z, Y=y, X=x_global
+
+2. ZSLAB MACRO (types.h line 71-72):
+   Formula: idx = y + N * (x_idx + x_count * array_idx)
+   Note: Different order! (array_idx + narray * x_idx) vs (x_idx + x_count * array_idx)
+
+3. .BIN FILE WRITING (main.cpp line 1718-1730):
+   Transposes from ZSLAB [array][x][y] to [array][Y][X]
+   Loop: for array_idx, for j (Y), for k_idx (X)
+   Writes in [array][Y][X] format
+
+4. REASSEMBLY (write_particles_from_reassembled_mpi.cpp):
+   Reads .bin files in [array][Y][X] format
+   Creates full_slab in [array][Y][X] format
+
+5. PARTICLE WRITING (WriteParticlesSlab_new):
+   Expects [Y][X] format per array
+   Uses: idx = X + N * Y
+
+================================================================================
+THE MISMATCH:
+================================================================================
+
+Matrix dump formula: idx = y + N * (array_idx + narray * x_idx)
+  For N=8, narray=2:
+    Array=0, x_idx=0, y=0: idx = 0 + 8 * (0 + 2 * 0) = 0
+    Array=0, x_idx=1, y=0: idx = 0 + 8 * (0 + 2 * 1) = 16
+    Array=0, x_idx=0, y=1: idx = 1 + 8 * (0 + 2 * 0) = 1
+
+ZSLAB macro formula: idx = y + N * (x_idx + x_count * array_idx)
+  For N=8, x_count=8:
+    Array=0, x_idx=0, y=0: idx = 0 + 8 * (0 + 8 * 0) = 0
+    Array=0, x_idx=1, y=0: idx = 0 + 8 * (1 + 8 * 0) = 8
+    Array=0, x_idx=0, y=1: idx = 1 + 8 * (0 + 8 * 0) = 1
+
+[array][Y][X] format: idx = array_idx * N * N + Y * N + X
+  Array=0, X=0, Y=0: idx = 0 * 64 + 0 * 8 + 0 = 0
+  Array=0, X=1, Y=0: idx = 0 * 64 + 0 * 8 + 1 = 1
+  Array=0, X=0, Y=1: idx = 0 * 64 + 1 * 8 + 0 = 8
+
+================================================================================
+SOLUTION:
+================================================================================
+
+The matrix dump should use the SAME indexing as the .bin files:
+  - Either use ZSLAB macro correctly, OR
+  - Write in [array][Y][X] format to match .bin files
+
+Recommended fix: Update matrix dump to write in [array][Y][X] format
+  to match how .bin files are written and how particles are read.

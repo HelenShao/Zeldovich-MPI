@@ -62,10 +62,19 @@ echo "Running write_particles_from_reassembled_mpi..."
     2>&1 | tee test_IC/N8_trace_reassembly.log
 
 # Move output files
-if [ -d "output" ]; then
+# Note: The parameter file specifies InitialConditionsDirectory = "./output_trace"
+# so files are written to output_trace/, not output/
+if [ -d "output_trace" ]; then
+    mkdir -p "$PARTICLE_OUTPUT_DIR"
+    mv output_trace/ic_* "$PARTICLE_OUTPUT_DIR/" 2>/dev/null || true
+    mv output_trace/dens* "$PARTICLE_OUTPUT_DIR/" 2>/dev/null || true
+    echo "Moved IC files from output_trace/ to $PARTICLE_OUTPUT_DIR/"
+elif [ -d "output" ]; then
+    # Fallback: also check output/ directory in case parameter file uses different setting
     mkdir -p "$PARTICLE_OUTPUT_DIR"
     mv output/ic_* "$PARTICLE_OUTPUT_DIR/" 2>/dev/null || true
     mv output/dens* "$PARTICLE_OUTPUT_DIR/" 2>/dev/null || true
+    echo "Moved IC files from output/ to $PARTICLE_OUTPUT_DIR/"
 fi
 
 IC_COUNT=$(find "$PARTICLE_OUTPUT_DIR" -name "ic_*" 2>/dev/null | wc -l)

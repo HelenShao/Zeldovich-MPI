@@ -8,6 +8,84 @@ Running hermitian_3d_matrix with matrix trace (N=8)
 Parameter file: param_N8_trace.par
 Output directory: hermitian_output
 
+rm -f hermitian_3d_matrix write_particles_from_reassembled_mpi *.o
+mpicxx -Wall -Wextra -Wno-cast-function-type -std=c++17 -O3 -fopenmp -DUSE_DOUBLE_PRECISION -DPRINT_DETAILED_SLICES=1 -DPRINT_Z_SLABS=0 -DSKIP_FILE_WRITE=0 -DDUMP_MATRIX_BEFORE_FFT=1 -DDUMP_MATRIX_AFTER_FFT=1 -I../zeldovich-PLT/include -I../zeldovich-PLT/subprojects/ParseHeader/include -I../zeldovich-PLT/build/subprojects/ParseHeader -I../zeldovich-PLT/subprojects/fmt-11.2.0/include -Isrc -Isrc/utils -Isrc/fft -Isrc/generation -Isrc/communication -Isrc/streaming -Isrc/output -Ideps -I../.. -I../../../..  -I/opt/aurora/25.190.0/spack/unified/0.10.1/install/linux-sles15-x86_64/oneapi-2025.2.0/fftw-3.3.10-bs6lijg/include -o hermitian_3d_matrix src/main.cpp src/utils/printing.c src/utils/verification.c src/utils/decomposition.c src/utils/batch_helpers.c src/utils/rng.c src/utils/power_spectrum.c src/utils/plt_eigenmodes.c src/fft/fft_setup.c src/generation/hermitian_generation.c src/communication/mpi_exchange.c src/streaming/z_streaming.c src/STimer.cc src/utils/zeldovich_wrapper.cpp src/output/output_new.cpp  -L/opt/aurora/25.190.0/spack/unified/0.10.1/install/linux-sles15-x86_64/oneapi-2025.2.0/fftw-3.3.10-bs6lijg/lib -lfftw3 -lfftw3_omp -L../zeldovich-PLT/build -L../zeldovich-PLT/build/subprojects/ParseHeader -L../zeldovich-PLT/build/subprojects/fmt-11.2.0 -lzeldovich -lparseheader -lfmt  -lm -lstdc++ -Wl,-rpath,/home/helenshao/InitialConditions/zeldovich-PLT/build:/home/helenshao/InitialConditions/zeldovich-PLT/build/subprojects/ParseHeader:/home/helenshao/InitialConditions/zeldovich-PLT/build/subprojects/fmt-11.2.0
+icpx: warning: use of '-qopenmp' recommended over '-fopenmp' [-Wrecommended-option]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+src/main.cpp:271:9: warning: variable 'num_my_slices' set but not used [-Wunused-but-set-variable]
+  271 |     int num_my_slices = 0;  // Will be set per-batch (1 or 2)
+      |         ^
+1 warning generated.
+src/utils/decomposition.c:146:46: warning: unused parameter 'num_ranks' [-Wunused-parameter]
+  146 | int validate_abacus_compatibility(int N, int num_ranks, int grid_x, int grid_z)
+      |                                              ^
+1 warning generated.
+src/utils/rng.c:50:39: warning: unused parameter 'M' [-Wunused-parameter]
+   50 | void initialize_global_pcg(int L, int M, int N, uint64_t seed) {
+      |                                       ^
+src/utils/rng.c:50:46: warning: unused parameter 'N' [-Wunused-parameter]
+   50 | void initialize_global_pcg(int L, int M, int N, uint64_t seed) {
+      |                                              ^
+2 warnings generated.
+src/generation/hermitian_generation.c:403:24: warning: unused variable 'ik2' [-Wunused-variable]
+  403 |                 double ik2 = 1.0 / k2;
+      |                        ^~~
+src/generation/hermitian_generation.c:996:28: warning: unused variable 'ik2' [-Wunused-variable]
+  996 |                     double ik2 = 1.0 / k2;
+      |                            ^~~
+src/generation/hermitian_generation.c:962:28: warning: unused variable 'ik2' [-Wunused-variable]
+  962 |                     double ik2 = 1.0 / k2;
+      |                            ^~~
+3 warnings generated.
+src/streaming/z_streaming.c:147:13: warning: variable 'found_inf_before' set but not used [-Wunused-but-set-variable]
+  147 |         int found_inf_before = 0;
+      |             ^
+src/streaming/z_streaming.c:36:10: warning: unused parameter 'src_total_slices' [-Wunused-parameter]
+   36 |     int *src_total_slices,                 // Total slices per source (unused, kept for API)
+      |          ^
+src/streaming/z_streaming.c:38:10: warning: unused parameter 'y_src_local_idx' [-Wunused-parameter]
+   38 |     int *y_src_local_idx,                  // Y -> local_idx mapping (unused, kept for API)
+      |          ^
+3 warnings generated.
+mpicxx -Wall -Wextra -Wno-cast-function-type -std=c++17 -O3 -fopenmp -DUSE_DOUBLE_PRECISION -DPRINT_DETAILED_SLICES=1 -DPRINT_Z_SLABS=0 -DSKIP_FILE_WRITE=0 -DDUMP_MATRIX_BEFORE_FFT=1 -DDUMP_MATRIX_AFTER_FFT=1 -I../zeldovich-PLT/include -I../zeldovich-PLT/subprojects/ParseHeader/include -I../zeldovich-PLT/build/subprojects/ParseHeader -I../zeldovich-PLT/subprojects/fmt-11.2.0/include -Isrc -Isrc/utils -Isrc/fft -Isrc/generation -Isrc/communication -Isrc/streaming -Isrc/output -Ideps -I../.. -I../../../..  -I/opt/aurora/25.190.0/spack/unified/0.10.1/install/linux-sles15-x86_64/oneapi-2025.2.0/fftw-3.3.10-bs6lijg/include -o write_particles_from_reassembled_mpi src/write_particles_from_reassembled_mpi.cpp src/utils/printing.c src/utils/verification.c src/utils/decomposition.c src/utils/batch_helpers.c src/utils/rng.c src/utils/power_spectrum.c src/utils/plt_eigenmodes.c src/STimer.cc src/output/output_new.cpp  -L/opt/aurora/25.190.0/spack/unified/0.10.1/install/linux-sles15-x86_64/oneapi-2025.2.0/fftw-3.3.10-bs6lijg/lib -lfftw3 -lfftw3_omp -L../zeldovich-PLT/build -L../zeldovich-PLT/build/subprojects/ParseHeader -L../zeldovich-PLT/build/subprojects/fmt-11.2.0 -lzeldovich -lparseheader -lfmt  -lm -lstdc++ -Wl,-rpath,/home/helenshao/InitialConditions/zeldovich-PLT/build:/home/helenshao/InitialConditions/zeldovich-PLT/build/subprojects/ParseHeader:/home/helenshao/InitialConditions/zeldovich-PLT/build/subprojects/fmt-11.2.0
+icpx: warning: use of '-qopenmp' recommended over '-fopenmp' [-Wrecommended-option]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+src/write_particles_from_reassembled_mpi.cpp:55:22: warning: unused variable 'EXPECTED_BYTES_PER_COMPLEX' [-Wunused-const-variable]
+   55 |     constexpr size_t EXPECTED_BYTES_PER_COMPLEX = 16;
+      |                      ^~~~~~~~~~~~~~~~~~~~~~~~~~
+1 warning generated.
+src/utils/decomposition.c:146:46: warning: unused parameter 'num_ranks' [-Wunused-parameter]
+  146 | int validate_abacus_compatibility(int N, int num_ranks, int grid_x, int grid_z)
+      |                                              ^
+1 warning generated.
+src/utils/rng.c:50:39: warning: unused parameter 'M' [-Wunused-parameter]
+   50 | void initialize_global_pcg(int L, int M, int N, uint64_t seed) {
+      |                                       ^
+src/utils/rng.c:50:46: warning: unused parameter 'N' [-Wunused-parameter]
+   50 | void initialize_global_pcg(int L, int M, int N, uint64_t seed) {
+      |                                              ^
+2 warnings generated.
+
+Build successful!
+Binary: hermitian_3d_matrix
+Configuration: see src/config.h
+
 Using executable: /home/helenshao/InitialConditions/hermitian_3d_matrix_production/hermitian_3d_matrix
 Running hermitian_3d_matrix...
 Command: mpiexec -n 1 /home/helenshao/InitialConditions/hermitian_3d_matrix_production/hermitian_3d_matrix 8 param_N8_trace.par
@@ -181,6 +259,7 @@ Final sigma(8.000000) = 1
 [SKIP-DEBUG] N=8 Y=0: IMMEDIATELY AFTER #endif (line 1527) - nskip=0 (0x0)
 [SKIP-DEBUG] N=8 Y=0: RIGHT BEFORE LOOP ENDS (inside #endif) - nskip=0 (0x0)
 [SKIP-DEBUG] N=8 Y=0: AFTER LOOP ENDS - nskip=0 (0x0)
+[DUMP-DEBUG] Wrote 128 matrix elements for Y=0 to matrix_before_fft.txt
 [Rank 0] After primary FFT (array 0, Y=0): buffer OK (checksum=-80)
 [Rank 0] After primary FFT (array 1, Y=0): buffer OK (checksum=26)
 [SKIP-DEBUG] N=8 Y=1 (x,z)=(0,0): CALLING cgauss (nskip=0, kmag=6.283185e-02)
@@ -305,7 +384,82 @@ Final sigma(8.000000) = 1
 [RNG-DEBUG] N=8 Y=1 (x,z)=(3,4): k=(3,1,4) k2=26.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(-0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(-0.0000000000e+00,0.0000000000e+00)
 [SKIP-DEBUG] N=8 Y=1 (x,z)=(4,4): D=0 (Nyquist: kx=4 ky=1 kz=4), ACCUMULATE nskip++ (total=5)
 [FACTOR-DEBUG] N=8 Y=1 (x,z)=(4,4): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[4,1,4] factor=4.8228770634e-01
-[RNG-DEBUG] N=8 Y=1 (x,z)=(4,4): k=(4,1,4) k2=33.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(-0.0000000000e+00,0.0000000000e+00) G=(-0.0[INFO] num_ranks=1 < total_pairs=5: Each rank will process 5-5 pairs
+[RNG-DEBUG] N=8 Y=1 (x,z)=(4,4): k=(4,1,4) k2=33.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(-0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(-0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=8 Y=1 z=4 x=5: ACCUMULATE skip at Nyquist boundary: +65528 (missing x-values), total nskip=65533
+[SKIP-DEBUG] N=8 Y=1 (x,z)=(5,4): D=0 (Nyquist: kx=-3 ky=1 kz=4), ACCUMULATE nskip++ (total=65534)
+[FACTOR-DEBUG] N=8 Y=1 (x,z)=(5,4): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[-3,1,4] factor=6.1213439651e-01
+[RNG-DEBUG] N=8 Y=1 (x,z)=(5,4): k=(-3,1,4) k2=26.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,-0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(-0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=8 Y=1 (x,z)=(6,4): D=0 (Nyquist: kx=-2 ky=1 kz=4), ACCUMULATE nskip++ (total=65535)
+[FACTOR-DEBUG] N=8 Y=1 (x,z)=(6,4): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[-2,1,4] factor=7.5788068139e-01
+[RNG-DEBUG] N=8 Y=1 (x,z)=(6,4): k=(-2,1,4) k2=21.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,-0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(-0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=8 Y=1 (x,z)=(7,4): D=0 (Nyquist: kx=-1 ky=1 kz=4), ACCUMULATE nskip++ (total=65536)
+[FACTOR-DEBUG] N=8 Y=1 (x,z)=(7,4): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[-1,1,4] factor=8.8419412829e-01
+[RNG-DEBUG] N=8 Y=1 (x,z)=(7,4): k=(-1,1,4) k2=18.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,-0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(-0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=8 Y=1 z=5: ACCUMULATE skip at Nyquist boundary: +4294443008 (missing z-rows), total nskip=4294508544
+[SKIP-DEBUG] N=8 Y=1 (x,z)=(0,5): APPLYING skip=4294508544 BEFORE cgauss
+[SKIP-DEBUG] N=8 Y=1 (x,z)=(0,5): RNG advanced, nskip reset to 0
+[SKIP-DEBUG] N=8 Y=1 (x,z)=(0,5): CALLING cgauss (nskip=0, kmag=1.986918e-01)
+[FACTOR-DEBUG] N=8 Y=1 (x,z)=(0,5): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[0,1,-3] factor=1.5915494309e+00
+[RNG-DEBUG] N=8 Y=1 (x,z)=(0,5): k=(0,1,-3) k2=10.000000 | D=(-5.5068929027e-03,8.8749489731e-02) F=(0.0000000000e+00,-0.0000000000e+00) G=(-1.4124919988e-01,-8.7644922655e-03) H=(4.2374759963e-01,2.6293476796e-02)
+[SKIP-DEBUG] N=8 Y=1 (x,z)=(1,5): CALLING cgauss (nskip=0, kmag=2.083897e-01)
+[FACTOR-DEBUG] N=8 Y=1 (x,z)=(1,5): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[1,1,-3] factor=1.4468631190e+00
+[RNG-DEBUG] N=8 Y=1 (x,z)=(1,5): k=(1,1,-3) k2=11.000000 | D=(2.9717799684e-02,4.1367927009e-02) F=(-5.9853727899e-02,4.2997588342e-02) G=(-5.9853727899e-02,4.2997588342e-02) H=(1.7956118370e-01,-1.2899276503e-01)
+[SKIP-DEBUG] N=8 Y=1 (x,z)=(2,5): CALLING cgauss (nskip=0, kmag=2.350953e-01)
+[FACTOR-DEBUG] N=8 Y=1 (x,z)=(2,5): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[2,1,-3] factor=1.1368210221e+00
+[RNG-DEBUG] N=8 Y=1 (x,z)=(2,5): k=(2,1,-3) k2=14.000000 | D=(-8.9959839720e-03,-3.4197584029e-02) F=(7.7753064857e-02,-2.0453647387e-02) G=(3.8876532428e-02,-1.0226823694e-02) H=(-1.1662959729e-01,3.0680471081e-02)
+[SKIP-DEBUG] N=8 Y=1 (x,z)=(3,5): D=0 (k_cutoff: k2=19 >= 16.0), ACCUMULATE nskip++ (total=1)
+[FACTOR-DEBUG] N=8 Y=1 (x,z)=(3,5): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[3,1,-3] factor=8.3765759522e-01
+[RNG-DEBUG] N=8 Y=1 (x,z)=(3,5): k=(3,1,-3) k2=19.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(-0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,-0.0000000000e+00)
+[SKIP-DEBUG] N=8 Y=1 (x,z)=(4,5): D=0 (Nyquist: kx=4 ky=1 kz=-3), ACCUMULATE nskip++ (total=2)
+[FACTOR-DEBUG] N=8 Y=1 (x,z)=(4,5): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[4,1,-3] factor=6.1213439651e-01
+[RNG-DEBUG] N=8 Y=1 (x,z)=(4,5): k=(4,1,-3) k2=26.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(-0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,-0.0000000000e+00)
+[SKIP-DEBUG] N=8 Y=1 z=5 x=5: ACCUMULATE skip at Nyquist boundary: +65528 (missing x-values), total nskip=65530
+[SKIP-DEBUG] N=8 Y=1 (x,z)=(5,5): D=0 (k_cutoff: k2=19 >= 16.0), ACCUMULATE nskip++ (total=65531)
+[FACTOR-DEBUG] N=8 Y=1 (x,z)=(5,5): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[-3,1,-3] factor=8.3765759522e-01
+[RNG-DEBUG] N=8 Y=1 (x,z)=(5,5): k=(-3,1,-3) k2=19.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,-0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,-0.0000000000e+00)
+[SKIP-DEBUG] N=8 Y=1 (x,z)=(6,5): APPLYING skip=65531 BEFORE cgauss
+[SKIP-DEBUG] N=8 Y=1 (x,z)=(6,5): RNG advanced, nskip reset to 0
+[SKIP-DEBUG] N=8 Y=1 (x,z)=(6,5): CALLING cgauss (nskip=0, kmag=2.350953e-01)
+[FACTOR-DEBUG] N=8 Y=1 (x,z)=(6,5): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[-2,1,-3] factor=1.1368210221e+00
+[RNG-DEBUG] N=8 Y=1 (x,z)=(6,5): k=(-2,1,-3) k2=14.000000 | D=(1.0835911833e-02,1.0769177878e-02) F=(2.4485255605e-02,-2.4636984729e-02) G=(-1.2242627803e-02,1.2318492365e-02) H=(3.6727883408e-02,-3.6955477094e-02)
+[SKIP-DEBUG] N=8 Y=1 (x,z)=(7,5): CALLING cgauss (nskip=0, kmag=2.083897e-01)
+[FACTOR-DEBUG] N=8 Y=1 (x,z)=(7,5): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[-1,1,-3] factor=1.4468631190e+00
+[RNG-DEBUG] N=8 Y=1 (x,z)=(7,5): k=(-1,1,-3) k2=11.000000 | D=(1.2169495255e-02,1.4893384815e-02) F=(2.1548689207e-02,-1.7607593861e-02) G=(-2.1548689207e-02,1.7607593861e-02) H=(6.4646067620e-02,-5.2822781584e-02)
+[SKIP-DEBUG] N=8 Y=1 (x,z)=(0,6): CALLING cgauss (nskip=0, kmag=1.404963e-01)
+[FACTOR-DEBUG] N=8 Y=1 (x,z)=(0,6): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[0,1,-2] factor=3.1830988618e+00
+[RNG-DEBUG] N=8 Y=1 (x,z)=(0,6): k=(0,1,-2) k2=5.000000 | D=(6.2726429105e-02,-3.1728654098e-02) F=(-0.0000000000e+00,0.0000000000e+00) G=(1.0099544275e-01,1.9966442509e-01) H=(-2.0199088549e-01,-3.9932885018e-01)
+[SKIP-DEBUG] N=8 Y=1 (x,z)=(1,6): CALLING cgauss (nskip=0, kmag=1.539060e-01)
+[FACTOR-DEBUG] N=8 Y=1 (x,z)=(1,6): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[1,1,-2] factor=2.6525823849e+00
+[RNG-DEBUG] N=8 Y=1 (x,z)=(1,6): k=(1,1,-2) k2=6.000000 | D=(-3.5187033851e-02,4.1982953317e-02) F=(-1.1136324243e-01,-9.3336506168e-02) G=(-1.1136324243e-01,-9.3336506168e-02) H=(2.2272648487e-01,1.8667301234e-01)
+[SKIP-DEBUG] N=8 Y=1 (x,z)=(2,6): CALLING cgauss (nskip=0, kmag=1.884956e-01)
+[FACTOR-DEBUG] N=8 Y=1 (x,z)=(2,6): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[2,1,-2] factor=1.7683882566e+00
+[RNG-DEBUG] N=8 Y=1 (x,z)=(2,6): k=(2,1,-2) k2=9.000000 | D=(2.9205609799e-02,5.4959445011e-02) F=(-1.9437927429e-01,1.0329371479e-01) G=(-9.7189637145e-02,5.1646857395e-02) H=(1.9437927429e-01,-1.0329371479e-01)
+[SKIP-DEBUG] N=8 Y=1 (x,z)=(3,6): CALLING cgauss (nskip=0, kmag=2.350953e-01)
+[FACTOR-DEBUG] N=8 Y=1 (x,z)=(3,6): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[3,1,-2] factor=1.1368210221e+00
+[RNG-DEBUG] N=8 Y=1 (x,z)=(3,6): k=(3,1,-2) k2=14.000000 | D=(-9.9926088292e-03,1.7331357865e-02) F=(-5.9107955887e-02,-3.4079423348e-02) G=(-1.9702651962e-02,-1.1359807783e-02) H=(3.9405303924e-02,2.2719615565e-02)
+[SKIP-DEBUG] N=8 Y=1 (x,z)=(4,6): D=0 (Nyquist: kx=4 ky=1 kz=-2), ACCUMULATE nskip++ (total=1)
+[FACTOR-DEBUG] N=8 Y=1 (x,z)=(4,6): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[4,1,-2] factor=7.5788068139e-01
+[RNG-DEBUG] N=8 Y=1 (x,z)=(4,6): k=(4,1,-2) k2=21.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(-0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,-0.0000000000e+00)
+[SKIP-DEBUG] N=8 Y=1 z=6 x=5: ACCUMULATE skip at Nyquist boundary: +65528 (missing x-values), total nskip=65529
+[SKIP-DEBUG] N=8 Y=1 (x,z)=(5,6): APPLYING skip=65529 BEFORE cgauss
+[SKIP-DEBUG] N=8 Y=1 (x,z)=(5,6): RNG advanced, nskip reset to 0
+[SKIP-DEBUG] N=8 Y=1 (x,z)=(5,6): CALLING cgauss (nskip=0, kmag=2.350953e-01)
+[FACTOR-DEBUG] N=8 Y=1 (x,z)=(5,6): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[-3,1,-2] factor=1.1368210221e+00
+[RNG-DEBUG] N=8 Y=1 (x,z)=(5,6): k=(-3,1,-2) k2=14.000000 | D=(3.4998528785e-03,2.0837962383e-02) F=(7.1067101084e-02,-1.1936118979e-02) G=(-2.3689033695e-02,3.9787063264e-03) H=(4.7378067389e-02,-7.9574126529e-03)
+[SKIP-DEBUG] N=8 Y=1 (x,z)=(6,6): CALLING cgauss (nskip=0, kmag=1.884956e-01)
+[FACTOR-DEBUG] N=8 Y=1 (x,z)=(6,6): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[-2,1,-2] factor=1.7683882566e+00
+[RNG-DEBUG] N=8 Y=1 (x,z)=(6,6): k=(-2,1,-2) k2=9.000000 | D=(-2.8047230104e-02,3.0639625864e-02) F=(1.0836550913e-01,9.9196784692e-02) G=(-5.4182754564e-02,-4.9598392346e-02) H=(1.0836550913e-01,9.9196784692e-02)
+[SKIP-DEBUG] N=8 Y=1 (x,z)=(7,6): CALLING cgauss (nskip=0, kmag=1.539060e-01)
+[FACTOR-DEBUG] N=8 Y=1 (x,z)=(7,6): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[-1,1,-2] factor=2.6525823849e+00
+[RNG-DEBUG] N=8 Y=1 (x,z)=(7,6): k=(-1,1,-2) k2=6.000000 | D=(-4.0367358306e-02,4.5757894893e-02) F=(1.2137658596e-01,1.0707774357e-01) G=(-1.2137658596e-01,-1.0707774357e-01) H=(2.4275317192e-01,2.1415548713e-01)
+[SKIP-DEBUG] N=8 Y=1 (x,z)=(0,7): CALLING cgauss (nskip=0, kmag=8.885766e-02)
+[FACTOR-DEBUG] N=8 Y=1 (x,z)=(0,7): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[0,1,-1] factor=7.9577471546e+00
+[RNG-DEBUG] N=8 Y=1 (x,z)=(0,7): k=(0,1,-1) k2=2.000000 | D=(3.3494990122e-02,-1.1002823074e-01) F=(-0.0000000000e+00,0.0000000000e+00) G=(8.7557684006e-01,2.6654466233e-01) H=(-8.7557684006e-01,-2.6654466233e-01)
+[SKIP-DEBUG] N=8 Y=1 (x,z)=(1,7): CALLING cgauss (nskip=0, kmag=1.088280e-01)
+[FACTOR-DEBUG] N=8 Y=1 (x,z)=(1,7): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[1,1,-1] factor=5.3051647697e+00
+[RNG-DEBUG] N=8 Y=1 (x,z)=(1,7): k=(1,1,-1) k2=3.000000 | D=(1.6050719517e-02,-6.3609735562e-02) F=(3.3746012812e-01,8.5151711712e-02) G=(3.3746012812e-01,8.5151711712e-02) H=(-3.3746012812e-01,-8.5151711712e-02)
+[SKIP-DEBUG] N=8 Y=1 (x,z)=(2,7): CALLING cgauss (nskip=0, kmag=1.539060e-01)
+[INFO] num_ranks=1 < total_pairs=5: Each rank will process 5-5 pairs
 ====================================================================================
 VERSION 15: POWER SPECTRUM INTEGRATION
 ====================================================================================
@@ -384,82 +538,7 @@ Communication method: MPI_Ialltoallv (Phase A)
 [V11-BATCH 0] Cursors advanced. Sample: src0=128, src1=0
 [BATCH 1] Rank 0: Processing 2 Y-slices (Y=1, Y=7)
 [DEBUG Y=1] Before 2D FFT (Fourier space) - PRIMARY slice - Max real/imag per array: A0: re=8.861e-01 im=8.797e-01 A1: re=2.586e+00 im=1.692e+00 (NOTE: Non-zero imag expected in Fourier space)
-[DEBUG Y=1] Before 2D FFT (Fourier space) - CONJUGATE slice - Max real/imag per array: A0: re=1.141e+00 im=6.408e-01 A1: re=2.586e+00 im=1.692e+00 (000000000e+00,0.0000000000e+00) H=(-0.0000000000e+00,0.0000000000e+00)
-[SKIP-DEBUG] N=8 Y=1 z=4 x=5: ACCUMULATE skip at Nyquist boundary: +65528 (missing x-values), total nskip=65533
-[SKIP-DEBUG] N=8 Y=1 (x,z)=(5,4): D=0 (Nyquist: kx=-3 ky=1 kz=4), ACCUMULATE nskip++ (total=65534)
-[FACTOR-DEBUG] N=8 Y=1 (x,z)=(5,4): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[-3,1,4] factor=6.1213439651e-01
-[RNG-DEBUG] N=8 Y=1 (x,z)=(5,4): k=(-3,1,4) k2=26.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,-0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(-0.0000000000e+00,0.0000000000e+00)
-[SKIP-DEBUG] N=8 Y=1 (x,z)=(6,4): D=0 (Nyquist: kx=-2 ky=1 kz=4), ACCUMULATE nskip++ (total=65535)
-[FACTOR-DEBUG] N=8 Y=1 (x,z)=(6,4): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[-2,1,4] factor=7.5788068139e-01
-[RNG-DEBUG] N=8 Y=1 (x,z)=(6,4): k=(-2,1,4) k2=21.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,-0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(-0.0000000000e+00,0.0000000000e+00)
-[SKIP-DEBUG] N=8 Y=1 (x,z)=(7,4): D=0 (Nyquist: kx=-1 ky=1 kz=4), ACCUMULATE nskip++ (total=65536)
-[FACTOR-DEBUG] N=8 Y=1 (x,z)=(7,4): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[-1,1,4] factor=8.8419412829e-01
-[RNG-DEBUG] N=8 Y=1 (x,z)=(7,4): k=(-1,1,4) k2=18.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,-0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(-0.0000000000e+00,0.0000000000e+00)
-[SKIP-DEBUG] N=8 Y=1 z=5: ACCUMULATE skip at Nyquist boundary: +4294443008 (missing z-rows), total nskip=4294508544
-[SKIP-DEBUG] N=8 Y=1 (x,z)=(0,5): APPLYING skip=4294508544 BEFORE cgauss
-[SKIP-DEBUG] N=8 Y=1 (x,z)=(0,5): RNG advanced, nskip reset to 0
-[SKIP-DEBUG] N=8 Y=1 (x,z)=(0,5): CALLING cgauss (nskip=0, kmag=1.986918e-01)
-[FACTOR-DEBUG] N=8 Y=1 (x,z)=(0,5): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[0,1,-3] factor=1.5915494309e+00
-[RNG-DEBUG] N=8 Y=1 (x,z)=(0,5): k=(0,1,-3) k2=10.000000 | D=(-5.5068929027e-03,8.8749489731e-02) F=(0.0000000000e+00,-0.0000000000e+00) G=(-1.4124919988e-01,-8.7644922655e-03) H=(4.2374759963e-01,2.6293476796e-02)
-[SKIP-DEBUG] N=8 Y=1 (x,z)=(1,5): CALLING cgauss (nskip=0, kmag=2.083897e-01)
-[FACTOR-DEBUG] N=8 Y=1 (x,z)=(1,5): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[1,1,-3] factor=1.4468631190e+00
-[RNG-DEBUG] N=8 Y=1 (x,z)=(1,5): k=(1,1,-3) k2=11.000000 | D=(2.9717799684e-02,4.1367927009e-02) F=(-5.9853727899e-02,4.2997588342e-02) G=(-5.9853727899e-02,4.2997588342e-02) H=(1.7956118370e-01,-1.2899276503e-01)
-[SKIP-DEBUG] N=8 Y=1 (x,z)=(2,5): CALLING cgauss (nskip=0, kmag=2.350953e-01)
-[FACTOR-DEBUG] N=8 Y=1 (x,z)=(2,5): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[2,1,-3] factor=1.1368210221e+00
-[RNG-DEBUG] N=8 Y=1 (x,z)=(2,5): k=(2,1,-3) k2=14.000000 | D=(-8.9959839720e-03,-3.4197584029e-02) F=(7.7753064857e-02,-2.0453647387e-02) G=(3.8876532428e-02,-1.0226823694e-02) H=(-1.1662959729e-01,3.0680471081e-02)
-[SKIP-DEBUG] N=8 Y=1 (x,z)=(3,5): D=0 (k_cutoff: k2=19 >= 16.0), ACCUMULATE nskip++ (total=1)
-[FACTOR-DEBUG] N=8 Y=1 (x,z)=(3,5): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[3,1,-3] factor=8.3765759522e-01
-[RNG-DEBUG] N=8 Y=1 (x,z)=(3,5): k=(3,1,-3) k2=19.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(-0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,-0.0000000000e+00)
-[SKIP-DEBUG] N=8 Y=1 (x,z)=(4,5): D=0 (Nyquist: kx=4 ky=1 kz=-3), ACCUMULATE nskip++ (total=2)
-[FACTOR-DEBUG] N=8 Y=1 (x,z)=(4,5): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[4,1,-3] factor=6.1213439651e-01
-[RNG-DEBUG] N=8 Y=1 (x,z)=(4,5): k=(4,1,-3) k2=26.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(-0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,-0.0000000000e+00)
-[SKIP-DEBUG] N=8 Y=1 z=5 x=5: ACCUMULATE skip at Nyquist boundary: +65528 (missing x-values), total nskip=65530
-[SKIP-DEBUG] N=8 Y=1 (x,z)=(5,5): D=0 (k_cutoff: k2=19 >= 16.0), ACCUMULATE nskip++ (total=65531)
-[FACTOR-DEBUG] N=8 Y=1 (x,z)=(5,5): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[-3,1,-3] factor=8.3765759522e-01
-[RNG-DEBUG] N=8 Y=1 (x,z)=(5,5): k=(-3,1,-3) k2=19.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,-0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,-0.0000000000e+00)
-[SKIP-DEBUG] N=8 Y=1 (x,z)=(6,5): APPLYING skip=65531 BEFORE cgauss
-[SKIP-DEBUG] N=8 Y=1 (x,z)=(6,5): RNG advanced, nskip reset to 0
-[SKIP-DEBUG] N=8 Y=1 (x,z)=(6,5): CALLING cgauss (nskip=0, kmag=2.350953e-01)
-[FACTOR-DEBUG] N=8 Y=1 (x,z)=(6,5): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[-2,1,-3] factor=1.1368210221e+00
-[RNG-DEBUG] N=8 Y=1 (x,z)=(6,5): k=(-2,1,-3) k2=14.000000 | D=(1.0835911833e-02,1.0769177878e-02) F=(2.4485255605e-02,-2.4636984729e-02) G=(-1.2242627803e-02,1.2318492365e-02) H=(3.6727883408e-02,-3.6955477094e-02)
-[SKIP-DEBUG] N=8 Y=1 (x,z)=(7,5): CALLING cgauss (nskip=0, kmag=2.083897e-01)
-[FACTOR-DEBUG] N=8 Y=1 (x,z)=(7,5): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[-1,1,-3] factor=1.4468631190e+00
-[RNG-DEBUG] N=8 Y=1 (x,z)=(7,5): k=(-1,1,-3) k2=11.000000 | D=(1.2169495255e-02,1.4893384815e-02) F=(2.1548689207e-02,-1.7607593861e-02) G=(-2.1548689207e-02,1.7607593861e-02) H=(6.4646067620e-02,-5.2822781584e-02)
-[SKIP-DEBUG] N=8 Y=1 (x,z)=(0,6): CALLING cgauss (nskip=0, kmag=1.404963e-01)
-[FACTOR-DEBUG] N=8 Y=1 (x,z)=(0,6): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[0,1,-2] factor=3.1830988618e+00
-[RNG-DEBUG] N=8 Y=1 (x,z)=(0,6): k=(0,1,-2) k2=5.000000 | D=(6.2726429105e-02,-3.1728654098e-02) F=(-0.0000000000e+00,0.0000000000e+00) G=(1.0099544275e-01,1.9966442509e-01) H=(-2.0199088549e-01,-3.9932885018e-01)
-[SKIP-DEBUG] N=8 Y=1 (x,z)=(1,6): CALLING cgauss (nskip=0, kmag=1.539060e-01)
-[FACTOR-DEBUG] N=8 Y=1 (x,z)=(1,6): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[1,1,-2] factor=2.6525823849e+00
-[RNG-DEBUG] N=8 Y=1 (x,z)=(1,6): k=(1,1,-2) k2=6.000000 | D=(-3.5187033851e-02,4.1982953317e-02) F=(-1.1136324243e-01,-9.3336506168e-02) G=(-1.1136324243e-01,-9.3336506168e-02) H=(2.2272648487e-01,1.8667301234e-01)
-[SKIP-DEBUG] N=8 Y=1 (x,z)=(2,6): CALLING cgauss (nskip=0, kmag=1.884956e-01)
-[FACTOR-DEBUG] N=8 Y=1 (x,z)=(2,6): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[2,1,-2] factor=1.7683882566e+00
-[RNG-DEBUG] N=8 Y=1 (x,z)=(2,6): k=(2,1,-2) k2=9.000000 | D=(2.9205609799e-02,5.4959445011e-02) F=(-1.9437927429e-01,1.0329371479e-01) G=(-9.7189637145e-02,5.1646857395e-02) H=(1.9437927429e-01,-1.0329371479e-01)
-[SKIP-DEBUG] N=8 Y=1 (x,z)=(3,6): CALLING cgauss (nskip=0, kmag=2.350953e-01)
-[FACTOR-DEBUG] N=8 Y=1 (x,z)=(3,6): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[3,1,-2] factor=1.1368210221e+00
-[RNG-DEBUG] N=8 Y=1 (x,z)=(3,6): k=(3,1,-2) k2=14.000000 | D=(-9.9926088292e-03,1.7331357865e-02) F=(-5.9107955887e-02,-3.4079423348e-02) G=(-1.9702651962e-02,-1.1359807783e-02) H=(3.9405303924e-02,2.2719615565e-02)
-[SKIP-DEBUG] N=8 Y=1 (x,z)=(4,6): D=0 (Nyquist: kx=4 ky=1 kz=-2), ACCUMULATE nskip++ (total=1)
-[FACTOR-DEBUG] N=8 Y=1 (x,z)=(4,6): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[4,1,-2] factor=7.5788068139e-01
-[RNG-DEBUG] N=8 Y=1 (x,z)=(4,6): k=(4,1,-2) k2=21.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(-0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,-0.0000000000e+00)
-[SKIP-DEBUG] N=8 Y=1 z=6 x=5: ACCUMULATE skip at Nyquist boundary: +65528 (missing x-values), total nskip=65529
-[SKIP-DEBUG] N=8 Y=1 (x,z)=(5,6): APPLYING skip=65529 BEFORE cgauss
-[SKIP-DEBUG] N=8 Y=1 (x,z)=(5,6): RNG advanced, nskip reset to 0
-[SKIP-DEBUG] N=8 Y=1 (x,z)=(5,6): CALLING cgauss (nskip=0, kmag=2.350953e-01)
-[FACTOR-DEBUG] N=8 Y=1 (x,z)=(5,6): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[-3,1,-2] factor=1.1368210221e+00
-[RNG-DEBUG] N=8 Y=1 (x,z)=(5,6): k=(-3,1,-2) k2=14.000000 | D=(3.4998528785e-03,2.0837962383e-02) F=(7.1067101084e-02,-1.1936118979e-02) G=(-2.3689033695e-02,3.9787063264e-03) H=(4.7378067389e-02,-7.9574126529e-03)
-[SKIP-DEBUG] N=8 Y=1 (x,z)=(6,6): CALLING cgauss (nskip=0, kmag=1.884956e-01)
-[FACTOR-DEBUG] N=8 Y=1 (x,z)=(6,6): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[-2,1,-2] factor=1.7683882566e+00
-[RNG-DEBUG] N=8 Y=1 (x,z)=(6,6): k=(-2,1,-2) k2=9.000000 | D=(-2.8047230104e-02,3.0639625864e-02) F=(1.0836550913e-01,9.9196784692e-02) G=(-5.4182754564e-02,-4.9598392346e-02) H=(1.0836550913e-01,9.9196784692e-02)
-[SKIP-DEBUG] N=8 Y=1 (x,z)=(7,6): CALLING cgauss (nskip=0, kmag=1.539060e-01)
-[FACTOR-DEBUG] N=8 Y=1 (x,z)=(7,6): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[-1,1,-2] factor=2.6525823849e+00
-[RNG-DEBUG] N=8 Y=1 (x,z)=(7,6): k=(-1,1,-2) k2=6.000000 | D=(-4.0367358306e-02,4.5757894893e-02) F=(1.2137658596e-01,1.0707774357e-01) G=(-1.2137658596e-01,-1.0707774357e-01) H=(2.4275317192e-01,2.1415548713e-01)
-[SKIP-DEBUG] N=8 Y=1 (x,z)=(0,7): CALLING cgauss (nskip=0, kmag=8.885766e-02)
-[FACTOR-DEBUG] N=8 Y=1 (x,z)=(0,7): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[0,1,-1] factor=7.9577471546e+00
-[RNG-DEBUG] N=8 Y=1 (x,z)=(0,7): k=(0,1,-1) k2=2.000000 | D=(3.3494990122e-02,-1.1002823074e-01) F=(-0.0000000000e+00,0.0000000000e+00) G=(8.7557684006e-01,2.6654466233e-01) H=(-8.7557684006e-01,-2.6654466233e-01)
-[SKIP-DEBUG] N=8 Y=1 (x,z)=(1,7): CALLING cgauss (nskip=0, kmag=1.088280e-01)
-[FACTOR-DEBUG] N=8 Y=1 (x,z)=(1,7): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[1,1,-1] factor=5.3051647697e+00
-[RNG-DEBUG] N=8 Y=1 (x,z)=(1,7): k=(1,1,-1) k2=3.000000 | D=(1.6050719517e-02,-6.3609735562e-02) F=(3.3746012812e-01,8.5151711712e-02) G=(3.3746012812e-01,8.5151711712e-02) H=(-3.3746012812e-01,-8.5151711712e-02)
-[SKIP-DEBUG] N=8 Y=1 (x,z)=(2,7): CALLING cgauss (nskip=0, kmag=1.539060e-01)
-[FACTOR-DEBUG] N=8 Y=1 (x,z)=(2,7): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[2,1,-1] factor=2.6525823849e+00
+[DEBUG Y=1] Before 2D FFT (Fourier space) - CONJUGATE slice - Max real/imag per array: A0: re=1.141e+00 im=6.408e-01 A1: re=2.586e+00 im=1.692e+00 ([FACTOR-DEBUG] N=8 Y=1 (x,z)=(2,7): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[2,1,-1] factor=2.6525823849e+00
 [RNG-DEBUG] N=8 Y=1 (x,z)=(2,7): k=(2,1,-1) k2=6.000000 | D=(-7.1145008497e-02,-2.6529255876e-02) F=(1.4074207364e-01,-3.7743599262e-01) G=(7.0371036820e-02,-1.8871799631e-01) H=(-7.0371036820e-02,1.8871799631e-01)
 [SKIP-DEBUG] N=8 Y=1 (x,z)=(3,7): CALLING cgauss (nskip=0, kmag=2.083897e-01)
 [FACTOR-DEBUG] N=8 Y=1 (x,z)=(3,7): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[3,1,-1] factor=1.4468631190e+00
@@ -512,7 +591,7 @@ NOTE: Should be conjugate of primary!)
   ERROR at (X=2,Z=1,Array=1): F(2,1,1)=-4.255128e-02+2.589152e-01i, F(6,7,7)*=+2.326629e-01-1.213081e-01i, err=4.694e-01
   ERROR at (X=2,Z=2,Array=1): F(2,1,2)=+1.023157e-01+6.394744e-02i, F(6,7,6)*=-1.023147e-02-1.202210e-01i, err=2.158e-01
   Array 1: Hermitian symmetry VIOLATED: 38 errors, max error = 1.830e+00
-[DEBUG Y=1] Before 2D FFT - Buffer addresses: prim=0x5bc9000 conj=0x5bc9800 (diff=128)
+[DEBUG Y=1] Before 2D FFT - Buffer addresses: prim=0x6209000 conj=0x6209800 (diff=128)
 [DEBUG Y=1] Before 2D FFT - Sample values: prim[0,0]=(1.063e-01,-1.625e-01) conj[0,0]=(1.063e-01,1.625e-01)
 [DEBUG Y=1] Right before conjugate FFT - conj[0,0]=(1.063e-01,1.625e-01) prim[0,0]=(2.200e+00,2.941e-02)
 [DEBUG Y=1] Right after conjugate FFT - conj[0,0]=(-1.840e+00,7.683e-01) prim[0,0]=(2.200e+00,2.941e-02)
@@ -610,39 +689,7 @@ NOTE: Should be conjugate of primary!)
 [FACTOR-DEBUG] N=8 Y=2 (x,z)=(2,3): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[2,2,3] factor=9.3620554760e-01
 [RNG-DEBUG] N=8 Y=2 (x,z)=(2,3): k=(2,2,3) k2=17.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(-0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(-0.0000000000e+00,0.0000000000e+00)
 [SKIP-DEBUG] N=8 Y=2 (x,z)=(3,3): D=0 (k_cutoff: k2=22 >= 16.0), ACCUMULATE nskip++ (total=2)
-[FACace) - CONJUGATE slice - Max real/imag per array: A0: re=3.706e+00 im=2.609e+00 (ratio=7.039e-01) A1: re=8.444e+00 im=4.859e+00 (ratio=5.754e-01) (NOTE: Imag should be ~0 in real space!)
-[DEBUG Y=1] Array comparison: 0 identical, 128 different (total=128)
-[DEBUG Y=1] Sample differences (first 3 non-identical): A0[0,0]: prim=(2.200e+00,2.941e-02) conj=(-1.840e+00,7.683e-01) diff=(4.040e+00,7.389e-01) A0[0,1]: prim=(2.901e+00,-1.236e-01) conj=(-2.622e+00,3.918e-01) diff=(5.523e+00,5.154e-01) A0[0,2]: prim=(2.730e+00,6.373e-01) conj=(-3.706e+00,9.419e-01) diff=(6.436e+00,3.046e-01) 
-[PACK] Rank 0: Packed 256 total elements to send_buffer
-       Sending to ranks: 256 elements to rank 0
-[V11-BATCH 1] Cursors advanced. Sample: src0=384, src1=0
-[DEBUG Y=2] Before 2D FFT (Fourier space) - PRIMARY slice - Max real/imag per array: A0: re=3.401e-01 im=4.593e-01 A1: re=6.003e-01 im=8.205e-01 (NOTE: Non-zero imag expected in Fourier space)
-[DEBUG Y=2] Before 2D FFT (Fourier space) - CONJUGATE slice - Max real/imag per array: A0: re=5.391e-01 im=3.944e-01 A1: re=6.003e-01 im=8.205e-01 (NOTE: Should be conjugate of primary!)
-[DEBUG Y=2] Sample conjugate check (first 3 points): A0[0,0]: prim=(1.519e-02,-4.642e-02) conj[0,0]=(1.519e-02,4.642e-02) A0[0,1]: prim=(-1.493e-02,1.246e-02) conj[0,7]=(-1.493e-02,-1.246e-02) A0[1,0]: prim=(-2.814e-01,-2.058e-01) conj[7,0]=(5.391e-01,-3.944e-01) A0[1,1]: prim=(-3.020e-02,4.736e-02) conj[7,7]=(6.675e-02,1.047e-01) A1[0,0]: prim=(3.694e-01,1.209e-01) conj[0,0]=(3.694e-01,-1.209e-01) A1[0,1]: prim=(-3.179e-02,-1.347e-01) conj[0,7]=(-1.268e-01,5.539e-02) A1[1,0]: prim=(-6.003e-01,8.205e-01) conj[7,0]=(-6.003e-01,-8.205e-01) A1[1,1]: prim=(1.036e-01,1.730e-01) conj[7,7]=(2.005e-01,-2.093e-02) 
-
-[RANK 0 - BEFORE FFT] Checking Y=2 and Y=6 conjugate relationship (all arrays):
-
-[RANK 0] Checking Hermitian pair Y=2 and Y=6, Array=0 (before 2D FFT):
-  ERROR at (X=0,Z=1,Array=0): F(0,2,1)=-2.813633e-01-2.058485e-01i, F(0,6,7)*=+5.391283e-01+3.944322e-01i, err=1.017e+00
-  ERROR at (X=0,Z=2,Array=0): F(0,2,2)=+1.255835e-01+2.583845e-02i, F(0,6,6)*=-2.098996e-01-4.318624e-02i, err=3.425e-01
-  ERROR at (X=0,Z=3,Array=0): F(0,2,3)=-1.120466e-01+1.380498e-02i, F(0,6,5)*=+1.958886e-01-2.413494e-02i, err=3.103e-01
-  ERROR at (X=0,Z=5,Array=0): F(0,2,5)=-1.960594e-02+6.558519e-02i, F(0,6,3)*=+1.121443e-02-3.751419e-02i, err=1.076e-01
-  ERROR at (X=0,Z=6,Array=0): F(0,2,6)=+1.325166e-01+4.592719e-01i, F(0,6,2)*=-7.928503e-02-2.747836e-01i, err=7.640e-01
-  ERROR at (X=0,Z=7,Array=0): F(0,2,7)=+3.400545e-01+6.320701e-02i, F(0,6,1)*=-1.774695e-01-3.298682e-02i, err=5.264e-01
-  ERROR at (X=1,Z=1,Array=0): F(1,2,1)=-3.020061e-02+4.736185e-02i, F(7,6,7)*=+6.675020e-02-1.046804e-01i, err=1.803e-01
-  ERROR at (X=1,Z=2,Array=0): F(1,2,2)=-9.856449e-02-1.000290e-01i, F(7,6,6)*=+1.762729e-01+1.788921e-01i, err=3.916e-01
-  ERROR at (X=1,Z=3,Array=0): F(1,2,3)=-3.160097e-02-2.469505e-02i, F(7,6,5)*=+5.782081e-02+4.518494e-02i, err=1.135e-01
-  ERROR at (X=1,Z=5,Array=0): F(1,2,5)=-1.626666e-01+2.497724e-02i, F(7,6,3)*=+8.890264e-02-1.365088e-02i, err=2.545e-01
-  Array 0: Hermitian symmetry VIOLATED: 30 errors, max error = 1.017e+00
-
-[RANK 0] Checking Hermitian pair Y=2 and Y=6, Array=1 (before 2D FFT):
-  ERROR at (X=1,Z=0,Array=1): F(1,2,0)=-3.178706e-02-1.347043e-01i, F(7,6,0)*=-1.268357e-01-5.539293e-02i, err=1.238e-01
-  ERROR at (X=1,Z=1,Array=1): F(1,2,1)=+1.035669e-01+1.729720e-01i, F(7,6,7)*=+2.005177e-01+2.092966e-02i, err=1.803e-01
-  ERROR at (X=1,Z=2,Array=1): F(1,2,2)=-2.081699e-01+6.768843e-02i, F(7,6,6)*=-7.075123e-02+2.071490e-01i, err=1.958e-01
-  ERROR at (X=1,Z=3,Array=1): F(1,2,3)=-3.819696e-02+1.816059e-02i, F(7,6,5)*=-8.389701e-03+4.145392e-02i, err=3.783e-02
-  ERROR at (X=1,Z=5,Array=1): F(1,2,5)=+2.905217e-02-9.029443e-02i, F(7,6,3)*=-5.480425e-02-7.741839e-02i, err=8.484e-02
-  ERROR at (X=1,Z=6,Array=1): F(1,2,6)=+1.887897e-03-1.490800e-01i, F(7,6,2)*=-1.181313e-01-9.095833e-02i, err=1.334e-01
-  ERROR at (X=1,Z=7,Array=1): F(1,2,7)=-4.297073e-02-4.657152e-01i, F(7,6,1)*=-3.983546e-01-2.450525e-01i, err=4.183e-01TOR-DEBUG] N=8 Y=2 (x,z)=(3,3): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[3,2,3] factor=7.2343155951e-01
+[FACTOR-DEBUG] N=8 Y=2 (x,z)=(3,3): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[3,2,3] factor=7.2343155951e-01
 [RNG-DEBUG] N=8 Y=2 (x,z)=(3,3): k=(3,2,3) k2=22.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(-0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(-0.0000000000e+00,0.0000000000e+00)
 [SKIP-DEBUG] N=8 Y=2 (x,z)=(4,3): D=0 (Nyquist: kx=4 ky=2 kz=3), ACCUMULATE nskip++ (total=3)
 [FACTOR-DEBUG] N=8 Y=2 (x,z)=(4,3): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[4,2,3] factor=5.4881014859e-01
@@ -763,7 +810,39 @@ NOTE: Should be conjugate of primary!)
 [FACTOR-DEBUG] N=8 Y=2 (x,z)=(5,7): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[-3,2,-1] factor=1.1368210221e+00
 [RNG-DEBUG] N=8 Y=2 (x,z)=(5,7): k=(-3,2,-1) k2=14.000000 | D=(1.3650940675e-02,2.0594040009e-02) F=(7.0235212837e-02,-4.6556028991e-02) G=(-4.6823475225e-02,3.1037352660e-02) H=(2.3411737612e-02,-1.5518676330e-02)
 [SKIP-DEBUG] N=8 Y=2 (x,z)=(6,7): CALLING cgauss (nskip=0, kmag=1.884956e-01)
-[FACTOR-DEBUG] N=8 Y=2 (x,z)=(6,7): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[-2,2,-1] factor=1.7683882566e+00
+[FACTOR-DEBUG] N=8 Y=2 (x,z)=(6,7): fundamental=6.2831853072e-02 rescale=1.0000000000ace) - CONJUGATE slice - Max real/imag per array: A0: re=3.706e+00 im=2.609e+00 (ratio=7.039e-01) A1: re=8.444e+00 im=4.859e+00 (ratio=5.754e-01) (NOTE: Imag should be ~0 in real space!)
+[DEBUG Y=1] Array comparison: 0 identical, 128 different (total=128)
+[DEBUG Y=1] Sample differences (first 3 non-identical): A0[0,0]: prim=(2.200e+00,2.941e-02) conj=(-1.840e+00,7.683e-01) diff=(4.040e+00,7.389e-01) A0[0,1]: prim=(2.901e+00,-1.236e-01) conj=(-2.622e+00,3.918e-01) diff=(5.523e+00,5.154e-01) A0[0,2]: prim=(2.730e+00,6.373e-01) conj=(-3.706e+00,9.419e-01) diff=(6.436e+00,3.046e-01) 
+[PACK] Rank 0: Packed 256 total elements to send_buffer
+       Sending to ranks: 256 elements to rank 0
+[V11-BATCH 1] Cursors advanced. Sample: src0=384, src1=0
+[DEBUG Y=2] Before 2D FFT (Fourier space) - PRIMARY slice - Max real/imag per array: A0: re=3.401e-01 im=4.593e-01 A1: re=6.003e-01 im=8.205e-01 (NOTE: Non-zero imag expected in Fourier space)
+[DEBUG Y=2] Before 2D FFT (Fourier space) - CONJUGATE slice - Max real/imag per array: A0: re=5.391e-01 im=3.944e-01 A1: re=6.003e-01 im=8.205e-01 (NOTE: Should be conjugate of primary!)
+[DEBUG Y=2] Sample conjugate check (first 3 points): A0[0,0]: prim=(1.519e-02,-4.642e-02) conj[0,0]=(1.519e-02,4.642e-02) A0[0,1]: prim=(-1.493e-02,1.246e-02) conj[0,7]=(-1.493e-02,-1.246e-02) A0[1,0]: prim=(-2.814e-01,-2.058e-01) conj[7,0]=(5.391e-01,-3.944e-01) A0[1,1]: prim=(-3.020e-02,4.736e-02) conj[7,7]=(6.675e-02,1.047e-01) A1[0,0]: prim=(3.694e-01,1.209e-01) conj[0,0]=(3.694e-01,-1.209e-01) A1[0,1]: prim=(-3.179e-02,-1.347e-01) conj[0,7]=(-1.268e-01,5.539e-02) A1[1,0]: prim=(-6.003e-01,8.205e-01) conj[7,0]=(-6.003e-01,-8.205e-01) A1[1,1]: prim=(1.036e-01,1.730e-01) conj[7,7]=(2.005e-01,-2.093e-02) 
+
+[RANK 0 - BEFORE FFT] Checking Y=2 and Y=6 conjugate relationship (all arrays):
+
+[RANK 0] Checking Hermitian pair Y=2 and Y=6, Array=0 (before 2D FFT):
+  ERROR at (X=0,Z=1,Array=0): F(0,2,1)=-2.813633e-01-2.058485e-01i, F(0,6,7)*=+5.391283e-01+3.944322e-01i, err=1.017e+00
+  ERROR at (X=0,Z=2,Array=0): F(0,2,2)=+1.255835e-01+2.583845e-02i, F(0,6,6)*=-2.098996e-01-4.318624e-02i, err=3.425e-01
+  ERROR at (X=0,Z=3,Array=0): F(0,2,3)=-1.120466e-01+1.380498e-02i, F(0,6,5)*=+1.958886e-01-2.413494e-02i, err=3.103e-01
+  ERROR at (X=0,Z=5,Array=0): F(0,2,5)=-1.960594e-02+6.558519e-02i, F(0,6,3)*=+1.121443e-02-3.751419e-02i, err=1.076e-01
+  ERROR at (X=0,Z=6,Array=0): F(0,2,6)=+1.325166e-01+4.592719e-01i, F(0,6,2)*=-7.928503e-02-2.747836e-01i, err=7.640e-01
+  ERROR at (X=0,Z=7,Array=0): F(0,2,7)=+3.400545e-01+6.320701e-02i, F(0,6,1)*=-1.774695e-01-3.298682e-02i, err=5.264e-01
+  ERROR at (X=1,Z=1,Array=0): F(1,2,1)=-3.020061e-02+4.736185e-02i, F(7,6,7)*=+6.675020e-02-1.046804e-01i, err=1.803e-01
+  ERROR at (X=1,Z=2,Array=0): F(1,2,2)=-9.856449e-02-1.000290e-01i, F(7,6,6)*=+1.762729e-01+1.788921e-01i, err=3.916e-01
+  ERROR at (X=1,Z=3,Array=0): F(1,2,3)=-3.160097e-02-2.469505e-02i, F(7,6,5)*=+5.782081e-02+4.518494e-02i, err=1.135e-01
+  ERROR at (X=1,Z=5,Array=0): F(1,2,5)=-1.626666e-01+2.497724e-02i, F(7,6,3)*=+8.890264e-02-1.365088e-02i, err=2.545e-01
+  Array 0: Hermitian symmetry VIOLATED: 30 errors, max error = 1.017e+00
+
+[RANK 0] Checking Hermitian pair Y=2 and Y=6, Array=1 (before 2D FFT):
+  ERROR at (X=1,Z=0,Array=1): F(1,2,0)=-3.178706e-02-1.347043e-01i, F(7,6,0)*=-1.268357e-01-5.539293e-02i, err=1.238e-01
+  ERROR at (X=1,Z=1,Array=1): F(1,2,1)=+1.035669e-01+1.729720e-01i, F(7,6,7)*=+2.005177e-01+2.092966e-02i, err=1.803e-01
+  ERROR at (X=1,Z=2,Array=1): F(1,2,2)=-2.081699e-01+6.768843e-02i, F(7,6,6)*=-7.075123e-02+2.071490e-01i, err=1.958e-01
+  ERROR at (X=1,Z=3,Array=1): F(1,2,3)=-3.819696e-02+1.816059e-02i, F(7,6,5)*=-8.389701e-03+4.145392e-02i, err=3.783e-02
+  ERROR at (X=1,Z=5,Array=1): F(1,2,5)=+2.905217e-02-9.029443e-02i, F(7,6,3)*=-5.480425e-02-7.741839e-02i, err=8.484e-02
+  ERROR at (X=1,Z=6,Array=1): F(1,2,6)=+1.887897e-03-1.490800e-01i, F(7,6,2)*=-1.181313e-01-9.095833e-02i, err=1.334e-01
+  ERROR at (X=1,Z=7,Array=1): F(1,2,7)=-4.297073e-02-4.657152e-01i, F(7,6,1)*=-3.983546e-01-2.450525e-01i, err=4.183e-01e+00 k=[-2,2,-1] factor=1.7683882566e+00
 [RNG-DEBUG] N=8 Y=2 (x,z)=(6,7): k=(-2,2,-1) k2=9.000000 | D=(6.3166845522e-02,-5.5413691096e-03) F=(-1.9598584118e-02,-2.2340701565e-01) G=(1.9598584118e-02,2.2340701565e-01) H=(-9.7992920588e-03,-1.1170350783e-01)
 [SKIP-DEBUG] N=8 Y=2 (x,z)=(7,7): CALLING cgauss (nskip=0, kmag=1.539060e-01)
 [FACTOR-DEBUG] N=8 Y=2 (x,z)=(7,7): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[-1,2,-1] factor=2.6525823849e+00
@@ -892,45 +971,7 @@ NOTE: Should be conjugate of primary!)
 [FACTOR-DEBUG] N=8 Y=3 (x,z)=(3,4): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[3,3,4] factor=4.6810277380e-01
 [RNG-DEBUG] N=8 Y=3 (x,z)=(3,4): k=(3,3,4) k2=34.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(-0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(-0.0000000000e+00,0.0000000000e+00)
 [SKIP-DEBUG] N=8 Y=3 (x,z)=(4,4): D=0 (Nyquist: kx=4 ky=3 kz=4), ACCUMULATE nskip++ (total=65541)
-[FACTOR-DEBUG] N=8 Y=3 (x,z)=(4,4): fundament
-  ERROR at (X=2,Z=0,Array=1): F(2,2,0)=+8.563325e-03+1.273425e-01i, F(6,6,0)*=+1.273425e-01-8.563325e-03i, err=1.805e-01
-  ERROR at (X=2,Z=1,Array=1): F(2,2,1)=+4.205273e-01+4.388468e-01i, F(6,6,7)*=+4.388468e-01-4.205273e-01i, err=8.596e-01
-  ERROR at (X=2,Z=2,Array=1): F(2,2,2)=-2.123653e-01-5.279191e-02i, F(6,6,6)*=-5.279191e-02+2.123653e-01i, err=3.095e-01
-  Array 1: Hermitian symmetry VIOLATED: 30 errors, max error = 8.596e-01
-[DEBUG Y=2] Before 2D FFT - Buffer addresses: prim=0x5bc9000 conj=0x5bc9800 (diff=128)
-[DEBUG Y=2] Before 2D FFT - Sample values: prim[0,0]=(1.519e-02,-4.642e-02) conj[0,0]=(1.519e-02,4.642e-02)
-[DEBUG Y=2] Right before conjugate FFT - conj[0,0]=(1.519e-02,4.642e-02) prim[0,0]=(-1.914e-01,1.017e+00)
-[DEBUG Y=2] Right after conjugate FFT - conj[0,0]=(1.065e+00,3.870e-01) prim[0,0]=(-1.914e-01,1.017e+00)
-[DEBUG Y=2] After 2D FFT (Real space) - PRIMARY slice - Max real/imag per array: A0: re=1.551e+00 im=1.923e+00 (ratio=1.239e+00) A1: re=2.082e+00 im=3.362e+00 (ratio=1.615e+00) (NOTE: Imag should be ~0 in real space!)
-[DEBUG Y=2] After 2D FFT (Real space) - CONJUGATE slice - Max real/imag per array: A0: re=1.832e+00 im=2.060e+00 (ratio=1.125e+00) A1: re=2.192e+00 im=3.386e+00 (ratio=1.544e+00) (NOTE: Imag should be ~0 in real space!)
-[DEBUG Y=2] Array comparison: 0 identical, 128 different (total=128)
-[DEBUG Y=2] Sample differences (first 3 non-identical): A0[0,0]: prim=(-1.914e-01,1.017e+00) conj=(1.065e+00,3.870e-01) diff=(1.257e+00,6.295e-01) A0[0,1]: prim=(2.902e-02,-2.946e-01) conj=(4.797e-01,-4.186e-01) diff=(4.507e-01,1.240e-01) A0[0,2]: prim=(-2.418e-02,-1.023e+00) conj=(5.819e-02,-1.111e+00) diff=(8.237e-02,8.766e-02) 
-[PACK] Rank 0: Packed 256 total elements to send_buffer
-       Sending to ranks: 256 elements to rank 0
-
-[RANK 0 - BEFORE FFT] Checking Y=3 and Y=5 conjugate relationship (all arrays):
-
-[RANK 0] Checking Hermitian pair Y=3 and Y=5, Array=0 (before 2D FFT):
-  ERROR at (X=0,Z=1,Array=0): F(0,3,1)=+4.219592e-02-3.218279e-03i, F(0,5,7)*=-1.848583e-01+1.409913e-02i, err=2.277e-01
-  ERROR at (X=0,Z=2,Array=0): F(0,3,2)=-2.629305e-02+5.939684e-03i, F(0,5,6)*=+6.259594e-02-1.414062e-02i, err=9.113e-02
-  ERROR at (X=0,Z=6,Array=0): F(0,3,6)=+4.401377e-02-1.634947e-02i, F(0,5,2)*=-1.848772e-02+6.867496e-03i, err=6.667e-02
-  ERROR at (X=0,Z=7,Array=0): F(0,3,7)=-3.043530e-01+1.638550e-01i, F(0,5,1)*=+6.947190e-02-3.740169e-02i, err=4.246e-01
-  ERROR at (X=1,Z=1,Array=0): F(1,3,1)=-1.538477e-02+1.564828e-02i, F(7,5,7)*=+8.424153e-02-8.568442e-02i, err=1.421e-01
-  ERROR at (X=1,Z=2,Array=0): F(1,3,2)=+2.100342e-02-2.855552e-02i, F(7,5,6)*=-5.398509e-02+7.339624e-02i, err=1.266e-01
-  ERROR at (X=1,Z=6,Array=0): F(1,3,6)=-7.043578e-02+2.947097e-02i, F(7,5,2)*=+2.740372e-02-1.146597e-02i, err=1.061e-01
-  ERROR at (X=1,Z=7,Array=0): F(1,3,7)=-5.741433e-02-9.898929e-02i, F(7,5,1)*=+1.048540e-02+1.807811e-02i, err=1.353e-01
-  ERROR at (X=2,Z=1,Array=0): F(2,3,1)=+3.936911e-03-1.028946e-03i, F(6,5,7)*=-6.148525e-02+1.606971e-02i, err=6.762e-02
-  ERROR at (X=2,Z=7,Array=0): F(2,3,7)=-9.310150e-02+3.234013e-02i, F(6,5,1)*=+5.961305e-03-2.070744e-03i, err=1.049e-01
-  Array 0: Hermitian symmetry VIOLATED: 16 errors, max error = 4.246e-01
-
-[RANK 0] Checking Hermitian pair Y=3 and Y=5, Array=1 (before 2D FFT):
-  ERROR at (X=1,Z=0,Array=1): F(1,3,0)=+9.613177e-02-9.705531e-02i, F(7,5,0)*=+1.867223e-02-1.353233e-01i, err=8.640e-02
-  ERROR at (X=1,Z=1,Array=1): F(1,3,1)=+1.021859e-01+2.001058e-01i, F(7,5,7)*=+2.018122e-01+9.877309e-02i, err=1.421e-01
-  ERROR at (X=1,Z=2,Array=1): F(1,3,2)=-5.771669e-02-8.172932e-02i, F(7,5,6)*=-9.521095e-02-3.075344e-02i, err=6.328e-02
-  ERROR at (X=1,Z=6,Array=1): F(1,3,6)=-6.242832e-03-8.361386e-02i, F(7,5,2)*=-5.516258e-02-6.314539e-02i, err=5.303e-02
-  ERROR at (X=1,Z=7,Array=1): F(1,3,7)=+2.095510e-01-4.331590e-02i, F(7,5,1)*=+1.416512e-01-1.603833e-01i, err=1.353e-01
-  ERROR at (X=2,Z=0,Array=1): F(2,3,0)=+1.258337e-01-1.034277e-01i, F(6,5,0)*=-4.707418e-02-1.559340e-01i, err=1.807e-01
-  ERROR at (X=2,Z=1,Array=1): F(2,3,1)=+3.977418e-02-1.152319e-01i, F(6,5,7al=6.2831853072e-02 rescale=1.0000000000e+00 k=[4,3,4] factor=3.8818278803e-01
+[FACTOR-DEBUG] N=8 Y=3 (x,z)=(4,4): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[4,3,4] factor=3.8818278803e-01
 [RNG-DEBUG] N=8 Y=3 (x,z)=(4,4): k=(4,3,4) k2=41.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(-0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(-0.0000000000e+00,0.0000000000e+00)
 [SKIP-DEBUG] N=8 Y=3 z=4 x=5: ACCUMULATE skip at Nyquist boundary: +65528 (missing x-values), total nskip=131069
 [SKIP-DEBUG] N=8 Y=3 (x,z)=(5,4): D=0 (Nyquist: kx=-3 ky=3 kz=4), ACCUMULATE nskip++ (total=131070)
@@ -1003,7 +1044,45 @@ NOTE: Should be conjugate of primary!)
 [SKIP-DEBUG] N=8 Y=3 (x,z)=(1,7): CALLING cgauss (nskip=0, kmag=2.083897e-01)
 [FACTOR-DEBUG] N=8 Y=3 (x,z)=(1,7): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[1,3,-1] factor=1.4468631190e+00
 [RNG-DEBUG] N=8 Y=3 (x,z)=(1,7): k=(1,3,-1) k2=11.000000 | D=(3.1955319330e-02,1.9318724173e-02) F=(-2.7951549512e-02,4.6234972995e-02) G=(-8.3854648537e-02,1.3870491898e-01) H=(2.7951549512e-02,-4.6234972995e-02)
-[SKIP-DEBUG] N=8 Y=3 (x,z)=(2,7): CALLING cgauss (nskip=0, kmag=2.350953e-01)
+[SKIP-DEBUG]
+  ERROR at (X=2,Z=0,Array=1): F(2,2,0)=+8.563325e-03+1.273425e-01i, F(6,6,0)*=+1.273425e-01-8.563325e-03i, err=1.805e-01
+  ERROR at (X=2,Z=1,Array=1): F(2,2,1)=+4.205273e-01+4.388468e-01i, F(6,6,7)*=+4.388468e-01-4.205273e-01i, err=8.596e-01
+  ERROR at (X=2,Z=2,Array=1): F(2,2,2)=-2.123653e-01-5.279191e-02i, F(6,6,6)*=-5.279191e-02+2.123653e-01i, err=3.095e-01
+  Array 1: Hermitian symmetry VIOLATED: 30 errors, max error = 8.596e-01
+[DEBUG Y=2] Before 2D FFT - Buffer addresses: prim=0x6209000 conj=0x6209800 (diff=128)
+[DEBUG Y=2] Before 2D FFT - Sample values: prim[0,0]=(1.519e-02,-4.642e-02) conj[0,0]=(1.519e-02,4.642e-02)
+[DEBUG Y=2] Right before conjugate FFT - conj[0,0]=(1.519e-02,4.642e-02) prim[0,0]=(-1.914e-01,1.017e+00)
+[DEBUG Y=2] Right after conjugate FFT - conj[0,0]=(1.065e+00,3.870e-01) prim[0,0]=(-1.914e-01,1.017e+00)
+[DEBUG Y=2] After 2D FFT (Real space) - PRIMARY slice - Max real/imag per array: A0: re=1.551e+00 im=1.923e+00 (ratio=1.239e+00) A1: re=2.082e+00 im=3.362e+00 (ratio=1.615e+00) (NOTE: Imag should be ~0 in real space!)
+[DEBUG Y=2] After 2D FFT (Real space) - CONJUGATE slice - Max real/imag per array: A0: re=1.832e+00 im=2.060e+00 (ratio=1.125e+00) A1: re=2.192e+00 im=3.386e+00 (ratio=1.544e+00) (NOTE: Imag should be ~0 in real space!)
+[DEBUG Y=2] Array comparison: 0 identical, 128 different (total=128)
+[DEBUG Y=2] Sample differences (first 3 non-identical): A0[0,0]: prim=(-1.914e-01,1.017e+00) conj=(1.065e+00,3.870e-01) diff=(1.257e+00,6.295e-01) A0[0,1]: prim=(2.902e-02,-2.946e-01) conj=(4.797e-01,-4.186e-01) diff=(4.507e-01,1.240e-01) A0[0,2]: prim=(-2.418e-02,-1.023e+00) conj=(5.819e-02,-1.111e+00) diff=(8.237e-02,8.766e-02) 
+[PACK] Rank 0: Packed 256 total elements to send_buffer
+       Sending to ranks: 256 elements to rank 0
+
+[RANK 0 - BEFORE FFT] Checking Y=3 and Y=5 conjugate relationship (all arrays):
+
+[RANK 0] Checking Hermitian pair Y=3 and Y=5, Array=0 (before 2D FFT):
+  ERROR at (X=0,Z=1,Array=0): F(0,3,1)=+4.219592e-02-3.218279e-03i, F(0,5,7)*=-1.848583e-01+1.409913e-02i, err=2.277e-01
+  ERROR at (X=0,Z=2,Array=0): F(0,3,2)=-2.629305e-02+5.939684e-03i, F(0,5,6)*=+6.259594e-02-1.414062e-02i, err=9.113e-02
+  ERROR at (X=0,Z=6,Array=0): F(0,3,6)=+4.401377e-02-1.634947e-02i, F(0,5,2)*=-1.848772e-02+6.867496e-03i, err=6.667e-02
+  ERROR at (X=0,Z=7,Array=0): F(0,3,7)=-3.043530e-01+1.638550e-01i, F(0,5,1)*=+6.947190e-02-3.740169e-02i, err=4.246e-01
+  ERROR at (X=1,Z=1,Array=0): F(1,3,1)=-1.538477e-02+1.564828e-02i, F(7,5,7)*=+8.424153e-02-8.568442e-02i, err=1.421e-01
+  ERROR at (X=1,Z=2,Array=0): F(1,3,2)=+2.100342e-02-2.855552e-02i, F(7,5,6)*=-5.398509e-02+7.339624e-02i, err=1.266e-01
+  ERROR at (X=1,Z=6,Array=0): F(1,3,6)=-7.043578e-02+2.947097e-02i, F(7,5,2)*=+2.740372e-02-1.146597e-02i, err=1.061e-01
+  ERROR at (X=1,Z=7,Array=0): F(1,3,7)=-5.741433e-02-9.898929e-02i, F(7,5,1)*=+1.048540e-02+1.807811e-02i, err=1.353e-01
+  ERROR at (X=2,Z=1,Array=0): F(2,3,1)=+3.936911e-03-1.028946e-03i, F(6,5,7)*=-6.148525e-02+1.606971e-02i, err=6.762e-02
+  ERROR at (X=2,Z=7,Array=0): F(2,3,7)=-9.310150e-02+3.234013e-02i, F(6,5,1)*=+5.961305e-03-2.070744e-03i, err=1.049e-01
+  Array 0: Hermitian symmetry VIOLATED: 16 errors, max error = 4.246e-01
+
+[RANK 0] Checking Hermitian pair Y=3 and Y=5, Array=1 (before 2D FFT):
+  ERROR at (X=1,Z=0,Array=1): F(1,3,0)=+9.613177e-02-9.705531e-02i, F(7,5,0)*=+1.867223e-02-1.353233e-01i, err=8.640e-02
+  ERROR at (X=1,Z=1,Array=1): F(1,3,1)=+1.021859e-01+2.001058e-01i, F(7,5,7)*=+2.018122e-01+9.877309e-02i, err=1.421e-01
+  ERROR at (X=1,Z=2,Array=1): F(1,3,2)=-5.771669e-02-8.172932e-02i, F(7,5,6)*=-9.521095e-02-3.075344e-02i, err=6.328e-02
+  ERROR at (X=1,Z=6,Array=1): F(1,3,6)=-6.242832e-03-8.361386e-02i, F(7,5,2)*=-5.516258e-02-6.314539e-02i, err=5.303e-02
+  ERROR at (X=1,Z=7,Array=1): F(1,3,7)=+2.095510e-01-4.331590e-02i, F(7,5,1)*=+1.416512e-01-1.603833e-01i, err=1.353e-01
+  ERROR at (X=2,Z=0,Array=1): F(2,3,0)=+1.258337e-01-1.034277e-01i, F(6,5,0)*=-4.707418e-02-1.559340e-01i, err=1.807e-01
+  ERROR at (X=2,Z=1,Array=1): F(2,3,1)=+3.977418e-02-1.152319e-01i, F(6,5,7 N=8 Y=3 (x,z)=(2,7): CALLING cgauss (nskip=0, kmag=2.350953e-01)
 [FACTOR-DEBUG] N=8 Y=3 (x,z)=(2,7): fundamental=6.2831853072e-02 rescale=1.0000000000e+00 k=[2,3,-1] factor=1.1368210221e+00
 [RNG-DEBUG] N=8 Y=3 (x,z)=(2,7): k=(2,3,-1) k2=14.000000 | D=(1.0623333018e-02,1.2958404564e-02) F=(-2.9462773442e-02,2.4153656600e-02) G=(-4.4194160162e-02,3.6230484900e-02) H=(1.4731386721e-02,-1.2076828300e-02)
 [SKIP-DEBUG] N=8 Y=3 (x,z)=(3,7): D=0 (k_cutoff: k2=19 >= 16.0), ACCUMULATE nskip++ (total=1)
@@ -1241,8 +1320,8 @@ NOTE: Should be conjugate of primary!)
 [PACK] Rank 0: Packed 128 total elements to send_buffer
        Sending to ranks: 128 elements to rank 0
 [MULTI-BATCH] All batches complete.
-              Generation time: 0.025527 s
-              Communication time: 0.000079 s
+              Generation time: 0.026708 s
+              Communication time: 0.000066 s
 [V11-VERIFY] Rank 0: All cursors match expected totals
 
 [V12-Stage 3] Z-slab streaming from recv_buffer...
@@ -1255,174 +1334,12 @@ NOTE: Should be conjugate of primary!)
 [DEBUG Z=0] Before 1D FFT (after unpack) - Max imag per array: A0=2.524e+00 A1=3.672e+00 
 [DEBUG Z=0] After 1D FFT - Max imag per array: A0=5.855e+00 A1=2.958e+00 
 [Rank 0, Z=0] First Z-slab max values (all Y): A0: re=6.198881e+00 im=5.855490e+00 A1: re=1.401282e+01 im=2.958374e+00
-
-[RANK 0] Z-slab Z=0 (X=[0,8), after 3D FFT):
-  Array 0:
-    Y=0: X0=  2.11+2.14i X1=  5.11+0.50i X2= -3.04+2.22i X3= -2.52-4.86i X4=  4.84+2.96i X5= 12.40+1.73i X6= 11.48-1.23i X7=  8.64+0.15i 
-    Y=1: X0=  1.97+1.92i X1=  6.20+0.35i X2= -3.43+0.35i X3= -0.72-2.62i X4=  2.93+2.72i X5=  8.10+0.64i X6=  6.89-0.47i X7=  1.45-0.26i 
-    Y=2: X0=  1.59+3.05i X1=  5.93+1.40i X2= -2.43-4.68i X3= -1.31+0.24i X4= -3.62-0.55i X5= -5.47+1.00i X6= -1.19+1.50i X7= -9.65+0.44i 
-    Y=3: X0=  1.81+3.22i X1=  4.07-1.18i X2= -3.53-5.76i X3= -2.74+3.72i X4= -4.46-1.08i X5=-11.96+1.44i X6=-10.35+1.41i X7= -9.79+2.85i 
-    Y=4: X0=  2.67+0.67i X1=  4.23-4.26i X2= -4.95-2.23i X3= -3.41+5.82i X4=-11.81-1.59i X5= -9.10-0.62i X6= -0.25-2.64i X7= -4.70+0.84i 
-    Y=5: X0= -0.20-4.43i X1=  3.94+0.26i X2= -3.32+2.51i X3= -2.74+1.66i X4=-12.36-1.33i X5= -7.13-2.60i X6=  6.89-1.52i X7=  0.74-1.14i 
-    Y=6: X0= -0.31-5.86i X1=  2.96+2.36i X2= -3.76+4.68i X3= -1.75-1.19i X4=  5.61-0.82i X5=  3.36-2.11i X6=  6.12+2.37i X7=  1.16-1.43i 
-    Y=7: X0=  2.48-0.70i X1=  4.02+0.57i X2= -3.91+2.89i X3= -2.79-2.76i X4=  8.90-0.31i X5= 12.17+0.52i X6= 12.72+0.59i X7=  3.05-1.45i 
-  Array 1:
-    Y=0: X0=  5.73-0.21i X1=  0.44+0.87i X2= -2.83-0.82i X3= -1.68+0.16i X4=  7.22+1.28i X5= 12.19+0.59i X6= 10.71-1.11i X7=  7.22+2.85i 
-    Y=1: X0=  5.95+3.97i X1=  0.55-2.99i X2= -2.48+0.93i X3=  0.01-1.91i X4=  4.08+2.77i X5=  9.32-0.94i X6=  2.28-0.35i X7=  3.68+1.13i 
-    Y=2: X0=  5.56+3.81i X1=  1.68-3.14i X2= -2.99-0.94i X3= -0.46+0.27i X4= -5.63+1.93i X5= -1.19+0.47i X6= -7.03+0.59i X7= -6.09-0.61i 
-    Y=3: X0=  5.15-1.28i X1=  0.36-2.47i X2= -4.62-0.39i X3= -1.26+4.14i X4= -8.52+0.88i X5=-12.57+1.24i X6=-10.08+1.11i X7= -5.38+1.39i 
-    Y=4: X0=  6.05-3.25i X1= -1.15-2.46i X2= -5.76+1.24i X3= -0.60+4.46i X4=-13.39-0.86i X5= -5.76-1.77i X6= -0.13-1.36i X7= -6.58-0.03i 
-    Y=5: X0=  3.62+0.36i X1= -0.78+2.15i X2= -3.98-0.14i X3= -1.18-2.38i X4=-14.01-1.93i X5=  0.50-2.16i X6=  6.92-0.27i X7= -5.26-2.22i 
-    Y=6: X0=  2.90-0.36i X1= -1.49+4.72i X2= -3.33+0.53i X3= -0.94-4.89i X4=  4.17-2.36i X5=  5.42+0.71i X6=  4.61+1.87i X7=  2.05-2.21i 
-    Y=7: X0=  5.51-3.05i X1= -0.63+3.31i X2= -3.83-0.41i X3= -1.25+0.15i X4= 10.82-1.73i X5= 13.41+1.86i X6=  9.04-0.49i X7=  3.56-0.30i 
-
-
-[RANK 0] Z-slab Z=1 (X=[0,8), after 3D FFT):
-  Array 0:
-    Y=0: X0=  1.19-0.57i X1=  4.98+0.83i X2= -3.79+2.62i X3= -2.78-2.87i X4= 15.26-3.86i X5= 18.62-4.08i X6= 14.44-1.23i X7= 14.51+0.50i 
-    Y=1: X0=  1.15+3.46i X1=  5.68-2.53i X2= -3.36+1.26i X3= -2.03-2.18i X4=  9.95-2.86i X5= 17.32-3.42i X6= 10.99-2.21i X7=  4.43-3.53i 
-    Y=2: X0=  0.46+6.63i X1=  6.69-2.08i X2= -2.40-5.67i X3= -2.88+1.13i X4=  5.53+0.08i X5=  6.04+1.51i X6=  3.30-4.14i X7= -0.42-4.86i 
-    Y=3: X0=  0.81+3.80i X1=  5.72-2.53i X2= -3.45-6.75i X3= -2.59+5.48i X4=  2.77+2.34i X5= -5.60+4.11i X6= -6.23-2.39i X7=  0.58+0.54i 
-    Y=4: X0=  0.92-0.85i X1=  4.65-3.64i X2= -5.95-1.04i X3= -3.11+5.53i X4= -3.81+1.38i X5= -4.95+1.13i X6=  2.32+0.79i X7=  0.18+5.51i 
-    Y=5: X0= -0.31-4.36i X1=  3.99+0.89i X2= -4.53+4.01i X3= -3.83-0.54i X4= -2.08+4.09i X5=  1.01+0.25i X6= 14.38+2.13i X7=  3.31+3.34i 
-    Y=6: X0= -0.38-5.20i X1=  3.53+4.89i X2= -3.22+4.09i X3= -4.04-3.78i X4=  9.75+2.40i X5= 11.60+1.43i X6= 11.49+4.58i X7=  5.80-1.15i 
-    Y=7: X0=  0.53-2.90i X1=  4.47+4.17i X2= -4.03+1.48i X3= -4.36-2.76i X4= 16.09-3.57i X5= 18.58-0.93i X6= 12.41+2.47i X7= 11.75-0.35i 
-  Array 1:
-    Y=0: X0=  4.45-0.37i X1=  1.14+0.94i X2= -6.03-0.08i X3=  0.03-0.49i X4= 19.90-4.27i X5= 14.36-3.36i X6= 14.76-0.72i X7= 13.81-0.33i 
-    Y=1: X0=  5.78+2.94i X1=  0.91-1.86i X2= -5.45-0.05i X3=  0.21-1.03i X4= 16.56-1.36i X5= 15.03-4.06i X6=  4.76-3.02i X7=  6.34-3.58i 
-    Y=2: X0=  6.34+5.05i X1=  2.79-3.67i X2= -6.64-1.99i X3= -0.62+0.61i X4=  6.24+3.44i X5=  6.96-2.23i X6= -2.21-5.67i X7=  3.47-2.95i 
-    Y=3: X0=  5.63+1.05i X1=  2.27-4.44i X2= -7.49+1.25i X3=  0.07+2.15i X4= -1.82+3.79i X5= -7.34+0.77i X6= -2.87-1.89i X7=  3.56+1.94i 
-    Y=4: X0=  4.89-2.53i X1= -0.23-4.11i X2= -8.21+4.83i X3=  0.06+1.81i X4= -5.61-0.56i X5= -3.06+1.47i X6=  4.26+4.27i X7= -1.85+3.63i 
-    Y=5: X0=  3.35-2.14i X1= -0.12+2.21i X2= -6.86+1.04i X3= -1.06-1.11i X4= -2.25+0.99i X5=  8.22+1.76i X6= 11.09+4.22i X7= -0.43+2.85i 
-    Y=6: X0=  2.66-2.15i X1=  0.80+6.84i X2= -6.33-2.76i X3= -1.23-1.93i X4= 11.31+1.39i X5= 12.76+4.12i X6=  7.50+2.11i X7=  7.06-0.36i 
-    Y=7: X0=  3.58-1.85i X1=  1.44+4.09i X2= -7.41-2.24i X3= -0.99+0.00i X4= 19.35-3.41i X5= 15.11+1.53i X6= 11.33+0.69i X7= 13.04-1.21i 
-
-
-[RANK 0] Z-slab Z=2 (X=[0,8), after 3D FFT):
-  Array 0:
-    Y=0: X0=  2.67-0.58i X1=  2.66-0.71i X2= -4.81+3.11i X3= -4.51-1.83i X4= 15.56-0.83i X5= 22.32+2.63i X6= 14.05-0.19i X7= 14.88-0.63i 
-    Y=1: X0=  2.86+5.47i X1=  3.68-4.10i X2= -4.24+0.38i X3= -4.90-1.75i X4= 12.64-3.86i X5= 22.96+0.37i X6=  9.84-2.97i X7=  6.16-3.91i 
-    Y=2: X0=  3.49+8.75i X1=  5.68-4.73i X2= -4.83-6.73i X3= -6.16+2.71i X4= 10.85-4.13i X5= 12.55-3.94i X6=  3.48-5.97i X7=  5.68-3.43i 
-    Y=3: X0=  4.69+3.38i X1=  5.21-3.15i X2= -5.64-6.67i X3= -5.35+6.45i X4=  5.80-2.94i X5= -0.13-5.61i X6=  1.42-3.44i X7= 10.84-2.30i 
-    Y=4: X0=  4.23-3.69i X1=  3.52-0.23i X2= -6.21+0.32i X3= -4.09+3.61i X4=  0.07+0.30i X5=  0.63-1.97i X6=  8.24+2.74i X7=  8.17+1.25i 
-    Y=5: X0=  3.80-5.64i X1=  2.49+3.85i X2= -4.79+4.28i X3= -5.05-2.49i X4=  2.36+2.94i X5=  7.95+2.05i X6= 16.74+4.77i X7=  4.87+2.29i 
-    Y=6: X0=  3.28-4.48i X1=  2.14+5.67i X2= -3.20+3.30i X3= -6.41-4.49i X4=  8.60+4.66i X5= 16.43+3.28i X6= 12.73+3.42i X7=  9.95+2.81i 
-    Y=7: X0=  2.32-3.21i X1=  2.63+3.40i X2= -4.38+2.02i X3= -5.87-2.21i X4= 14.27+3.86i X5= 21.15+3.19i X6= 10.49+1.64i X7= 16.81+3.92i 
-  Array 1:
-    Y=0: X0=  4.98+1.53i X1= -1.60+1.94i X2= -7.53-0.05i X3=  0.16-3.41i X4= 22.85+2.60i X5= 16.88+0.63i X6= 15.65-1.46i X7= 11.43-0.79i 
-    Y=1: X0=  6.58+4.46i X1= -1.17-1.76i X2= -7.36-1.01i X3= -0.65-1.70i X4= 21.57-1.17i X5= 17.88-0.61i X6=  6.07-4.67i X7=  6.09-3.92i 
-    Y=2: X0=  8.21+5.91i X1=  0.44-6.52i X2= -9.57-1.43i X3= -0.89+2.04i X4= 11.96-4.32i X5= 10.52-5.14i X6=  2.11-4.62i X7=  7.97-3.39i 
-    Y=3: X0=  7.40+0.96i X1=  0.57-7.21i X2= -9.77+2.71i X3=  0.70+3.54i X4=  0.42-5.34i X5=  0.64-5.03i X6=  8.55-1.39i X7=  8.32-2.52i 
-    Y=4: X0=  5.04-3.78i X1= -0.63-3.96i X2= -7.98+6.39i X3=  1.01+1.35i X4= -1.26-2.73i X5=  3.94+1.18i X6= 12.90+3.44i X7=  1.53+0.44i 
-    Y=5: X0=  4.13-4.90i X1= -0.66+3.41i X2= -6.93+1.22i X3= -0.08+0.27i X4=  5.63+1.18i X5= 13.05+4.94i X6= 13.03+3.78i X7=  0.21+2.15i 
-    Y=6: X0=  4.18-3.66i X1= -0.10+8.54i X2= -7.33-4.90i X3= -0.95+0.02i X4= 14.58+4.45i X5= 15.09+3.34i X6= 10.69+2.64i X7=  7.35+3.74i 
-    Y=7: X0=  4.30-0.52i X1= -0.63+5.56i X2= -8.34-2.92i X3= -0.64-2.11i X4= 20.50+5.33i X5= 14.86+0.71i X6= 13.70+2.29i X7= 13.66+4.29i 
-
-
-[RANK 0] Z-slab Z=3 (X=[0,8), after 3D FFT):
-  Array 0:
-    Y=0: X0=  4.83+2.09i X1=  5.30-1.70i X2= -3.95+0.74i X3= -6.43-1.13i X4=  8.48+3.32i X5= 12.83+4.71i X6=  4.60+2.06i X7=  6.27-0.50i 
-    Y=1: X0=  4.75+5.19i X1=  6.01-2.27i X2= -4.22-2.36i X3= -6.49-0.55i X4=  8.20-0.01i X5=  9.11+0.22i X6= -1.11+0.43i X7=  3.09+1.45i 
-    Y=2: X0=  4.79+5.36i X1=  5.80-2.34i X2= -4.99-5.05i X3= -6.74+2.03i X4=  5.44-5.34i X5= -1.61-5.66i X6= -4.05+1.53i X7=  0.13+2.59i 
-    Y=3: X0=  5.45+0.87i X1=  3.69-1.52i X2= -5.11-2.68i X3= -7.18+3.32i X4=  7.43-7.31i X5= -6.56-7.27i X6= -5.07+1.84i X7=  4.96-0.54i 
-    Y=4: X0=  6.63-3.99i X1=  3.37-0.03i X2= -5.41+1.95i X3= -6.22+2.07i X4=  3.18-0.50i X5= -0.77-2.70i X6=  1.36-1.92i X7=  4.43-1.84i 
-    Y=5: X0=  5.68-4.63i X1=  3.67+4.28i X2= -3.95+2.83i X3= -7.15-2.48i X4=  1.25+1.07i X5=  3.13+1.93i X6=  8.53-2.36i X7=  0.42-1.66i 
-    Y=6: X0=  5.67-3.46i X1=  3.33+4.07i X2= -3.04+2.35i X3= -7.62-2.96i X4= 10.75+2.51i X5=  9.55+3.66i X6=  3.61-1.68i X7=  7.91-0.26i 
-    Y=7: X0=  6.03-1.43i X1=  4.43-0.49i X2= -4.12+2.21i X3= -6.19-0.29i X4= 10.98+6.25i X5= 14.31+5.12i X6=  3.17+0.08i X7= 10.27+0.75i 
-  Array 1:
-    Y=0: X0=  7.94+3.61i X1= -2.59-0.10i X2= -4.99-0.94i X3= -0.61-2.57i X4= 11.70+4.33i X5=  9.68+4.21i X6=  5.24+0.57i X7=  5.55+0.49i 
-    Y=1: X0=  8.46+6.54i X1= -2.14-3.58i X2= -5.32-0.49i X3= -0.95-2.47i X4=  9.35-1.63i X5=  5.27+1.86i X6= -0.70+0.27i X7=  5.36+1.59i 
-    Y=2: X0=  8.35+6.08i X1= -2.45-5.45i X2= -6.10+0.18i X3= -0.96-0.81i X4=  0.63-8.26i X5= -1.72-1.26i X6= -2.54+2.91i X7=  3.54-0.26i 
-    Y=3: X0=  6.82-0.53i X1= -3.32-3.25i X2= -5.83+2.01i X3= -0.82+1.76i X4= -2.13-8.31i X5= -6.15-3.17i X6=  1.83+2.38i X7=  7.22-4.18i 
-    Y=4: X0=  6.36-5.95i X1= -3.37-1.47i X2= -4.70+5.18i X3=  0.09+2.24i X4= -1.05+0.03i X5=  0.92-3.73i X6=  5.27-1.84i X7=  3.05-1.41i 
-    Y=5: X0=  5.75-5.19i X1= -2.09+3.34i X2= -4.28+0.37i X3= -1.13+1.48i X4=  1.55+3.09i X5=  7.01-0.75i X6=  5.28-2.95i X7= -0.50-0.41i 
-    Y=6: X0=  6.29-3.74i X1= -2.41+7.02i X2= -4.64-4.42i X3= -0.90+1.15i X4= 12.01+3.91i X5=  5.38+0.78i X6=  4.70-1.63i X7=  9.74+1.18i 
-    Y=7: X0=  7.89-0.82i X1= -3.26+3.48i X2= -5.01-1.89i X3=  0.53-0.76i X4= 14.54+6.85i X5=  8.12+2.06i X6=  6.27+0.29i X7=  9.80+3.00i 
-
-
-[RANK 0] Z-slab Z=4 (X=[0,8), after 3D FFT):
-  Array 0:
-    Y=0: X0=  4.54+3.81i X1=  4.54-2.18i X2= -2.95+1.27i X3= -2.87-2.91i X4=  0.65+4.79i X5= -2.00-2.22i X6= -3.60-1.31i X7= -0.98-0.11i 
-    Y=1: X0=  4.63+2.69i X1=  4.46-0.61i X2= -3.74-1.16i X3= -1.58-0.93i X4= -0.89+1.18i X5= -6.56-5.80i X6= -9.33+0.44i X7= -3.91+0.44i 
-    Y=2: X0=  3.44+0.91i X1=  4.46+2.25i X2= -3.25-4.01i X3= -1.87+0.85i X4= -5.38-3.23i X5=-12.65-5.04i X6= -9.90+3.45i X7=-10.58-0.50i 
-    Y=3: X0=  3.09-0.48i X1=  3.15+1.57i X2= -3.24-2.98i X3= -3.19+1.89i X4=  5.41-4.74i X5=-14.38+0.82i X6=-18.18+3.41i X7= -5.53-0.97i 
-    Y=4: X0=  6.34-2.19i X1=  2.97-3.27i X2= -6.33+1.09i X3= -2.18+4.37i X4=  3.05-1.65i X5= -9.05+4.39i X6=-11.58-0.45i X7= -3.73+0.01i 
-    Y=5: X0=  4.70-2.64i X1=  3.27+0.87i X2= -4.90+1.95i X3= -3.10-0.18i X4= -5.50-0.19i X5= -7.41+4.77i X6=  0.91-1.30i X7= -8.17+1.21i 
-    Y=6: X0=  3.90-2.52i X1=  2.93+3.19i X2= -3.39+1.64i X3= -4.15-2.31i X4=  8.69+0.10i X5= -2.39+2.87i X6= -5.01-1.69i X7= -1.09+0.61i 
-    Y=7: X0=  5.80+0.42i X1=  4.02-1.83i X2= -4.04+2.19i X3= -3.20-0.77i X4=  7.98+3.74i X5=  2.25+0.21i X6= -3.49-2.55i X7=  1.22-0.68i 
-  Array 1:
-    Y=0: X0=  4.18+0.84i X1= -2.06-0.36i X2= -1.00-1.42i X3=  2.14+0.94i X4= -0.02+2.34i X5= -2.92-3.06i X6= -3.92+1.20i X7=  0.92+0.67i 
-    Y=1: X0=  4.05+3.53i X1= -2.33-1.29i X2= -1.53+0.03i X3=  3.58-2.26i X4= -4.28-2.53i X5= -7.60-3.59i X6=-10.11+1.96i X7=  1.30+0.42i 
-    Y=2: X0=  3.31+5.38i X1= -1.78-0.35i X2= -1.98-1.08i X3=  3.23-3.95i X4= -9.63-6.00i X5=-11.04+0.25i X6=-12.03+1.47i X7= -5.81-1.05i 
-    Y=3: X0=  2.53+1.75i X1= -2.44+0.72i X2= -2.33-0.51i X3=  2.07-1.96i X4= -3.39-3.03i X5=-19.49+4.03i X6=-12.39-0.43i X7=  2.61-2.04i 
-    Y=4: X0=  4.35-4.27i X1= -4.80-2.53i X2= -3.01+5.61i X3=  4.26+1.18i X4= -2.84+2.53i X5=-12.46+2.17i X6= -7.19-2.31i X7=  1.17-0.09i 
-    Y=5: X0=  2.93-2.77i X1= -3.42-0.13i X2= -2.11+1.93i X3=  2.56+0.98i X4= -8.02+3.43i X5= -2.52+1.04i X6= -3.19-1.00i X7= -6.44+1.01i 
-    Y=6: X0=  1.97-1.95i X1= -2.66+3.23i X2= -1.85-3.11i X3=  1.83+1.83i X4=  5.05+1.13i X5= -6.06+0.64i X6= -4.59-0.36i X7=  5.80+0.47i 
-    Y=7: X0=  4.30-2.51i X1= -3.11+0.71i X2= -1.87-1.45i X3=  3.26+3.25i X4=  8.26+2.12i X5= -2.86-1.48i X6= -2.03-0.53i X7=  4.60+0.61i 
-
-
-[RANK 0] Z-slab Z=5 (X=[0,8), after 3D FFT):
-  Array 0:
-    Y=0: X0=  7.24+5.31i X1= -0.09-6.09i X2= -2.94+4.19i X3= -0.54-3.41i X4=-11.59+1.98i X5= -5.22-2.77i X6= -2.09-3.13i X7= -2.73+0.87i 
-    Y=1: X0=  5.73+3.57i X1= -0.88-2.41i X2= -2.68+1.60i X3= -0.24-2.76i X4=-14.67+0.14i X5=-10.38-1.29i X6= -7.06-0.06i X7= -6.05-2.03i 
-    Y=2: X0=  4.18-0.29i X1= -0.98+3.85i X2= -1.78-3.75i X3= -0.80+0.19i X4=-16.34+1.90i X5=-11.72-1.28i X6= -9.66+0.20i X7=-10.17-1.98i 
-    Y=3: X0=  3.42-1.36i X1= -0.31+4.61i X2= -1.95-5.56i X3= -1.02+2.31i X4= -6.93+0.73i X5=-11.73+0.07i X6=-18.21+0.67i X7= -4.64-0.08i 
-    Y=4: X0=  5.76-1.43i X1=  0.43-1.18i X2= -4.54-1.60i X3=  0.45+4.22i X4= -6.56-4.41i X5= -9.26+2.23i X6=-11.93+4.93i X7= -3.45-0.43i 
-    Y=5: X0=  4.94-2.01i X1=  0.85+1.24i X2= -3.01+0.55i X3= -0.17+0.22i X4=-13.25-2.54i X5=-10.20+3.86i X6= -2.17+3.18i X7= -7.32-0.35i 
-    Y=6: X0=  4.65-3.59i X1= -0.24+3.42i X2= -2.39+1.17i X3= -1.04-1.00i X4=  0.50+0.53i X5= -8.95+1.82i X6= -8.78-2.00i X7= -1.47+1.54i 
-    Y=7: X0=  7.74-0.20i X1= -0.55-3.44i X2= -4.01+3.41i X3= -0.50+0.23i X4=  0.85+1.68i X5= -2.83-2.64i X6= -5.02-3.78i X7=  0.20+2.45i 
-  Array 1:
-    Y=0: X0=  3.27-4.23i X1= -2.73-0.17i X2= -0.04+0.63i X3=  3.16+3.77i X4= -6.19+0.86i X5= -4.94-4.15i X6= -2.31-0.99i X7= -8.19+1.22i 
-    Y=1: X0=  1.83-0.29i X1= -2.82+1.75i X2= -0.52-1.21i X3=  3.43-0.24i X4=-13.90+0.61i X5= -7.59-1.57i X6= -9.59-0.19i X7= -7.07-2.09i 
-    Y=2: X0=  0.06+3.05i X1= -1.38+3.51i X2= -1.62-3.91i X3=  3.56-2.65i X4=-14.90+0.47i X5= -9.26-0.78i X6=-12.40-0.34i X7=-11.33-0.50i 
-    Y=3: X0= -0.17+3.68i X1= -0.56+1.71i X2= -2.26-2.18i X3=  3.13-3.21i X4= -6.83-0.28i X5=-18.34+0.93i X6=-11.61+0.54i X7= -4.74+0.19i 
-    Y=4: X0=  2.01+1.18i X1= -2.57-3.42i X2= -2.26+4.20i X3=  4.91-1.96i X4= -5.88-2.09i X5=-14.47+4.78i X6= -5.74+2.83i X7= -5.10-3.19i 
-    Y=5: X0=  1.14+2.34i X1= -1.63-2.49i X2= -0.66+1.55i X3=  3.76-1.40i X4=-12.84+0.24i X5= -6.41+4.13i X6= -3.09+1.05i X7=-10.60-1.27i 
-    Y=6: X0= -0.52-0.01i X1= -1.36+0.08i X2= -0.49-0.91i X3=  3.35+0.84i X4= -1.89+0.76i X5=-11.75+0.16i X6= -5.23-1.50i X7=  0.17+2.48i 
-    Y=7: X0=  2.02-5.73i X1= -3.03-0.96i X2= -0.96+1.84i X3=  4.66+4.85i X4=  4.71-0.57i X5= -8.08-3.49i X6= -1.38-1.40i X7= -2.04+3.16i 
-
-
-[RANK 0] Z-slab Z=6 (X=[0,8), after 3D FFT):
-  Array 0:
-    Y=0: X0=  6.20+4.25i X1= -2.04-5.22i X2= -1.90+4.18i X3= -0.04-3.21i X4=-11.28-6.92i X5=  0.68-2.14i X6=  1.44+2.73i X7= -2.89+0.59i 
-    Y=1: X0=  4.83+4.15i X1= -1.30-1.75i X2= -1.23+1.13i X3= -0.51-3.54i X4=-10.65-0.03i X5= -4.27+4.79i X6= -3.95+3.00i X7= -6.28+3.74i 
-    Y=2: X0=  5.39+1.17i X1= -1.67+2.45i X2= -1.12-3.56i X3= -1.06-0.06i X4=-12.59+7.92i X5=-11.01+7.98i X6=-10.59+1.02i X7= -9.86+3.50i 
-    Y=3: X0=  4.73-0.20i X1= -2.27+3.03i X2= -1.81-4.17i X3= -0.86+1.35i X4=-13.04+8.75i X5=-12.29+3.35i X6=-13.68-1.38i X7= -5.76+0.42i 
-    Y=4: X0=  4.61-0.89i X1= -1.73+0.46i X2= -1.89-0.64i X3=  0.06+1.07i X4=-11.97+2.94i X5= -7.69-1.80i X6= -7.69+0.34i X7= -5.11-2.10i 
-    Y=5: X0=  4.33-2.29i X1= -0.34+1.80i X2= -1.17+0.07i X3= -0.92+0.43i X4=-12.36-1.42i X5= -7.77-4.22i X6= -6.05-1.94i X7= -6.60-2.37i 
-    Y=6: X0=  4.67-4.53i X1= -1.01+2.32i X2= -2.16+0.02i X3= -1.00+2.19i X4= -1.24-3.94i X5= -9.02-4.04i X6= -7.72-4.09i X7=  0.12-1.99i 
-    Y=7: X0=  6.97-1.66i X1= -2.54-3.08i X2= -2.86+2.97i X3=  0.25+1.77i X4= -1.03-7.29i X5= -2.71-3.92i X6= -0.88+0.32i X7=  0.90-1.79i 
-  Array 1:
-    Y=0: X0=  4.97-3.88i X1= -2.97+1.40i X2=  1.63+1.56i X3= -1.42+0.92i X4= -4.63-6.22i X5=  1.67+1.85i X6= -0.16+1.36i X7= -8.93-2.73i 
-    Y=1: X0=  4.29+1.28i X1= -2.13+1.06i X2=  1.48-1.55i X3= -1.85-0.80i X4=-10.14+0.92i X5= -1.24+5.14i X6= -7.65+3.06i X7= -6.13+2.36i 
-    Y=2: X0=  3.45+1.56i X1= -1.52+1.13i X2=  0.57-3.53i X3= -0.97+0.84i X4=-13.84+8.38i X5= -8.25+4.43i X6=-12.30+2.57i X7= -9.65+5.05i 
-    Y=3: X0=  2.54+0.63i X1= -1.77+0.23i X2=  0.34-1.43i X3= -1.31+0.57i X4=-12.56+7.48i X5=-13.94-0.23i X6= -9.18+0.71i X7= -9.10+3.18i 
-    Y=4: X0=  3.05+1.21i X1= -2.31-1.38i X2=  1.35+1.28i X3= -1.05-1.11i X4= -9.98+1.07i X5= -9.08-1.58i X6= -5.24+0.22i X7= -8.16-0.32i 
-    Y=5: X0=  3.32+3.90i X1= -1.41-1.66i X2=  1.25-0.61i X3= -1.26-1.63i X4=-12.11-2.68i X5= -5.63-3.82i X6= -6.79-2.51i X7= -8.24-0.94i 
-    Y=6: X0=  2.52+1.11i X1= -1.65-1.15i X2=  0.19+0.69i X3= -0.55-0.65i X4= -4.61-3.22i X5= -8.94-4.69i X6= -4.09-4.16i X7= -0.22-2.00i 
-    Y=7: X0=  3.84-5.81i X1= -3.15+0.37i X2=  0.68+3.58i X3=  0.44+1.86i X4=  1.75-5.73i X5= -3.79-1.09i X6=  1.82-1.26i X7= -3.50-4.60i 
-
-
-[RANK 0] Z-slab Z=7 (X=[0,8), after 3D FFT):
-  Array 0:
-    Y=0: X0=  2.25+2.80i X1=  0.08-0.65i X2= -2.01+3.24i X3= -0.19-5.39i X4= -2.39-1.44i X5=  7.17+2.14i X6=  6.41+2.31i X7=  1.60-0.87i 
-    Y=1: X0=  2.66+2.02i X1=  2.23+1.11i X2= -2.37+0.21i X3=  1.05-3.35i X4=  0.54+2.73i X5=  4.19+4.49i X6=  0.62+1.85i X7= -4.05+4.10i 
-    Y=2: X0=  4.49+2.17i X1=  2.89+1.94i X2= -2.45-4.50i X3=  0.03+0.39i X4= -5.37+3.36i X5= -9.29+5.43i X6= -7.80+2.40i X7=-13.96+4.25i 
-    Y=3: X0=  4.65+2.60i X1=  1.05-0.29i X2= -3.71-4.60i X3= -1.35+2.29i X4= -9.57+4.24i X5=-14.86+3.09i X6=-11.29-0.13i X7=-11.13+0.08i 
-    Y=4: X0=  4.56+0.17i X1=  0.53-2.45i X2= -3.48-0.77i X3= -0.75+3.06i X4=-13.48+3.52i X5=-10.23-0.66i X6= -3.03-3.80i X7= -6.54-3.24i 
-    Y=5: X0=  2.32-3.99i X1=  0.85+0.37i X2= -2.69+1.42i X3= -0.66+2.20i X4=-13.76-2.62i X5= -8.29-6.03i X6= -2.25-2.95i X7= -5.57-1.33i 
-    Y=6: X0=  1.60-5.14i X1=  0.40+1.16i X2= -3.87+2.03i X3= -0.61+1.95i X4=  0.65-5.44i X5= -3.82-6.91i X6= -0.21-0.91i X7= -2.10-0.14i 
-    Y=7: X0=  3.26-0.63i X1= -0.23-1.19i X2= -3.04+2.96i X3= -0.56-1.15i X4=  2.20-4.35i X5=  2.80-1.54i X6=  8.29+1.23i X7= -0.25-2.85i 
-  Array 1:
-    Y=0: X0=  4.20-0.73i X1= -2.02+3.18i X2=  1.33-0.34i X3= -3.39-2.11i X4=  0.02-0.93i X5=  8.72+3.30i X6=  4.58+1.14i X7= -0.52-1.38i 
-    Y=1: X0=  4.80+4.06i X1= -1.03-1.29i X2=  1.40+0.15i X3= -1.60-2.92i X4= -0.77+2.38i X5=  5.65+3.77i X6= -3.88+2.94i X7=  0.31+4.08i 
-    Y=2: X0=  5.77+2.48i X1= -0.14-3.27i X2=  0.39-1.27i X3= -1.06+2.06i X4= -9.11+4.36i X5= -5.94+4.27i X6=-12.10+3.10i X7= -9.26+3.71i 
-    Y=3: X0=  5.32-2.14i X1= -1.67-2.75i X2= -0.81-0.69i X3= -2.19+5.59i X4=-13.28+4.81i X5=-13.54+1.46i X6=-10.46-1.04i X7= -9.58+2.04i 
-    Y=4: X0=  5.24-2.78i X1= -2.72-1.32i X2= -0.22+0.30i X3= -1.44+3.80i X4=-14.93+2.62i X5= -6.75-2.52i X6= -3.44-5.26i X7= -8.15+0.97i 
-    Y=5: X0=  3.76+1.58i X1= -2.44+0.70i X2=  0.03-0.55i X3= -1.53-1.72i X4=-14.96-4.31i X5= -3.42-5.14i X6= -3.30-2.32i X7= -8.19-1.17i 
-    Y=6: X0=  3.15+1.03i X1= -2.94+1.40i X2= -0.86+1.31i X3= -1.83-3.75i X4= -2.25-6.06i X5= -0.88-5.06i X6= -0.35+1.02i X7= -1.99-3.30i 
-    Y=7: X0=  4.48-3.49i X1= -2.67+3.34i X2=  0.02+1.10i X3= -2.40-0.95i X4=  2.74-2.88i X5=  6.46-0.09i X6=  6.32+0.42i X7= -2.48-4.96i 
-
+[OUTPUT-DEBUG] z=0: param_file=0x7ffdddef9079, params=0x61b3b60, PARTICLE_OUTPUT_MODE=1
+[OUTPUT-DEBUG] z=0: Mode 1 (Write .bin files for re-assembly)
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x618a7c0 (tracked: 1/1024)
+[DEBUG] Rank 0: Mode 1 - Wrote rank_0/i0_slab_N8.bin (0.00 MB)
+[DEBUG] Rank 0: Mode 1 - Wrote rank_0/i1_slab_N8.bin (0.00 MB)
+[DEBUG] Rank 0: Mode 1 - Wrote rank_0/i2_slab_N8.bin (0.00 MB)
 
 ========== VERIFICATION: REAL-SPACE AFTER 3D FFT ==========
 Array 0: Max real=9.773238e+00, Max imag=8.750823e+00, Ratio=8.953863e-01 [NOT REAL, 89.54%]
@@ -1430,14 +1347,13 @@ Array 1: Max real=2.296442e+01, Max imag=8.751968e+00, Ratio=3.811100e-01 [NOT R
 RESULT: Some arrays have significant imaginary components
 ============================================================
 
-[Stage 3] Streaming complete. Time: 0.027963 s
+[Stage 3] Streaming complete. Time: 0.103590 s
           (Includes unpacking, FFT, and I/O for all Z-slabs)
           Total files written: 8 (across all ranks)
           Total data written: 0.000 GB
           Files per rank: ~8 (z_count per rank, for 1 ranks)
           Each file contains one Z-slab: x_count X x 2 arrays x 8 Y-values
-       [DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x5b67e30 (tracked: 1/1024)
-   Typical file size: ~0.00 MB (varies by rank's X-extent)
+          Typical file size: ~0.00 MB (varies by rank's X-extent)
           File naming: rank_<rank>/z<z>_slab_N8.bin
           File format: Binary [Array][Y][X] (Zeldovich AZYX order, fftw_complex = 16 bytes)
           3D FFT COMPLETE (2D XZ + 1D Y)
@@ -1446,13 +1362,13 @@ RESULT: Some arrays have significant imaginary components
 ====================================================================================
 TIMING SUMMARY (v11 - Persistent Recv Buffer + Streaming)
 ====================================================================================
-Stage 1 (Y-slice generation + 2D FFT): 0.025527 s
+Stage 1 (Y-slice generation + 2D FFT): 0.026708 s
 Stage 2 (Metadata exchange):            0.000000 s
-Stage 3 (Communication: Alltoallv):    0.000079 s
-Stage 3 (Streaming: Unpack+FFT+Write):  0.027963 s
+Stage 3 (Communication: Alltoallv):    0.000066 s
+Stage 3 (Streaming: Unpack+FFT+Write):  0.103590 s
 ------------------------------------------------------------------------------------
-Total 3D FFT time (Gen + Comm + FFT):   0.025606 s
-Total time (including all stages):      0.025606 s
+Total 3D FFT time (Gen + Comm + FFT):   0.026774 s
+Total time (including all stages):      0.026774 s
 
 Note: In v11, persistent recv_buffer eliminates per-batch allocation
       Unpacking, 1D FFT, and I/O are combined in streaming stage
@@ -1466,17 +1382,21 @@ Checking for matrix dump files in hermitian_output/...
 Warning: Matrix dump files not found in hermitian_output/
 
 Checking for .bin files in hermitian_output/rank_0/...
-No .bin files found (executable was compiled with SKIP_FILE_WRITE=1)
+Found 8 .bin files in hermitian_output/rank_0/
+-rw-r--r-- 1 helenshao users 2.0K Jan  4 04:27 hermitian_output/rank_0/i0_slab_N8.bin
+-rw-r--r-- 1 helenshao users 2.0K Jan  4 04:27 hermitian_output/rank_0/i1_slab_N8.bin
+-rw-r--r-- 1 helenshao users 2.0K Jan  4 04:27 hermitian_output/rank_0/i2_slab_N8.bin
+-rw-r--r-- 1 helenshao users 2.0K Jan  4 04:27 hermitian_output/rank_0/i3_slab_N8.bin
+-rw-r--r-- 1 helenshao users 2.0K Jan  4 04:27 hermitian_output/rank_0/i4_slab_N8.bin
 
-To generate .bin files, recompile with:
-  make CFLAGS="-DUSE_DOUBLE_PRECISION -DSKIP_FILE_WRITE=0"
-
-Then .bin files will be written to: hermitian_output/rank_0/i*_slab_N8.bin
+NOTE: .bin files are saved to: hermitian_output/rank_0/i*_slab_N8.bin
+      (relative to the working directory when the executable runs)
 
 ==========================================
 hermitian_3d_matrix trace completed
 Log saved to: hermitian_output/hermitian_N8_trace.log
 Matrix dumps saved to: hermitian_output/
+.bin files saved to: hermitian_output/rank_0/
 ==========================================
 
 Job completed!

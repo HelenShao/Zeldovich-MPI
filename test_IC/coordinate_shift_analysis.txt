@@ -1,0 +1,53 @@
+====================================================================================================
+COORDINATE SHIFT PATTERN - SUMMARY
+====================================================================================================
+
+KEY FINDINGS:
+1. Z and Y coordinates match exactly (no shift)
+2. Only X coordinate has shifts
+3. Pattern is consistent across ALL Z and Y values
+
+SHIFT PATTERNS:
+
+displ[X] shifts (X dimension only):
+  - Most common: shift = -1 (12 occurrences)
+  - Also common: shift = 0, -2, -3, -4
+  - Pattern: displ[X] at particle (Z,Y,X) matches Array0/1 Im at matrix (Z,Y,X-1 to X)
+
+displ[Y] shifts (X dimension only):
+  - Most common: shift = +3 (10 occurrences)
+  - Also common: shift = +4, +2, +1, 0
+  - Pattern: displ[Y] at particle (Z,Y,X) matches Array0/1 Re at matrix (Z,Y,X+1 to X+4)
+
+displ[Z] shifts (X dimension only):
+  - Most common: shift = +3 (11 occurrences)
+  - Also common: shift = +2, +1, +4, 0
+  - Pattern: displ[Z] at particle (Z,Y,X) matches Array0/1 Im at matrix (Z,Y,X+1 to X+4)
+
+====================================================================================================
+SPECIFIC EXAMPLE: Particle (Z=0, Y=0, X=2)
+====================================================================================================
+
+Particle coordinate: (i=0, j=0, k=2)
+  displ[X] = 0.498752
+  displ[Y] = 12.395399
+  displ[Z] = 1.732009
+
+Matrix matches:
+  displ[X] matches Array0 Im at (Z=0, Y=0, X=1) - shift = -1
+  displ[Y] matches Array0 Re at (Z=0, Y=0, X=5) - shift = +3
+  displ[Z] matches Array0 Im at (Z=0, Y=0, X=5) - shift = +3
+
+✓ This confirms the coordinate shift pattern!
+
+====================================================================================================
+CONSISTENCY CHECK:
+====================================================================================================
+
+The pattern holds for:
+  - All Z values: 0, 2, 4, 6
+  - All Y values: 0, 1
+  - All X values: 0-7
+
+This suggests a systematic coordinate system or indexing difference
+between the matrix dump location and the particle writing location.

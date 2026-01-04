@@ -6,6 +6,8 @@
 #include "utils/decomposition.h"
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdint.h>  // For uint64_t
+#include <stdio.h>   // For fprintf, stderr
 
 // ====================================================================================
 // Maps from rank's local batch idx to the global y pair idx, based on rank division
@@ -113,11 +115,12 @@ void calculate_batch_send_recv_counts(
 {
     (void)rank;  // Unused but kept for API consistency
     
-    // Allocate arrays
-    int *sendcounts = (int*)malloc(sizeof(int) * num_ranks);
-    int *sdispls = (int*)malloc(sizeof(int) * num_ranks);
-    int *recvcounts = (int*)malloc(sizeof(int) * num_ranks);
-    int *rdispls = (int*)malloc(sizeof(int) * num_ranks);
+    size_t array_size = sizeof(int) * (size_t)num_ranks;
+    
+    int *sendcounts = (int*)malloc(array_size);
+    int *sdispls = (int*)malloc(array_size);
+    int *recvcounts = (int*)malloc(array_size);
+    int *rdispls = (int*)malloc(array_size);
     
     // SEND COUNTS: I send my batch's Y-slices to all ranks (each gets their (X,Z) region)
     int total_send = 0;

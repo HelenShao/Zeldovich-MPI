@@ -40,6 +40,8 @@
 #include <fftw3.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <execinfo.h>  // For backtrace
+#include <unistd.h>    // For getpid
 
 // Include PCG RNG and STimer
 #include "pcg-rng/pcg_random.hpp"
@@ -908,23 +910,25 @@ int main(int argc, char **argv)
         // Allocate buffer for maximum 2 slices (conjugate pair)
         int max_slices_per_batch = 2;
         int64_t slice_buffer_size = (int64_t)max_slices_per_batch * narray * N * N;
+        size_t requested_bytes = (size_t)slice_buffer_size * sizeof(fftw_complex_t);
         
-        if (posix_memalign((void**)&local_y_slices, ALIGN_BYTES,
-                           sizeof(fftw_complex_t) * slice_buffer_size) != 0) {
+        if (posix_memalign((void**)&local_y_slices, ALIGN_BYTES, requested_bytes) != 0) {
             fprintf(stderr, "Rank %d: posix_memalign failed for local_y_slices\n", rank);
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
         
         if (rank == 0 && DEBUG_PRINTS) {
-            size_t slice_bytes = (size_t)slice_buffer_size * sizeof(fftw_complex_t);
             printf("[MEMORY] Allocated local_y_slices (reusable): %zu bytes (%.2f GB)\n",
-                   slice_bytes, slice_bytes / (1024.0 * 1024.0 * 1024.0));
+                   requested_bytes, requested_bytes / (1024.0 * 1024.0 * 1024.0));
         }
         
         // ========================================================================
         // VERIFY MACRO INDEXING
         // ========================================================================
-        #if DEBUG_PRINTS
+        // TEMPORARILY DISABLED: This code was causing canary corruption
+        // The Y_SLICE macro test writes to indices that may be out of bounds
+        // for small N values, corrupting the canaries.
+        #if 0  // DEBUG_PRINTS && 0  // Disabled due to canary corruption
         // Test macro indexing (add after allocation, before generation)
         if (rank < 3) {  // Only test on first few ranks to reduce output
             // Fill test pattern for 2 slices (max_slices_per_batch)
@@ -1023,6 +1027,7 @@ int main(int argc, char **argv)
                 params          // v15.2: zeldovich-PLT Parameters handle (NULL = use legacy)
             );
             
+            
             // DEBUG: Check for Inf/NaN values in generated Y-slices
             // Known problematic locations: x=126,127,0 and z values in conjugate Y-slices
             if (rank == 0) {
@@ -1086,10 +1091,27 @@ int main(int argc, char **argv)
             }
         }
         
+        // DEBUG: Print backtrace before calculate_batch_send_recv_counts to catch crash location
+        // TEMPORARILY COMMENTED OUT to test if it's causing malloc corruption
+        #if 0  // DISABLED for debugging
+        if (rank == 0 && batch_idx == 0) {
+            void *array[20];
+            size_t size = backtrace(array, 20);
+            char **strings = backtrace_symbols(array, size);
+            fprintf(stderr, "[Rank %d] Backtrace before calculate_batch_send_recv_counts (%zu frames):\n", rank, size);
+            for (size_t i = 0; i < size; i++) {
+                fprintf(stderr, "  %zu: %s\n", i, strings[i]);
+            }
+            free(strings);
+            fflush(stderr);
+        }
+        #endif
+        
         // ===== BATCH STEP 3: Calculate send/recv counts (V11 MODIFIED) =====
         int *sendcounts_batch, *sdispls_batch, *recvcounts_batch, *rdispls_batch;
         int total_send_batch, total_recv_batch;
         
+        fprintf(stderr, "[DIAG] Rank %d: About to call calculate_batch_send_recv_counts (batch_idx=%d)\n", rank, batch_idx);
         calculate_batch_send_recv_counts(
             rank, num_ranks, N, narray, batch_idx,
             my_batch_slice_count, my_pencils,
@@ -1097,6 +1119,8 @@ int main(int argc, char **argv)
             &recvcounts_batch, &rdispls_batch,
             &total_send_batch, &total_recv_batch
         );
+        fprintf(stderr, "[DIAG] Rank %d: calculate_batch_send_recv_counts returned: total_send=%d, total_recv=%d\n",
+                rank, total_send_batch, total_recv_batch);
         
         // V11: Adjust rdispls to point into persistent recv_buffer
         // CRITICAL: Check for integer overflow! rdispls_batch is int*, but recv_displs_src is int64_t*
@@ -1126,8 +1150,9 @@ int main(int argc, char **argv)
         // V11: recv_buffer_batch REMOVED - receiving directly into persistent recv_buffer
         
         if (total_send_batch > 0) {
-            if (posix_memalign((void**)&send_buffer_batch, ALIGN_BYTES,
-                               sizeof(fftw_complex_t) * total_send_batch) != 0) {
+            size_t requested_bytes = sizeof(fftw_complex_t) * (size_t)total_send_batch;
+            
+            if (posix_memalign((void**)&send_buffer_batch, ALIGN_BYTES, requested_bytes) != 0) {
                 fprintf(stderr, "Rank %d: posix_memalign failed for send_buffer_batch\n", rank);
                 MPI_Abort(MPI_COMM_WORLD, 1);
             }
@@ -1533,12 +1558,16 @@ int main(int argc, char **argv)
             if (N <= 16) {  // Only for small N
                 char dump_filename[256];
                 snprintf(dump_filename, sizeof(dump_filename), "matrix_after_fft.txt");
-                FILE *dump_fp = fopen(dump_filename, "a");
+                // Clear file on first Z-slab, first rank (overwrite mode)
+                // Append for all subsequent writes
+                const char *mode = (z == my_extended_bounds.core.z_start && rank == 0) ? "w" : "a";
+                FILE *dump_fp = fopen(dump_filename, mode);
                 if (dump_fp) {
                     // Write header on first Z-slab, first rank
                     if (z == my_extended_bounds.core.z_start && rank == 0) {
                         fprintf(dump_fp, "# Matrix values after FFT (Real space)\n");
                         fprintf(dump_fp, "# Format: Z=<z> Y=<y> X=<x> Array=<array_idx> Re=<real> Im=<imag>\n");
+                        fprintf(dump_fp, "# Layout: [array][Y][X] format (matches .bin file format)\n");
                     }
                     // Get x_start (same logic as PRINT_Z_SLABS block)
 #if USE_X_PADDING
@@ -1546,14 +1575,20 @@ int main(int argc, char **argv)
 #else
                     int x_start = my_extended_bounds.core.x_start;
 #endif
-                    // Dump this Z-slab
-                    for (int y = 0; y < N; y++) {
-                        for (int x_idx = 0; x_idx < x_count; x_idx++) {
-                            int x_global = x_start + x_idx;
-                            for (int array_idx = 0; array_idx < narray; array_idx++) {
-                                int64_t idx = (int64_t)y + (int64_t)N * ((int64_t)array_idx + (int64_t)narray * (int64_t)x_idx);
+                    // Dump this Z-slab in [array][Y][X] format to match .bin files and particle output
+                    // Loop order: for array_idx, for y (Y), for x_idx (X)
+                    // This matches how .bin files are written (line 1718-1730)
+                    for (int array_idx = 0; array_idx < narray; array_idx++) {
+                        for (int y = 0; y < N; y++) {
+                            for (int x_idx = 0; x_idx < x_count; x_idx++) {
+                                int x_global = x_start + x_idx;
+                                // Access using ZSLAB macro: [array][x][y] format
+                                // ZSLAB(array_idx, x_idx, y, N, narray, x_count) returns fftw_complex_t (array)
+                                // Use direct indexing like other code does (e.g., line 1516-1517)
+                                double re = ZSLAB(array_idx, x_idx, y, N, narray, x_count)[0];
+                                double im = ZSLAB(array_idx, x_idx, y, N, narray, x_count)[1];
                                 fprintf(dump_fp, "Z=%d Y=%d X=%d Array=%d Re=%.15e Im=%.15e\n",
-                                        z, y, x_global, array_idx, local_z_slab[idx][0], local_z_slab[idx][1]);
+                                        z, y, x_global, array_idx, re, im);
                             }
                         }
                     }

@@ -5,7 +5,7 @@
 // to write complete particle data (matching serial Zeldovich output).
 //
 // 1. Reads command-line arguments
-// 2. Loads or creates simulation parameters
+// 2. Loads or creates sim parameters
 // 3. Initializes output buffers
 // 4. For each i-slab:
 //    - Reassembles full i-slab from all ranks using ReassembleISlabFromRanks
@@ -218,7 +218,6 @@ int main(int argc, char* argv[]) {
     std::string output_dir = argv[1];
     int N = std::stoi(argv[2]);
     int num_ranks = std::stoi(argv[3]);
-    int narray = 4;
     
     std::string param_file = "";
     int i_start = 0;
@@ -240,7 +239,6 @@ int main(int argc, char* argv[]) {
     printf("Output directory: %s\n", output_dir.c_str());
     printf("Grid size N: %d\n", N);
     printf("Number of MPI ranks: %d\n", num_ranks);
-    printf("Number of arrays: %d\n", narray);
     printf("i-slab range: [%d, %d)\n", i_start, i_end);
     printf("Parameter file: %s\n", param_file.empty() ? "(create minimal)" : param_file.c_str());
     printf("================================================================================\n\n");
@@ -260,6 +258,23 @@ int main(int argc, char* argv[]) {
             param = nullptr;
         }
     }
+    
+    // Determine narray from parameter file (must match how main.cpp sets it)
+    // This is critical for correctly reading .bin files!
+    int narray;
+    if (param) {
+        if (param->qdensity == 2) {
+            narray = 1;  // Density only
+        } else {
+            // Normal mode: Set narray based on PLT
+            narray = param->qPLT ? 4 : 2;
+        }
+    } else {
+        // Default to 2 if no param file (PLT disabled by default)
+        narray = 2;
+    }
+    printf("Number of arrays: %d (determined from parameter file: qPLT=%d, qdensity=%d)\n", 
+           narray, param ? param->qPLT : 0, param ? param->qdensity : 0);
     
     // Create minimal Parameters if needed
     if (!param) {
@@ -345,10 +360,14 @@ int main(int argc, char* argv[]) {
         
         // Create 2D slab pointers for WriteParticlesSlab_new
         // Layout: [narray][Y][X]
-        Complx* slab1 = &full_slab[0 * N * N];  // Array 0: D + i*F
-        Complx* slab2 = &full_slab[1 * N * N];  // Array 1: G + i*H
-        Complx* slab3 = &full_slab[2 * N * N];  // Array 2: X-velocity
-        Complx* slab4 = &full_slab[3 * N * N];  // Array 3: Y-velocity + Z-velocity
+        // Mapping:
+        //   displ[X] = imag(slab1) = imag(Array=0)
+        //   displ[Y] = real(slab2) = real(Array=1)
+        //   displ[Z] = imag(slab2) = imag(Array=1)
+        Complx* slab1 = &full_slab[0 * N * N];  // Array 0: D + i*F (X displacement in imag part)
+        Complx* slab2 = &full_slab[1 * N * N];  // Array 1: G + i*H (Y displacement in real part, Z displacement in imag part)
+        Complx* slab3 = &full_slab[2 * N * N];  // Array 2: Z-velocity (if PLT enabled)
+        Complx* slab4 = &full_slab[3 * N * N];  // Array 3: X-velocity + Y-velocity (if PLT enabled)
         
         // Call WriteParticlesSlab_new
         try {

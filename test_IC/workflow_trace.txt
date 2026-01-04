@@ -71,14 +71,14 @@ $ ./run_zeldovich_trace.sh
 
 5. Extract matrix values from logs (if not already in separate files):
 $ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_IC
-$ python3 extract_matrix_dumps.py hermitian_output/hermitian_N8_trace.log hermitian_output/
 $ python3 extract_matrix_dumps.py zeldovich_output/zeldovich_N8_trace.log zeldovich_output/
 
 # This will create:
-#   - hermitian_output/matrix_before_fft.txt
-#   - hermitian_output/matrix_after_fft.txt
 #   - zeldovich_output/matrix_before_fft.txt
 #   - zeldovich_output/matrix_after_fft.txt
+
+# Dont do this: $ python3 extract_matrix_dumps.py hermitian_output/hermitian_N8_trace.log hermitian_output/
+# The main build already writes the matrix dump text files!
 
 # ====================================================================================
 # STEP 4: Compare matrices
@@ -106,10 +106,10 @@ $ bash write_ic_trace.sh
 
 10. Read particle ICs:
    hermitian_3d_matrix:
-   $ for f in ./particle_ics/ic_{0..1}; do python3 /home/helenshao/InitialConditions/hermitian_3d_matrix_production/tests/options_ab/read_particles.py "$f" 10; done > ./particle_values.txt 2>&1
+   $ for f in ./particle_ics/ic_*; do python3 /home/helenshao/InitialConditions/hermitian_3d_matrix_production/tests/options_ab/read_particles.py "$f" 1000; done > ./particle_values.txt 2>&1
 
    zeldovich-plt:
-   $ for f in /home/helenshao/InitialConditions/zeldovich-PLT/output_trace/ic_*; do python3 /home/helenshao/InitialConditions/hermitian_3d_matrix_production/tests/options_ab/read_particles.py "$f" 10; done > ./particle_ics/zeldovich_trace_particle_values.txt 2>&1
+   $ for f in /home/helenshao/InitialConditions/zeldovich-PLT/output_trace/ic_*; do python3 /home/helenshao/InitialConditions/hermitian_3d_matrix_production/tests/options_ab/read_particles.py "$f" 1000; done > ./particle_ics/zeldovich_trace_particle_values.txt 2>&1
 
 11. Compare particle ICs:
 $ python3 /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_assembly/compare_ic_files.py ./particle_ics /home/helenshao/InitialConditions/zeldovich-PLT/output_trace > ic_comparison.txt 2>&1

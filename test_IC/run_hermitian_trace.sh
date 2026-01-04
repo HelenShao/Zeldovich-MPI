@@ -27,11 +27,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 EXEC="$PROJECT_ROOT/hermitian_3d_matrix"
 
-# Rebuild executable with correct flags
-echo "Rebuilding hermitian_3d_matrix with trace flags..."
+# Rebuild executables with correct flags
 cd "$PROJECT_ROOT"
 make clean
 make CFLAGS="-DUSE_DOUBLE_PRECISION -DPRINT_DETAILED_SLICES=1 -DPRINT_Z_SLABS=0 -DSKIP_FILE_WRITE=0 -DDUMP_MATRIX_BEFORE_FFT=1 -DDUMP_MATRIX_AFTER_FFT=1"
+make reassembly CFLAGS="-DUSE_DOUBLE_PRECISION -DPRINT_DETAILED_SLICES=1 -DPRINT_Z_SLABS=0 -DSKIP_FILE_WRITE=0 -DDUMP_MATRIX_BEFORE_FFT=1 -DDUMP_MATRIX_AFTER_FFT=1"
 BUILD_EXIT_CODE=$?
 
 if [ $BUILD_EXIT_CODE -ne 0 ]; then

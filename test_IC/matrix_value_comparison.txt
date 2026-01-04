@@ -1,0 +1,23 @@
+================================================================================
+MATRIX VALUE COMPARISON: HERMITIAN vs ZELDOVICH (After FFT)
+================================================================================
+
+RESULT: NO MATCHING VALUES FOUND
+
+Analysis:
+  - Total unique values in hermitian dump: 1024
+  - Total unique values in zeldovich dump: 1024
+  - Common values (exact match): 0
+  - Common values (tolerance 1e-5): 0
+  - Common values (tolerance 1.0): 0
+
+This confirms that:
+  1. The two codes produce completely different values after FFT
+  2. The differences are not just floating-point precision issues
+  3. The values are fundamentally different, consistent with the large
+     differences observed in the FFT difference analysis
+
+This is consistent with the findings in FFT_DIFFERENCE_ANALYSIS.md:
+  - Mean difference: Re=5.83, Im=5.33
+  - Max difference: Re=23.11, Im=21.56
+  - No systematic scaling factor

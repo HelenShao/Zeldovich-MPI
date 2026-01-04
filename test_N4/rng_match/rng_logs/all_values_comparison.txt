@@ -1,0 +1,26 @@
+================================================================================
+RNG D, F, G, H Value Comparison Report
+================================================================================
+
+Total coordinates in hermitian: 48
+Total coordinates in zeldovich: 32
+Total unique coordinates: 48
+Tolerance: 1e-06
+Comparing: D, F, G, H
+
+WARNING: 16 coordinates missing in zeldovich:
+  Y=2 (x,z)=(0,0)
+  Y=2 (x,z)=(0,1)
+  Y=2 (x,z)=(0,2)
+  Y=2 (x,z)=(0,3)
+  Y=2 (x,z)=(1,0)
+  Y=2 (x,z)=(1,1)
+  Y=2 (x,z)=(1,2)
+  Y=2 (x,z)=(1,3)
+  Y=2 (x,z)=(2,0)
+  Y=2 (x,z)=(2,1)
+  ... and 6 more
+
+SUCCESS: All values match (within tolerance)!
+
+================================================================================

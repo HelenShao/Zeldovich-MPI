@@ -1,0 +1,51 @@
+================================================================================
+MATRIX DUMP vs PARTICLE IC COMPARISON
+================================================================================
+
+Matrix dump format: Z=<z> Y=<y> X=<x> Array=<idx> Re=<real> Im=<imag>
+Particle format: i(Z) j(Y) k(X) | displ[Z] displ[Y] displ[X]
+
+Expected mapping (from output_new.cpp and zeldovich-PLT):
+  pos[0] = imag(Array 1)  -> displ[X] (via zeldovich-PLT: displ[2] = pos[0])
+  pos[1] = real(Array 1)  -> displ[Y] (via zeldovich-PLT: displ[1] = pos[1])
+  pos[2] = imag(Array 0)  -> displ[Z] (via zeldovich-PLT: displ[0] = pos[2])
+
+================================================================================
+COMPARISON FOR Z=0, Y=0, X=0-7:
+================================================================================
+X    Array0 Re    Array0 Im    Array1 Re    Array1 Im    displ[Z]     displ[Y]     displ[X]    
+--------------------------------------------------------------------------------
+0        2.106505     2.141486     5.730060    -0.206600     2.958375     4.836881     2.141486
+1        5.108234     0.498752     0.444906     0.871221     1.282943     7.221037    -0.206600
+2       -3.042370     2.224051    -2.834744    -0.824139     1.732009    12.395399     0.498752
+3       -2.515872    -4.864290    -1.683725     0.159518     0.586158    12.194819     0.871221
+4        4.836881     2.958374     7.221037     1.282943    -1.231023    11.479286     2.224051
+5       12.395399     1.732009    12.194820     0.586158    -1.105715    10.707796    -0.824139
+6       11.479286    -1.231023    10.707796    -1.105715     0.150639     8.635689    -4.864290
+7        8.635689     0.150639     7.223601     2.846613     2.846613     7.223601     0.159518
+
+================================================================================
+DIFFERENCES:
+================================================================================
+Expected: displ[Z] = Array0 Im, displ[Y] = Array1 Re, displ[X] = Array1 Im
+
+X=0: ✗ displ[Z] diff=0.816889 | ✗ displ[Y] diff=0.893179 | ✗ displ[X] diff=2.348086
+X=1: ✗ displ[Z] diff=0.784191 | ✗ displ[Y] diff=6.776131 | ✗ displ[X] diff=1.077821
+X=2: ✗ displ[Z] diff=0.492042 | ✗ displ[Y] diff=15.230143 | ✗ displ[X] diff=1.322891
+X=3: ✗ displ[Z] diff=5.450448 | ✗ displ[Y] diff=13.878544 | ✗ displ[X] diff=0.711703
+X=4: ✗ displ[Z] diff=4.189397 | ✗ displ[Y] diff=4.258249 | ✗ displ[X] diff=0.941108
+X=5: ✗ displ[Z] diff=2.837724 | ✗ displ[Y] diff=1.487024 | ✗ displ[X] diff=1.410297
+X=6: ✗ displ[Z] diff=1.381662 | ✗ displ[Y] diff=2.072107 | ✗ displ[X] diff=3.758575
+X=7: ✗ displ[Z] diff=2.695974 | ✓ displ[Y] diff=0.000000 | ✗ displ[X] diff=2.687095
+
+================================================================================
+OBSERVATIONS:
+================================================================================
+1. For X=0: displ[X] = Array0 Im matches exactly (2.141486)
+2. For X=7: displ[Y] = Array1 Re matches exactly (7.223601)
+3. For X=7: displ[Z] = Array1 Im matches exactly (2.846613)
+4. Large discrepancies for other coordinates suggest:
+   - Possible coordinate system mismatch
+   - Possible array ordering issue
+   - Possible normalization or transformation applied
+   - Possible bug in the output mapping code
