@@ -16,6 +16,19 @@ rank_*/
 *.bin
 *.dat
 
+# Test output directories and files
+tests/options_ab/output_option_*/
+ic_rank*
+test_*/bin_files/
+test_*/particle_ics/
+test_*/output/
+test_*/rng_logs/
+test_*/visualizations/
+# Large PBS job output files in test directories (keep small expected outputs)
+tests/options_ab/*.out
+test_*/*N*.out
+test_*/*test*.out
+
 # Editor files
 .vscode/
 .idea/

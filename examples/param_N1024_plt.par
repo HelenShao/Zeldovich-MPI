@@ -4,7 +4,7 @@
 
 BoxSize = 100.0
 CPD = 4                            # Node grid size (4x8 = 32 ranks for 2 nodes)
-ICFormat = "RVZel"
+ICFormat = "RV"
 InitialConditionsDirectory = "./output"
 InitialRedshift = 99.0
 NP = 1073741824                    # N^3 = 1024^3
