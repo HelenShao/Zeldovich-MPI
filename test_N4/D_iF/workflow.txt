@@ -1,0 +1,43 @@
+# D+i*F Test (Serial: 1 MPI rank, 1 OMP thread)
+# Testing with explicit D+i*F storage in just_density mode (ZD_qdensity=2)
+# Compare final results after 3D FFT for both codes
+# Both codes will print [REAL-FFT-DEBUG] output after 3D FFT
+# NOTE: The two codes process Y-slices in different orders, so logs must be sorted before comparison
+# For N=4: k2_cutoff = (2)² / (1.0)² = 4
+
+0. (First time only) Rebuild zeldovich-PLT to include REAL-FFT-DEBUG code:
+$ cd /home/helenshao/InitialConditions/zeldovich-PLT
+$ meson compile -C build
+
+1. Run hermitian_3d_matrix (serial: 1 rank, 1 thread):
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N4/D_iF
+$ qsub N4_D_iF_test.pbs
+
+2. Run zeldovich-PLT (serial, single-threaded):
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N4/D_iF
+$ ./run_zeldovich_D_iF.sh
+# OR manually:
+# $ cd /home/helenshao/InitialConditions/zeldovich-PLT
+# $ ./build/zeldovich /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N4/D_iF/param_N4_D_iF.par
+
+3. Extract REAL-FFT-DEBUG lines from both codes:
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N4/D_iF
+$ grep "\[REAL-FFT-DEBUG\]" rng_logs/hermitian_rng_debug.log > real_fft_hermitian_D_iF.txt
+$ grep "\[REAL-FFT-DEBUG\]" rng_logs/zeldovich_rng_debug.log > real_fft_zeldovich_D_iF.txt
+
+4. Compare REAL-FFT-DEBUG output:
+$ python3 compare_real_fft_D_iF.py
+# This will compare real(Array0) and imag(Array0) values after 3D FFT
+# Report saved to: real_fft_comparison_D_iF.txt
+
+5. Verify results:
+# After 3D FFT, with explicit D+i*F storage in just_density mode:
+# - The result should be purely REAL (imaginary part should be ~0)
+# - Compare real(Array0) values between codes
+# - Check if differences are within numerical precision
+
+6. Optional: Compare density files if output:
+# Hermitian density file: particle_ics/density4
+# Zeldovich density file: /home/helenshao/InitialConditions/zeldovich-PLT/output_N4_D_iF/density4
+# Compare using your preferred method (diff, binary comparison, etc.)
+

@@ -1,0 +1,35 @@
+# zeldovich-PLT Parameter File
+# For N=4 grid with power law power spectrum
+# D+i*F test (PLT DISABLED, serial: 1 rank, 1 thread)
+# Testing with explicit D+i*F storage in just_density mode (ZD_qdensity=2)
+# Usage: ./hermitian_3d_matrix 4 test_N4/D_iF/param_N4_D_iF.par
+
+BoxSize = 100.0
+CPD = 2
+ICFormat = "RVZel"
+InitialConditionsDirectory = "./output"
+InitialRedshift = 99.0
+NP = 64                           # N^3 = 4^3 = 64
+ZD_NumBlock = 2
+ZD_Seed = 4                        # Random seed (must match zeldovich-PLT)
+ZD_Pk_scale = 1.0
+ZD_Pk_norm = 8.0                   # Normalization scale (e.g., sigma_8)
+ZD_Pk_sigma = 1.0                  # Amplitude at normalization scale (required when Pk_norm > 0)
+ZD_Pk_smooth = 0.0
+ZD_Pk_powerlaw_index = -2.0        # Power law: P(k) ~ k^-2
+ZD_Version = 2                     # Use version 2 (recommended)
+ZD_qPk_fix_to_mean = 0             # Random amplitude (not fixed)
+ZD_f_NL = 0                        # No f_NL
+ZD_qdensity = 2                    # Output density field (mode 2) - but code will store D+i*F explicitly
+
+# k_cutoff and CornerModes settings
+ZD_k_cutoff = 1.0                  # k_max = k_Nyquist / k_cutoff = 2 / 1.0 = 2 (full range for N=4)
+ZD_CornerModes = 0                  # Zero modes with k² >= k2_cutoff (default)
+
+# PLT (Particle Linear Theory) settings - DISABLED
+ZD_qPLT = 0                        # Disable PLT mode
+ZD_qPLTrescale = 0                 # Disable PLT rescaling
+ZD_PLT_target_z = 0.0              # Not used when PLT is disabled
+
+# ZD_PLT_filename not needed when PLT is disabled
+

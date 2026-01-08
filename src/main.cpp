@@ -1013,10 +1013,11 @@ int main(int argc, char **argv)
             memset(local_y_slices, 0, sizeof(fftw_complex_t) * 2 * narray * N * N);
             
             // Generate this batch's pair
+            // Always use separate buffers for primary and conjugate slices
+            // For self-conjugate slices, conjugate_slices acts as temporary storage
+            // (like slabHer in zeldovich code) to store conj(D)+i*conj(F) values
             fftw_complex_t *primary_ptr = &local_y_slices[0 * narray * N * N];
-            fftw_complex_t *conjugate_ptr = batch_is_self_conjugate
-                ? &local_y_slices[0 * narray * N * N]
-                : &local_y_slices[1 * narray * N * N];
+            fftw_complex_t *conjugate_ptr = &local_y_slices[1 * narray * N * N];
             
             generate_hermitian_slice_pair_local(
                 N, y_batch_primary, y_batch_mirror,
@@ -1550,6 +1551,28 @@ int main(int argc, char **argv)
                     printf("A%d=%.3e ", a, debug_max_imag[a]);
                 }
                 printf("\n");
+            }
+            #endif
+            
+            // ========== DEBUG: Extract real(FFT(D + i*F)) or real(FFT(D)) for comparison ==========
+            #if DEBUG_RNG_CONSISTENCY && !SKIP_VERIFICATION
+            // After 3D FFT, Array 0 contains either FFT(D + i*F) or FFT(D) depending on just_density
+            // Print real parts for test coordinates to compare between runs
+            if (N <= DEBUG_FULL_PRINT_MAX_N && z < 4 && rank == 0 && params != NULL) {
+                int qdensity = zeldovich_params_get_qdensity(params);
+                int just_density_flag = (qdensity == 2) ? 1 : 0;
+                int max_test_coord = (N <= DEBUG_FULL_PRINT_MAX_N) ? N : MAX_DEBUG_COORD;
+                for (int x_test = 0; x_test < max_test_coord && x_test < x_count; x_test++) {
+                    for (int y_test = 0; y_test < max_test_coord && y_test < N; y_test++) {
+                        // Array 0: Contains FFT(D + i*F) when just_density=false, or FFT(D) when just_density=true
+                        double real_part = ZSLAB(0, x_test, y_test, N, narray, x_count)[0];
+                        double imag_part = ZSLAB(0, x_test, y_test, N, narray, x_count)[1];
+                        fprintf(stderr, "[REAL-FFT-DEBUG] N=%d just_density=%d Z=%d (x,y)=(%d,%d): "
+                                "real(Array0)=%.10e imag(Array0)=%.10e\n",
+                                N, just_density_flag, z, x_test, y_test, real_part, imag_part);
+                    }
+                }
+                fflush(stderr);
             }
             #endif
             
