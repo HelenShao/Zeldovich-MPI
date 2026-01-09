@@ -1773,15 +1773,23 @@ int main(int argc, char **argv)
                     
                     FILE *fp = fopen(filename, "wb");
                     if (fp) {
-                        // Transpose from [Array][X][Y] to [Array][Y][X] and write
+                        // DEBUG: Print x_count and expected file size
+                        if (rank == 0 && i == 0) {
+                            size_t expected_size = (size_t)x_count * narray * N * sizeof(fftw_complex_t);
+                            fprintf(stderr, "[DEBUG-WRITE-BIN] Rank %d, i=%d: x_count=%d, narray=%d, N=%d, expected_size=%zu bytes\n",
+                                   rank, i, x_count, narray, N, expected_size);
+                        }
+                        
+                        // Write in [Array][X][Y] order (no transpose)
+                        // Loop order: for (array) for (X) for (Y) to match ZSLAB layout
                         for (int array_idx = 0; array_idx < narray; array_idx++) {
-                            for (int j = 0; j < N; j++) {
-                                for (int k_idx = 0; k_idx < x_count; k_idx++) {
+                            for (int k_idx = 0; k_idx < x_count; k_idx++) {
+                                for (int j = 0; j < N; j++) {
                                     fftw_complex_t *src = &ZSLAB(array_idx, k_idx, j, N, narray, x_count);
                                     size_t written = fwrite(src, sizeof(fftw_complex_t), 1, fp);
                                     if (written != 1) {
-                                        fprintf(stderr, "Rank %d: Write error in %s at (array=%d,j=%d,k_idx=%d)\n",
-                                               rank, filename, array_idx, j, k_idx);
+                                        fprintf(stderr, "Rank %d: Write error in %s at (array=%d,k_idx=%d,j=%d)\n",
+                                               rank, filename, array_idx, k_idx, j);
                                     }
                                 }
                             }

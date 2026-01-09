@@ -80,17 +80,12 @@ const char* zeldovich_params_get_ICFormat(ParametersHandle params);
 // Returns: 0 = normal mode, 1 = normal + density file, 2 = density only (no displacements)
 int zeldovich_params_get_qdensity(ParametersHandle params);
 
-// Get k_cutoff (wavenumber cutoff parameter)
-// Returns: k_cutoff value (default: 1.0)
-// k_max = k_Nyquist / k_cutoff
-// For k_cutoff=1.0: k_max = k_Nyquist (full range)
-// For k_cutoff=2.0: k_max = k_Nyquist/2 (half range)
+// Get k_cutoff (wavenumber cutoff factor)
+// Returns: k_cutoff value (default 1.0, corresponds to k_Nyquist)
 double zeldovich_params_get_k_cutoff(ParametersHandle params);
 
-// Get CornerModes flag
-// Returns: 0 = zero modes with k² >= k2_cutoff (default), 1 = allow corner modes
-// When CornerModes=0: All modes with k² >= k2_cutoff are zeroed
-// When CornerModes=1: These modes are NOT zeroed (allows "corner modes" with k > k_Nyquist)
+// Get CornerModes (corner mode handling flag)
+// Returns: 0 = zero modes with k² >= k2_cutoff (default), non-zero = keep corner modes
 int zeldovich_params_get_CornerModes(ParametersHandle params);
 
 // ====================================================================================

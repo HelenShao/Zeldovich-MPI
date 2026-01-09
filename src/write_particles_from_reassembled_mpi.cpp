@@ -5,7 +5,7 @@
 // to write complete particle data (matching serial Zeldovich output).
 //
 // 1. Reads command-line arguments
-// 2. Loads or creates sim parameters
+// 2. Loads or creates simulation parameters
 // 3. Initializes output buffers
 // 4. For each i-slab:
 //    - Reassembles full i-slab from all ranks using ReassembleISlabFromRanks
@@ -25,6 +25,8 @@
 #include <filesystem>
 #include <iostream>
 #include <algorithm>
+
+#include "utils/zeldovich_wrapper.h"
 
 // Avoid MPI C++ binding conflicts
 #define MPICH_SKIP_MPICXX
@@ -164,24 +166,42 @@ std::vector<BinComplx> ReassembleISlabFromRanks(
                     (size_t)narray * (size_t)N * (size_t)x_count);
         }
 
-        // Map from [array][Y][k_local] -> [array][Y][k_global]
-        for (int array_idx = 0; array_idx < narray; array_idx++) {
-            for (int j = 0; j < N; j++) {
-                for (int k_local = 0; k_local < x_count; k_local++) {
-                    int k_global = x_start + k_local;
-                    if (k_global < 0 || k_global >= N) {
-                        continue;
+        // Map from [array][X_local][Y] -> [array][X_global][Y]
+        // File is written in [Array][X][Y] order, so local_slab is in [array][X_local][Y] format
+        // DEBUG: Print what we read from file
+        if (i == 0 && rank == 0 && N <= 4 && x_count <= 4) {
+            printf("  [DEBUG-READ] Rank %d, i=%d, x_count=%d, x_start=%d:\n", rank, i, x_count, x_start);
+            for (int array_idx = 0; array_idx < narray && array_idx < 1; array_idx++) {
+                for (int k_local = 0; k_local < x_count && k_local < 2; k_local++) {
+                    for (int j = 0; j < N && j < 2; j++) {
+                        size_t src_idx = (size_t)array_idx * (size_t)N * (size_t)x_count +
+                                        (size_t)k_local * (size_t)N +
+                                        (size_t)j;
+                        printf("    local_slab[array=%d, X_local=%d, Y=%d] (idx=%zu) = %.10e\n",
+                               array_idx, k_local, j, src_idx, (double)local_slab[src_idx].real());
                     }
-
+                }
+            }
+        }
+        
+        for (int array_idx = 0; array_idx < narray; array_idx++) {
+            for (int k_local = 0; k_local < x_count; k_local++) {
+                int k_global = x_start + k_local;
+                if (k_global < 0 || k_global >= N) {
+                    continue;
+                }
+                for (int j = 0; j < N; j++) {
+                    // Source: [array][X_local][Y] format: src_idx = array * N * x_count + k_local * N + j
                     size_t src_idx =
                         (size_t)array_idx * (size_t)N * (size_t)x_count +
-                        (size_t)j * (size_t)x_count +
-                        (size_t)k_local;
+                        (size_t)k_local * (size_t)N +
+                        (size_t)j;
 
+                    // Dest: [array][X_global][Y] format: dst_idx = array * N * N + k_global * N + j
                     size_t dst_idx =
                         (size_t)array_idx * (size_t)N * (size_t)N +
-                        (size_t)j * (size_t)N +
-                        (size_t)k_global;
+                        (size_t)k_global * (size_t)N +
+                        (size_t)j;
 
                     full_slab[dst_idx] = local_slab[src_idx];
                 }
@@ -218,6 +238,7 @@ int main(int argc, char* argv[]) {
     std::string output_dir = argv[1];
     int N = std::stoi(argv[2]);
     int num_ranks = std::stoi(argv[3]);
+    int narray = 4;  // Default, will be determined from parameter file
     
     std::string param_file = "";
     int i_start = 0;
@@ -233,17 +254,7 @@ int main(int argc, char* argv[]) {
         i_end = std::stoi(argv[6]);
     }
     
-    printf("================================================================================\n");
-    printf("WRITE PARTICLES FROM REASSEMBLED MPI Z-SLABS\n");
-    printf("================================================================================\n");
-    printf("Output directory: %s\n", output_dir.c_str());
-    printf("Grid size N: %d\n", N);
-    printf("Number of MPI ranks: %d\n", num_ranks);
-    printf("i-slab range: [%d, %d)\n", i_start, i_end);
-    printf("Parameter file: %s\n", param_file.empty() ? "(create minimal)" : param_file.c_str());
-    printf("================================================================================\n\n");
-    
-    // Create Parameters object
+    // Create Parameters object first to determine narray
     Parameters* param = nullptr;
     if (!param_file.empty() && fs::exists(param_file)) {
         try {
@@ -252,6 +263,18 @@ int main(int argc, char* argv[]) {
             printf("  ppd: %ld\n", param->ppd);
             printf("  boxsize: %f\n", param->boxsize);
             printf("  separation: %f\n", param->separation);
+            
+            // Determine narray from parameter file (same logic as main.cpp)
+            // Cast Parameters* to ParametersHandle (void*)
+            ParametersHandle params_handle = reinterpret_cast<ParametersHandle>(param);
+            int qdensity = zeldovich_params_get_qdensity(params_handle);
+            if (qdensity == 2) {
+                narray = 1;  // Density-only mode
+            } else {
+                int qPLT = zeldovich_params_get_qPLT(params_handle);
+                narray = qPLT ? 4 : 2;  // PLT mode: 4 arrays, normal mode: 2 arrays
+            }
+            printf("  Determined narray=%d from parameter file (qdensity=%d)\n", narray, qdensity);
         } catch (const std::exception& e) {
             fprintf(stderr, "ERROR: Failed to load parameter file: %s\n", e.what());
             fprintf(stderr, "Creating minimal parameters...\n");
@@ -259,22 +282,16 @@ int main(int argc, char* argv[]) {
         }
     }
     
-    // Determine narray from parameter file (must match how main.cpp sets it)
-    // This is critical for correctly reading .bin files!
-    int narray;
-    if (param) {
-        if (param->qdensity == 2) {
-            narray = 1;  // Density only
-        } else {
-            // Normal mode: Set narray based on PLT
-            narray = param->qPLT ? 4 : 2;
-        }
-    } else {
-        // Default to 2 if no param file (PLT disabled by default)
-        narray = 2;
-    }
-    printf("Number of arrays: %d (determined from parameter file: qPLT=%d, qdensity=%d)\n", 
-           narray, param ? param->qPLT : 0, param ? param->qdensity : 0);
+    printf("================================================================================\n");
+    printf("WRITE PARTICLES FROM REASSEMBLED MPI Z-SLABS\n");
+    printf("================================================================================\n");
+    printf("Output directory: %s\n", output_dir.c_str());
+    printf("Grid size N: %d\n", N);
+    printf("Number of MPI ranks: %d\n", num_ranks);
+    printf("Number of arrays: %d\n", narray);
+    printf("i-slab range: [%d, %d)\n", i_start, i_end);
+    printf("Parameter file: %s\n", param_file.empty() ? "(create minimal)" : param_file.c_str());
+    printf("================================================================================\n\n");
     
     // Create minimal Parameters if needed
     if (!param) {
@@ -352,22 +369,32 @@ int main(int argc, char* argv[]) {
         
         // Convert from BinComplx (float or double, matches .bin file) to Complx (double, required by WriteParticlesSlab_new)
         // WriteParticlesSlab_new always expects Complx = std::complex<double>
+        // full_slab_bin is in [narray][X][Y] format from .bin files (no transpose needed)
+        // WriteParticlesSlab_new with use_x_y_layout=true expects [narray][X][Y] format
+        // So no transpose is needed - just convert precision
         std::vector<Complx> full_slab;
-        full_slab.reserve(full_slab_bin.size());
-        for (const auto& val : full_slab_bin) {
-            full_slab.push_back(Complx(static_cast<double>(val.real()), static_cast<double>(val.imag())));
+        full_slab.resize(full_slab_bin.size());
+        
+        // Convert precision only (no transpose needed)
+        for (size_t idx = 0; idx < full_slab_bin.size(); idx++) {
+            full_slab[idx] = Complx(static_cast<double>(full_slab_bin[idx].real()), 
+                                    static_cast<double>(full_slab_bin[idx].imag()));
+        }
+        
+        // DEBUG: Print a few values to verify
+        if (i == 0 && N <= 4) {
+            printf("  [DEBUG] After conversion (full_slab), array=0, Z=%d, [X][Y] format:\n", i);
+            printf("    (X=0, Y=0): %.10e\n", (double)full_slab[0 * N * N + 0 * N + 0].real());
+            printf("    (X=1, Y=0): %.10e\n", (double)full_slab[0 * N * N + 1 * N + 0].real());
+            printf("    (X=0, Y=1): %.10e\n", (double)full_slab[0 * N * N + 0 * N + 1].real());
         }
         
         // Create 2D slab pointers for WriteParticlesSlab_new
-        // Layout: [narray][Y][X]
-        // Mapping:
-        //   displ[X] = imag(slab1) = imag(Array=0)
-        //   displ[Y] = real(slab2) = real(Array=1)
-        //   displ[Z] = imag(slab2) = imag(Array=1)
-        Complx* slab1 = &full_slab[0 * N * N];  // Array 0: D + i*F (X displacement in imag part)
-        Complx* slab2 = &full_slab[1 * N * N];  // Array 1: G + i*H (Y displacement in real part, Z displacement in imag part)
-        Complx* slab3 = &full_slab[2 * N * N];  // Array 2: Z-velocity (if PLT enabled)
-        Complx* slab4 = &full_slab[3 * N * N];  // Array 3: X-velocity + Y-velocity (if PLT enabled)
+        // Layout: [narray][X][Y] (matches file format)
+        Complx* slab1 = &full_slab[0 * N * N];  // Array 0: D + i*F
+        Complx* slab2 = &full_slab[1 * N * N];  // Array 1: G + i*H
+        Complx* slab3 = &full_slab[2 * N * N];  // Array 2: X-velocity
+        Complx* slab4 = &full_slab[3 * N * N];  // Array 3: Y-velocity + Z-velocity
         
         // Call WriteParticlesSlab_new
         try {

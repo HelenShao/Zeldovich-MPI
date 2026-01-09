@@ -94,7 +94,8 @@ static void WriteParticlesSlab_unified(
    int rank,               // MPI rank (-1 for full-range mode)
    int k_start_global,     // Global X start
    int k_extent,           // Number of X values
-   bool use_x_y_layout     // true: [x][y] layout (ZSLAB), false: [y][x] layout (JK)
+   bool use_x_y_layout,    // true: [x][y] layout (ZSLAB), false: [y][x] layout (JK)
+   int N                   // Grid size (for ZSLAB format indexing - must match data layout)
 ) {
     STimer thisouttimer;
     thisouttimer.Start();
@@ -117,7 +118,9 @@ static void WriteParticlesSlab_unified(
     }
 
     // Determine loop bounds and indexing
-    int j_max = param.ppd;
+    // For ZSLAB format ([x][y] layout), use N (grid size) for Y bounds
+    // For JK format ([y][x] layout), use param.ppd for Y bounds
+    int j_max = use_x_y_layout ? N : param.ppd;
     int k_max = is_full_range ? param.ppd : k_extent;
     int64_t num_particles = (int64_t)j_max * (int64_t)k_max;
 
@@ -171,29 +174,36 @@ static void WriteParticlesSlab_unified(
             }
 
             // Access data using layout-appropriate indexing macro
-            // [x][y] layout: slab[k_local * param.ppd + j] (ZSLAB format)
+            // [x][y] layout: slab[k_local * N + j] (ZSLAB format - stride N in x direction)
             // [y][x] layout: slab[k_local + stride * j] (JK format)
             int stride = is_full_range ? param.ppd : k_extent;
-            Complx *slab1_val = INDEX_SLAB(slab1, j, k_local, use_x_y_layout, stride, param.ppd);
-            Complx *slab2_val = INDEX_SLAB(slab2, j, k_local, use_x_y_layout, stride, param.ppd);
-            Complx *slab3_val = slab3 ? INDEX_SLAB(slab3, j, k_local, use_x_y_layout, stride, param.ppd) : NULL;
-            Complx *slab4_val = slab4 ? INDEX_SLAB(slab4, j, k_local, use_x_y_layout, stride, param.ppd) : NULL;
+            // For ZSLAB format, use N (grid size) for stride; for JK format, use param.ppd
+            int index_stride = use_x_y_layout ? N : param.ppd;
+            Complx *slab1_val = INDEX_SLAB(slab1, j, k_local, use_x_y_layout, stride, index_stride);
+            Complx *slab2_val = INDEX_SLAB(slab2, j, k_local, use_x_y_layout, stride, index_stride);
+            Complx *slab3_val = slab3 ? INDEX_SLAB(slab3, j, k_local, use_x_y_layout, stride, index_stride) : NULL;
+            Complx *slab4_val = slab4 ? INDEX_SLAB(slab4, j, k_local, use_x_y_layout, stride, index_stride) : NULL;
+
+            // DEBUG: Print indexing for first few values (N=4, i=0 only)
+            if (i == 0 && param.ppd <= 4 && j < 2 && k_local < 2) {
+                int idx_used = use_x_y_layout ? (k_local * index_stride + j) : (k_local + stride * j);
+                fprintf(stderr, "[DEBUG-WRITE] i=%d j=%d(Y) k_local=%d(X) use_xy=%d stride=%d index_stride=%d idx=%d val=%.10e\n",
+                       i, j, k_local, use_x_y_layout, stride, index_stride, idx_used, (double)real(*slab1_val));
+            }
 
             dens = real(*slab1_val) * densitynorm;
             if (!just_density) {
-                // Match zeldovich-PLT convention: displ[0]=Z, displ[1]=Y, displ[2]=X
-                // Store in pos[] array to match displ[] indexing (no swapping needed)
-                pos[0] = imag(*slab2_val) * norm;  // Z displacement
-                pos[1] = real(*slab2_val) * norm;  // Y displacement
-                pos[2] = imag(*slab1_val) * norm;  // X displacement
+                pos[0] = imag(*slab2_val) * norm;
+                pos[1] = real(*slab2_val) * norm;
+                pos[2] = imag(*slab1_val) * norm;
                 if (param.qPLT) {
-                    vel[0] = slab3_val ? imag(*slab3_val) * vnorm : 0.0;  // Z velocity
-                    vel[1] = slab4_val ? real(*slab4_val) * vnorm : 0.0;  // Y velocity
-                    vel[2] = slab4_val ? imag(*slab4_val) * vnorm : 0.0;  // X velocity
+                    vel[0] = slab4_val ? imag(*slab4_val) * vnorm : 0.0;
+                    vel[1] = slab4_val ? real(*slab4_val) * vnorm : 0.0;
+                    vel[2] = slab3_val ? imag(*slab3_val) * vnorm : 0.0;
                 } else {
-                    vel[0] = imag(*slab2_val) * vnorm;  // Z velocity
-                    vel[1] = real(*slab2_val) * vnorm;  // Y velocity
-                    vel[2] = imag(*slab1_val) * vnorm;  // X velocity
+                    vel[0] = imag(*slab2_val) * vnorm;
+                    vel[1] = real(*slab2_val) * vnorm;
+                    vel[2] = imag(*slab1_val) * vnorm;
                 }
 
                 if (param.qascii) {
@@ -201,15 +211,13 @@ static void WriteParticlesSlab_unified(
                     if (is_full_range) {
                         // Note: output FILE* is handled by caller in WriteParticlesSlab_new
                         // For now, use stdout for both (can be enhanced if needed)
-                        // ASCII output: match zeldovich-PLT order (x, y, z, X_disp, Y_disp, Z_disp, ...)
                         fmt::print(stdout,
                            "{:d} {:d} {:d} {:f} {:f} {:f} {:f} {:f} {:f} {:f}\n",
-                           i, j, k_value, pos[2], pos[1], pos[0], dens, vel[2], vel[1], vel[0]);
+                           i, j, k_value, pos[0], pos[1], pos[2], dens, vel[0], vel[1], vel[2]);
                     } else {
-                        // ASCII output: match zeldovich-PLT order (x, y, z, X_disp, Y_disp, Z_disp, ...)
                         fmt::print(stdout,
                            "{:d} {:d} {:d} {:f} {:f} {:f} {:f} {:f} {:f} {:f}\n",
-                           i, j, k_value, pos[2], pos[1], pos[0], dens, vel[2], vel[1], vel[0]);
+                           i, j, k_value, pos[0], pos[1], pos[2], dens, vel[0], vel[1], vel[2]);
                     }
                 } else {
                     switch (param_icformat) {
@@ -218,15 +226,12 @@ static void WriteParticlesSlab_unified(
                             out.i = i;
                             out.j = j;
                             out.k = k_value;
-                            // Match zeldovich-PLT convention: displ[0]=Z, displ[1]=Y, displ[2]=X
-                            // pos[] array already matches displ[] indexing (no swapping needed)
-                            out.displ[0] = pos[0];  // Z displacement
-                            out.displ[1] = pos[1];  // Y displacement
-                            out.displ[2] = pos[2];  // X displacement
-                            // Match zeldovich-PLT convention: vel[0]=Z, vel[1]=Y, vel[2]=X
-                            out.vel[0] = vel[0];  // Z velocity
-                            out.vel[1] = vel[1];  // Y velocity
-                            out.vel[2] = vel[2];  // X velocity
+                            out.displ[0] = pos[0];
+                            out.displ[1] = pos[1];
+                            out.displ[2] = pos[2];
+                            out.vel[0] = vel[0];
+                            out.vel[1] = vel[1];
+                            out.vel[2] = vel[2];
                             ((RVdoubleZelParticle *) particle_buffer)[count] = out;
                             break;
                         }
@@ -235,15 +240,12 @@ static void WriteParticlesSlab_unified(
                             out.i = i;
                             out.j = j;
                             out.k = k_value;
-                            // Match zeldovich-PLT convention: displ[0]=Z, displ[1]=Y, displ[2]=X
-                            // pos[] array already matches displ[] indexing (no swapping needed)
-                            out.displ[0] = pos[0];  // Z displacement
-                            out.displ[1] = pos[1];  // Y displacement
-                            out.displ[2] = pos[2];  // X displacement
-                            // Match zeldovich-PLT convention: vel[0]=Z, vel[1]=Y, vel[2]=X
-                            out.vel[0] = vel[0];  // Z velocity
-                            out.vel[1] = vel[1];  // Y velocity
-                            out.vel[2] = vel[2];  // X velocity
+                            out.displ[0] = pos[0];
+                            out.displ[1] = pos[1];
+                            out.displ[2] = pos[2];
+                            out.vel[0] = vel[0];
+                            out.vel[1] = vel[1];
+                            out.vel[2] = vel[2];
                             ((RVZelParticle *) particle_buffer)[count] = out;
                             break;
                         }
@@ -252,21 +254,17 @@ static void WriteParticlesSlab_unified(
                             out.i = i;
                             out.j = j;
                             out.k = k_value;
-                            // Match zeldovich-PLT convention: displ[0]=Z, displ[1]=Y, displ[2]=X
-                            // pos[] array already matches displ[] indexing (no swapping needed)
-                            out.displ[0] = pos[0];  // Z displacement
-                            out.displ[1] = pos[1];  // Y displacement
-                            out.displ[2] = pos[2];  // X displacement
+                            out.displ[0] = pos[0];
+                            out.displ[1] = pos[1];
+                            out.displ[2] = pos[2];
                             ((ZelParticle *) particle_buffer)[count] = out;
                             break;
                         }
                         case OUTPUT_ZEL_SIMPLE: {
                             ZelSimpleParticle out;
-                            // Match zeldovich-PLT convention: displ[0]=Z, displ[1]=Y, displ[2]=X
-                            // pos[] array already matches displ[] indexing (no swapping needed)
-                            out.displ[0] = pos[0];  // Z displacement
-                            out.displ[1] = pos[1];  // Y displacement
-                            out.displ[2] = pos[2];  // X displacement
+                            out.displ[0] = pos[0];
+                            out.displ[1] = pos[1];
+                            out.displ[2] = pos[2];
                             ((ZelSimpleParticle *) particle_buffer)[count] = out;
                             break;
                         }
@@ -406,6 +404,14 @@ void WriteParticlesSlab_new(
    Parameters &param
 ) {
     // Call unified function with full-range parameters
+    // NOTE: Data passed to WriteParticlesSlab_new is in [Y][X] format from reassembled .bin files
+    // The reassembled data has layout: full_slab[array * N * N + j * N + k] where j=Y, k=X
+    // So element (Y, X) is at: slab1[Y * N + X]
+    // 
+    // With use_x_y_layout=false (JK format): accesses slab1[X + stride * Y] = slab1[X + N * Y] = slab1[Y * N + X] (correct?)
+    // With use_x_y_layout=true (ZSLAB format): accesses slab1[X * N + Y] ≠ slab1[Y * N + X] X
+    // 
+    // However, if this doesn't work, the issue might be in the reassembly or .bin file format
     WriteParticlesSlab_unified(
         i, slab1, slab2, slab3, slab4, param,
         true,   // is_full_range = true (ppd x ppd)
@@ -413,7 +419,8 @@ void WriteParticlesSlab_new(
         -1,     // rank = -1 (not used in full-range mode)
         0,      // k_start_global = 0 (full range starts at 0)
         param.ppd,  // k_extent = ppd (full range)
-        false   // use_x_y_layout = false ([y][x] layout, JK format)
+        true,   // use_x_y_layout = true ([x][y] layout, ZSLAB format) - REVERTED: test if original was correct
+        param.ppd  // N = ppd (for full-range mode, ppd should equal grid size)
     );
     (void)output;  // Unused in unified function (handled internally)
 }
@@ -473,7 +480,8 @@ void WriteParticlesSlab_range(
         rank,   // rank = MPI rank (for per-rank file naming)
         k_start_global,  // k_start_global = rank's X start
         k_extent,  // k_extent = rank's X extent
-        true    // use_x_y_layout = true ([x][y] layout, ZSLAB format)
+        true,   // use_x_y_layout = true ([x][y] layout, ZSLAB format)
+        N       // N = grid size (must match data layout stride)
     );
 }
 
@@ -490,6 +498,7 @@ void WriteParticlesSlab_range(
    Parameters &param
 ) {
     // Call unified function with [y][x] layout
+    // For JK format, use param.ppd as grid size (Y dimension)
     WriteParticlesSlab_unified(
         i, slab1, slab2, slab3, slab4, param,
         false,  // is_full_range = false (local range: ppd x k_extent)
@@ -497,7 +506,8 @@ void WriteParticlesSlab_range(
         rank,   // rank = MPI rank (for per-rank file naming)
         k_start_global,  // k_start_global = rank's X start
         k_extent,  // k_extent = rank's X extent
-        false   // use_x_y_layout = false ([y][x] layout, JK format)
+        false,  // use_x_y_layout = false ([y][x] layout, JK format)
+        param.ppd  // N = ppd (for JK format, ppd is the grid size)
     );
 }
 
@@ -611,37 +621,34 @@ void WriteParticlesSlab_range_from_zslab(
             dens = real(slab1[k_local * N + j]) * densitynorm;
             
             if (!just_density) {
-                // Match zeldovich-PLT convention: displ[0]=Z, displ[1]=Y, displ[2]=X
-                // Store in pos[] array to match displ[] indexing (no swapping needed)
-                pos[0] = imag(slab2[k_local * N + j]) * norm;  // Z displacement
-                pos[1] = real(slab2[k_local * N + j]) * norm;  // Y displacement
-                pos[2] = imag(slab1[k_local * N + j]) * norm;  // X displacement
+                pos[0] = imag(slab2[k_local * N + j]) * norm;
+                pos[1] = real(slab2[k_local * N + j]) * norm;
+                pos[2] = imag(slab1[k_local * N + j]) * norm;
                 
                 if (param.qPLT && slab3 && slab4) {
-                    vel[0] = imag(slab3[k_local * N + j]) * vnorm;  // Z velocity
-                    vel[1] = real(slab4[k_local * N + j]) * vnorm;  // Y velocity
-                    vel[2] = imag(slab4[k_local * N + j]) * vnorm;  // X velocity
+                    vel[0] = imag(slab4[k_local * N + j]) * vnorm;
+                    vel[1] = real(slab4[k_local * N + j]) * vnorm;
+                    vel[2] = imag(slab3[k_local * N + j]) * vnorm;
                 } else {
-                    vel[0] = imag(slab2[k_local * N + j]) * vnorm;  // Z velocity
-                    vel[1] = real(slab2[k_local * N + j]) * vnorm;  // Y velocity
-                    vel[2] = imag(slab1[k_local * N + j]) * vnorm;  // X velocity
+                    vel[0] = imag(slab2[k_local * N + j]) * vnorm;
+                    vel[1] = real(slab2[k_local * N + j]) * vnorm;
+                    vel[2] = imag(slab1[k_local * N + j]) * vnorm;
                 }
 
                 if (param.qascii) {
-                    // ASCII output: match zeldovich-PLT order (x, y, z, X_disp, Y_disp, Z_disp, ...)
                     fmt::print(
                        stdout,
                        "{:d} {:d} {:d} {:f} {:f} {:f} {:f} {:f} {:f} {:f}\n",
                        i,
                        j,
                        k_global,
-                       pos[2],  // X displacement
-                       pos[1],  // Y displacement
-                       pos[0],  // Z displacement
+                       pos[0],
+                       pos[1],
+                       pos[2],
                        dens,
-                       vel[2],  // X velocity
-                       vel[1],  // Y velocity
-                       vel[0]   // Z velocity
+                       vel[0],
+                       vel[1],
+                       vel[2]
                     );
                 } else {
                     switch (param_icformat) {
@@ -650,15 +657,12 @@ void WriteParticlesSlab_range_from_zslab(
                             out.i        = i;
                             out.j        = j;
                             out.k        = k_global;
-                            // Match zeldovich-PLT convention: displ[0]=Z, displ[1]=Y, displ[2]=X
-                            // pos[] array already matches displ[] indexing (no swapping needed)
-                            out.displ[0] = pos[0];  // Z displacement
-                            out.displ[1] = pos[1];  // Y displacement
-                            out.displ[2] = pos[2];  // X displacement
-                            // Match zeldovich-PLT convention: vel[0]=Z, vel[1]=Y, vel[2]=X
-                            out.vel[0]   = vel[2];  // Z velocity
-                            out.vel[1]   = vel[1];  // Y velocity
-                            out.vel[2]   = vel[0];  // X velocity
+                            out.displ[0] = pos[0];
+                            out.displ[1] = pos[1];
+                            out.displ[2] = pos[2];
+                            out.vel[0]   = vel[0];
+                            out.vel[1]   = vel[1];
+                            out.vel[2]   = vel[2];
                             ((RVdoubleZelParticle *) local_output_tmp)[count] = out;
                             break;
                         }
@@ -668,15 +672,12 @@ void WriteParticlesSlab_range_from_zslab(
                             out.i        = i;
                             out.j        = j;
                             out.k        = k_global;
-                            // Match zeldovich-PLT convention: displ[0]=Z, displ[1]=Y, displ[2]=X
-                            // pos[] array already matches displ[] indexing (no swapping needed)
-                            out.displ[0] = pos[0];  // Z displacement
-                            out.displ[1] = pos[1];  // Y displacement
-                            out.displ[2] = pos[2];  // X displacement
-                            // Match zeldovich-PLT convention: vel[0]=Z, vel[1]=Y, vel[2]=X
-                            out.vel[0]   = vel[2];  // Z velocity
-                            out.vel[1]   = vel[1];  // Y velocity
-                            out.vel[2]   = vel[0];  // X velocity
+                            out.displ[0] = pos[0];
+                            out.displ[1] = pos[1];
+                            out.displ[2] = pos[2];
+                            out.vel[0]   = vel[0];
+                            out.vel[1]   = vel[1];
+                            out.vel[2]   = vel[2];
                             ((RVZelParticle *) local_output_tmp)[count] = out;
                             break;
                         }
@@ -686,22 +687,18 @@ void WriteParticlesSlab_range_from_zslab(
                             out.i        = i;
                             out.j        = j;
                             out.k        = k_global;
-                            // Match zeldovich-PLT convention: displ[0]=Z, displ[1]=Y, displ[2]=X
-                            // pos[] array already matches displ[] indexing (no swapping needed)
-                            out.displ[0] = pos[0];  // Z displacement
-                            out.displ[1] = pos[1];  // Y displacement
-                            out.displ[2] = pos[2];  // X displacement
+                            out.displ[0] = pos[0];
+                            out.displ[1] = pos[1];
+                            out.displ[2] = pos[2];
                             ((ZelParticle *) local_output_tmp)[count] = out;
                             break;
                         }
 
                         case OUTPUT_ZEL_SIMPLE: {
                             ZelSimpleParticle out;
-                            // Match zeldovich-PLT convention: displ[0]=Z, displ[1]=Y, displ[2]=X
-                            // pos[] array already matches displ[] indexing (no swapping needed)
-                            out.displ[0] = pos[0];  // Z displacement
-                            out.displ[1] = pos[1];  // Y displacement
-                            out.displ[2] = pos[2];  // X displacement
+                            out.displ[0] = pos[0];
+                            out.displ[1] = pos[1];
+                            out.displ[2] = pos[2];
                             ((ZelSimpleParticle *) local_output_tmp)[count] = out;
                             break;
                         }
