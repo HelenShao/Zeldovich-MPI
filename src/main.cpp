@@ -1710,9 +1710,8 @@ int main(int argc, char **argv)
             //      Data is in [Array][k_rng][j] format (memory), transpose to [Array][j][k_rng] for output
             // =======================================================================================
 
-            #ifndef SKIP_FILE_WRITE
-            // Use i,j,k notation for output writing (Zeldovich convention)
-            int i = z;  // i = Z coordinate (Zeldovich i)
+            // Use i,j,k notation for output writing 
+            int i = z; 
             
             // Debug: Check output mode
             if (rank == 0 && z == 0) {
@@ -1923,12 +1922,6 @@ int main(int argc, char **argv)
                     break;
                 }
             }
-            #else
-            // Skip file writing for large N to avoid disk space issues
-            files_written++;
-            size_t slab_bytes = (size_t)x_count * narray * N * sizeof(fftw_complex_t);
-            total_bytes_written += slab_bytes;
-            #endif
 
             // =======================================================================================
             
