@@ -282,7 +282,7 @@ int main(int argc, char **argv)
     // ========================================================================
     int *src_total_slices = NULL;       // [num_ranks] - total Y-slices from each source
     int64_t *recv_displs_src = NULL;    // [num_ranks] - base offset per source (elements)
-    int *src_write_cursor = NULL;       // [num_ranks] - current write position per source
+    int64_t *src_write_cursor = NULL;   // [num_ranks] - current write position per source (int64_t to avoid overflow for large N)
     int *y_owner_src = NULL;            // [N] - which rank generated Y=i
     int *y_src_local_idx = NULL;        // [N] - index within that source's chunk
     int *y_batch_idx = NULL;            // [N] - which batch Y=i came from (for unpacking)
@@ -805,7 +805,7 @@ int main(int argc, char **argv)
     // as batches are processed, ensuring data from batch N is written after data from
     // batches 0 to N-1 for that source.
 
-    src_write_cursor = (int*)calloc(num_ranks, sizeof(int));
+    src_write_cursor = (int64_t*)calloc(num_ranks, sizeof(int64_t));
     
     if (DEBUG_PRINTS && rank < 2) {
         printf("[V11-SETUP] Rank %d: Write cursors initialized to 0\n", rank);
@@ -1133,7 +1133,7 @@ int main(int argc, char **argv)
                 fprintf(stderr, "[Rank %d] ERROR: rdispls overflow! src=%d, displ=%lld > INT_MAX (%d)\n",
                        rank, src, (long long)new_displ, INT_MAX);
                 fprintf(stderr, "  recv_displs_src[%d] = %lld\n", src, (long long)recv_displs_src[src]);
-                fprintf(stderr, "  src_write_cursor[%d] = %d\n", src, src_write_cursor[src]);
+                fprintf(stderr, "  src_write_cursor[%d] = %lld\n", src, (long long)src_write_cursor[src]);
                 MPI_Abort(MPI_COMM_WORLD, 1);
             }
             
@@ -1334,8 +1334,8 @@ int main(int argc, char **argv)
         }
         
         if (DEBUG_PRINTS && rank == 0 && batch_idx < 2) {
-            printf("[V11-BATCH %d] Cursors advanced. Sample: src0=%d, src1=%d\n",
-                   batch_idx, src_write_cursor[0], num_ranks > 1 ? src_write_cursor[1] : 0);
+            printf("[V11-BATCH %d] Cursors advanced. Sample: src0=%lld, src1=%lld\n",
+                   batch_idx, (long long)src_write_cursor[0], num_ranks > 1 ? (long long)src_write_cursor[1] : 0);
         }
         
         // ===== BATCH STEP 9: Free per-batch buffers (V11: No recv_buffer_batch!) =====
@@ -1379,8 +1379,8 @@ int main(int argc, char **argv)
         for (int src = 0; src < num_ranks; src++) {
             int64_t expected = (int64_t)src_total_slices[src] * my_pencils * narray;
             if (src_write_cursor[src] != expected) {
-                fprintf(stderr, "[ERROR] Rank %d: src %d cursor mismatch! Got %d, expected %lld\n",
-                       rank, src, src_write_cursor[src], (long long)expected);
+                fprintf(stderr, "[ERROR] Rank %d: src %d cursor mismatch! Got %lld, expected %lld\n",
+                       rank, src, (long long)src_write_cursor[src], (long long)expected);
                 cursor_error = true;
             }
         }
