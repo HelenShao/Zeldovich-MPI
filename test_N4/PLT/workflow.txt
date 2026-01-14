@@ -1,0 +1,198 @@
+# PLT (Particle Linear Theory) Test (Serial: 1 MPI rank, 1 OMP thread)
+# Testing PLT mode with k_cutoff implementation (k_cutoff=1.0, CornerModes=0)
+# Compare random number draws and particle ICs between hermitian_3d_matrix_production and zeldovich-PLT
+# Both codes print [RNG-DEBUG] output before any FFT for coordinates x,y,z <= 10
+# Using ZD_qdensity=1 (density + displacement, narray=2 - just_density=1 mode)
+# PLT ENABLED (ZD_qPLT=1), rescaling DISABLED (ZD_qPLTrescale=0)
+# NOTE: The two codes process Y-slices in different orders, so logs must be sorted before comparison
+# For N=4: k2_cutoff = (2)² / (1.0)² = 4
+
+0. (First time only) Rebuild zeldovich-PLT to include RNG debug code:
+$ cd /home/helenshao/InitialConditions/zeldovich-PLT
+$ meson compile -C build
+
+1. Run hermitian_3d_matrix (serial: 1 rank, 1 thread):
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N4/PLT
+$ qsub N4_PLT_test.pbs
+
+2. Run zeldovich-PLT (serial, single-threaded):
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N4/PLT
+$ ./run_zeldovich_PLT.sh
+# OR manually:
+# $ cd /home/helenshao/InitialConditions/zeldovich-PLT
+# $ ./build/zeldovich /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N4/PLT/param_N4_PLT.par
+
+2.5 Extract rng-debug lines into filtered txt file:
+$ cd rng_logs
+$ grep "\[RNG-DEBUG\]" hermitian_rng_debug.log > hermitian_rng_debug_filtered.txt
+
+3. Sort and compare RNG debug output (files have different Y ordering):
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N4/PLT
+# Option A: Sort and save diff in one step
+$ python3 sort_rng_logs.py --diff-output rng_logs/rng_diff.txt
+# OR Option B: Sort first, then diff manually
+$ python3 sort_rng_logs.py
+$ cd rng_logs
+$ diff hermitian_rng_debug_sorted.txt zeldovich_rng_debug_sorted.txt > rng_diff.txt 2>&1
+# Differences saved to rng_logs/rng_diff.txt
+# If files match, rng_diff.txt will be empty (check with: wc -l rng_logs/rng_diff.txt)
+# View differences: cat rng_logs/rng_diff.txt
+
+4. Count RNG debug lines (should match):
+$ wc -l hermitian_rng_debug_filtered.txt zeldovich_rng_debug_filtered.txt
+$ wc -l hermitian_rng_debug_sorted.txt zeldovich_rng_debug_sorted.txt
+# Line counts should match between filtered and sorted versions
+
+5. Compare specific coordinates (e.g., Y=0, x=0, z=0):
+$ grep "Y=0.*(x,z)=(0,0)" hermitian_rng_debug_filtered.txt
+$ grep "Y=0.*(x,z)=(0,0)" zeldovich_rng_debug_filtered.txt
+
+6. Compare D values (random Gaussian draws) - Detailed comparison:
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N4/PLT
+$ python3 compare_rng_d_values.py
+# This creates a detailed report showing D value differences for each coordinate
+# Report saved to: rng_logs/d_value_comparison.txt
+# 
+# Compare all values (D, F, G, H):
+$ python3 compare_rng_all_values.py
+# This compares D, F, G, H values and creates a detailed report
+# Report saved to: rng_logs/all_values_comparison.txt
+# 
+# Note: With ZD_qdensity=1 (just_density=1 mode, narray=2), all arrays (D+iF, G+iH) should be non-zero
+# Both density and displacement values are generated
+# With PLT enabled, velocities use PLT growth rate f instead of f=1.0
+# 
+# To compare only specific values (e.g., D only):
+# $ python3 compare_rng_all_values.py --compare D --output rng_logs/d_comparison.txt
+# 
+# Quick check for specific coordinates:
+$ grep "Y=0.*(x,z)=(0,1)" rng_logs/hermitian_rng_debug_filtered.txt | head -1
+$ grep "Y=0.*(x,z)=(0,1)" rng_logs/zeldovich_rng_debug_filtered.txt | head -1
+# D values should match exactly if same random numbers are drawn
+
+7. Verify k_cutoff zeroing:
+# For N=4, k_cutoff=1.0: k2_cutoff = (2)² / (1.0)² = 4
+# All modes with k² >= 4 should have D=0 in both codes
+$ grep "k2=[4-9]\|k2=[1-9][0-9]" rng_logs/hermitian_rng_debug_sorted.txt | grep -v "D=(0.000000e+00,0.000000e+00)"
+$ grep "k2=[4-9]\|k2=[1-9][0-9]" rng_logs/zeldovich_rng_debug_sorted.txt | grep -v "D=(0.000000e+00,0.000000e+00)"
+# Both commands should return no results (all high-k modes should be zeroed)
+
+8. Compare REAL-FFT-DEBUG output (after 2D FFT, before 1D FFT):
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N4/PLT
+$ python3 compare_real_fft_D_iF.py
+# This compares the real parts of Array 0 after 2D FFT (should be real(FFT(D+i*F)))
+# Report saved to: rng_logs/real_fft_comparison.txt
+# 
+# Extract REAL-FFT-DEBUG lines manually:
+# $ grep "\[REAL-FFT-DEBUG\]" rng_logs/hermitian_rng_debug.log > rng_logs/hermitian_real_fft_debug.txt
+# $ grep "\[REAL-FFT-DEBUG\]" rng_logs/zeldovich_rng_debug.log > rng_logs/zeldovich_real_fft_debug.txt
+
+9. Extract density values to text files:
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N4/PLT
+# Extract hermitian density values
+$ python3 extract_density_values.py particle_ics/density4 hermitian_density_values.txt 4
+# Extract zeldovich density values
+$ python3 extract_density_values.py /home/helenshao/InitialConditions/zeldovich-PLT/output_N4_PLT/density4 zeldovich_density_values.txt 4
+# This creates text files with all density values and their (i,j,k) coordinates
+
+10. Compare and visualize density files:
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N4/PLT
+# Run comparison with default paths
+$ python3 visualize_density_comparison.py
+# OR specify custom paths:
+# $ python3 visualize_density_comparison.py particle_ics/density4 /home/helenshao/InitialConditions/zeldovich-PLT/output_N4_PLT/density4 visualizations
+# 
+# This creates:
+#   - visualizations/density_histograms.png: Distribution comparison
+#   - visualizations/density_scatter.png: Scatter plot with correlation
+#   - visualizations/density_differences.png: Difference distribution
+#   - Prints detailed statistics to console
+#
+# Expected results:
+#   - Correlation should be very close to 1.0 if codes match
+#   - Mean difference should be near zero
+#   - Max absolute difference should be small (within numerical precision)
+#   - With ZD_qdensity=1 (just_density=1, narray=2), density values should match those from ZD_qdensity=2
+#   - Both density and displacement arrays are generated, but density should be identical to ZD_qdensity=2 case
+
+11. Compare particle IC files:
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N4/PLT
+# Hermitian IC files: particle_ics/ic_*
+# Zeldovich IC files: /home/helenshao/InitialConditions/zeldovich-PLT/output_N4_PLT/ic_*
+# 
+# Both should contain particle data with:
+#   - Density (real part of Array 0)
+#   - Displacements: X = imag(Array 0), Y = real(Array 1), Z = imag(Array 1)
+#   - Velocities: With PLT enabled, velocities use PLT growth rate f instead of f=1.0
+#     Array 2: X-velocity = imag(Array 2) = F_re * f
+#     Array 3: Y-velocity = real(Array 3) = (G_re - H_im) * f, Z-velocity = imag(Array 3) = (G_im + H_re) * f
+# 
+# Compare using the comparison script:
+$ python3 compare_particle_ics.py particle_ics/ic_0 /home/helenshao/InitialConditions/zeldovich-PLT/output_N4_PLT/ic_0 4 visualizations/
+$ python3 compare_particle_ics.py particle_ics/ic_1 /home/helenshao/InitialConditions/zeldovich-PLT/output_N4_PLT/ic_1 4 visualizations/
+# 
+# This creates:
+#   - Displacement comparison plots (histograms, scatter plots, difference histograms)
+#   - Velocity comparison plots (histograms, scatter plots, difference histograms)
+#   - Prints statistics (mean difference, max difference, correlation) for each component
+# 
+# Or compare using binary diff (should match exactly if everything is correct):
+# $ diff particle_ics/ic_0 /home/helenshao/InitialConditions/zeldovich-PLT/output_N4_PLT/ic_0
+# $ diff particle_ics/ic_1 /home/helenshao/InitialConditions/zeldovich-PLT/output_N4_PLT/ic_1
+# 
+# Note: Binary diff may show differences due to floating-point representation,
+# but the comparison script provides more detailed analysis with tolerance checks
+# 
+# IMPORTANT: With PLT enabled, velocities should match up to single-precision tolerance
+# If velocities differ significantly, check:
+#   1. PLT eigenmode interpolation (eigenmode values e.val)
+#   2. PLT growth rate f calculation: f = (sqrt(1 + 24*e.val*f_cluster) - 1) / 4
+#   3. Velocity storage format: Array 2 = i*F*f, Array 3 = G*f + i*H*f
+
+12. Compare all particle IC files (simpler comparison without visualization):
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N4/PLT
+# Compare all IC files in both directories:
+$ python3 compare_ic_files.py particle_ics /home/helenshao/InitialConditions/zeldovich-PLT/output_N4_PLT > ic_comparison.txt 2>&1
+# 
+# OR use default paths (script auto-detects current directory):
+$ python3 compare_ic_files.py
+# 
+# This creates a text report showing:
+#   - Total particles in each directory
+#   - Common particles (same i,j,k indices)
+#   - Exact matches vs differences
+#   - Maximum differences for displacements and velocities
+#   - Average ratios (for detecting scaling factors)
+#   - Example particles with differences
+# 
+# View the comparison:
+$ cat ic_comparison.txt
+# 
+# Note: This script uses a simpler comparison method than compare_particle_ics.py
+# It's useful for quick checks and detecting systematic differences (e.g., scaling factors)
+# For detailed visualizations, use compare_particle_ics.py (step 11)
+
+13. Dump particle IC values for manual inspection:
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N4/PLT
+# Dump all particles from a specific IC file:
+$ python3 dump_particle_ics.py particle_ics/ic_0 4 > hermitian_ic_0_all_slabs.txt
+$ python3 dump_particle_ics.py /home/helenshao/InitialConditions/zeldovich-PLT/output_N4_PLT/ic_0 4 > zeldovich_ic_0_all_slabs.txt
+# 
+# Compare the dumped files and save differences to a text file:
+$ python3 compare_ic_differences.py hermitian_ic_0_all_slabs.txt zeldovich_ic_0_all_slabs.txt ic_0_differences.txt
+# 
+# This creates ic_0_differences.txt with detailed comparison statistics:
+#   - Displacement differences (Z, Y, X): mean, std, max abs, min, max
+#   - Velocity differences (Z, Y, X): mean, std, max abs, min, max
+#   - Summary: total differences, mean absolute, max absolute, std
+#   - Verification: tolerance check, warning if differences exceed tolerance
+#   - Example particle differences (first 10 particles)
+# 
+# View the results:
+$ cat ic_0_differences.txt
+# 
+# Expected results with PLT enabled:
+#   - Displacements should match up to single-precision tolerance (~1e-6)
+#   - Velocities should match up to single-precision tolerance (~1e-6)
+#   - If velocities differ significantly (order 0.1-0.8), check PLT growth rate f calculation
+

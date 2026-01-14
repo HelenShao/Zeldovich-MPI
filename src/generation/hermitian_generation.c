@@ -81,7 +81,7 @@ void generate_hermitian_slice_pair_local(
 
     // ========== k_cutoff filtering parameters (computed once per function call) ==========
     // Calculate k2_cutoff for filtering high-wavenumber modes
-    // This matches zeldovich.cpp line 321-322: k2_cutoff = nyquist² / (k_cutoff²)
+    // This matches zeldovich.cpp line 321-322: k2_cutoff = nyquist^2 / (k_cutoff^2)
     double k_cutoff = 1.0;  // Default value
     int CornerModes = 0;    // Default value
     double k2_cutoff = 0.0; // Will be calculated
@@ -91,8 +91,8 @@ void generate_hermitian_slice_pair_local(
         CornerModes = zeldovich_params_get_CornerModes(params_handle);
     }
     
-    // Calculate k2_cutoff: k2_cutoff = (N/2)² / (k_cutoff²)
-    // For N=16, k_cutoff=1.0: k2_cutoff = 8² / 1.0² = 64
+    // Calculate k2_cutoff: k2_cutoff = (N/2)^2 / (k_cutoff^2)
+    // For N=16, k_cutoff=1.0: k2_cutoff = 8^2 / 1.0^2 = 64
     double Nhalf_dbl = (double)Nhalf;
     k2_cutoff = (Nhalf_dbl * Nhalf_dbl) / (k_cutoff * k_cutoff);
 
@@ -396,35 +396,43 @@ void generate_hermitian_slice_pair_local(
                 // Declare f before if/else blocks (needed for velocity arrays in all modes)
                 double f = 1.0;
                 
+                // Match zeldovich.cpp: set f=0 when D==0 (line 443)
+                if (D[0] == 0.0 && D[1] == 0.0) {
+                    f = 0.0;
+                }
+                
                 if (just_density) {
+                    // Density-only mode: Set F, G, H to zero (not used)
+                    F[0] = F[1] = G[0] = G[1] = H[0] = H[1] = 0.0;
+
                     // Density-only mode: Compute F from D (for D+i*F test)
                     // Match zeldovich behavior: only compute F when D != 0
-                    if (D[0] != 0.0 || D[1] != 0.0) {
-                        // Avoid division by zero: if k2==0, set F=0 (D is already 0 for k2==0)
-                        if (k2 == 0.0) {
-                            F[0] = F[1] = 0.0;
-                        } else {
-                            double fundamental = 1.0;
-                            if (params_handle != NULL) {
-                                fundamental = zeldovich_params_get_fundamental(params_handle);
-                            }
-                            // For VERIFY_HERMITIAN_SYMMETRY=1, we don't use PLT rescaling, so rescale=1.0
-                            double rescale = 1.0;
-                            // Compute factor the same way as normal mode
-                            double factor = rescale / (k2 * fundamental);
+                    // if (D[0] != 0.0 || D[1] != 0.0) {
+                    //     // Avoid division by zero: if k2==0, set F=0 (D is already 0 for k2==0)
+                    //     if (k2 == 0.0) {
+                    //         F[0] = F[1] = 0.0;
+                    //     } else {
+                    //         double fundamental = 1.0;
+                    //         if (params_handle != NULL) {
+                    //             fundamental = zeldovich_params_get_fundamental(params_handle);
+                    //         }
+                    //         // For VERIFY_HERMITIAN_SYMMETRY=1, we don't use PLT rescaling, so rescale=1.0
+                    //         double rescale = 1.0;
+                    //         // Compute factor the same way as normal mode
+                    //         double factor = rescale / (k2 * fundamental);
 
-                            F[0] = -kx * factor * D[1];
-                            F[1] =  kx * factor * D[0];
-                        }
-                    } else {
-                        // D == 0, so F = 0 (match zeldovich line 442)
-                        F[0] = F[1] = 0.0;
-                    }
+                    //         F[0] = -kx * factor * D[1];
+                    //         F[1] =  kx * factor * D[0];
+                    //     }
+                    // } else {
+                    //     // D == 0, so F = 0 (match zeldovich line 442)
+                    //     F[0] = F[1] = 0.0;
+                    // }
 
-                    // D[0] = D[0] - F[1]; // Test D+iF calculation
-                    // D[1] = D[1] + F[0]; // Test D+iF calculation
-                    // F[0] = F[1] // Test D+iF calculation
-                    G[0] = G[1] = H[0] = H[1] = 0.0;
+                    // // D[0] = D[0] - F[1]; // Test D+iF calculation
+                    // // D[1] = D[1] + F[0]; // Test D+iF calculation
+                    // // F[0] = F[1] // Test D+iF calculation
+                    // G[0] = G[1] = H[0] = H[1] = 0.0;
                 } else {
                 double ik2 = 1.0 / k2; // later: define this at top of code and use it instead of dividing
                 
@@ -551,7 +559,8 @@ void generate_hermitian_slice_pair_local(
                 // When PLT is enabled: f = (sqrt(1. + 24 * e.val * f_cluster) - 1) / 4.
                 // When PLT is not enabled: f = 1.0 (default)
                 // Skip in density-only mode (qdensity == 2)
-                double f = 1.0;
+                // NOTE: Use outer f variable (declared on 397), not a new inner f!
+                // Otherwise the PLT f value goes out of scope before velocity storage.
                 double rescale = 1.0;
                 
                 if (!just_density && use_plt && params_handle != NULL) {
@@ -738,12 +747,13 @@ void generate_hermitian_slice_pair_local(
                 // ========== STEP 4: Store in arrays ==========
                 if (just_density) {
                     // Density-only mode: Only store D (density) in Array 0
-                    // PRIM_SLICE(0, x, z)[0] = D[0];  // Real = D_re
-                    //PRIM_SLICE(0, x, z)[1] = D[1];  // Imag = D_im
+                    // Array 0: D (density only, no displacement)
+                    PRIM_SLICE(0, x, z)[0] = D[0];  // Real = D_re
+                    PRIM_SLICE(0, x, z)[1] = D[1];  // Imag = D_im
 
                     // Test D+iF calculation
-                    PRIM_SLICE(0, x, z)[0] = D[0] - F[1];  // Real = D_re - F_im
-                    PRIM_SLICE(0, x, z)[1] = D[1] + F[0];  // Imag = D_im + F_re
+                    // PRIM_SLICE(0, x, z)[0] = D[0] - F[1];  // Real = D_re - F_im
+                    // PRIM_SLICE(0, x, z)[1] = D[1] + F[0];  // Imag = D_im + F_re
                 } else {
                     // Normal mode: Store D+iF, G+iH, and optionally velocities
                     // Array 0: D + i*F (density + X-displacement)
@@ -796,11 +806,12 @@ void generate_hermitian_slice_pair_local(
                 if (just_density) {
                     // Density-only mode: Only store D (density) in Array 0
                     // For conjugate, store conj(D) = (D[0], -D[1])
-                    // CONJ_SLICE(0, x_mirror, z_mirror)[0] = D[0];   // Real = D_re
-                    // CONJ_SLICE(0, x_mirror, z_mirror)[1] = -D[1];  // Imag = -D_im (conjugate)
+                    CONJ_SLICE(0, x_mirror, z_mirror)[0] = D[0];   // Real = D_re
+                    CONJ_SLICE(0, x_mirror, z_mirror)[1] = -D[1];  // Imag = -D_im (conjugate)
+                    
                     // Test D+iF calculation
-                    CONJ_SLICE(0, x_mirror, z_mirror)[0] = D[0] + F[1];  // Real = D_re + F_im
-                    CONJ_SLICE(0, x_mirror, z_mirror)[1] = F[0] - D[1];  // Imag = F_re - D_im
+                    // CONJ_SLICE(0, x_mirror, z_mirror)[0] = D[0] + F[1];  // Real = D_re + F_im
+                    // CONJ_SLICE(0, x_mirror, z_mirror)[1] = F[0] - D[1];  // Imag = F_re - D_im
                 } else {
                     // Normal mode: Store conj(D)+i*conj(F), conj(G)+i*conj(H), and optionally velocities
                     // For mode -k, store conj(D) + i*conj(F), NOT the conjugate of (D + i*F)!
@@ -1062,39 +1073,48 @@ void generate_hermitian_slice_pair_local(
                 // Declare f_sc before if/else blocks (needed for velocity arrays in all modes)
                 double f_sc = 1.0;
                 
+                // Match zeldovich.cpp: set f=0 when D==0 (line 443)
+                if (D[0] == 0.0 && D[1] == 0.0) {
+                    f_sc = 0.0;
+                }
+                
                 if (just_density) {
+                    // Density-only mode: Set F, G, H to zero (not used)
+                    F[0] = F[1] = G[0] = G[1] = H[0] = H[1] = 0.0;
+
                     // Density-only mode: Compute F from D (for D+i*F test)
                     // Match zeldovich behavior: only compute F when D != 0
-                    if (D[0] != 0.0 || D[1] != 0.0) {
-                        // Avoid division by zero: if k2==0, set F=0 (D is already 0 for k2==0)
-                        if (k2 == 0.0) {
-                            F[0] = F[1] = 0.0;
-                        } else {
-                            double fundamental_sc = 1.0;
-                            if (params_handle != NULL) {
-                                fundamental_sc = zeldovich_params_get_fundamental(params_handle);
-                            }
-                            // For VERIFY_HERMITIAN_SYMMETRY=2, we don't use PLT rescaling, so rescale=1.0
-                            double rescale_sc = 1.0;
-                            // Compute factor the same way as normal mode
-                            double factor_sc = rescale_sc / (k2 * fundamental_sc);
+                    // if (D[0] != 0.0 || D[1] != 0.0) {
+                    //     // Avoid division by zero: if k2==0, set F=0 (D is already 0 for k2==0)
+                    //     if (k2 == 0.0) {
+                    //         F[0] = F[1] = 0.0;
+                    //     } else {
+                    //         double fundamental_sc = 1.0;
+                    //         if (params_handle != NULL) {
+                    //             fundamental_sc = zeldovich_params_get_fundamental(params_handle);
+                    //         }
+                    //         // For VERIFY_HERMITIAN_SYMMETRY=2, we don't use PLT rescaling, so rescale=1.0
+                    //         double rescale_sc = 1.0;
+                    //         // Compute factor the same way as normal mode
+                    //         double factor_sc = rescale_sc / (k2 * fundamental_sc);
                             
-                            // Now compute F and H using the same formula as normal mode
-                            F[0] = -kx * factor_sc * D[1];
-                            F[1] =  kx * factor_sc * D[0];
-                        }
-                    } else {
-                        // D == 0, so F = 0 (match zeldovich line 442)
-                        F[0] = F[1] = 0.0;
-                    }
+                    //         // Now compute F and H using the same formula as normal mode
+                    //         F[0] = -kx * factor_sc * D[1];
+                    //         F[1] =  kx * factor_sc * D[0];
+                    //     }
+                    // } else {
+                    //     // D == 0, so F = 0 (match zeldovich line 442)
+                    //     F[0] = F[1] = 0.0;
+                    // }
 
-                    // D+i*F test: Store D + i*F (D should NOT be overwritten)
-                    // D[0] = F[0]; // REMOVED: This was overwriting D with F (wrong!)
-                    // D[1] = F[1]; // REMOVED: This was overwriting D with F (wrong!)
-                    // F[0] = F[1] = G[0] = G[1] = H[0] = H[1] = 0.0; // Test D+iF calculation
-                    G[0] = G[1] = H[0] = H[1] = 0.0;
+                    // // D+i*F test: Store D + i*F (D should NOT be overwritten)
+                    // // D[0] = F[0]; // REMOVED: This was overwriting D with F (wrong!)
+                    // // D[1] = F[1]; // REMOVED: This was overwriting D with F (wrong!)
+                    // // F[0] = F[1] = G[0] = G[1] = H[0] = H[1] = 0.0; // Test D+iF calculation
+                    // G[0] = G[1] = H[0] = H[1] = 0.0;
                 } else if (k2 == 0.0) {
                     F[0] = F[1] = G[0] = G[1] = H[0] = H[1] = 0.0;
+                    f_sc = 0.0;  // Match zeldovich.cpp: set f=0 when k2==0 (D==0)
                 } else {
                     double ik2 = 1.0 / k2;
                     
@@ -1342,13 +1362,19 @@ void generate_hermitian_slice_pair_local(
                 // (like zeldovich stores in slab and slabHer)
                 if (just_density) {
                     // Density-only mode: Only store D (density) in Array 0
-                    // Primary slice: D + i*F = (D[0] - F[1]) + i*(D[1] + F[0])
-                    PRIM_SLICE(0, x, z)[0] = D[0] - F[1];  // Real = D_re - F_im
-                    PRIM_SLICE(0, x, z)[1] = D[1] + F[0];  // Imag = D_im + F_re
+                    PRIM_SLICE(0, x, z)[0] = D[0];  // Real = D_re
+                    PRIM_SLICE(0, x, z)[1] = D[1];  // Imag = D_im
+
+                    CONJ_SLICE(0, x_mirror, z_mirror)[0] = D[0];  // Real = D_re
+                    CONJ_SLICE(0, x_mirror, z_mirror)[1] = -D[1];  // Imag = -D_im (conjugate)
+
+                    // Test D+iF calculation
+                    // PRIM_SLICE(0, x, z)[0] = D[0] - F[1];  // Real = D_re - F_im
+                    // PRIM_SLICE(0, x, z)[1] = D[1] + F[0];  // Imag = D_im + F_re
                     
                     // Conjugate slice (at mirrored position): conj(D) + i*conj(F) = (D[0] + F[1]) + i*(F[0] - D[1])
-                    CONJ_SLICE(0, x_mirror, z_mirror)[0] = D[0] + F[1];  // Real = D_re + F_im
-                    CONJ_SLICE(0, x_mirror, z_mirror)[1] = F[0] - D[1];  // Imag = F_re - D_im
+                    // CONJ_SLICE(0, x_mirror, z_mirror)[0] = D[0] + F[1];  // Real = D_re + F_im
+                    // CONJ_SLICE(0, x_mirror, z_mirror)[1] = F[0] - D[1];  // Imag = F_re - D_im
                 } else {
                     // Normal mode: Store D+iF, G+iH, and optionally velocities
                     // Primary slice: Array 0: D + i*F = (D[0] - F[1]) + i*(D[1] + F[0])
@@ -1411,16 +1437,28 @@ void generate_hermitian_slice_pair_local(
                     #if defined(VERIFY_HERMITIAN_SYMMETRY) && VERIFY_HERMITIAN_SYMMETRY == 2
                     // Mode 2: Anti-Hermitian symmetry for purely imaginary result
                     // f(-k) = -conj(f(k)) means we negate the conjugate
+                    if (x == 0 && z == 0) {
+                        fprintf(stderr, "[MIRROR-DEBUG] Y=%d: Mode 2 branch executing (VERIFY_HERMITIAN_SYMMETRY=2)\n", global_y);
+                        fflush(stderr);
+                    }
                     for (int a = 0; a < narray; a++) {
                         // Negated complex conjugate: -(a + i*b)* = -(a - i*b) = -a + i*b
-                        PRIM_SLICE(a, x_mirror, z_mirror)[0] = -PRIM_SLICE(a, x, z)[0];  // Real part (negated)
-                        PRIM_SLICE(a, x_mirror, z_mirror)[1] = PRIM_SLICE(a, x, z)[1];   // Imaginary part (same)
+                        PRIM_SLICE(a, x_mirror, z_mirror)[0] = CONJ_SLICE(a, x_mirror, z_mirror)[0];  // -PRIM_SLICE(a, x, z)[0];  // Real part (negated)
+                        PRIM_SLICE(a, x_mirror, z_mirror)[1] = CONJ_SLICE(a, x_mirror, z_mirror)[1]; // PRIM_SLICE(a, x, z)[1];   // Imaginary part (same)
                     }
                     #else
                     // Normal operation and Mode 1: Hermitian symmetry for purely real result
                     // Match zeldovich's scheme: copy conj(D)+i*conj(F) from conjugate_slices to primary_slices
                     // This copies the conjugate values that were stored in conjugate_slices during main loop
                     // (like zeldovich copies from slabHer to slab at lines 560-561)
+                    if (x == 0 && z == 0) {
+                        #if defined(VERIFY_HERMITIAN_SYMMETRY) && VERIFY_HERMITIAN_SYMMETRY == 1
+                        fprintf(stderr, "[MIRROR-DEBUG] Y=%d: Mode 1 branch executing (VERIFY_HERMITIAN_SYMMETRY=1)\n", global_y);
+                        #else
+                        fprintf(stderr, "[MIRROR-DEBUG] Y=%d: Normal operation branch executing (VERIFY_HERMITIAN_SYMMETRY not defined or != 1,2)\n", global_y);
+                        #endif
+                        fflush(stderr);
+                    }
                     for (int a = 0; a < narray; a++) {
                         // Copy from conjugate slice (which contains conj(D)+i*conj(F) at mirror positions)
                         // to primary slice at mirror positions
