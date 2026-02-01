@@ -144,6 +144,12 @@ grep "\[RNG-DEBUG\]" "$RNG_LOG_DIR/hermitian_rng_debug.log" > "$RNG_LOG_DIR/herm
 RNG_LINES=$(wc -l < "$RNG_LOG_DIR/hermitian_rng_debug_filtered.txt")
 echo "Found $RNG_LINES RNG-DEBUG lines"
 
+# Extract REAL-FFT-DEBUG lines
+echo "Extracting REAL-FFT-DEBUG lines from log..."
+grep "\[REAL-FFT-DEBUG\]" "$RNG_LOG_DIR/hermitian_rng_debug.log" > "$RNG_LOG_DIR/hermitian_real_fft_debug.txt" || true
+REAL_FFT_LINES=$(wc -l < "$RNG_LOG_DIR/hermitian_real_fft_debug.txt")
+echo "Found $REAL_FFT_LINES REAL-FFT-DEBUG lines"
+
 # ====================================================================================
 # STEP 3: Reassemble and write particle ICs
 # ====================================================================================
@@ -185,10 +191,13 @@ echo "=========================================="
 echo "  .bin files: $BIN_COUNT"
 echo "  Particle IC files: $IC_COUNT"
 echo "  RNG debug lines: $RNG_LINES"
+echo "  REAL-FFT-DEBUG lines: $REAL_FFT_LINES"
 echo "  Logs: test_N4/sc_dens_match/"
 echo "  RNG debug output: test_N4/sc_dens_match/rng_logs/hermitian_rng_debug_filtered.txt"
+echo "  REAL-FFT-DEBUG output: test_N4/sc_dens_match/rng_logs/hermitian_real_fft_debug.txt"
 echo ""
 echo "Next steps:"
 echo "  1. Run zeldovich-PLT with same parameters: ./run_zeldovich_sc_dens.sh"
 echo "  2. Compare RNG outputs: see workflow.txt"
+echo "  3. Compare REAL-FFT-DEBUG outputs: see workflow.txt"
 

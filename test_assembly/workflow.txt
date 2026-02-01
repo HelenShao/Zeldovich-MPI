@@ -17,6 +17,3 @@ $ ./build/zeldovich /home/helenshao/InitialConditions/hermitian_3d_matrix_produc
 
 4. Compare all ic files:
 cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production && python3 test_assembly/compare_ic_files.py > test_assembly/particle_ics/comparison_analysis.txt 2>&1 && tail -50 test_assembly/particle_ics/comparison_analysis.txt
-
-5. visualize particle fields:
-python3 visualize_particle_comparison.py

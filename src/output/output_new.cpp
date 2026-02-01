@@ -120,7 +120,7 @@ static void WriteParticlesSlab_unified(
     // Determine loop bounds and indexing
     // For ZSLAB format ([x][y] layout), use N (grid size) for Y bounds
     // For JK format ([y][x] layout), use param.ppd for Y bounds
-    int j_max = use_x_y_layout ? N : param.ppd;
+    int j_max = use_x_y_layout ? N : param.ppd; // change later: N = param.ppd
     int k_max = is_full_range ? param.ppd : k_extent;
     int64_t num_particles = (int64_t)j_max * (int64_t)k_max;
 
@@ -294,7 +294,7 @@ static void WriteParticlesSlab_unified(
 
     // File writing
     int64_t totsize = 0;
-    int ic_index = i * param.cpd / param.ppd;
+    int ic_index = (i * param.cpd) / param.ppd; // rounds up (z-slab index * cpd ) / ppd -> 0, 1, ...
 
     if (!just_density && particle_buffer != NULL) {
         if (is_full_range) {

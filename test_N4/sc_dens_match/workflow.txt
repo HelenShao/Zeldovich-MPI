@@ -75,9 +75,31 @@ $ grep "k2=[4-9]\|k2=[1-9][0-9]" rng_logs/hermitian_rng_debug_sorted.txt | grep 
 $ grep "k2=[4-9]\|k2=[1-9][0-9]" rng_logs/zeldovich_rng_debug_sorted.txt | grep -v "D=(0.000000e+00,0.000000e+00)"
 # Both commands should return no results (all high-k modes should be zeroed)
 
-8. Compare density files:
-# Hermitian density file: particle_ics/density4
-# Zeldovich density file: /home/helenshao/InitialConditions/zeldovich-PLT/output_sc_dens_k2cutoff_N4/density4
-# Compare using your preferred method (diff, binary comparison, etc.)
+8. Extract density values to text files:
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N4/sc_dens_match
+# Extract hermitian density values
+$ python3 extract_density_values.py particle_ics/density4 hermitian_density_values.txt 4
+# Extract zeldovich density values
+$ python3 extract_density_values.py /home/helenshao/InitialConditions/zeldovich-PLT/output_N4_sc_dens/density4 zeldovich_density_values.txt 4
+# This creates text files with all density values and their (i,j,k) coordinates
+
+9. Compare and visualize density files:
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N4/sc_dens_match
+# Run comparison with default paths
+$ python3 visualize_density_comparison.py
+# OR specify custom paths:
+# $ python3 visualize_density_comparison.py particle_ics/density4 /home/helenshao/InitialConditions/zeldovich-PLT/output_N4_sc_dens/density4 visualizations
+# 
+# This creates:
+#   - visualizations/density_histograms.png: Distribution comparison
+#   - visualizations/density_scatter.png: Scatter plot with correlation
+#   - visualizations/density_differences.png: Difference distribution
+#   - Prints detailed statistics to console
+#
+# Expected results:
+#   - Correlation should be very close to 1.0 if codes match
+#   - Mean difference should be near zero
+#   - Max absolute difference should be small (within numerical precision)
+#   - With just_density mode (ZD_qdensity=2), only density values are non-zero
 
 

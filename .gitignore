@@ -15,6 +15,13 @@ obj/
 rank_*/
 *.bin
 *.dat
+*_reassembled.bin
+*slab*.bin
+
+# All bin/particle output dirs at any depth (avoid pushing large or many .bin files)
+**/bin_files/
+**/particle_ics/
+**/output/
 
 # Test output directories and files
 tests/options_ab/output_option_*/
@@ -79,3 +86,4 @@ zeldovich-PLT/
 
 # Documentation files (temporary notes)
 AXIS_NOTATION_MAPPING.md
+overview.md

@@ -5,12 +5,12 @@
 # Usage: ./hermitian_3d_matrix 4 test_N4/sc_dens_match/param_N4_sc_dens.par
 
 BoxSize = 100.0
-CPD = 2
+CPD = 4
 ICFormat = "RVZel"
 InitialConditionsDirectory = "./output"
 InitialRedshift = 99.0
 NP = 64                           # N^3 = 4^3 = 64
-ZD_NumBlock = 2
+ZD_NumBlock = 1
 ZD_Seed = 4                        # Random seed (must match zeldovich-PLT)
 ZD_Pk_scale = 1.0
 ZD_Pk_norm = 8.0                   # Normalization scale (e.g., sigma_8)

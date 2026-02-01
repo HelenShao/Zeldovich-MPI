@@ -207,6 +207,12 @@ grep "\[RNG-DEBUG\]" "$RNG_LOG_DIR/zeldovich_rng_debug.log" > "$RNG_LOG_DIR/zeld
 RNG_LINES=$(wc -l < "$RNG_LOG_DIR/zeldovich_rng_debug_filtered.txt")
 echo "Found $RNG_LINES RNG-DEBUG lines"
 
+# Extract REAL-FFT-DEBUG lines
+echo "Extracting REAL-FFT-DEBUG lines from log..."
+grep "\[REAL-FFT-DEBUG\]" "$RNG_LOG_DIR/zeldovich_rng_debug.log" > "$RNG_LOG_DIR/zeldovich_real_fft_debug.txt" || true
+REAL_FFT_LINES=$(wc -l < "$RNG_LOG_DIR/zeldovich_real_fft_debug.txt")
+echo "Found $REAL_FFT_LINES REAL-FFT-DEBUG lines"
+
 # Check for output files
 IC_COUNT=$(find "$OUTPUT_DIR" -name "ic_*" 2>/dev/null | wc -l)
 echo ""
@@ -218,13 +224,21 @@ echo "=========================================="
 echo "Output directory: $OUTPUT_DIR"
 echo "Particle IC files: $IC_COUNT"
 echo "RNG debug lines: $RNG_LINES"
+echo "REAL-FFT-DEBUG lines: $REAL_FFT_LINES"
 echo ""
 echo "RNG debug output files:"
 echo "  - $RNG_LOG_DIR/zeldovich_rng_debug_filtered.txt"
 echo "  - $RNG_LOG_DIR/hermitian_rng_debug_filtered.txt (from hermitian run)"
 echo ""
+echo "REAL-FFT-DEBUG output files:"
+echo "  - $RNG_LOG_DIR/hermitian_real_fft_debug.txt (from hermitian run)"
+echo "  - $RNG_LOG_DIR/zeldovich_real_fft_debug.txt (from zeldovich run)"
+echo ""
 echo "You can now compare RNG outputs:"
 echo "  - diff $RNG_LOG_DIR/hermitian_rng_debug_filtered.txt $RNG_LOG_DIR/zeldovich_rng_debug_filtered.txt"
 echo "  - Or use the comparison script in workflow.txt"
+echo ""
+echo "You can now compare REAL-FFT-DEBUG outputs:"
+echo "  - See workflow.txt for comparison script"
 echo ""
 

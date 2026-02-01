@@ -2128,6 +2128,13 @@ int main(int argc, char **argv)
         TeardownOutput();
     }
     
+    // Cleanup FFTW threading resources
+    #ifdef USE_DOUBLE_PRECISION
+    fftw_cleanup_threads();
+    #else
+    fftwf_cleanup_threads();
+    #endif
+    
     MPI_Finalize();
     
     if (rank == 0) {

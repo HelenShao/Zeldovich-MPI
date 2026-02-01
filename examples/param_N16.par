@@ -26,7 +26,7 @@ ZD_qPLTrescale = 1                 # Enable PLT rescaling
 ZD_PLT_target_z = 0.0              # Target redshift for PLT rescaling (rescale to z=0)
 
 # eigenmodes:
-# This file usually contains something like a 128^3 grid, 
+# This file usually contains something like a 1283 grid, 
 # and the code linearly interpolates the eigenmodes and eigenvalues 
 # to finer meshes as needed for different N (ppd). This parameter should be eigmodes128
 

@@ -214,13 +214,6 @@
 #define VERIFY_RNG_CALLS 0
 #endif
 
-// Debug eigenvector components for PLT mode
-// 0 = No debug output
-// 1 = Print e.vec[0], e.vec[1], e.vec[2] for test coordinates
-#ifndef DEBUG_EIGENVECTOR
-#define DEBUG_EIGENVECTOR 0
-#endif
-
 // ====================================================================================
 // I/O CONFIGURATION
 // ====================================================================================
