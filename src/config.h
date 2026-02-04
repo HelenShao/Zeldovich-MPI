@@ -208,15 +208,15 @@
 // ====================================================================================
 
 // Communication overlap strategy
-// 0 = Use MPI_Ialltoallv (Phase A, simpler)
-// 1 = Use Isend/Irecv with overlap (Phase B, messy)
+// 0 = MPI_Ialltoallv
+// 1 = Isend/Irecv with overlap
 #ifndef OVERLAP_COMMUNICATION
 #define OVERLAP_COMMUNICATION 0
 #endif
 
 // Metadata exchange method
 // 0 = Method A (Each rank calculates + MPI_Allgatherv)
-// 1 = Method B (Rank 0 calculates + MPI_Bcast) [used]
+// 1 = Method B (Rank 0 calculates + MPI_Bcast)
 #ifndef METADATA_EXCHANGE_METHOD
 #define METADATA_EXCHANGE_METHOD 1
 #endif
@@ -226,24 +226,18 @@
 // ====================================================================================
 
 // Maximum grid size for RNG consistency across different N values
-// Used for skip tracking when N < MAX_PPD
-// Set this to be >= maximum N you plan to use
-// When N < MAX_PPD, we skip RNG calls for missing grid points to maintain
+// When N < MAX_PPD, skip RNG calls for missing grid points to maintain
 // consistency with what a full MAX_PPD * MAX_PPD grid would generate
 #ifndef MAX_PPD
-#define MAX_PPD 65536  // Adjust based on max expected PPD
+#define MAX_PPD 65536
 #endif
 
 // Power spectrum spline interpolation resolution
-// Higher values = more accurate interpolation, but more memory
-// 128 = default (good accuracy for most cases)
-// 256 or 512 = higher accuracy (may reduce numerical differences between N values)
 #ifndef SPLINE_RESOLUTION
 #define SPLINE_RESOLUTION 128
 #endif
 
-// Memory alignment for FFTW (bytes)
-// FFTW recommends 4096-byte alignment for best performance
+// Memory alignment for FFTW
 #define ALIGN_BYTES 4096
 
 // FFT direction
@@ -266,13 +260,6 @@
 // 1 = Free PCG RNG after Stage 1 (saves ~1 MB for N=32K)
 #define FREE_PCG_AFTER_STAGE1 1
 
-// ====================================================================================
-// PRODUCTION VS DEBUG PRESETS
-// ====================================================================================
-
-// Uncomment one of these to quickly switch between configurations:
-
-// TEMPORARY: Disable Z-slab file output to avoid running out of storage
 // When SKIP_FILE_WRITE is defined and non-zero, Stage 3 will skip writing rank_*/z*_slab_N*.bin
 // Use -DSKIP_FILE_WRITE=0 to enable file writes, or -USKIP_FILE_WRITE to undefine it
 #ifndef SKIP_FILE_WRITE
@@ -281,8 +268,6 @@
 #undef SKIP_FILE_WRITE
 #endif
 
-// PRODUCTION MODE (Minimal output)
-// #define PRODUCTION_MODE
 #ifdef PRODUCTION_MODE
     #undef PRINT_MATRICES
     #define PRINT_MATRICES 0
@@ -297,13 +282,11 @@
     #undef SKIP_VERIFICATION
     #define SKIP_VERIFICATION 1
     #undef DETAILED_TIMING
-    #define DETAILED_TIMING 1  // Keep timing in production
+    #define DETAILED_TIMING 1  // Keep ?
     #undef VERBOSE_MPI_BUFFER_CHECKS
     #define VERBOSE_MPI_BUFFER_CHECKS 0  
 #endif
 
-// DEBUG MODE (Maximum verification, verbose output)
-// #define DEBUG_MODE
 #ifdef DEBUG_MODE
     #undef PRINT_MATRICES
     #define PRINT_MATRICES 1
@@ -324,10 +307,9 @@
 #endif
 
 // ====================================================================================
-// CONFIGURATION SUMMARY (for verification)
+// CONFIGURATION SUMMARY
 // ====================================================================================
 
-// These macros are for compile-time verification and documentation only
 #define CONFIG_SUMMARY() do { \
     if (rank == 0) { \
         printf("Configuration:\n"); \
