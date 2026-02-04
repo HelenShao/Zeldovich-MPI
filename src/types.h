@@ -4,84 +4,76 @@
 #include "precision.h"
 
 // ====================================================================================
-// PLT EIGENMODE STRUCTURE
-// ====================================================================================
 // Structure for Particle Linear Theory (PLT) eigenmodes
 // Used when qPLT is enabled to get correct growth rates and eigenvectors
-// Matches zeldovich-PLT's eigenmode structure
+// ====================================================================================
+
 typedef struct {
-    double vec[3];  // Eigenvector components [x, y, z]
-    double val;     // Eigenvalue (growth rate factor)
+    double vec[3];  // evector components [x, y, z]
+    double val;     // eval = growth rate
 } eigenmode;
 
 // ====================================================================================
-// GRID DECOMPOSITION
+// Grid bounds structure for 2D decomposition in (X,Z) 
+// Ranges: [x_start, x_end) and [z_start, z_end)
 // ====================================================================================
 
-// Grid bounds structure for 2D decomposition
-// Rectangular region in (X,Z) 
-// Ranges: [x_start, x_end) and [z_start, z_end) - half-open intervals
 typedef struct {
-    int x_start, x_end;  // X-direction range [x_start, x_end)
-    int z_start, z_end;  // Z-direction range [z_start, z_end)
+    int x_start, x_end;  // X-range [x_start, x_end)
+    int z_start, z_end;  // Z-range [z_start, z_end)
 } GridBounds;
 
-// Extended grid bounds with overlapping regions for Abacus compatibility
+// ====================================================================================
+// Extended grid bounds with padded (periodic, may overlap with neighbors) regions
 // Core region  : Non-overlapping, primary responsibility of this rank
 // Padded region: Extended with X_PADDING on each side, may overlap with neighbors
 //
-// Example (N=1024, 3×3 grid, X_PADDING=10):
+// Ex. (N=1024, 3×3 decomp, X_PADDING=10):
 //   Rank 0 core: X=[0, 342), Z=[0, 342)
 //   Rank 0 padded: X=[-10, 352), Z=[-10, 352)  // Wraps at boundaries
-//
-// The padded region uses periodic boundary conditions to handle coordinates
-// outside [0, N). This ensures neighboring ranks have consistent ghost zones.
+// ====================================================================================
+
 typedef struct {
-    GridBounds core;              // Core region [x_start, x_end) - primary responsibility
-    GridBounds padded;            // Padded region with overlap - actual storage
-    int num_pencils_core;         // Number of pencils in core region
-    int num_pencils_padded;       // Number of pencils in padded region (larger)
+    GridBounds core;              // Core [x_start, x_end) 
+    GridBounds padded;            // Padded region with overlap
+    int num_pencils_core;         // # pencils in core
+    int num_pencils_padded;       // # pencils in padded region
 } ExtendedGridBounds;
 
 // ====================================================================================
-// INDEXING MACROS
-// ====================================================================================
-// Y-slice indexing: Access array 'array_idx' in slice 'slice_idx' at (x, z)
-// Memory order: [Slice][Array][Z][X] (X is stride-1, fastest varying)
+// Y-slice idxing: Access array 'array_idx' in slice 'slice_idx' at (x, z)
+// Memory order: [Slice][Array][Z][X] (X is stride-1)
 // Formula: x + N * (z + N * (array_idx + narray * slice_idx))
 //
-// Ex: N=8, narray=4, slice_idx=2, array_idx=1, x=3, z=5:
+// Ex. N=8, narray=4, slice_idx=2, array_idx=1, x=3, z=5:
 //   Index = 3 + 8*(5 + 8*(1 + 4*2)) = 3 + 8*(5 + 8*9) = 3 + 8*77 = 619
+// ====================================================================================
+
 #define Y_SLICE(slice_idx, array_idx, x, z, N, narray) \
     local_y_slices[(int64_t)(x) + (N) * ((z) + (N) * ((array_idx) + (narray) * (slice_idx)))]
 
+// ====================================================================================
 // Pencil indexing: Access array 'array_idx' in pencil 'pencil_idx' at Y position 'y'
-// Memory order: [Pencil][Array][Y] (Y is stride-1 for FFT)
+// Memory order: [Pencil][Array][Y] (Y stride-1 cuz 1D FFT)
 // Formula: y + N * (array_idx + narray * pencil_idx)
-//
-// Y-direction data is contiguous for 1D FFT along Y
+// ====================================================================================
+
 #define PENCIL(pencil_idx, array_idx, y, N, narray) \
     local_pencils[(int64_t)(y) + (N) * ((array_idx) + (narray) * (pencil_idx))]
 
-// Z-slab indexing macro: Access array 'array_idx' at (x_idx, y) for one Z-slab
-// Memory order: [Array][X][Y] (Y is stride-1 for FFT)
+// ====================================================================================
+// Z-slab idxing: [Array][X][Y]
 // Formula: y + N * (x_idx + x_count * array_idx)
 // Note: This format has better cache locality than [X][Array][Y] for unpacking
 // For final output, transpose to [Array][Y][X] format during write!
+// ====================================================================================
 #define ZSLAB(array_idx, x_idx, y, N, narray, x_count) \
     local_z_slab[(int64_t)(y) + (N) * ((x_idx) + (x_count) * (array_idx))]
 
 // ====================================================================================
-// PERIODIC BOUNDARY CONDITION MACROS
+// PBC MACROS
 // ====================================================================================
-// Efficient periodic boundary condition mapping for coordinates.
 // Maps logical coordinates (can be negative or >= N) to actual array indices [0, N).
-// Optimized for the specific range: [-X_PADDING, N+X_PADDING).
-//
-// Performance: Fast-path for common case (x in [0,N)) - no computation needed!
-// - If x in [0, N): return x directly (branch prediction makes this ~free)
-// - If x >= N: return x - N (one subtraction, handles wrap to left)
-// - If x < 0: use modulo arithmetic to handle all negative cases correctly
 //
 // Examples (N=1024, X_PADDING=10):
 //   PERIODIC_X(50, 1024)   → 50    (common case, no-op)
@@ -143,10 +135,8 @@ static inline size_t get_z_slab_memory_bytes(int x_count, int N, int narray) {
 }
 
 // ====================================================================================
-// GRID PRINTING (for debugging)
+// Grid debugging prints
 // ====================================================================================
-
-// Print GridBounds structure
 static inline void print_grid_bounds(const GridBounds *bounds, const char *label, int rank) {
     printf("[Rank %d] %s: X=[%d, %d), Z=[%d, %d), size=%d pencils\n",
            rank, label,
@@ -155,7 +145,6 @@ static inline void print_grid_bounds(const GridBounds *bounds, const char *label
            get_grid_bounds_size(bounds));
 }
 
-// Print ExtendedGridBounds structure
 static inline void print_extended_grid_bounds(const ExtendedGridBounds *ext_bounds, int rank) {
     printf("[Rank %d] Extended Grid Bounds:\n", rank);
     print_grid_bounds(&ext_bounds->core, "  Core", rank);

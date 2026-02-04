@@ -11,7 +11,7 @@ extern "C" {
 #endif
 
 // ====================================================================================
-// Calculate grid factors (grid_x × grid_z = num_ranks)
+// Calculate grid factors (grid_x * grid_z = num_ranks)
 // ====================================================================================
 
 void calculate_grid_factors(int num_ranks, int *grid_x_out, int *grid_z_out)
@@ -49,7 +49,7 @@ GridBounds get_grid_bounds(int dest, int N, int num_pencil_ranks)
 {
     GridBounds bounds;
     
-    // Determine 2D grid factors (grid_x × grid_z = num_pencil_ranks)
+    // Determine 2D grid factors (grid_x * grid_z = num_pencil_ranks)
     int grid_x, grid_z;
     calculate_grid_factors(num_pencil_ranks, &grid_x, &grid_z);
     
@@ -164,16 +164,16 @@ int validate_abacus_compatibility(int N, int num_ranks, int grid_x, int grid_z)
         valid = 0;
     }
     
-    // Check if matches Abacus layout (81×81 nodes, N=6075)
+    // Check if matches Abacus layout (81*81 nodes, N=6075)
     if (grid_x == 81 && grid_z == 81 && N == 6075) {
         int cells_per_node_x = N / grid_x;
         int cells_per_node_z = N / grid_z;
         if (cells_per_node_x == 75 && cells_per_node_z == 75) {
             printf("[INFO] Abacus-compatible decomposition detected:\n");
-            printf("       Grid: %d×%d nodes (81×81)\n", grid_x, grid_z);
-            printf("       Cells per node: %d (X) × %d (Y) × %d (Z)\n",
+            printf("       Grid: %d*%d nodes (81*81)\n", grid_x, grid_z);
+            printf("       Cells per node: %d (X) * %d (Y) * %d (Z)\n",
                    cells_per_node_x, N, cells_per_node_z);
-            printf("       Total: %d×%d×%d cells/node\n",
+            printf("       Total: %d*%d*%d cells/node\n",
                    cells_per_node_x, N, cells_per_node_z);
         }
     } else if (valid) {
@@ -181,7 +181,7 @@ int validate_abacus_compatibility(int N, int num_ranks, int grid_x, int grid_z)
         int cells_per_node_x = N / grid_x;
         int cells_per_node_z = N / grid_z;
         if (N % grid_x == 0 && N % grid_z == 0) {
-            printf("[INFO] Exact division decomposition: %d×%d nodes, %d×%d×%d cells/node\n",
+            printf("[INFO] Exact division decomposition: %d*%d nodes, %d*%d*%d cells/node\n",
                    grid_x, grid_z, cells_per_node_x, N, cells_per_node_z);
         }
     }
