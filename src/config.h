@@ -1,28 +1,18 @@
 #ifndef HERMITIAN_CONFIG_H
 #define HERMITIAN_CONFIG_H
 
-// ====================================================================================
-// CONFIGURATION
-// ====================================================================================
-// Centralizes all compile-time configuration options.
-// Modify these flags or override them at compile time using -D flags.
-//
-// Example: make CFLAGS="-DUSE_DOUBLE_PRECISION -DDEBUG_PRINTS=0"
-// ====================================================================================
-
-// ====================================================================================
-// ALGORITHM SELECTION
-// ====================================================================================
+// Modify flags or override them at compile time using -D flags.
+// Ex. make CFLAGS="-DUSE_DOUBLE_PRECISION -DDEBUG_PRINTS=0"
 
 // Parallelization strategy for (x,z) loops within Y-slice generation
 // 0 = Sequential (x,z) loops - no locks needed, each thread processes different Y-slice
 //     Similar to zeldovich.cpp approach: parallelize over Y-slices, sequential within slice
-//     [RECOMMENDED] Avoids lock contention, simpler and safer
+//     [RECOMMENDED] Avoids lock contention
 // 1 = Parallel (x,z) loops with locks - may be faster but requires locks for thread safety
 //     All threads process same Y-slice, need locks to protect RNG access
 //     Lock contention can serialize execution, reducing parallel benefit
 #ifndef PARALLELIZE_XZ_WITHIN_SLICE
-#define PARALLELIZE_XZ_WITHIN_SLICE 0  // Default: sequential (x,z) loops, no locks (like zeldovich.cpp)
+#define PARALLELIZE_XZ_WITHIN_SLICE 0  // default
 #endif
 
 // Use Zeldovich method for self-conjugate planes (Y=0, Y=N/2)
@@ -33,99 +23,74 @@
 #endif
 
 // Use X-direction padding with periodic boundary conditions
-// 1 = Enable X-padding with periodic wrap-around (for Abacus compatibility)
-// 0 = Core grid only (no padding, standard decomposition)
+// 1 = Enable X-padding with periodic wrap-around
 #ifndef USE_X_PADDING
 #define USE_X_PADDING 0
 #endif
 
 // Enable Abacus domain decomposition validation
 // 1 = Validate that N is divisible by grid_x and grid_z (exact division required)
-// 0 = Skip validation (for non-Abacus use cases)
 #ifndef ENABLE_ABACUS_VALIDATION
 #define ENABLE_ABACUS_VALIDATION 0
 #endif
 
 // ====================================================================================
-// PRECISION SELECTION
+// PRECISION
 // ====================================================================================
-
-// Floating-point precision
-// 0 = Single precision (float) - default, uses ~8 bytes per complex number
-// 1 = Double precision (double) - uses ~16 bytes per complex number
-// NOTE: Precision selection:
+// NOTE:
 //       - Single precision (default): Don't define USE_DOUBLE_PRECISION (undefined = single)
 //       - Double precision: Define via CFLAGS: make CFLAGS="-DUSE_DOUBLE_PRECISION"
-//       The Makefile checks CFLAGS to automatically link the correct FFTW libraries.
-//       DO NOT define USE_DOUBLE_PRECISION here (even as 0) - precision.h uses #ifdef which
-//       checks for definition, not value. Leave it undefined for single precision.
-// #define USE_DOUBLE_PRECISION  // Uncomment this line to use double precision (but prefer CFLAGS)
+// The Makefile checks CFLAGS to automatically link the correct FFTW libraries.
+// DO NOT define USE_DOUBLE_PRECISION here (even as 0) - precision.h uses #ifdef which
+// checks for definition, not value. Leave it undefined for single precision!!
+// #define USE_DOUBLE_PRECISION  // Uncomment this to use double precision (but prefer CFLAGS)
 
 // ====================================================================================
-// OUTPUT AND DEBUG CONTROL
+// Debugging
 // ====================================================================================
 
-// Print matrix contents for visual inspection (small N only)
-// 0 = No matrix printing (recommended for production)
+// Print matrix (small N only)
 // 1 = Print matrices for debugging
 #ifndef PRINT_MATRICES
 #define PRINT_MATRICES 1
 #endif
 
-// Print detailed Y-slices before/after communication
-// 0 = No detailed slice printing (recommended)
+// Print Y-slices before/after communication
 // 1 = Print detailed Y-slice information (small N only)
 #ifndef PRINT_DETAILED_SLICES
 #define PRINT_DETAILED_SLICES 0
 #endif
 
 // Print all final output Z-slabs after 3D FFT
-// 0 = No Z-slab printing (recommended for production)
 // 1 = Print all Z-slabs for debugging (small N only, N <= 16)
 #ifndef PRINT_Z_SLABS
 #define PRINT_Z_SLABS 1
 #endif
 
 // Show detailed debug information
-// 0 = Minimal output (production mode)
-// 1 = Verbose debug output
+// 1 = Verbose
 #ifndef DEBUG_PRINTS
 #define DEBUG_PRINTS 1
 #endif
 
-// Debug RNG consistency: Print raw D, F, G, H values for test coordinates
-// This allows comparing overlapping grid points across different N values
-// 0 = Disabled
+// RNG skip consistency
 // 1 = Print D, F, G, H for test coordinates up to MAX_DEBUG_COORD
 #ifndef DEBUG_RNG_CONSISTENCY
 #define DEBUG_RNG_CONSISTENCY 1
 #endif
 
 // Maximum coordinate value to test for RNG consistency debugging
-// Tests all coordinates (x,y,z) where x,y,z <= MAX_DEBUG_COORD
-// This ensures overlapping regions are tested for any pair of N values
-// where min(N1, N2) >= 2*MAX_DEBUG_COORD
-// Recommended: 10-20 for small N testing, can be increased for larger N
 #ifndef MAX_DEBUG_COORD
 #define MAX_DEBUG_COORD 10
 #endif
 
-// Maximum boundary coordinate to test for large N
-// When (N/2)-1 <= MAX_DEBUG_BOUNDARY_COORD, test all coordinates ≤ (N/2)-1
-// This ensures overlapping region boundary is tested for large N comparisons
-// For N=256 and N=512: overlapping region is x,y,z <= 128 (Nhalf for N=256)
-//   If MAX_DEBUG_BOUNDARY_COORD >= 127, both N=256 and N=512 will test coordinates ≤ 127
-// Recommended: 128-256 for testing large N comparisons
+// Maximum coord for RNG consistency debugging
 #ifndef MAX_DEBUG_BOUNDARY_COORD
 #define MAX_DEBUG_BOUNDARY_COORD 128
 #endif
 
-// Sampling stride for RNG consistency debugging when N > 16
-// For N > 16, only print coordinates where x, y, z are multiples of DEBUG_SAMPLE_STRIDE
-// This reduces output volume while still testing representative coordinates
-// For N=256 with stride=10: prints ~(128/10)^3 ≈ 2,000 coordinates instead of ~2.1 million
-// Set to 1 to print all coordinates (no sampling)
-// Recommended: 5-20 for large N testing
+// Sampling stride for RNG debugging when N > 16
+// For N > 16, only print coords where x, y, z are multiples of DEBUG_SAMPLE_STRIDE
 #ifndef DEBUG_SAMPLE_STRIDE
 #define DEBUG_SAMPLE_STRIDE 10
 #endif
@@ -137,19 +102,14 @@
 #define DEBUG_FULL_PRINT_MAX_N 16
 #endif
 
-// Debug RNG skip logic: Print detailed skip information to trace RNG state
-// This helps identify where skip logic diverges between different N values
-// 0 = Disabled
-// 1 = Print skip accumulation and application for test coordinates
+// Debug RNG skip logic: Print detailed skip info to trace RNG state
 #ifndef DEBUG_RNG_SKIP
 #define DEBUG_RNG_SKIP 1
 #endif
 
-// Verbose output for MPI buffer verification (send/recv buffer bounds, displacements, etc.)
-// 1 = Print detailed buffer checks before MPI_Ialltoallv (verbose, useful for debugging)
-// 0 = Silent checks (only print errors, reduces log spam)
+// Verbose for MPI buffer verification (send/recv buffer bounds, displacements, etc.)
 #ifndef VERBOSE_MPI_BUFFER_CHECKS
-#define VERBOSE_MPI_BUFFER_CHECKS 0  // Default: silent (reduces log spam)
+#define VERBOSE_MPI_BUFFER_CHECKS 0  // default
 #endif
 
 // ====================================================================================
@@ -269,9 +229,9 @@
 // Used for skip tracking when N < MAX_PPD
 // Set this to be >= maximum N you plan to use
 // When N < MAX_PPD, we skip RNG calls for missing grid points to maintain
-// consistency with what a full MAX_PPD × MAX_PPD grid would generate
+// consistency with what a full MAX_PPD * MAX_PPD grid would generate
 #ifndef MAX_PPD
-#define MAX_PPD 65536  // Adjust based on maximum expected N
+#define MAX_PPD 65536  // Adjust based on max expected PPD
 #endif
 
 // Power spectrum spline interpolation resolution
@@ -287,21 +247,15 @@
 #define ALIGN_BYTES 4096
 
 // FFT direction
-// FFTW_FORWARD = -1 (real → Fourier)
-// FFTW_BACKWARD = +1 (Fourier → real) [USED HERE]
+// FFTW_FORWARD = -1 (real -> Fourier)
+// FFTW_BACKWARD = +1 (Fourier -> real)
 #define FFT_SIGN FFTW_BACKWARD
 
-// Number of arrays per Y-slice
-// 1 = Density field only
-// 2 = Density + displacement fields
-// 4 = Density + displacement + velocity fields [RECOMMENDED]
-// TODO: Make this a runtime parameter in future versions
+// # arrays per Y-slice
 #define NARRAY 4
 
-// X-direction padding size (number of grid points)
+// X-direction padding
 // Only used if USE_X_PADDING=1
-// Creates overlapping regions between adjacent ranks in X-direction
-// Handles Abacus's imperfect grid reading (may access X outside strict bounds)
 #if USE_X_PADDING
 #define X_PADDING 10
 #else
@@ -310,8 +264,6 @@
 
 // Free PCG RNG after Stage 1 to save memory?
 // 1 = Free PCG RNG after Stage 1 (saves ~1 MB for N=32K)
-// 0 = Keep PCG RNG allocated (needed if generating more slices later)
-// Set to 0 if you plan to generate additional slices (e.g., multiple iterations)
 #define FREE_PCG_AFTER_STAGE1 1
 
 // ====================================================================================
