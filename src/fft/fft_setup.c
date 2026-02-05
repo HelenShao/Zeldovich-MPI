@@ -1,12 +1,12 @@
-// ====================================================================================
-// FFT SETUP MODULE
-// ====================================================================================
-
 #include "fft_setup.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <mpi.h>
 #include <omp.h>
+
+// todo: add FFTW_WISDOM
+// Double: fftw_import_wisdom_file("wisdom_double.txt")
+// Export wisdom after creating plans
 
 void setup_fftw_plans_full(int N, fftw_plan_t *plan_2d_out, fftw_plan_t *plan_1d_out)
 {
@@ -16,11 +16,11 @@ void setup_fftw_plans_full(int N, fftw_plan_t *plan_2d_out, fftw_plan_t *plan_1d
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     
     // ====================================================================================
-    // INITIALIZE FFTW THREADING (CRITICAL FOR PERFORMANCE)
+    // INITIALIZE FFTW THREADING (TODO: performance scaling tests, FFTW_WISDOM)
     // ====================================================================================
-    // FFTW threading must be initialized before creating plans.
-    // This enables FFTW to use OpenMP threads for FFT computation.
-    // Without this, FFTW only uses ONE thread regardless of OMP_NUM_THREADS setting!
+    // FFTW threading must be initialized before creating plans
+    // This enables FFTW to use OMP threads
+    // W/O this, FFTW only uses ONE thread regardless of OMP_NUM_THREADS setting
     static int fftw_threads_initialized = 0;
     if (!fftw_threads_initialized) {
         int nthreads = omp_get_max_threads();
@@ -61,11 +61,10 @@ void setup_fftw_plans_full(int N, fftw_plan_t *plan_2d_out, fftw_plan_t *plan_1d
     *plan_2d_out = FFTW_PLAN_DFT_2D(N, N, dummy_2d, dummy_2d, 
                                      FFT_SIGN, FFTW_ESTIMATE);
     
-    // CRITICAL: Free dummy memory immediately after plan creation
-    // The plan is now independent of the dummy buffer
+    // Free dummy memory after plan creation!
     free(dummy_2d);
     
-    // Create 1D FFT plan (for Y-direction FFT on pencils)
+    // Create 1D FFT plan
     if (posix_memalign((void**)&dummy_1d, ALIGN_BYTES, 
                        sizeof(fftw_complex_t) * N) != 0) {
         fprintf(stderr, "[ERROR] Failed to allocate dummy_1d for 1D FFT plan creation\n");
@@ -75,10 +74,10 @@ void setup_fftw_plans_full(int N, fftw_plan_t *plan_2d_out, fftw_plan_t *plan_1d
     *plan_1d_out = FFTW_PLAN_DFT_1D(N, dummy_1d, dummy_1d, 
                                      FFT_SIGN, FFTW_ESTIMATE);
     
-    // CRITICAL: Free dummy memory immediately after plan creation
+    // Free dummy memory after plan
     free(dummy_1d);
     
-    // Verify plan creation
+    // Ceck plan creation
     if (*plan_2d_out == NULL || *plan_1d_out == NULL) {
         fprintf(stderr, "[ERROR] Failed to create FFT plans (one or both plans are NULL)\n");
         MPI_Abort(MPI_COMM_WORLD, 1);

@@ -2,21 +2,12 @@
 // POWER SPECTRUM AND GAUSSIAN RANDOM FIELD GENERATION 
 // ** obsolete! Use zeldovich_wrapper.cpp instead **
 // ====================================================================================
-// Implementation of power spectrum evaluation and complex Gaussian random field
-// generation, matching zeldovich-PLT's PowerSpectrum::cgauss<2>() behavior.
-//
-// Dependencies: rng.h, math.h
-// ====================================================================================
 
 #include "power_spectrum.h"
 #include "rng.h"
 #include <math.h>
 #include <float.h>
 #include <stdio.h>
-
-// ====================================================================================
-// POWER SPECTRUM FUNCTIONS
-// ====================================================================================
 
 void init_power_spectrum_params(
     power_spectrum_params_t *params,

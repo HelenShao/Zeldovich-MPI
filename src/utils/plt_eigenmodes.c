@@ -1,7 +1,5 @@
 // ====================================================================================
-// PLT EIGENMODE UTILITIES
-// ====================================================================================
-// Implementation of PLT eigenmode loading and interpolation
+// PLT EIGENMODE (load + interpolate)
 // ====================================================================================
 
 #include "plt_eigenmodes.h"
@@ -12,10 +10,7 @@
 #include <stdint.h>
 #include <assert.h>
 
-// ====================================================================================
-// GLOBAL EIGENMODE DATA
-// ====================================================================================
-// Matches zeldovich-PLT's global variables
+// Same as zeldovich-PLT's global variables
 static double *eig_vecs = NULL;
 static int64_t eig_vecs_ppd = 0;
 
@@ -104,8 +99,7 @@ int64_t plt_get_eigenmode_ppd(void) {
 // EIGENMODE INTERPOLATION
 // ====================================================================================
 
-// Helper macro for accessing eigenmode data
-// Matches zeldovich-PLT's EIGMODE macro
+// Accessing eigenmode data (see zeldovich-PLT's EIGMODE macro)
 #define EIGMODE(_kx, _ky, _kz, _i) \
     (eig_vecs[(int64_t)(_kx) * eig_vecs_ppd * halfppd * 4 + (_ky) * halfppd * 4 + (_kz) * 4 + (_i)])
 
@@ -123,7 +117,7 @@ int plt_get_eigenmode(int ikx, int iky, int ikz, int64_t ppd, eigenmode *e) {
     int64_t halfppd = eig_vecs_ppd / 2 + 1;
     int64_t ppdhalf = eig_vecs_ppd / 2;
     
-    // Handle exact match case (no interpolation needed)
+    // Exact match case (no interpolation needed)
     if (eig_vecs_ppd % ppd == 0) {
         int64_t scale = eig_vecs_ppd / ppd;
         int64_t ekx = ikx * scale;

@@ -1,11 +1,8 @@
 // ====================================================================================
-// PCG RANDOM NUMBER GENERATOR MODULE
+// PCG RANDOM NUMBER GENERATOR
 // ====================================================================================
-// PCG-based random number generation for Y-slices.
 // Each rank has its own generator that has been advanced to correct state
-// and advances with each call + for skips.
-//
-// Dependencies: pcg-rng/pcg_random.hpp
+// and advances with each call + for skips
 // ====================================================================================
 
 #include "rng.h"
@@ -31,28 +28,21 @@ static pcg64 *v2rng_global = NULL;
 static int v2rng_global_initialized = 0;
 static int v2rng_global_size = 0;
 
-// OpenMP locks for thread-safe generator access (only when parallelizing (x,z) within slice)
+// OpenMP locks for thread-safe generator access
 #if PARALLELIZE_XZ_WITHIN_SLICE
 static omp_lock_t *v2rng_locks = NULL;
 #endif
 
-// ====================================================================================
-// FUNCTIONS
-// ====================================================================================
-
 // Initialize global PCG generators array (NxNxN)
-// seed: Base seed for reproducibility
-//
-// One generator per Y-slice: Each Y-slice (Y = 0, 1, 2, ..., N/2) has its own RNG generator.
-// Hermitian symmetry: Only Y values 0 to N/2 need to be generated; the rest are determined by symmetry.
-// Deterministic sequences: Each generator produces an independent, reproducible sequence for its Y-slice.
-// Array size: L/2 + 1 includes both Y=0 and Y=N/2 (both are self-conjugate).
+// Each Y-slice (Y = 0, 1, 2, ..., N/2) has its own RNG generator
+// Each generator produces an independent sequence for its Y-slice
+
 void initialize_global_pcg(int L, int M, int N, uint64_t seed) {
     if (!v2rng_global_initialized) {
         // All threads share same v2rng array
         // Thread accesses v2rng[i] where i = assigned slice index
         
-        // Allocate memory for v2rng array (one generator per i-slice)
+        // Allocate mem for v2rng array (one generator per i-slice)
         // Need L/2 + 1 to include index L/2 (self-conjugate case: Y=0 and Y=L/2)
         v2rng_global_size = L/2 + 1;  // Number of i-slices we need to process (0 to L/2)
         // Add padding to avoid buffer overflow in PCG state
@@ -69,15 +59,13 @@ void initialize_global_pcg(int L, int M, int N, uint64_t seed) {
         
         // Initialize remaining generators with sequential copying
         // Each generator is advanced by 2*MAX_PPD*MAX_PPD to ensure independent sequences
-        // This matches zeldovich.cpp approach: v2rng[i].advance(2 * MAX_PPD * MAX_PPD)
-        // Using MAX_PPD (not actual grid size) maintains consistency across different N values
-        // Cast to uint64_t to avoid integer overflow warning (MAX_PPD=65536 gives 8.5e9 > INT_MAX)
+        // Cast to uint64_t for integer overflow 
         for(int i = 1; i < v2rng_global_size; i++) {
-            v2rng_global[i] = v2rng_global[i-1]; 
-            v2rng_global[i].advance((uint64_t)2 * MAX_PPD * MAX_PPD); // Match zeldovich.cpp: each plane is MAX_PPD^2 complexes
+            v2rng_global[i] = v2rng_global[i-1]; // Copy previous gen.
+            v2rng_global[i].advance((uint64_t)2 * MAX_PPD * MAX_PPD); 
         }
         
-        // Initialize OpenMP locks for thread-safe access (only when parallelizing (x,z) within slice)
+        // Initialize OpenMP locks for thread-safe access
         #if PARALLELIZE_XZ_WITHIN_SLICE
         v2rng_locks = (omp_lock_t*)malloc(v2rng_global_size * sizeof(omp_lock_t));
         if (v2rng_locks == NULL) {
@@ -137,15 +125,13 @@ double random_real_pcg_global(int slice_index) {
         exit(1);
     }
     
-    // Conditional thread-safety: use locks only when parallelizing (x,z) within slice
     #if PARALLELIZE_XZ_WITHIN_SLICE
     // Thread-safe access: acquire lock, generate number (advances generator), release lock
-    // This ensures generator advances naturally with each call, just like zeldovich.cpp
     omp_set_lock(&v2rng_locks[slice_index]);
     uint64_t r = v2rng_global[slice_index]();
     omp_unset_lock(&v2rng_locks[slice_index]);
-    #else
-    // Sequential access: no locks needed, generator advances deterministically
+
+    #else 
     uint64_t r = v2rng_global[slice_index]();
     #endif
     
@@ -159,17 +145,12 @@ double random_real_pcg_global(int slice_index) {
     // This ensures we never return 0, which would cause log(0) in Box-Muller
     r += (uint64_t)1;
     
-    // Convert using ldexp for precise floating-point conversion (matches zeldovich-PLT)
+    // Convert using ldexp for precise floating-point conversion (see zeldovich-PLT)
     // ldexp(r, -64) is equivalent to r * 2^-64, but more precise
     return ldexp((double)r, -64);
 }
 
-// Advance RNG generator for a specific Y-slice
-// slice_index: Y-slice index (0 to N/2, inclusive)
-// n: Number of steps to advance (each step = 1 random number)
-//
-// Used for skipping RNG calls when N < MAX_PPD to maintain consistency
-// with what a full MAX_PPD × MAX_PPD grid would generate
+// Advance RNG generator for a specific Y-slice for skipping when N < MAX_PPD
 void advance_pcg_global(int slice_index, uint64_t n) {
     if (!v2rng_global_initialized || v2rng_global == NULL) {
         fprintf(stderr, "ERROR: advance_pcg_global called before initialize_global_pcg!\n");

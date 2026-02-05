@@ -49,6 +49,7 @@ GridBounds get_grid_bounds(int dest, int N, int num_pencil_ranks)
 
     // 1. Calculate 2D position (x_block, z_block) for given rank, ranks stored in row-major order
     // 2. Assign chunk [xrng, zrng] of NxN slice into (x_block, z_block) 
+    
     // dest = rank to which block is assigned
     // N    = PPD
     // num_pencil_ranks = total number of ranks in the grid (to calculate grid decomp)
@@ -122,12 +123,11 @@ ExtendedGridBounds get_extended_grid_bounds(int rank, int N, int num_ranks, int 
     ext_bounds.padded.x_end = core.x_end;
 #endif
     
-    // Step 4: Z-direction stays unchanged (no padding in Z for now)
-    // TODO: Add Z-direction periodic padding if needed
+    // TODO: Add Z-periodic padding?
     ext_bounds.padded.z_start = core.z_start;
     ext_bounds.padded.z_end = core.z_end;
     
-    // Step 5: Calculate number of pencils for both regions
+    // Step 4: Calculate number of pencils for both regions
     // Note: Padded region size is still (x_end - x_start) even if coordinates are out of [0,N)
     ext_bounds.num_pencils_core = (core.x_end - core.x_start) * (core.z_end - core.z_start);
     ext_bounds.num_pencils_padded = (ext_bounds.padded.x_end - ext_bounds.padded.x_start) * 

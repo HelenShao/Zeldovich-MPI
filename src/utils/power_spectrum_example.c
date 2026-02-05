@@ -1,14 +1,11 @@
 // ====================================================================================
-// EXAMPLE: Using cgauss() to generate power-spectrum-weighted random fields
-// ====================================================================================
-// This example shows how to use the cgauss() function to generate complex
-// Gaussian random fields with variance matching a power spectrum, similar to
-// zeldovich-PLT's PowerSpectrum::cgauss<2>().
+// EX: Using cgauss() to generate power-spectrum-weighted random fields
+// with variance matching a p(k), similar to zeldovich-PLT's PowerSpectrum::cgauss<2>()
 // ====================================================================================
 
 #include "power_spectrum.h"
 #include "rng.h"
-#include "precision.h"  // For fftw_complex_t
+#include "precision.h" 
 #include <math.h>
 #include <stdio.h>
 
@@ -23,10 +20,6 @@ void example_usage() {
     power_spectrum_params_t ps_params;
     
     // Example: Power law P(k) = k^n with normalization
-    // For cosmological simulations, typical values:
-    //   powerlaw_index = -2.0 to -3.0 (scale-invariant)
-    //   normalization = includes box volume factor (1/BoxSize^3)
-    //   Pk_smooth = 0.0 (no smoothing) or small value for testing
     double powerlaw_index = -2.0;  // P(k) ~ k^-2
     double normalization = 1.0;    // Adjust amplitude
     double Pk_smooth = 0.0;        // No smoothing
@@ -64,7 +57,6 @@ void example_usage() {
         }
     }
     
-    // Cleanup
     cleanup_global_pcg();
 }
 

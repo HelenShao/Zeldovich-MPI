@@ -1,12 +1,6 @@
 #ifndef PLT_EIGENMODES_H
 #define PLT_EIGENMODES_H
 
-// ====================================================================================
-// PLT EIGENMODE UTILITIES
-// ====================================================================================
-// Functions for loading and accessing Particle Linear Theory (PLT) eigenmodes
-// ====================================================================================
-
 #include "../types.h"  // For eigenmode structure
 #include <stdint.h>
 
@@ -14,12 +8,7 @@
 extern "C" {
 #endif
 
-// ====================================================================================
-// EIGENMODE FILE LOADING
-// ====================================================================================
-
 // Load PLT eigenmodes from binary file
-// filename: Path to eigenmode file
 // Returns: 0 on success, non-zero on error
 // Side effects: Sets global eig_vecs and eig_vecs_ppd
 // File format:
@@ -28,23 +17,14 @@ extern "C" {
 //   - Each eigenmode is 4 doubles: vec[3] + val
 int plt_load_eigenmodes(const char *filename);
 
-// Free eigenmode data
-// Should be called when done with eigenmodes
+// Free emode data
 void plt_free_eigenmodes(void);
 
 // Get the ppd (grid size) of the loaded eigenmodes
 // Returns: eig_vecs_ppd, or 0 if not loaded
 int64_t plt_get_eigenmode_ppd(void);
 
-// ====================================================================================
-// EIGENMODE INTERPOLATION
-// ====================================================================================
-
 // Get PLT eigenmode for given k-vector using interpolation
-// ikx, iky, ikz: Integer k-vector components (can be negative)
-// ppd: Current grid size (may differ from eig_vecs_ppd)
-// e: Output eigenmode structure
-// Returns: 0 on success, non-zero on error (e.g., eigenmodes not loaded)
 int plt_get_eigenmode(int ikx, int iky, int ikz, int64_t ppd, eigenmode *e);
 
 #ifdef __cplusplus

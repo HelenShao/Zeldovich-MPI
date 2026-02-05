@@ -1,12 +1,6 @@
 #ifndef HERMITIAN_BATCH_HELPERS_H
 #define HERMITIAN_BATCH_HELPERS_H
 
-// ====================================================================================
-// BATCH PROCESSING HELPERS
-// ====================================================================================
-// Depends on: config.h, types.h, mpi.h
-// ====================================================================================
-
 #include "config.h"
 #include "types.h"
 #include <mpi.h>
@@ -28,9 +22,8 @@ void get_rank_batch_y_values(int target_rank, int batch_idx, int N, int num_rank
                               int *out_y_values, int *out_count);
 // ====================================================================================
 
-// Calculate sendcounts, recvcounts, and displacements for a given batch
+// Calculate sendcounts, recvcounts,  total send and recv counts, and displacements for a given batch
 // Allocates new arrays (caller must free them)
-// Also returns total send and recv counts
 
 void calculate_batch_send_recv_counts(
     int rank, int num_ranks, int N, int narray, int batch_idx,

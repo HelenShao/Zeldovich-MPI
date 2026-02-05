@@ -1,15 +1,15 @@
 // ====================================================================================
-// HERMITIAN GENERATION MODULE
+// HERMITIAN Y-SLICES GENERATION+FFT
 // ====================================================================================
 
 #include "hermitian_generation.h"
 #include "../utils/verification.h"
 #include "../utils/zeldovich_wrapper.h" 
-#include "../utils/plt_eigenmodes.h"  // For PLT eigenmode support
-#include "../config.h"  // For DEBUG_PRINTS, SKIP_VERIFICATION, MAX_PPD
-#include "../precision.h"  // For real_t, fabs_t, fmax_t
+#include "../utils/plt_eigenmodes.h" 
+#include "../config.h"  
+#include "../precision.h"  
 #include <stdio.h>
-#include <stdlib.h>  // For malloc/free
+#include <stdlib.h>  
 #include <stdint.h> 
 #include <math.h>    
 #include <omp.h>

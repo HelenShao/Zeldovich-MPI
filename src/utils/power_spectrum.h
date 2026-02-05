@@ -2,17 +2,12 @@
 #define POWER_SPECTRUM_H
 
 // ====================================================================================
-// POWER SPECTRUM AND GAUSSIAN RANDOM FIELD GENERATION
+// POWER SPECTRUM AND GAUSSIAN RNG
 // ** obsolete! Use zeldovich_wrapper.cpp instead **
-// ====================================================================================
-// Power spectrum evaluation and complex Gaussian random field
-// generation similar to zeldovich-PLT's PowerSpectrum::cgauss<2>() function.
-//
-// Dependencies: rng.h (for PCG RNG), math.h
 // ====================================================================================
 
 #include <stdint.h>
-#include <fftw3.h>  // For fftw_complex type
+#include <fftw3.h> 
 
 #ifdef __cplusplus
 extern "C" {
@@ -61,7 +56,7 @@ double power_spectrum_eval(const power_spectrum_params_t *params, double wavenum
 // ====================================================================================
 
 // Generate complex Gaussian random field mode with variance P(k)
-// This is equivalent to zeldovich-PLT's PowerSpectrum::cgauss<2>(kmag, y)
+// See zeldovich-PLT's PowerSpectrum::cgauss<2>(kmag, y) for details
 //
 // params: Power spectrum parameters
 // wavenumber: Magnitude of wavenumber vector k = sqrt(kx^2 + ky^2 + kz^2)
@@ -90,5 +85,5 @@ void cgauss(
 }
 #endif
 
-#endif // POWER_SPECTRUM_H
+#endif
 

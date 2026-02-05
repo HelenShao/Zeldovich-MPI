@@ -1,28 +1,19 @@
 // ====================================================================================
-// ZELDOVICH-PLT WRAPPER
-// ====================================================================================
-// C++ wrapper for zeldovich-PLT PowerSpectrum and Parameters classes
+// C++ wrapper for zeldovich-PLT P(k) and Parameters classes
 // ====================================================================================
 
 #include "zeldovich_wrapper.h"
-
-// Include zeldovich-PLT headers
-// Note: Use angle brackets to search include paths first (avoiding local src/utils/power_spectrum.h)
-// zeldovich-PLT include path comes first in Makefile
 #include <power_spectrum.h>
 #include <parameters.h>
 #include <zeldovich.h>
 
 extern "C" {
 
-// ====================================================================================
-// PARAMETERS INTERFACE
-// ====================================================================================
+// --- Parameters ---
 
 ParametersHandle zeldovich_params_create(const char* param_file) {
     try {
         Parameters* params = new Parameters(fs::path(param_file));
-        // Cast to ParametersHandle object
         return static_cast<ParametersHandle>(params);
     } catch (...) {
         return NULL;
@@ -31,11 +22,11 @@ ParametersHandle zeldovich_params_create(const char* param_file) {
 
 void zeldovich_params_destroy(ParametersHandle params) {
     if (params) {
-        // Cast to Parameters object and delete
         delete static_cast<Parameters*>(params);
     }
 }
 
+// Pattern: Cast to Parameters object and attribute
 double zeldovich_params_get_fundamental(ParametersHandle params) {
     if (!params) return 0.0;
     // Cast to Parameters object and return fundamental
@@ -68,7 +59,7 @@ int zeldovich_params_get_seed(ParametersHandle params) {
 }
 
 double zeldovich_params_get_Pk_powerlaw_index(ParametersHandle params) {
-    if (!params) return 1000.0;  // Default invalid value
+    if (!params) return 1000.0;
     Parameters* p = static_cast<Parameters*>(params);
     return p->Pk_powerlaw_index;
 }
@@ -95,8 +86,6 @@ const char* zeldovich_params_get_PLT_filename(ParametersHandle params) {
     if (!params) return NULL;
     Parameters* p = static_cast<Parameters*>(params);
     if (p->PLT_filename.empty()) return NULL;
-    // Return C string from fs::path (valid while Parameters object exists)
-    // Note: Caller should copy the string if they need to keep it beyond the Parameters lifetime
     return p->PLT_filename.c_str();
 }
 
@@ -125,20 +114,18 @@ int zeldovich_params_get_qdensity(ParametersHandle params) {
 }
 
 double zeldovich_params_get_k_cutoff(ParametersHandle params) {
-    if (!params) return 1.0;  // Default value
+    if (!params) return 1.0;
     Parameters* p = static_cast<Parameters*>(params);
     return p->k_cutoff;
 }
 
 int zeldovich_params_get_CornerModes(ParametersHandle params) {
-    if (!params) return 0;  // Default value
+    if (!params) return 0;
     Parameters* p = static_cast<Parameters*>(params);
     return p->CornerModes;
 }
 
-// ====================================================================================
-// POWER SPECTRUM INTERFACE
-// ====================================================================================
+// --- PowerSpectrum ---
 
 static const int MAX_TRACKED_OBJECTS = 1024;
 static PowerSpectrum* destroyed_objects[MAX_TRACKED_OBJECTS];
@@ -157,41 +144,19 @@ PowerSpectrumHandle zeldovich_ps_create(int n, ParametersHandle params) {
 
 void zeldovich_ps_destroy(PowerSpectrumHandle ps) {
     if (!ps) return;
-    
     PowerSpectrum* p = static_cast<PowerSpectrum*>(ps);
-    
-    // Check if this object was already destroyed
     for (int i = 0; i < num_destroyed; i++) {
-        if (destroyed_objects[i] == p) {
-            // Already destroyed, skip (prevent double-free)
-            fprintf(stderr, "[DEBUG] zeldovich_ps_destroy: Object %p already destroyed, skipping\n", (void*)p);
+        if (destroyed_objects[i] == p)
             return;
-        }
     }
-    
-    // Mark as destroyed BEFORE deletion (critical for preventing double-free)
-    if (num_destroyed < MAX_TRACKED_OBJECTS) {
+    if (num_destroyed < MAX_TRACKED_OBJECTS)
         destroyed_objects[num_destroyed++] = p;
-    } else {
-        fprintf(stderr, "[WARNING] zeldovich_ps_destroy: Tracking array full, cannot prevent double-free\n");
-        // Even if tracking is full, still try to delete (better than leaking memory)
-    }
-    
-    fprintf(stderr, "[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object %p (tracked: %d/%d)\n", 
-            (void*)p, num_destroyed, MAX_TRACKED_OBJECTS);
-    
     try {
-        // Delete the PowerSpectrum object, will delete[] v2rng array
-        // NOTE: After deletion, p becomes a dangling pointer - do not de-reference
         delete p;
-        // Set pointer to NULL after deletion to prevent accidental reuse
-        p = NULL;
-        // fprintf(stderr, "[DEBUG] zeldovich_ps_destroy: Successfully deleted PowerSpectrum object\n");
     } catch (const std::exception& e) {
-        fprintf(stderr, "[ERROR] zeldovich_ps_destroy: Exception during deletion: %s\n", e.what());
+        fprintf(stderr, "[ERROR] zeldovich_ps_destroy: %s\n", e.what());
     } catch (...) {
-        // Ignore other exceptions during destruction (shouldn't happen, but be safe)
-        fprintf(stderr, "[ERROR] zeldovich_ps_destroy: Unknown exception during deletion\n");
+        fprintf(stderr, "[ERROR] zeldovich_ps_destroy: unknown exception\n");
     }
 }
 
@@ -224,10 +189,7 @@ double zeldovich_ps_power(PowerSpectrumHandle ps, double wavenumber) {
 }
 
 double zeldovich_ps_one_rand(PowerSpectrumHandle ps, int64_t rng_index) {
-    if (!ps) {
-        fprintf(stderr, "ERROR: zeldovich_ps_one_rand called with NULL PowerSpectrum!\n");
-        return 0.0;
-    }
+    if (!ps) return 0.0;
     PowerSpectrum* p = static_cast<PowerSpectrum*>(ps);
     return p->one_rand<2>(rng_index);
 }
@@ -244,8 +206,6 @@ void zeldovich_ps_advance_rng(PowerSpectrumHandle ps, ParametersHandle params, i
     if (!ps || !params || nskip <= 0) return;
     PowerSpectrum* p = static_cast<PowerSpectrum*>(ps);
     Parameters* param = static_cast<Parameters*>(params);
-    // zeldovich.cpp advances by 2 * nskip (each cgauss call uses 2 random numbers)
-    // Cast to uint64_t explicitly to avoid overflow in multiplication
     int64_t ppd_half = param->ppd / 2;
     if (rng_index >= 0 && rng_index < ppd_half && p->v2rng) {
         uint64_t advance_amount = (uint64_t)2 * (uint64_t)nskip;
