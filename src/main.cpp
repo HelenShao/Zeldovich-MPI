@@ -228,8 +228,8 @@ int main(int argc, char **argv)
     }
     
     // STEP 3: Create list of pairs assigned to this rank
-    YSlicePair *my_pair_list = NULL;
-    bool is_idle_rank = (my_num_pairs == 0);
+    YSlicePair *my_pair_list = NULL; // Array of YSlicePair structs
+    bool is_idle_rank = (my_num_pairs == 0); // no pairs assigned to rank
     
     if (!is_idle_rank) {
         my_pair_list = (YSlicePair*)malloc(sizeof(YSlicePair) * my_num_pairs);
