@@ -1,11 +1,7 @@
-// ====================================================================================
-// MPI COMMUNICATION MODULE
-// ====================================================================================
-
 #include "mpi_exchange.h"
 #include "../utils/decomposition.h"
 #include "../utils/verification.h"
-#include "../types.h"  // For Y_SLICE, PENCIL, PERIODIC_X, PERIODIC_Z macros
+#include "../types.h" 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
