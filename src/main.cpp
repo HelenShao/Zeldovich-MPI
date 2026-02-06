@@ -305,6 +305,9 @@ int main(int argc, char **argv)
         my_extended_bounds.num_pencils_padded = 0;
         my_pencils = 0;
     }
+
+    // So sendcounts/recvcounts are 0 for idle ranks (decomposition returns empty bounds)
+    decomposition_set_first_idle_rank(num_ranks > total_pairs ? total_pairs : -1);
     
     // STEP 5: Print distribution summary
     if (rank == 0) {

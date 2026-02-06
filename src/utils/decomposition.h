@@ -20,6 +20,10 @@ extern "C" {
 // Calculates the grid decomposition dims from num_ranks
 void calculate_grid_factors(int num_ranks, int *grid_x_out, int *grid_z_out);
 
+// Optional: when set >= 0, ranks in [first_idle_rank, num_ranks) get empty bounds (e.g. num_ranks > total_pairs).
+// Idle for odd num_ranks: when num_ranks is odd, rank (num_ranks-1) gets empty bounds and grid uses (num_ranks-1).
+void decomposition_set_first_idle_rank(int first_idle_rank);
+
 // Returns GridBounds struct  with x_start, x_end, z_start, z_end 
 GridBounds get_grid_bounds(int dest, int N, int num_pencil_ranks);
 

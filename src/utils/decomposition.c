@@ -43,28 +43,39 @@ void calculate_grid_factors(int num_ranks, int *grid_x_out, int *grid_z_out)
 // ====================================================================================
 // Get the x,z range for given rank
 // ====================================================================================
+// When num_pencil_ranks is odd: use (num_pencil_ranks - 1) for grid so we get an even
+// factorisation (e.g. 13 -> 12 -> 3x4). Rank (num_pencil_ranks - 1) gets empty bounds (idle).
+// When num_pencil_ranks is even: use num_pencil_ranks for grid, no idle rank.
+// Optional: when s_first_idle_rank >= 0, ranks [s_first_idle_rank, num_ranks) also get empty
+// (e.g. num_ranks > total_pairs: ranks with no Y-pairs get no pencil chunk).
+static int s_first_idle_rank = -1;
+
+void decomposition_set_first_idle_rank(int first_idle_rank)
+{
+    s_first_idle_rank = first_idle_rank;
+}
 
 GridBounds get_grid_bounds(int dest, int N, int num_pencil_ranks)
 {
-
-    // 1. Calculate 2D position (x_block, z_block) for given rank, ranks stored in row-major order
-    // 2. Assign chunk [xrng, zrng] of NxN slice into (x_block, z_block) 
-    
-    // dest = rank to which block is assigned
-    // N    = PPD
-    // num_pencil_ranks = total number of ranks in the grid (to calculate grid decomp)
-   
-    // GridBounds object to store [xstart, xend], [zstart, zend] boundaries
     GridBounds bounds;
-    
-    // Compute 2D grid decomposition (grid_x * grid_z = num_pencil_ranks)
+
+    if (s_first_idle_rank >= 0 && dest >= s_first_idle_rank) {
+        bounds.x_start = bounds.x_end = 0;
+        bounds.z_start = bounds.z_end = 0;
+        return bounds;
+    }
+    if (num_pencil_ranks % 2 == 1 && dest == num_pencil_ranks - 1) {
+        bounds.x_start = bounds.x_end = 0;
+        bounds.z_start = bounds.z_end = 0;
+        return bounds;
+    }
+
+    int effective_ranks = (num_pencil_ranks % 2 == 1) ? num_pencil_ranks - 1 : num_pencil_ranks;
     int grid_x, grid_z;
-    calculate_grid_factors(num_pencil_ranks, &grid_x, &grid_z);
-    
-    // Locate the block in the 2D grid for rank 'dest'
-    // dest = x_block * grid_z + z_block (row-major order)
-    int x_block = dest / grid_z;  // Row 
-    int z_block = dest % grid_z;  // Column 
+    calculate_grid_factors(effective_ranks, &grid_x, &grid_z);
+
+    int x_block = dest / grid_z;
+    int z_block = dest % grid_z; 
     
     // X-range: Divide NxN slice into chunks with remainder handling
     int base_x = N / grid_x;
