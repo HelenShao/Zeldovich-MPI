@@ -1,32 +1,4 @@
-// ====================================================================================
-// VERSION 15: Power Spectrum Integration
-// ====================================================================================
-// - Each MPI rank generates multiple Y-slice pairs across batches
-// - Optional parallelization of X-Z loops during Y-slice generation
-// - 2D grid decomposition for redistribution to pencil layout
-// - ** NEW in v15**: Power Spectrum Integration
-//   * Use zeldovich-PLT to generate power spectrum
-//   * Use power spectrum in cgauss<>
-// - Retained from v14: PERIODIC BOUNDARY CONDITIONS FOR PADDING
-//   * Padding uses periodic boundaries (wrap-around) instead of clamping
-//   * Example: rank 0: [0,100] core --> [-10,110] padded (wraps from right side!)
-//              rank 1: [100,200] core --> [90,210] padded (normal overlap)
-//   * Efficient indexing: PERIODIC_X macro with fast-path for common case
-// - **RETAINED from v13**: (optional) OVERLAPPING X-REGIONS FOR PADDING
-//   * Each rank stores extra X-values beyond its core region (X_PADDING on each side)
-//   * Creates redundant storage at boundaries for seamless integration
-//   * File output includes padded regions (some X-values written by multiple ranks)
-// - **RETAINED from v12**: Z-SLAB STREAMING (ZELDOVICH-COMPATIBLE OUTPUT)
-//   * Process one Z-slab at a time instead of X-rows
-//   * Output format: [Z][Array][Y][X] matches Zeldovich's AZYX layout
-//   * Each file contains all (X,Y) for a given Z-slab
-//   * Direct compatibility with WriteParticlesSlab interface
-// - **RETAINED from v11**: PERSISTENT RECV_BUFFER WITH SOURCE-GROUPED LAYOUT
-//   * recv_buffer layout: [src_rank][y_idx_for_src][pencil_idx][array_idx]
-//   * Direct receive into persistent buffer (NO per-batch recv_buffer_batch)
-//   * Per-source write cursors track progress across batches
-//   * Eliminates ~64 GB transient allocation per batch (single precision, N=32K)
-// ====================================================================================
+// MPI multi-batch Y-slice generation, Z-slab streaming, zeldovich-PLT compatible output
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,9 +6,9 @@
 #include <math.h>
 #include <stdint.h>
 #include <assert.h>
-#include <limits.h>  // For INT_MAX
+#include <limits.h> 
 #include <mpi.h>
-#include <omp.h>  // For hybrid MPI+OpenMP within each rank
+#include <omp.h> 
 #include <fftw3.h>
 #include <sys/stat.h>
 #include <errno.h>
@@ -53,67 +25,40 @@ extern "C" {
 }
 #endif
 
-// ====================================================================================
-// CONFIGURATION AND TYPES
-// ====================================================================================
-// All compile-time flags and constants are now in config.h
-// All type definitions and precision handling are in precision.h and types.h
+// --- CONFIGURATION AND TYPES (config.h, precision.h, types.h) ---
 #include "config.h"
 #include "precision.h"
 #include "types.h"
 
-// ====================================================================================
-// UTILITIES
-// ====================================================================================
+// --- UTILITIES ---
 #include "utils/printing.h"
 #include "utils/verification.h"
 #include "utils/decomposition.h"
 #include "utils/batch_helpers.h"
 
-// ====================================================================================
-// CORE MODULES
-// ====================================================================================
+// --- CORE MODULES ---
 #include "fft/fft_setup.h"
 #include "generation/hermitian_generation.h"
 #include "communication/mpi_exchange.h"
 #include "streaming/z_streaming.h"
 
-// ====================================================================================
-// PCG RNG MODULE
-// ====================================================================================
-
-// Using zeldovich-PLT to generate power spectrum and call cgauss<> 
+// --- PCG RNG MODULE (zeldovich-PLT power spectrum / cgauss) ---
 #include "utils/rng.h"
 #include "utils/power_spectrum.h"
-#include "utils/zeldovich_wrapper.h"  // For zeldovich-PLT integration
+#include "utils/zeldovich_wrapper.h"  // For zeldovich-PLT functions
 #include "utils/plt_eigenmodes.h"    // For PLT eigenmode loading
-#include "output/output_new.h"       // For WriteParticlesSlab_range (Option A)
+#include "output/output_new.h"
 
-// Note: Precision types (real_t, fftw_complex_t, etc.) now defined in precision.h
-// Note: Data structures (GridBounds, ExtendedGridBounds) now defined in types.h
-// Note: Indexing macros (Y_SLICE, PENCIL, ZSLAB) now defined in types.h
-// Note: Periodic boundary macros (PERIODIC_X, PERIODIC_Z) now defined in types.h
-
-// ====================================================================================
-// MAIN FUNCTION
-// ====================================================================================
-
+// --- MAIN ---
 int main(int argc, char **argv)
 {
-    // ========================================================================
-    // MPI INITIALIZATION
-    // ========================================================================
-    
     MPI_Init(&argc, &argv);
     
     int rank, num_ranks;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &num_ranks);
     
-    // ========================================================================
-    // PARSE RESOLUTION, PARAMETER FILE
-    // ========================================================================
-    
+    // --- PARSE RESOLUTION, PARAMETER FILE ---
     int N = 64;
     const char* param_file = NULL;
     
@@ -137,7 +82,6 @@ int main(int argc, char **argv)
         return 1; 
     }
     
-    // Optional parameter file (enables zeldovich-PLT ps handle)
     if (argc >= 3) {
         param_file = argv[2];
     }
@@ -158,64 +102,26 @@ int main(int argc, char **argv)
         return 1;
     }
     
-    // Calculate pair distribution
     int pairs_per_rank_base = total_pairs / num_ranks;
     int remainder_pairs = total_pairs % num_ranks;
-    
-    // Warn about potential load imbalance
-    if (num_ranks < total_pairs && rank == 0) {
-        printf("[INFO] num_ranks=%d < total_pairs=%d: Each rank will process %d-%d pairs\n",
-               num_ranks, total_pairs, pairs_per_rank_base, 
-               pairs_per_rank_base + (remainder_pairs > 0 ? 1 : 0));
-    }
-    
-    // ========================================================================
-    // PRINT CONFIGURATION
-    // ========================================================================
-    
     if (rank == 0) {
-        printf("====================================================================================\n");
-        printf("VERSION 15: POWER SPECTRUM INTEGRATION\n");
-        printf("====================================================================================\n");
-        printf("Precision: %s (%d bytes per complex number)\n", PRECISION_NAME, BYTES_PER_COMPLEX);
-        printf("Matrix size: N = %d³, Total elements: %zu\n", N, (size_t)N * (size_t)N * (size_t)N);
-        printf("MPI ranks: %d (total_pairs: %d for N=%d)\n", num_ranks, total_pairs, N);
-        printf("Multi-batch processing: Each rank processes multiple Y-slice pairs\n");
-#if USE_X_PADDING
-        printf("V14: Periodic boundary conditions (X_PADDING=%d per side)\n", X_PADDING);
-#else
-        printf("Grid decomposition: Core grid only (no padding, X_PADDING=0)\n");
-        printf("            No periodic boundary wrapping - standard decomposition\n");
-#endif
-        printf("V12 feature: Z-slab streaming (Zeldovich-compatible output)\n");
-        printf("            Output format: [Z][Array][Y][X] matches Zeldovich AZYX\n");
-        printf("            Each file contains all (X,Y) for one Z-slab\n");
-        printf("V11 feature: Direct receive into persistent source-grouped buffer\n");
-        printf("Communication method: %s\n",
-               OVERLAP_COMMUNICATION == 0 ? "MPI_Ialltoallv (Phase A)" : "Isend/Irecv with overlap (Phase B)");
-        printf("====================================================================================\n\n");
+        printf("N=%d ranks=%d\n", N, num_ranks);
     }
     
-    // ========================================================================
-    // MULTI-BATCH SLICE DISTRIBUTION
-    // ========================================================================
+    // --- MULTI-BATCH SLICE DISTRIBUTION ---
     
-    // Structure to hold a pair of Y-slices (primary + conjugate)
+    // Struct to hold a pair of Y-slices (primary + conjugate)
     typedef struct {
         int y_primary;    // Primary Y-index
         int y_mirror;     // Conjugate Y-index (may equal y_primary if self-conjugate)
-        bool is_self_conjugate;  // True if y_primary == y_mirror
+        bool is_self_conjugate;  
     } YSlicePair;
     
-    // STEP 1: Calculate total number of pairs to distribute
     // Conjugate pairs: (0,0), (1,N-1), (2,N-2), ..., up to N/2 self-conj.
-    // Note: total_pairs already calculated above in rank verification
-    
     // STEP 2: Distribute pairs across ranks
     int pairs_per_rank = total_pairs / num_ranks;
     int remainder = total_pairs % num_ranks;
     
-    // Each rank gets pairs_per_rank, and first 'remainder' ranks get +1
     int my_num_pairs;
     int my_pair_start;
     
@@ -243,43 +149,20 @@ int main(int argc, char **argv)
             my_pair_list[i].y_mirror = y_mirror;
             my_pair_list[i].is_self_conjugate = (y_primary == y_mirror);
         }
-        
-        // Debug output for first few ranks
-        if (DEBUG_PRINTS && rank < 5) {
-            printf("[INIT] Rank %d: Assigned %d pairs:\n", rank, my_num_pairs);
-            for (int i = 0; i < my_num_pairs && i < 3; i++) {  // Show first 3 pairs
-                printf("  Pair %d: Y=%d", i, my_pair_list[i].y_primary);
-                if (!my_pair_list[i].is_self_conjugate) {
-                    printf(" and Y=%d (conjugate)", my_pair_list[i].y_mirror);
-                } else {
-                    printf(" (self-conjugate)");
-                }
-                printf("\n");
-            }
-            if (my_num_pairs > 3) {
-                printf("  ... (%d more pairs)\n", my_num_pairs - 3);
-            }
-        }
     } else {
-        // IDLE RANK: No pairs assigned
         if (rank == num_ranks - 1 || (rank < num_ranks && rank + 1 >= num_ranks)) {
             printf("[WARNING] Rank %d is IDLE (total_pairs=%d, num_ranks=%d)\n",
                    rank, total_pairs, num_ranks);
         }
     }
     
-    // STEP 4: Set up data structures (compatible with existing code)
-    // Note: These will be used during batch processing
-    int num_my_slices = 0;  // Will be set per-batch (1 or 2)
-    // V11: No y_global_map needed (passing NULL to pack_slices_to_send_buffer)
-    fftw_complex_t *local_y_slices = NULL;  // Allocated once, reused per-batch
-    fftw_complex_t *local_z_slab = NULL;    // V12: Allocated once for Z-slab streaming
-    ExtendedGridBounds my_extended_bounds;  // V13: Extended bounds with padding (if enabled)
-    int my_pencils = 0;                     // Will be set to padded or core pencil count
-    
-    // ========================================================================
-    // V11: NEW DATA STRUCTURES FOR PERSISTENT RECV_BUFFER
-    // ========================================================================
+    int num_my_slices = 0;
+    fftw_complex_t *local_y_slices = NULL;
+    fftw_complex_t *local_z_slab = NULL;
+    ExtendedGridBounds my_extended_bounds;
+    int my_pencils = 0;
+
+    // --- V11: PERSISTENT RECV_BUFFER ---
     int *src_total_slices = NULL;       // [num_ranks] - total Y-slices from each source
     int64_t *recv_displs_src = NULL;    // [num_ranks] - base offset per source (elements)
     int64_t *src_write_cursor = NULL;   // [num_ranks] - current write position per source (int64_t to avoid overflow for large N)
@@ -292,11 +175,7 @@ int main(int argc, char **argv)
     int64_t recv_total_elems = 0;       // Total elements in recv_buffer
     
     if (is_idle_rank) {
-        // Set up dummy structures for idle rank
         num_my_slices = 0;
-        // V11: No y_global_map needed
-        
-        // V13: Initialize extended bounds to zero
         my_extended_bounds.core.x_start = my_extended_bounds.core.x_end = 0;
         my_extended_bounds.core.z_start = my_extended_bounds.core.z_end = 0;
         my_extended_bounds.padded.x_start = my_extended_bounds.padded.x_end = 0;
@@ -306,51 +185,14 @@ int main(int argc, char **argv)
         my_pencils = 0;
     }
     
-    // STEP 5: Print distribution summary
-    if (rank == 0) {
-        printf("\n[DISTRIBUTION] Multi-batch slice distribution:\n");
-        printf("  Total Y-slice pairs: %d\n", total_pairs);
-        printf("  Active ranks: %d\n", num_ranks);
-        printf("  Pairs per rank: %d base + %d ranks with +1\n", 
-               pairs_per_rank, remainder);
-        printf("  Rank 0 processes: %d pairs (Y indices %d-%d)\n",
-               my_num_pairs, my_pair_start, my_pair_start + my_num_pairs - 1);
-        int total_slices_estimate = total_pairs * 2 - 2;  // Account for 2 self-conjugate
-        printf("  Estimated total Y-slices: ~%d\n\n", total_slices_estimate);
-    }
-    
-    // ========================================================================
-    // INITIALIZE RNG (All ranks have identical RNG arrays)
-    // ========================================================================
-    
     uint64_t seed = 4;
     initialize_global_pcg(N, N, N, seed);
-    // NOTE: PCG array = (N/2+1) x 64 bytes = O(N) memory per rank
-    //       N=1024: 32 KB,  N=32,000: 1 MB  <--- Manageable!
-    // Each rank allocates identical array (same seed = reproducible RNG)
-    // Thread safety mechanism:
-    //   - One generator per Y-slice index (v2rng_global[0] to v2rng_global[N/2])
-    //   - When PARALLELIZE_XZ_WITHIN_SLICE=1: Multiple threads process same Y-slice (same index)
-    //     --> OpenMP locks access (one lock per Y-slice index)
-    //   - When PARALLELIZE_XZ_WITHIN_SLICE=0: Sequential access (no locks needed)
-    //   - Different Y-slices use different array indices (no lock contention)
-    // Can free after Stage 1 (after slice generation)
-    
-    // ========================================================================
-    // ZELDOVICH-PLT PARAMETERS AND POWER SPECTRUM (v15.2)
-    // ========================================================================
-    // Load parameters from file if provided, create PowerSpectrum object
-    // Each rank creates its own objects (same file --> identical objects)
     
     ParametersHandle params = NULL;
     PowerSpectrumHandle ps = NULL;
     
-    // Legacy power spectrum parameters (for backward compatibility)
     power_spectrum_params_t ps_params;
-    power_spectrum_params_t *ps_params_ptr = NULL;  // NULL = use uniform RNG (backward compatible)
-    
-    // TODO: Read these from config file 
-    // For now, use simple power law defaults (can be enabled by uncommenting):
+    power_spectrum_params_t *ps_params_ptr = NULL;
     init_power_spectrum_params(&ps_params, 
         -2.0,      // powerlaw_index: P(k) ~ k^-2 (scale-invariant)
         1.0,       // normalization: adjust based on desired amplitude
@@ -361,27 +203,17 @@ int main(int argc, char **argv)
     
     if (param_file != NULL) {
         // Load parameters from file
-        if (rank == 0) {
-            printf("[INIT] Loading zeldovich-PLT parameters from: %s\n", param_file);
-        }
+        if (rank == 0) {printf("[INIT] Loading zeldovich-PLT parameters from: %s\n", param_file);}
         
         params = zeldovich_params_create(param_file);
         if (!params) {
-            if (rank == 0) {
-                fprintf(stderr, "ERROR: Failed to load parameter file: %s\n", param_file);
-                fprintf(stderr, "       Check that file exists and has correct format\n");
-            }
+            if (rank == 0) {fprintf(stderr, "Failed to load param file: %s\n", param_file);}
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
         
-        // Initialize particle output system
-        if (rank == 0) {
-            printf("[INIT] Setting up particle output system...\n");
-        }
         SetupOutputDir(*static_cast<Parameters*>(params));
         InitOutputBuffers(*static_cast<Parameters*>(params));
         
-        // Verify N matches ppd from parameter file
         int64_t ppd = zeldovich_params_get_ppd(params);
         if (ppd != N) {
             if (rank == 0) {
@@ -401,11 +233,7 @@ int main(int argc, char **argv)
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
         
-        // Initialize power spectrum (power law mode)
-        // Get power law index from parameters
         double powerlaw_index = zeldovich_params_get_Pk_powerlaw_index(params);
-        
-        // Check if power law index is valid (not the default invalid value)
         if (powerlaw_index == 1000.0) {
             if (rank == 0) {
                 fprintf(stderr, "ERROR: ZD_Pk_powerlaw_index not specified in parameter file\n");
@@ -421,28 +249,14 @@ int main(int argc, char **argv)
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
         
-        // ========================================================================
-        // PLT PARAMETER VALIDATION
-        // ========================================================================
         int qPLT = zeldovich_params_get_qPLT(params);
         if (qPLT) {
-            // Validate PLT_filename is set when qPLT is enabled
-            const char* PLT_filename = zeldovich_params_get_PLT_filename(params);
-            if (!PLT_filename || strlen(PLT_filename) == 0) {
-                if (rank == 0) {
-                    fprintf(stderr, "ERROR: qPLT is enabled but PLT_filename is not set\n");
-                    fprintf(stderr, "       Add 'ZD_PLT_filename = <path_to_eigenmode_file>' to parameter file\n");
-                }
-                MPI_Abort(MPI_COMM_WORLD, 1);
-            }
+
             
-            // Validate ICFormat starts with "RV" when qPLT is enabled
-            // PLT requires velocity arrays, so output format must support velocities
             const char* ICFormat = zeldovich_params_get_ICFormat(params);
             if (!ICFormat || strncmp(ICFormat, "RV", 2) != 0) {
                 if (rank == 0) {
                     fprintf(stderr, "ERROR: qPLT is enabled but ICFormat does not start with 'RV'\n");
-                    fprintf(stderr, "       PLT requires velocity arrays, so ICFormat must be 'RV' or 'RV*'\n");
                     fprintf(stderr, "       Current ICFormat: '%s'\n", ICFormat ? ICFormat : "(empty)");
                     fprintf(stderr, "       Set 'ICFormat = RV' or 'ICFormat = RVDoubleZel' in parameter file\n");
                 }
@@ -459,77 +273,21 @@ int main(int argc, char **argv)
             }
             
             if (rank == 0) {
-                printf("[INIT] PLT validation passed:\n");
-                printf("       PLT_filename: %s\n", PLT_filename);
-                printf("       ICFormat: %s\n", ICFormat);
-                int64_t eig_ppd = plt_get_eigenmode_ppd();
-                printf("       Eigenmode ppd: %ld\n", (long)eig_ppd);
-            }
-        }
-        
-        if (rank == 0) {
-            double boxsize = zeldovich_params_get_boxsize(params);
-            double fundamental = zeldovich_params_get_fundamental(params);
-            int seed = zeldovich_params_get_seed(params);
-            printf("[INIT] PowerSpectrum initialized:\n");
-            printf("       Power law index: %.2f\n", powerlaw_index);
-            printf("       Box size: %.2f\n", boxsize);
-            printf("       Fundamental wavenumber: %.6e\n", fundamental);
-            printf("       Seed: %d\n", seed);
-            printf("       Power spectrum mode: ENABLED\n");
         }
     } else {
         if (rank == 0) {
-            printf("[INIT] No parameter file provided, using uniform random mode\n");
+            printf("[INIT] No param file provided, using uniform random mode\n");
         }
     }
 
-    // =========================================================================
-    // TEMPORARY DEBUG OPTION: Disable zeldovich-PLT power spectrum (ps/params)
-    // =========================================================================
-    //
-    // For heap corruption / segmentation fault isolation, it is useful to
-    // confirm whether the issue originates in the zeldovich-PLT integration
-    // (PowerSpectrum / Parameters / v2rng) or in the MPI / packing code.
-    //
-    // When this block is enabled, the code runs in legacy fallback mode:
-    //   - ps_handle     = NULL
-    //   - params_handle = NULL
-    //   - ps_params_ptr = NULL (uniform RNG mode)
-    //
-    // This allows testing whether crashes disappear when zeldovich-PLT is
-    // completely bypassed.
-    //
-    // To re-enable power spectrum mode, change the #if from 1 to 0.
-    //
-    #if 0  // DEBUG: Force-disable power spectrum / zeldovich-PLT
-    // Set to 1 to disable power spectrum for debugging
-    if (rank == 0) {
-        printf("[DEBUG] Power spectrum mode DISABLED for debugging "
-               "(ps_handle=NULL, params_handle=NULL, ps_params_ptr=NULL)\n");
-    }
-    ps_params_ptr = NULL;
-    ps = NULL;
-    params = NULL;
-    #endif
-    
-    // ========================================================================
-    // SETUP NARRAY (number of arrays per slice)
-    // ========================================================================
-    // narray determines how many arrays are stored per Y-slice:
-    //   - narray = 1: density only (if qdensity == 2)
-    //   - narray = 2: density + displacement (D+iF, G+iH) - standard Zeldovich
-    //   - narray = 4: density + displacement + velocity (D+iF, G+iH, vx, vy+vz) - PLT mode
-    // When PLT is enabled, we need 4 arrays to store velocities (arrays 2 and 3)
+
     int narray;
     if (params != NULL) {
         int qdensity = zeldovich_params_get_qdensity(params);
         
         if (qdensity == 2) {
-            // Density-only mode: only Array 0 (density)
             narray = 1;
         } else {
-            // Normal mode: Set narray based on PLT
             int qPLT = zeldovich_params_get_qPLT(params);
             narray = qPLT ? 4 : 2;
         }
@@ -538,92 +296,21 @@ int main(int argc, char **argv)
         narray = NARRAY;
     }
     
-    if (rank == 0 && DEBUG_PRINTS) {
-        printf("[SETUP] narray = %d (arrays per Y-slice)", narray);
-        if (params != NULL) {
-            int qdensity = zeldovich_params_get_qdensity(params);
-            int qPLT = zeldovich_params_get_qPLT(params);
-            if (qdensity == 2) {
-                printf(" [density-only mode]");
-            } else {
-                printf(" [PLT %s]", qPLT ? "enabled" : "disabled");
-            }
-        }
-        printf("\n");
-    }
-    
-    // ========================================================================
-    // DECLARE FFT PLANS (available throughout main)
-    // ========================================================================
+    // --- FFT PLANS ---
     fftw_plan_t plan_2d, plan_1d_y;
     
     // ========================================================================
     // STAGE 3: SETUP FFT PLANS (BEFORE DATA ALLOCATION)
     // ========================================================================
-    // CRITICAL: Create FFT plans using dummy memory before allocating actual data
+    // Create FFT plans using dummy memory before allocating actual data
     // This prevents data destruction during planning (FFTW_MEASURE/PATIENT modes)
-    
-    if (rank == 0 && DEBUG_PRINTS) {
-        printf("[SETUP] Creating FFT plans with dummy memory...\n");
-    }
-    
-    // Create plans using dummy memory (before allocating actual data)
     setup_fftw_plans_full(N, &plan_2d, &plan_1d_y);
     
-    if (rank == 0 && DEBUG_PRINTS) {
-        printf("[SETUP] FFT plans created successfully (2D and 1D)\n");
-    }
-    
-    
-    // ========================================================================
-    // STAGE 1: GENERATE MY PAIR (with 2D FFT)
-    // ========================================================================
-    
-    // ========================================================================
-    // NOTE: OLD STAGE 1 (SINGLE-PAIR GENERATION) REMOVED
-    // ========================================================================
-    // Generation and communication are now integrated in the MULTI-BATCH LOOP below
-    // (after metadata exchange and before streaming processing)
-    
-    // V11: No y_global_map needed - using y_owner_src + y_src_local_idx instead
-    
-    // ========================================================================
-    // STAGE 2: METADATA EXCHANGE
-    // ========================================================================
-    
-    // NOTE: Stage 2 (Metadata exchange) is INTEGRATED into multi-batch processing
-    // Each rank already knows its own Y-values from y_global_map (built from my_pair_list)
-    // No need for separate exchange_metadata() call
-    
+    // --- STAGE 1/2: Generation and metadata are in MULTI-BATCH LOOP below ---
     // V14: Verify grid decomposition (show both core and padded with periodic BC)
     // Calculate grid factors first (needed for get_extended_grid_bounds)
     int grid_x_verify, grid_z_verify;
     calculate_grid_factors(num_ranks, &grid_x_verify, &grid_z_verify);
-    
-    if (rank == 0 && DEBUG_PRINTS) {
-        printf("\n[V14-DEBUG] Grid decomposition verification (PERIODIC BOUNDARIES):\n");
-        int num_to_print = (num_ranks < 4) ? num_ranks : 4;
-        for (int dest = 0; dest < num_to_print; dest++) {
-            ExtendedGridBounds ext_b = get_extended_grid_bounds(dest, N, num_ranks, grid_x_verify, grid_z_verify);
-            printf("  Rank %d:\n", dest);
-            printf("    Core:   X=[%d,%d), Z=[%d,%d), Pencils=%d\n",
-                   ext_b.core.x_start, ext_b.core.x_end, 
-                   ext_b.core.z_start, ext_b.core.z_end, ext_b.num_pencils_core);
-            printf("    Padded: X=[%d,%d), Z=[%d,%d), Pencils=%d",
-                   ext_b.padded.x_start, ext_b.padded.x_end, 
-                   ext_b.padded.z_start, ext_b.padded.z_end, ext_b.num_pencils_padded);
-            
-            // Show if this rank has periodic wrapping
-            if (ext_b.padded.x_start < 0 || ext_b.padded.x_end > N) {
-                printf(" [PERIODIC WRAP]");
-            }
-            printf("\n");
-        }
-        if (num_ranks > 4) {
-            printf("  ... (showing first 4 ranks only)\n");
-        }
-        printf("  Note: Negative X-start or X-end > N indicates periodic wrap-around\n");
-    }
     
     if (rank == 0) {
         printf("[Stage 2] Complete.\n");
@@ -634,7 +321,7 @@ int main(int argc, char **argv)
     // ========================================================================
     // Process each Y-slice pair assigned to this rank in batches
     // Each batch: Generate --> 2D FFT --> Pack --> Communicate --> Accumulate
-    // After ALL batches: Streaming unpack --> 1D FFT --> Write
+    // After ALL batches: Streaming z unpack --> 1D FFT --> Write
     
     if (rank == 0) {
         printf("\n[MULTI-BATCH] Starting batch processing...\n");
@@ -642,61 +329,16 @@ int main(int argc, char **argv)
                is_idle_rank ? 0 : my_num_pairs);
     }
     
-    // ========================================================================
-    // STEP 0: CALCULATE PENCIL REGION (WITH PADDING IF ENABLED, NEEDED FOR BUFFER SIZES)
-    // ========================================================================
-    
-    // V13: Need to calculate grid factors first to call get_extended_grid_bounds
     int grid_x, grid_z;
     calculate_grid_factors(num_ranks, &grid_x, &grid_z);
-    
     if (!is_idle_rank) {
-        // V13: Get extended bounds with X-padding
         my_extended_bounds = get_extended_grid_bounds(rank, N, num_ranks, grid_x, grid_z);
-        
-        // Use appropriate pencil count (padded if enabled, core otherwise)
 #if USE_X_PADDING
         my_pencils = my_extended_bounds.num_pencils_padded;
 #else
         my_pencils = my_extended_bounds.num_pencils_core;
 #endif
         
-        if (DEBUG_PRINTS && rank < 2) {
-#if USE_X_PADDING
-            printf("[V14-PENCILS] Rank %d (PERIODIC BOUNDARIES):\n", rank);
-            printf("  Core region:   X=[%d,%d), Z=[%d,%d), pencils=%d\n",
-                   my_extended_bounds.core.x_start, my_extended_bounds.core.x_end,
-                   my_extended_bounds.core.z_start, my_extended_bounds.core.z_end,
-                   my_extended_bounds.num_pencils_core);
-            printf("  Padded region: X=[%d,%d), Z=[%d,%d), pencils=%d (STORAGE SIZE)\n",
-                   my_extended_bounds.padded.x_start, my_extended_bounds.padded.x_end,
-                   my_extended_bounds.padded.z_start, my_extended_bounds.padded.z_end,
-                   my_extended_bounds.num_pencils_padded);
-            
-            // Show periodic wrapping info
-            if (my_extended_bounds.padded.x_start < 0) {
-                printf("  ⚠ Left wrap: X=[%d,0) wraps to X=[%d,%d) (periodic BC)\n",
-                       my_extended_bounds.padded.x_start, 
-                       N + my_extended_bounds.padded.x_start, N);
-            }
-            if (my_extended_bounds.padded.x_end > N) {
-                printf("  ⚠ Right wrap: X=[%d,%d) wraps to X=[0,%d) (periodic BC)\n",
-                       N, my_extended_bounds.padded.x_end, 
-                       my_extended_bounds.padded.x_end - N);
-            }
-            
-            int x_overlap_left = my_extended_bounds.core.x_start - my_extended_bounds.padded.x_start;
-            int x_overlap_right = my_extended_bounds.padded.x_end - my_extended_bounds.core.x_end;
-            printf("  X-padding: %d values on left, %d values on right\n", 
-                   x_overlap_left, x_overlap_right);
-#else
-            printf("[GRID] Rank %d (NO PADDING - CORE GRID ONLY):\n", rank);
-            printf("  Core region:   X=[%d,%d), Z=[%d,%d), pencils=%d\n",
-                   my_extended_bounds.core.x_start, my_extended_bounds.core.x_end,
-                   my_extended_bounds.core.z_start, my_extended_bounds.core.z_end,
-                   my_extended_bounds.num_pencils_core);
-#endif
-        }
     }
     
     // V11: No recv_buffer_accumulator, y_value_received, or y_to_local_idx needed
@@ -711,24 +353,14 @@ int main(int argc, char **argv)
     if (!is_idle_rank && my_num_pairs > max_batches) {
         max_batches = my_num_pairs;
     }
-    
-    // Share maximum across all ranks
     int global_max_batches = 0;
     MPI_Allreduce(&max_batches, &global_max_batches, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
-    
-    if (rank == 0 && DEBUG_PRINTS) {
-        printf("[BATCHES] Total batches to process: %d\n", global_max_batches);
-    }
     
     // ========================================================================
     // V11: PHASE 1 - PRE-COMPUTATION (BEFORE BATCH LOOP)
     // ========================================================================
     // Calculate per-source totals and allocate persistent recv_buffer
 
-    if (rank == 0 && DEBUG_PRINTS) {
-        printf("\n[V11-SETUP] Computing per-source Y-slice totals...\n");
-    }
-    
     src_total_slices = (int*)calloc(num_ranks, sizeof(int));
     
     // Count how many Y-slices each source will send across ALL batches
@@ -737,15 +369,6 @@ int main(int argc, char **argv)
             int count = get_rank_batch_slice_count(src, batch, N, num_ranks);
             src_total_slices[src] += count;
         }
-    }
-    
-    if (DEBUG_PRINTS && rank < 2) {
-        printf("[V11-SETUP] Rank %d: Source totals: ", rank);
-        for (int src = 0; src < (num_ranks < 4 ? num_ranks : 4); src++) {
-            printf("src%d=%d ", src, src_total_slices[src]);
-        }
-        if (num_ranks > 4) printf("...");
-        printf("\n");
     }
     
     // ========================================================================
@@ -758,14 +381,6 @@ int main(int argc, char **argv)
     for (int src = 0; src < num_ranks; src++) {
         recv_displs_src[src] = recv_total_elems;
         recv_total_elems += (int64_t)src_total_slices[src] * my_pencils * narray;
-    }
-    
-    if (rank == 0 && DEBUG_PRINTS) {
-        size_t recv_bytes = (size_t)recv_total_elems * sizeof(fftw_complex_t);
-        printf("[V11-SETUP] Persistent recv_buffer size: %zu bytes (%.2f GB)\n",
-               recv_bytes, recv_bytes / (1024.0 * 1024.0 * 1024.0));
-        printf("            Total elements: %lld = sum of (src_total_slices[src] * my_pencils * narray)\n",
-               (long long)recv_total_elems);
     }
     
     // ========================================================================
@@ -782,11 +397,6 @@ int main(int argc, char **argv)
         }
         
         memset(recv_buffer, 0, sizeof(fftw_complex_t) * recv_total_elems);
-        
-        if (rank == 0 && DEBUG_PRINTS) {
-            printf("[V11-MEMORY] Allocated recv_buffer: %.2f GB (source-grouped layout)\n",
-                   (recv_total_elems * sizeof(fftw_complex_t)) / (1024.0 * 1024.0 * 1024.0));
-        }
     }
     
     // ========================================================================
@@ -800,28 +410,16 @@ int main(int argc, char **argv)
     //   - Each batch, displacement = recv_displs_src[src] + src_write_cursor[src]
     //   - After receiving data, cursor advances: src_write_cursor[src] += recvcounts_batch[src]
     //
-    // This allows multiple batches to write sequentially into the persistent recv_buffer
-    // without overwriting. The cursor "shifts" through each source's allocated region
-    // as batches are processed, ensuring data from batch N is written after data from
-    // batches 0 to N-1 for that source.
+    // This allows multiple batches to write sequentially into recv_buffer
+    // w/o overwriting. Cursor "shifts" through each src's allocated region
+    // as batches are processed, so that data from batch N is written after data from
+    // batches 0 to N-1 for that src.
 
     src_write_cursor = (int64_t*)calloc(num_ranks, sizeof(int64_t));
-    
-    if (DEBUG_PRINTS && rank < 2) {
-        printf("[V11-SETUP] Rank %d: Write cursors initialized to 0\n", rank);
-    }
-    
-    if (rank == 0 && DEBUG_PRINTS) {
-        printf("[V11-SETUP] Phase 1 pre-computation complete.\n\n");
-    }
     
     // ========================================================================
     // V11: PHASE 2 - BUILD Y --> (SRC, LOCAL_IDX) MAPPING
     // ========================================================================
-    
-    if (rank == 0 && DEBUG_PRINTS) {
-        printf("[V11-SETUP] Building Y-value ownership mapping...\n");
-    }
     
     y_owner_src = (int*)malloc(sizeof(int) * N);
     y_src_local_idx = (int*)malloc(sizeof(int) * N);
@@ -850,14 +448,9 @@ int main(int argc, char **argv)
             int y_values[2];
             int count;
             get_rank_batch_y_values(src, batch, N, num_ranks, y_values, &count);
-            
-            // Store slice count for this batch from this source
             src_batch_slice_counts[src][batch] = count;
-            
             for (int i = 0; i < count; i++) {
                 int y_global = y_values[i];
-                
-                // Ensure not already assigned (debug check)
                 if (y_owner_src[y_global] != -1) {
                     fprintf(stderr, "[ERROR] Y=%d already assigned to src %d, now src %d wants it!\n",
                            y_global, y_owner_src[y_global], src);
@@ -867,41 +460,14 @@ int main(int argc, char **argv)
                 y_owner_src[y_global] = src;
                 y_src_local_idx[y_global] = src_y_counter[src];
                 y_batch_idx[y_global] = batch;
-                y_slice_idx_in_batch[y_global] = i;  // i is the slice_idx (0 or 1) in this batch
+                y_slice_idx_in_batch[y_global] = i;
                 src_y_counter[src]++;
             }
         }
     }
     
     free(src_y_counter);
-    
-    // Verify all Y-values mapped
-    int unmapped_count = 0;
-    for (int y = 0; y < N; y++) {
-        if (y_owner_src[y] == -1) {
-            if (unmapped_count < 5) {
-                fprintf(stderr, "[ERROR] Rank %d: Y=%d not mapped to any source!\n", rank, y);
-            }
-            unmapped_count++;
-        }
-    }
-    
-    if (unmapped_count > 0) {
-        fprintf(stderr, "[ERROR] Rank %d: %d Y-values unmapped!\n", rank, unmapped_count);
-        MPI_Abort(MPI_COMM_WORLD, 1);
-    }
-    
-    if (DEBUG_PRINTS && rank < 2) {
-        printf("[V11-SETUP] Rank %d: Y-mapping complete. Sample: Y=0-->src%d[%d], Y=%d-->src%d[%d]\n",
-               rank, y_owner_src[0], y_src_local_idx[0], N/2, y_owner_src[N/2], y_src_local_idx[N/2]);
-    }
-    
-    if (rank == 0 && DEBUG_PRINTS) {
-        printf("[V11-SETUP] Phase 2 Y-mapping complete.\n\n");
-    }
-    
-    // V11: No y_global_map needed - using y_owner_src + y_src_local_idx instead
-    
+        
     // ========================================================================
     // STEP 4: ALLOCATE local_y_slices (REUSED PER BATCH)
     // ========================================================================
@@ -916,72 +482,11 @@ int main(int argc, char **argv)
             fprintf(stderr, "Rank %d: posix_memalign failed for local_y_slices\n", rank);
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
-        
-        if (rank == 0 && DEBUG_PRINTS) {
-            printf("[MEMORY] Allocated local_y_slices (reusable): %zu bytes (%.2f GB)\n",
-                   requested_bytes, requested_bytes / (1024.0 * 1024.0 * 1024.0));
-        }
-        
-        // ========================================================================
-        // VERIFY MACRO INDEXING
-        // ========================================================================
-        // TEMPORARILY DISABLED: This code was causing canary corruption
-        // The Y_SLICE macro test writes to indices that may be out of bounds
-        // for small N values, corrupting the canaries.
-        #if 0  // DEBUG_PRINTS && 0  // Disabled due to canary corruption
-        // Test macro indexing (add after allocation, before generation)
-        if (rank < 3) {  // Only test on first few ranks to reduce output
-            // Fill test pattern for 2 slices (max_slices_per_batch)
-            for (int s = 0; s < max_slices_per_batch; s++) {
-                for (int a = 0; a < narray; a++) {
-                    Y_SLICE(s, a, 5, 3, N, narray)[0] = s * 100 + a * 10;
-                    Y_SLICE(s, a, 5, 3, N, narray)[1] = s * 100 + a * 10 + 1;
-                }
-            }
-            
-            // Verify pattern
-            bool indexing_ok = true;
-            for (int s = 0; s < max_slices_per_batch; s++) {
-                for (int a = 0; a < narray; a++) {
-                    double expected_re = s * 100 + a * 10;
-                    double expected_im = s * 100 + a * 10 + 1;
-                    double actual_re = Y_SLICE(s, a, 5, 3, N, narray)[0];
-                    double actual_im = Y_SLICE(s, a, 5, 3, N, narray)[1];
-                    
-                    if (fabs_t(expected_re - actual_re) > 1e-10 || 
-                        fabs_t(expected_im - actual_im) > 1e-10) {
-                        printf("[ERROR] Rank %d: Macro indexing failed at (slice=%d, array=%d)\n", 
-                               rank, s, a);
-                        printf("        Expected: %.2f + %.2fi, Got: %.2f + %.2fi\n",
-                               expected_re, expected_im, actual_re, actual_im);
-                        indexing_ok = false;
-                    }
-                }
-            }
-            if (indexing_ok) {
-                printf("[OK] Rank %d: Macro indexing verified (slices=%d, arrays=%d)\n", 
-                       rank, max_slices_per_batch, narray);
-            } else {
-                fprintf(stderr, "[ERROR] Rank %d: Macro indexing test FAILED!\n", rank);
-                MPI_Abort(MPI_COMM_WORLD, 1);
-            }
-            
-            // Clear test pattern
-            memset(local_y_slices, 0, sizeof(fftw_complex_t) * slice_buffer_size);
-        }
-        #endif
     }
     
-    // ========================================================================
-    // MULTI-BATCH LOOP: GENERATION + COMMUNICATION + ACCUMULATION
-    // ========================================================================
-    
+    // --- MULTI-BATCH LOOP: GENERATION + COMMUNICATION + ACCUMULATION ---
     STimer t_gen, t_comm;
     t_gen.Start();
-    
-    if (rank == 0) {
-        printf("\n[MULTI-BATCH] Processing %d batches...\n", global_max_batches);
-    }
     
     for (int batch_idx = 0; batch_idx < global_max_batches; batch_idx++) {
         // ===== BATCH STEP 1: Get this batch's data =====
@@ -996,26 +501,13 @@ int main(int argc, char **argv)
             my_batch_slice_count = batch_is_self_conjugate ? 1 : 2;
         }
         
-        if (DEBUG_PRINTS && rank < 2 && batch_idx < 2) {
-            printf("[BATCH %d] Rank %d: Processing %d Y-slices", 
-                   batch_idx, rank, my_batch_slice_count);
-            if (my_batch_slice_count > 0) {
-                printf(" (Y=%d", y_batch_primary);
-                if (!batch_is_self_conjugate) printf(", Y=%d", y_batch_mirror);
-                printf(")");
-            }
-            printf("\n");
-        }
-        
         // ===== BATCH STEP 2: Generate + 2D FFT =====
         if (!is_idle_rank && my_batch_slice_count > 0) {
             // Clear buffer for reuse
             memset(local_y_slices, 0, sizeof(fftw_complex_t) * 2 * narray * N * N);
             
             // Generate this batch's pair
-            // Always use separate buffers for primary and conjugate slices
             // For self-conjugate slices, conjugate_slices acts as temporary storage
-            // (like slabHer in zeldovich code) to store conj(D)+i*conj(F) values
             fftw_complex_t *primary_ptr = &local_y_slices[0 * narray * N * N];
             fftw_complex_t *conjugate_ptr = &local_y_slices[1 * narray * N * N];
             
@@ -1023,96 +515,18 @@ int main(int argc, char **argv)
                 N, y_batch_primary, y_batch_mirror,
                 primary_ptr, conjugate_ptr,
                 narray, plan_2d, rank,
-                ps_params_ptr,  // Legacy power spectrum parameters (NULL = use uniform RNG)
-                ps,             // v15.2: zeldovich-PLT PowerSpectrum handle (NULL = use legacy or uniform RNG)
-                params          // v15.2: zeldovich-PLT Parameters handle (NULL = use legacy)
+                ps_params_ptr, ps, params
             );
             
-            
-            // DEBUG: Check for Inf/NaN values in generated Y-slices
-            // Known problematic locations: x=126,127,0 and z values in conjugate Y-slices
-            if (rank == 0) {
-                int inf_count_gen[4] = {0, 0, 0, 0};
-                for (int slice_idx = 0; slice_idx < my_batch_slice_count; slice_idx++) {
-                    for (int array_idx = 0; array_idx < narray; array_idx++) {
-                        for (int x = 0; x < N; x++) {
-                            for (int z = 0; z < N; z++) {
-                                // Y_SLICE macro: local_y_slices[x + N * (z + N * (array_idx + narray * slice_idx))]
-                                real_t re = Y_SLICE(slice_idx, array_idx, x, z, N, narray)[0];
-                                real_t im = Y_SLICE(slice_idx, array_idx, x, z, N, narray)[1];
-                                if (isinf(re) || isinf(im) || isnan(re) || isnan(im)) {
-                                    inf_count_gen[array_idx]++;
-                                    // Print first few Inf locations
-                                    if (inf_count_gen[array_idx] <= 3) {
-                                        fprintf(stderr, "[INF-DEBUG GEN] Y_primary=%d Y_mirror=%d slice=%d array=%d x=%d z=%d: re=%.6e im=%.6e\n",
-                                                y_batch_primary, y_batch_mirror, slice_idx, array_idx, x, z, (double)re, (double)im);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                int total_inf_gen = 0;
-                for (int a = 0; a < narray; a++) total_inf_gen += inf_count_gen[a];
-                if (total_inf_gen > 0) {
-                    fprintf(stderr, "[INF-DEBUG GEN] Y_primary=%d Y_mirror=%d: Total Inf/NaN count per array: ",
-                            y_batch_primary, y_batch_mirror);
-                    for (int a = 0; a < narray; a++) {
-                        fprintf(stderr, "A%d=%d ", a, inf_count_gen[a]);
-                    }
-                    fprintf(stderr, "\n");
-                }
-            }
-            
-            // DEBUG: Memory guard after generation + 2D FFT
-            // Silent error checks (always active) - verbose output controlled by VERBOSE_MPI_BUFFER_CHECKS
-            {
-                // Verify local_y_slices buffer bounds (silent check - always active)
-                size_t expected_size = (size_t)2 * narray * N * N * sizeof(fftw_complex_t);
-                if (local_y_slices != NULL) {
-                    // Touch memory to trigger segfault if corrupted (always active for safety)
-                    volatile char checksum = 0;
-                    for (size_t i = 0; i < expected_size && i < 1024*1024; i += 4096) {
-                        checksum ^= ((char*)local_y_slices)[i];
-                    }
-                    // Verbose output only if flag is enabled
-                    #if VERBOSE_MPI_BUFFER_CHECKS
-                    if (rank < 4 || DEBUG_PRINTS) {
-                        fprintf(stderr, "[Rank %d] After generate_hermitian_slice_pair_local (Y=%d): Verifying local_y_slices buffer...\n",
-                               rank, y_batch_primary);
-                        fprintf(stderr, "[Rank %d] local_y_slices buffer OK (size=%zu bytes, checksum=%d)\n",
-                               rank, expected_size, (int)checksum);
-                        fflush(stderr);
-                    }
-                    #endif
-                } else {
-                    // Always report NULL buffer (critical error)
-                    fprintf(stderr, "[Rank %d] WARNING: local_y_slices is NULL!\n", rank);
-                }
+            if (local_y_slices == NULL) {
+                fprintf(stderr, "[Rank %d] WARNING: local_y_slices is NULL!\n", rank);
             }
         }
         
-        // DEBUG: Print backtrace before calculate_batch_send_recv_counts to catch crash location
-        // TEMPORARILY COMMENTED OUT to test if it's causing malloc corruption
-        #if 0  // DISABLED for debugging
-        if (rank == 0 && batch_idx == 0) {
-            void *array[20];
-            size_t size = backtrace(array, 20);
-            char **strings = backtrace_symbols(array, size);
-            fprintf(stderr, "[Rank %d] Backtrace before calculate_batch_send_recv_counts (%zu frames):\n", rank, size);
-            for (size_t i = 0; i < size; i++) {
-                fprintf(stderr, "  %zu: %s\n", i, strings[i]);
-            }
-            free(strings);
-            fflush(stderr);
-        }
-        #endif
-        
-        // ===== BATCH STEP 3: Calculate send/recv counts (V11 MODIFIED) =====
+        // ===== BATCH STEP 3: Calculate send/recv counts =====
         int *sendcounts_batch, *sdispls_batch, *recvcounts_batch, *rdispls_batch;
         int total_send_batch, total_recv_batch;
         
-        fprintf(stderr, "[DIAG] Rank %d: About to call calculate_batch_send_recv_counts (batch_idx=%d)\n", rank, batch_idx);
         calculate_batch_send_recv_counts(
             rank, num_ranks, N, narray, batch_idx,
             my_batch_slice_count, my_pencils,
@@ -1120,11 +534,7 @@ int main(int argc, char **argv)
             &recvcounts_batch, &rdispls_batch,
             &total_send_batch, &total_recv_batch
         );
-        fprintf(stderr, "[DIAG] Rank %d: calculate_batch_send_recv_counts returned: total_send=%d, total_recv=%d\n",
-                rank, total_send_batch, total_recv_batch);
         
-        // V11: Adjust rdispls to point into persistent recv_buffer
-        // CRITICAL: Check for integer overflow! rdispls_batch is int*, but recv_displs_src is int64_t*
         for (int src = 0; src < num_ranks; src++) {
             int64_t new_displ = recv_displs_src[src] + src_write_cursor[src];
             
@@ -1146,9 +556,8 @@ int main(int argc, char **argv)
             rdispls_batch[src] = (int)new_displ;
         }
         
-        // ===== BATCH STEP 4: Allocate per-batch send buffer (V11: No recv_buffer_batch!) =====
+        // ===== BATCH STEP 4: Allocate per-batch send buffer =====
         fftw_complex_t *send_buffer_batch = NULL;
-        // V11: recv_buffer_batch REMOVED - receiving directly into persistent recv_buffer
         
         if (total_send_batch > 0) {
             size_t requested_bytes = sizeof(fftw_complex_t) * (size_t)total_send_batch;
@@ -1168,71 +577,7 @@ int main(int argc, char **argv)
             );
         }
         
-        // ===== BATCH STEP 6: MPI_Ialltoallv (V11: Direct to recv_buffer) =====
-        // DEBUG: Memory guards to detect heap corruption before MPI call
-        // Verbose output controlled by VERBOSE_MPI_BUFFER_CHECKS flag - error checks always active
-        #if VERBOSE_MPI_BUFFER_CHECKS
-        if (rank < 4 || DEBUG_PRINTS) {  // Only print for first few ranks to avoid spam
-            fprintf(stderr, "[Rank %d] Verifying buffers before MPI_Ialltoallv...\n", rank);
-            fflush(stderr);
-            
-            // Verify send buffer
-            if (send_buffer_batch != NULL && total_send_batch > 0) {
-                size_t total_send_bytes = (size_t)total_send_batch * sizeof(fftw_complex_t);
-                fprintf(stderr, "[Rank %d] Send buffer: %zu bytes (%d elements)\n", 
-                       rank, total_send_bytes, total_send_batch);
-                
-                // Touch memory to trigger segfault if corrupted
-                volatile char checksum = 0;
-                for (size_t i = 0; i < total_send_bytes && i < 1024*1024; i += 4096) {  // Limit to 1MB check
-                    checksum ^= ((char*)send_buffer_batch)[i];
-                }
-                fprintf(stderr, "[Rank %d] Send buffer OK (checksum=%d)\n", rank, (int)checksum);
-            }
-            
-            // Verify recv buffer
-            if (recv_buffer != NULL) {
-                // Calculate total recv size for this batch
-                int total_recv_batch = 0;
-                for (int i = 0; i < num_ranks; i++) {
-                    total_recv_batch += recvcounts_batch[i];
-                }
-                size_t total_recv_bytes = (size_t)total_recv_batch * sizeof(fftw_complex_t);
-                fprintf(stderr, "[Rank %d] Recv buffer: %zu bytes (%d elements) for this batch\n",
-                       rank, total_recv_bytes, total_recv_batch);
-                fprintf(stderr, "[Rank %d] Recv buffer bounds OK\n", rank);
-            }
-            
-            // CRITICAL: Validate ALL displacements fit in int and don't exceed buffers
-            int64_t max_send_displ = 0, max_recv_displ = 0;
-            for (int i = 0; i < num_ranks; i++) {
-                int64_t send_end = (int64_t)sdispls_batch[i] + sendcounts_batch[i];
-                int64_t recv_end = (int64_t)rdispls_batch[i] + recvcounts_batch[i];
-                
-                if (send_end > max_send_displ) max_send_displ = send_end;
-                if (recv_end > max_recv_displ) max_recv_displ = recv_end;
-            }
-            
-            fprintf(stderr, "[Rank %d] Max displacements: send=%lld, recv=%lld\n",
-                   rank, (long long)max_send_displ, (long long)max_recv_displ);
-            
-            // CRITICAL CHECK: Print displacement details
-            fprintf(stderr, "[Rank %d] CRITICAL CHECK:\n", rank);
-            fprintf(stderr, "  recv_total_elems = %lld\n", (long long)recv_total_elems);
-            fprintf(stderr, "  total_send_batch = %d\n", total_send_batch);
-            for (int i = 0; i < num_ranks && i < 4; i++) {
-                fprintf(stderr, "  src %d: rdispls=%d + recvcounts=%d = %d (end=%lld)\n",
-                       i, rdispls_batch[i], recvcounts_batch[i], 
-                       rdispls_batch[i] + recvcounts_batch[i],
-                       (long long)rdispls_batch[i] + recvcounts_batch[i]);
-            }
-            
-            fprintf(stderr, "[Rank %d] All buffer checks passed, calling MPI_Ialltoallv...\n", rank);
-            fflush(stderr);
-        }
-        #endif
-        
-        // Silent error checks (always active, no verbose output)
+        // ===== BATCH STEP 6: MPI_Ialltoallv =====
         // Verify sendcounts sum matches total_send_batch
         if (send_buffer_batch != NULL && total_send_batch > 0) {
             int sum_sendcounts = 0;
@@ -1275,8 +620,6 @@ int main(int argc, char **argv)
                 }
             }
         }
-        
-        // CRITICAL: Validate ALL displacements fit in int and don't exceed buffers
         int64_t max_send_displ = 0, max_recv_displ = 0;
         for (int i = 0; i < num_ranks; i++) {
             int64_t send_end = (int64_t)sdispls_batch[i] + sendcounts_batch[i];
@@ -1321,11 +664,11 @@ int main(int argc, char **argv)
             MPI_COMM_WORLD, &comm_request_batch
         );
         
-        // ===== BATCH STEP 7: MPI_Wait (SYNCHRONIZATION POINT - KEEP THIS!) =====
+        // ===== BATCH STEP 7: MPI_Wait =====
         MPI_Wait(&comm_request_batch, MPI_STATUS_IGNORE);
         t_comm.Stop();
         
-        // ===== BATCH STEP 8: Update write cursors (V11: No accumulation) =====
+        // ===== BATCH STEP 8: Update write cursors =====
         // After MPI_Ialltoallv completes, the cursor is advanced by recvcounts_batch[src]
         // The next batch then calculates a displacement that points after the current batch's data
 
@@ -1333,14 +676,8 @@ int main(int argc, char **argv)
             src_write_cursor[src] += recvcounts_batch[src];
         }
         
-        if (DEBUG_PRINTS && rank == 0 && batch_idx < 2) {
-            printf("[V11-BATCH %d] Cursors advanced. Sample: src0=%lld, src1=%lld\n",
-                   batch_idx, (long long)src_write_cursor[0], num_ranks > 1 ? (long long)src_write_cursor[1] : 0);
-        }
-        
-        // ===== BATCH STEP 9: Free per-batch buffers (V11: No recv_buffer_batch!) =====
+        // ===== BATCH STEP 9: Free per-batch buffers =====
         if (send_buffer_batch) free(send_buffer_batch);
-        // V11: recv_buffer_batch removed - no longer allocated
         free(sendcounts_batch);
         free(sdispls_batch);
         free(recvcounts_batch);
@@ -1364,7 +701,6 @@ int main(int argc, char **argv)
         printf("              Communication time: %.6f s\n", t_comm.Elapsed());
     }
     
-    // Free local_y_slices (no longer needed after all batches complete)
     if (local_y_slices != NULL) {
         free(local_y_slices);
         local_y_slices = NULL;
@@ -1387,20 +723,11 @@ int main(int argc, char **argv)
         
         if (cursor_error) {
             MPI_Abort(MPI_COMM_WORLD, 1);
-        } else if (DEBUG_PRINTS && rank < 2) {
-            printf("[V11-VERIFY] Rank %d: All cursors match expected totals\n", rank);
         }
     }
     
-    // ========================================================================
-    // FREE PCG RNG (NO LONGER NEEDED)
-    // ========================================================================
-    
     #if !FREE_PCG_AFTER_STAGE1
     cleanup_global_pcg();
-    if (rank == 0 && DEBUG_PRINTS) {
-        printf("[MEMORY] Freed PCG RNG after batch processing\n");
-    }
     #endif
     
     // ========================================================================
@@ -1408,19 +735,10 @@ int main(int argc, char **argv)
     // ========================================================================
     
     if (rank == 0) {
-        printf("\n[V12-Stage 3] Z-slab streaming from recv_buffer...\n");
+        printf("\n[Stage 3] Z-slab streaming from recv_buffer...\n");
     }
     
-    // Note: my_bounds and my_pencils already calculated above (before accumulator allocation)
-    
-    // ========================================================================
-    // V12: Z-SLAB STREAMING (ZELDOVICH-COMPATIBLE OUTPUT)
-    // ========================================================================
-    // MEMORY: x_count x narray x N x 16 bytes (ONE Z-SLAB ONLY, e.g, ~4 GB for N=32K, narray=4)
-    // Memory reduced by processing one Z-slab at a time instead of storing all pencils
-    // Memory layout: [Array][X][Y] for one Z-slab (narray arrays, x_count X-values, N Y-values)
-    // Note: Y stride-1 is optimal for FFT. For output, we transpose to [Array][Y][X]
-    
+    // --- V12: Z-SLAB STREAMING (one Z-slab at a time, [Array][X][Y] then transpose to [Array][Y][X]) ---
     STimer t_streaming;
     t_streaming.Start();
     
@@ -1447,28 +765,6 @@ int main(int argc, char **argv)
             fprintf(stderr, "Rank %d: posix_memalign failed for local_z_slab (one Z-slab)\n", rank);
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
-        
-        if (rank == 0 && DEBUG_PRINTS) {
-            size_t total_bytes = (size_t)elements_per_z_slab * sizeof(fftw_complex_t);
-#if USE_X_PADDING
-            printf("[V13-MEMORY] Allocated local_z_slab (one Z-slab with padding): %zu bytes (%.2f GB)\n",
-                   total_bytes, total_bytes / (1024.0 * 1024.0 * 1024.0));
-            printf("         Processing %d Z-slabs sequentially (Z=[%d,%d))\n", 
-                   z_count, my_extended_bounds.padded.z_start, my_extended_bounds.padded.z_end);
-            printf("         Each Z-slab: %d arrays x %d X-values (PADDED) x %d Y-values\n",
-                   narray, x_count, N);
-            printf("         Memory layout: [Array][X][Y] (Y stride-1 for FFT, transpose for output)\n");
-            printf("         NOTE: X-count includes %d padding values\n", X_PADDING);
-#else
-            printf("[MEMORY] Allocated local_z_slab (one Z-slab, core grid): %zu bytes (%.2f GB)\n",
-                   total_bytes, total_bytes / (1024.0 * 1024.0 * 1024.0));
-            printf("         Processing %d Z-slabs sequentially (Z=[%d,%d))\n", 
-                   z_count, my_extended_bounds.core.z_start, my_extended_bounds.core.z_end);
-            printf("         Each Z-slab: %d arrays x %d X-values (CORE) x %d Y-values\n",
-                   narray, x_count, N);
-            printf("         Memory layout: [Array][X][Y] (Y stride-1 for FFT, transpose for output)\n");
-#endif
-        }
     } else {
         // Idle ranks: local_z_slab stays NULL
         local_z_slab = NULL;
@@ -1483,16 +779,12 @@ int main(int argc, char **argv)
         MPI_Abort(MPI_COMM_WORLD, 1);
     }
     
-    // V12: MAIN Z-LOOP: Process one Z-slab at a time (Zeldovich-compatible)
+    // Process one Z-slab at a time (Zeldovich-compatible)
     int files_written = 0;
     size_t total_bytes_written = 0;
     
-    // Verification: Track max real/imag values per array across all Z-slabs
-    real_t *local_max_real = (real_t*)calloc(narray, sizeof(real_t));
-    real_t *local_max_imag = (real_t*)calloc(narray, sizeof(real_t));
-    
     if (!is_idle_rank && my_pencils > 0) {
-        // V13: Use appropriate bounds for Z-loop (padded if enabled, core otherwise)
+        // Use appropriate bounds for Z-loop (padded if enabled, core otherwise)
 #if USE_X_PADDING
         int x_count = my_extended_bounds.padded.x_end - my_extended_bounds.padded.x_start;
         int z_count = my_extended_bounds.padded.z_end - my_extended_bounds.padded.z_start;
@@ -1557,7 +849,6 @@ int main(int argc, char **argv)
             // ========== DEBUG: Extract real(FFT(D + i*F)) or real(FFT(D)) for comparison ==========
             #if DEBUG_RNG_CONSISTENCY && !SKIP_VERIFICATION
             // After 3D FFT, Array 0 contains either FFT(D + i*F) or FFT(D) depending on just_density
-            // Print real parts for test coordinates to compare between runs
             if (N <= DEBUG_FULL_PRINT_MAX_N && z < 4 && rank == 0 && params != NULL) {
                 int qdensity = zeldovich_params_get_qdensity(params);
                 int just_density_flag = (qdensity == 2) ? 1 : 0;
@@ -1573,125 +864,6 @@ int main(int argc, char **argv)
                     }
                 }
                 fflush(stderr);
-            }
-            #endif
-            
-            // ========== DUMP MATRIX AFTER FFT (Real space, after 3D FFT) ==========
-            #ifdef DUMP_MATRIX_AFTER_FFT
-            if (N <= 16) {  // Only for small N
-                char dump_filename[256];
-                snprintf(dump_filename, sizeof(dump_filename), "matrix_after_fft.txt");
-                // Clear file on first Z-slab, first rank (overwrite mode)
-                // Append for all subsequent writes
-                const char *mode = (z == my_extended_bounds.core.z_start && rank == 0) ? "w" : "a";
-                FILE *dump_fp = fopen(dump_filename, mode);
-                if (dump_fp) {
-                    // Write header on first Z-slab, first rank
-                    if (z == my_extended_bounds.core.z_start && rank == 0) {
-                        fprintf(dump_fp, "# Matrix values after FFT (Real space)\n");
-                        fprintf(dump_fp, "# Format: Z=<z> Y=<y> X=<x> Array=<array_idx> Re=<real> Im=<imag>\n");
-                        fprintf(dump_fp, "# Layout: [array][Y][X] format (matches .bin file format)\n");
-                    }
-                    // Get x_start (same logic as PRINT_Z_SLABS block)
-#if USE_X_PADDING
-                    int x_start = my_extended_bounds.padded.x_start;
-#else
-                    int x_start = my_extended_bounds.core.x_start;
-#endif
-                    // Dump this Z-slab in [array][Y][X] format to match .bin files and particle output
-                    // Loop order: for array_idx, for y (Y), for x_idx (X)
-                    // This matches how .bin files are written (line 1718-1730)
-                    for (int array_idx = 0; array_idx < narray; array_idx++) {
-                        for (int y = 0; y < N; y++) {
-                            for (int x_idx = 0; x_idx < x_count; x_idx++) {
-                                int x_global = x_start + x_idx;
-                                // Access using ZSLAB macro: [array][x][y] format
-                                // ZSLAB(array_idx, x_idx, y, N, narray, x_count) returns fftw_complex_t (array)
-                                // Use direct indexing like other code does (e.g., line 1516-1517)
-                                double re = ZSLAB(array_idx, x_idx, y, N, narray, x_count)[0];
-                                double im = ZSLAB(array_idx, x_idx, y, N, narray, x_count)[1];
-                                fprintf(dump_fp, "Z=%d Y=%d X=%d Array=%d Re=%.15e Im=%.15e\n",
-                                        z, y, x_global, array_idx, re, im);
-                            }
-                        }
-                    }
-                    fclose(dump_fp);
-                }
-            }
-            #endif
-            
-            // ========== VERIFICATION: Check this Z-slab after FFT ==========
-            #if !SKIP_VERIFICATION
-            for (int array_idx = 0; array_idx < narray; array_idx++) {
-                for (int x_idx = 0; x_idx < x_count; x_idx++) {
-                    for (int y = 0; y < N; y++) {
-                        double re = fabs_t(ZSLAB(array_idx, x_idx, y, N, narray, x_count)[0]);
-                        double im = fabs_t(ZSLAB(array_idx, x_idx, y, N, narray, x_count)[1]);
-                        local_max_real[array_idx] = fmax_t(local_max_real[array_idx], re);
-                        local_max_imag[array_idx] = fmax_t(local_max_imag[array_idx], im);
-                    }
-                }
-            }
-            
-            // Print max real/imag for rank 0's first Z-slab (for comparison across runs)
-            if (rank == 0 && z == my_extended_bounds.core.z_start) {
-                real_t first_slab_max_real[4] = {0, 0, 0, 0};
-                real_t first_slab_max_imag[4] = {0, 0, 0, 0};
-                real_t overlap_max_real[4] = {0, 0, 0, 0};
-                real_t overlap_max_imag[4] = {0, 0, 0, 0};
-                const int overlap_N = 256;  // Compare overlapping region with N=256 runs
-                // Due to conjugate symmetry, values after Nyquist are determined by values before Nyquist
-                // So the overlapping region should match up to overlap_N (not just overlap_N/2)
-                // For N=256: x,y,z = 0 to 255 should match N=512: x,y,z = 0 to 255
-                
-                for (int array_idx = 0; array_idx < narray; array_idx++) {
-                    for (int x_idx = 0; x_idx < x_count; x_idx++) {
-                        // Get actual x coordinate (accounting for rank's X region)
-                        int x_global = my_extended_bounds.core.x_start + x_idx;
-                        bool x_in_overlap = (x_global < overlap_N);
-                        
-                        for (int y = 0; y < N; y++) {
-                            double re = fabs_t(ZSLAB(array_idx, x_idx, y, N, narray, x_count)[0]);
-                            double im = fabs_t(ZSLAB(array_idx, x_idx, y, N, narray, x_count)[1]);
-                            first_slab_max_real[array_idx] = fmax_t(first_slab_max_real[array_idx], re);
-                            first_slab_max_imag[array_idx] = fmax_t(first_slab_max_imag[array_idx], im);
-                            
-                            // Track max for overlapping region: x,y,z all < overlap_N
-                            // Note: z is already 0 (first Z-slab), so only check x and y
-                            // Due to conjugate symmetry, values for x,y,z = 0 to overlap_N-1 should match
-                            if (y < overlap_N && x_in_overlap) {
-                                overlap_max_real[array_idx] = fmax_t(overlap_max_real[array_idx], re);
-                                overlap_max_imag[array_idx] = fmax_t(overlap_max_imag[array_idx], im);
-                            }
-                        }
-                    }
-                }
-                printf("[Rank 0, Z=%d] First Z-slab max values (all Y): ", z);
-                for (int a = 0; a < narray; a++) {
-                    printf("A%d: re=%.6e im=%.6e", a, first_slab_max_real[a], first_slab_max_imag[a]);
-                    if (a < narray - 1) printf(" ");
-                }
-                printf("\n");
-                if (N >= overlap_N) {
-                    printf("[Rank 0, Z=%d] Overlapping region max (x,y,z < %d): ", z, overlap_N);
-                    for (int a = 0; a < narray; a++) {
-                        printf("A%d: re=%.6e im=%.6e", a, overlap_max_real[a], overlap_max_imag[a]);
-                        if (a < narray - 1) printf(" ");
-                    }
-                    printf("\n");
-                }
-            }
-            #endif
-            
-            // Print Z-slab if flag is enabled (for debugging)
-            #if PRINT_Z_SLABS
-            {
-#if USE_X_PADDING
-                int x_start = my_extended_bounds.padded.x_start;
-#else
-                int x_start = my_extended_bounds.core.x_start;
-#endif
-                print_z_slab(rank, z, local_z_slab, x_count, N, narray, x_start);
             }
             #endif
             
@@ -1728,15 +900,7 @@ int main(int argc, char **argv)
                     // =======================================================================================
                     // Uses WriteParticlesSlab_range with [array][x][y] layout (ZSLAB format)
                     if (param_file == NULL || params == NULL) {
-                        if (rank == 0 && z == 0) {
-                            printf("[OUTPUT-DEBUG] z=%d: Mode 0 requires param_file, skipping\n", z);
-                        }
                         break;
-                    }
-                    
-                    if (rank == 0 && z == 0) {
-                        printf("[OUTPUT-DEBUG] z=%d: Mode 0 (Write particle ICs directly, no transpose)\n", z);
-                        fflush(stdout);
                     }
                     
                     int k_start_global = my_extended_bounds.core.x_start;
@@ -1751,34 +915,17 @@ int main(int argc, char **argv)
                     );
                     
                     files_written++;
-                    if (DEBUG_PRINTS && rank == 0 && files_written <= 3) {
-                        printf("[DEBUG] Rank %d: Mode 0 - Wrote particles for i=%d, X=[%d,%d)\n", 
-                               rank, i, k_start_global, k_start_global + k_extent);
-                    }
                     break;
                 }
-                
                 case 1: {
                     // =======================================================================================
                     // MODE 1: Write .bin files for later re-assembly
                     // =======================================================================================
-                    if (rank == 0 && z == 0) {
-                        printf("[OUTPUT-DEBUG] z=%d: Mode 1 (Write .bin files for re-assembly)\n", z);
-                        fflush(stdout);
-                    }
-                    
                     char filename[256];
                     snprintf(filename, sizeof(filename), "rank_%d/i%d_slab_N%d.bin", rank, i, N);
                     
                     FILE *fp = fopen(filename, "wb");
                     if (fp) {
-                        // DEBUG: Print x_count and expected file size
-                        if (rank == 0 && i == 0) {
-                            size_t expected_size = (size_t)x_count * narray * N * sizeof(fftw_complex_t);
-                            fprintf(stderr, "[DEBUG-WRITE-BIN] Rank %d, i=%d: x_count=%d, narray=%d, N=%d, expected_size=%zu bytes\n",
-                                   rank, i, x_count, narray, N, expected_size);
-                        }
-                        
                         // Write in [Array][X][Y] order (no transpose)
                         // Loop order: for (array) for (X) for (Y) to match ZSLAB layout
                         for (int array_idx = 0; array_idx < narray; array_idx++) {
@@ -1798,11 +945,6 @@ int main(int argc, char **argv)
                         files_written++;
                         size_t slab_bytes = (size_t)x_count * narray * N * sizeof(fftw_complex_t);
                         total_bytes_written += slab_bytes;
-                        
-                        if (DEBUG_PRINTS && rank == 0 && files_written <= 3) {
-                            printf("[DEBUG] Rank %d: Mode 1 - Wrote %s (%.2f MB)\n", 
-                                   rank, filename, slab_bytes / (1024.0 * 1024.0));
-                        }
                     } else {
                         fprintf(stderr, "Rank %d: ERROR opening %s for writing (errno=%d)\n", 
                                rank, filename, errno);
@@ -1816,15 +958,7 @@ int main(int argc, char **argv)
                     // =======================================================================================
                     // Useful for verifying .bin file format and re-assembly logic
                     if (param_file == NULL || params == NULL) {
-                        if (rank == 0 && z == 0) {
-                            printf("[OUTPUT-DEBUG] z=%d: Mode 2 requires param_file, skipping\n", z);
-                        }
                         break;
-                    }
-                    
-                    if (rank == 0 && z == 0) {
-                        printf("[OUTPUT-DEBUG] z=%d: Mode 2 (Write .bin then read back and write particle ICs)\n", z);
-                        fflush(stdout);
                     }
                     
                     // Step 1: Write .bin file (same as Mode 2)
@@ -1860,8 +994,6 @@ int main(int argc, char **argv)
                                rank, filename, errno);
                         break;
                     }
-                    
-                    // Allocate buffers in [y][x] format (same as Option A)
                     fftw_complex_t *T_slab1 = (fftw_complex_t*)FFTW_MALLOC(x_count * N * sizeof(fftw_complex_t));
                     fftw_complex_t *T_slab2 = (fftw_complex_t*)FFTW_MALLOC(x_count * N * sizeof(fftw_complex_t));
                     fftw_complex_t *T_slab3 = (fftw_complex_t*)FFTW_MALLOC(x_count * N * sizeof(fftw_complex_t));
@@ -1907,20 +1039,11 @@ int main(int argc, char **argv)
                     FFTW_FREE(T_slab4);
                     
                     files_written++;
-                    if (DEBUG_PRINTS && rank == 0 && files_written <= 3) {
-                        printf("[DEBUG] Rank %d: Mode 2 - Wrote .bin and particles for i=%d, X=[%d,%d)\n", 
-                               rank, i, k_start_global, k_start_global + k_extent);
-                    }
                     break;
                 }
                 
-                default: {
-                    if (rank == 0 && z == 0) {
-                        fprintf(stderr, "[OUTPUT-DEBUG] z=%d: Invalid PARTICLE_OUTPUT_MODE=%d (must be 0-2)\n", 
-                               z, PARTICLE_OUTPUT_MODE);
-                    }
+                default:
                     break;
-                }
             }
 
             // =======================================================================================
@@ -1940,57 +1063,8 @@ int main(int argc, char **argv)
         }
     }
     // Idle ranks: files_written = 0, total_bytes_written = 0 (already initialized)
-    
-    // NOTE: In V12 multi-batch mode:
-    // - recv_buffer (persistent) is freed in cleanup section (not here)
-    // - local_z_slab is freed in cleanup section (not here)
-    // - Per-batch send buffers are freed within batch loop
-    
     t_streaming.Stop();
     
-    // ========================================================================
-    // VERIFICATION: Report real-space statistics (after all Z-slabs processed)
-    // ========================================================================
-    #if !SKIP_VERIFICATION
-    {
-        // Gather global max for each array (all ranks participate)
-        real_t *global_max_real = (real_t*)malloc(sizeof(real_t) * narray);
-        real_t *global_max_imag = (real_t*)malloc(sizeof(real_t) * narray);
-        MPI_Reduce(local_max_real, global_max_real, narray, MPI_REAL_TYPE, MPI_MAX, 0, MPI_COMM_WORLD);
-        MPI_Reduce(local_max_imag, global_max_imag, narray, MPI_REAL_TYPE, MPI_MAX, 0, MPI_COMM_WORLD);
-        
-        if (rank == 0) {
-            printf("\n========== VERIFICATION: REAL-SPACE AFTER 3D FFT ==========\n");
-            bool all_real = true;
-            for (int array_idx = 0; array_idx < narray; array_idx++) {
-                real_t ratio = global_max_imag[array_idx] / (global_max_real[array_idx] + 1e-16);
-                printf("Array %d: Max real=%.6e, Max imag=%.6e, Ratio=%.6e", 
-                       array_idx, global_max_real[array_idx], global_max_imag[array_idx], ratio);
-                if (ratio < 1e-7) {
-                    printf(" [REAL]\n");
-                } else {
-                    printf(" [NOT REAL, %.2f%%]\n", 100.0 * ratio);
-                    all_real = false;
-                }
-            }
-            if (all_real) {
-                printf("RESULT: All %d arrays are PURELY REAL after forward 3D FFT!\n", narray);
-            } else {
-                printf("RESULT: Some arrays have significant imaginary components\n");
-            }
-            printf("============================================================\n\n");
-        }
-        
-        free(global_max_real);
-        free(global_max_imag);
-    }
-    #endif
-    
-    // Free verification arrays
-    free(local_max_real);
-    free(local_max_imag);
-    
-    // Gather statistics across ranks (all ranks participate)
     int total_files_written;
     size_t total_bytes_all_ranks;
     MPI_Reduce(&files_written, &total_files_written, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
@@ -2042,30 +1116,19 @@ int main(int argc, char **argv)
                t_gen.Elapsed() + t_comm.Elapsed());
         printf("Total time (including all stages):      %.6f s\n", 
                t_gen.Elapsed() + t_comm.Elapsed());
-        printf("\nNote: In v11, persistent recv_buffer eliminates per-batch allocation\n");
-        printf("      Unpacking, 1D FFT, and I/O are combined in streaming stage\n");
         printf("====================================================================================\n");
     }
     #endif
     
-    // ========================================================================
-    // CLEANUP
-    // ========================================================================
-    
-    // FREE: FFT plans (destroy after all FFTs complete)
     FFTW_DESTROY_PLAN(plan_2d);
     FFTW_DESTROY_PLAN(plan_1d_y);
     
-    // FREE: Y-slices (already freed after packing, but check for safety)
-    // Note: local_y_slices is freed immediately after packing (Stage 3) to reduce peak memory
+    // FREE: Y-slices (normally freed after packing; check for safety)
     if (!is_idle_rank && local_y_slices != NULL) {
         fprintf(stderr, "[WARNING] Rank %d: local_y_slices was not freed earlier!\n", rank);
         free(local_y_slices);
         local_y_slices = NULL;
     }
-    // V11: No y_global_map, recv_buffer_accumulator, or y_to_local_idx to free
-    
-    // V12: FREE: Z-slab buffer (final data - freed after streaming complete)
     if (!is_idle_rank && local_z_slab != NULL) {
         free(local_z_slab);
         local_z_slab = NULL;
@@ -2101,16 +1164,23 @@ int main(int argc, char **argv)
         free(recv_buffer);
         recv_buffer = NULL;
     }
-    
-    // FREE: PCG RNG array (no longer needed after slice generation)
-    // FREE: PCG RNG (may already be freed after Stage 1 if FREE_PCG_AFTER_STAGE1=1)
-    // If kept for future generation (FREE_PCG_AFTER_STAGE1=0), free it here
-    // cleanup_global_pcg() is safe to call even if already freed
+    if (recv_displs_src != NULL) {
+        free(recv_displs_src);
+        recv_displs_src = NULL;
+    }
+    if (src_total_slices != NULL) {
+        free(src_total_slices);
+        src_total_slices = NULL;
+    }
+    if (src_write_cursor != NULL) {
+        free(src_write_cursor);
+        src_write_cursor = NULL;
+    }
+    if (my_pair_list != NULL) {
+        free(my_pair_list);
+        my_pair_list = NULL;
+    }
     cleanup_global_pcg();
-    
-    // Cleanup zeldovich-PLT objects
-    // PowerSpectrum destructor now has NULL checks to prevent double-free
-    // The wrapper tracks destroyed objects to prevent double-free errors
     if (ps) {
         zeldovich_ps_destroy(ps);
         ps = NULL;
@@ -2127,8 +1197,6 @@ int main(int argc, char **argv)
     if (params != NULL) {
         TeardownOutput();
     }
-    
-    // Cleanup FFTW threading resources
     #ifdef USE_DOUBLE_PRECISION
     fftw_cleanup_threads();
     #else

@@ -305,6 +305,9 @@ static void WriteParticlesSlab_unified(
                 fwrite(particle_buffer, sizeof_outputtype, num_particles, fp);
                 fclose(fp);
                 totsize += num_particles * (int64_t)sizeof_outputtype;
+            } else {
+                fmt::print(stderr, "ERROR: Failed to open file {} for writing (ic_index={}, i={}): {}\n",
+                          fn.c_str(), ic_index, i, strerror(errno));
             }
         } else {
             // Local range: write to per-rank file
