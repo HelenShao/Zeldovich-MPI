@@ -252,8 +252,10 @@ int main(int argc, char **argv)
         int qPLT = zeldovich_params_get_qPLT(params);
         if (qPLT) {
 
-            
+            const char* PLT_filename = zeldovich_params_get_PLT_filename(params);
             const char* ICFormat = zeldovich_params_get_ICFormat(params);
+
+            // Validate ICFormat starts with "RV" when qPLT is enabled
             if (!ICFormat || strncmp(ICFormat, "RV", 2) != 0) {
                 if (rank == 0) {
                     fprintf(stderr, "ERROR: qPLT is enabled but ICFormat does not start with 'RV'\n");
@@ -273,13 +275,14 @@ int main(int argc, char **argv)
             }
             
             if (rank == 0) {
+                printf("[INIT] Loaded PLT eigenmodes from: %s\n", PLT_filename);
+            }
         }
     } else {
         if (rank == 0) {
             printf("[INIT] No param file provided, using uniform random mode\n");
         }
     }
-
 
     int narray;
     if (params != NULL) {
