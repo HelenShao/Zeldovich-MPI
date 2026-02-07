@@ -1,7 +1,3 @@
-// ====================================================================================
-// HERMITIAN Y-SLICES GENERATION+FFT
-// ====================================================================================
-
 #include "hermitian_generation.h"
 #include "../utils/verification.h"
 #include "../utils/zeldovich_wrapper.h" 
@@ -16,7 +12,7 @@
 
 // ====================================================================================
 // Generates one pair of Hermitian Y-slices (primary + conjugate) in Fourier space
-// Gaussian w/ power spectrum weighting (via zeldovich-PLT ps_handle and params_handle)
+// Gaussian w/ power spectrum weighting (w/ zeldovich-PLT ps_handle & params_handle)
 // 2D FFT: Fourier --> real space (X,Z)
 // Handles RNG nskip tracking
 // ====================================================================================
@@ -545,14 +541,7 @@ void generate_hermitian_slice_pair_local(
             nskip = 0;
         }
         
-        #if USE_ZELDOVICH_METHOD
         // Zeldovich method: Fill half the plane, mirror the rest
-        #if DEBUG_PRINTS
-        if (global_y == 0) {
-            fprintf(stderr, "[Y0-DEBUG] Y=0 detected as self-conjugate, using zeldovich_method (USE_ZELDOVICH_METHOD=%d)\n", USE_ZELDOVICH_METHOD);
-            fflush(stderr);
-        }
-        #endif
         // Process FULL plane first: z = 0 to N-1, x = 0 to N-1
         for (int z = 0; z < N; z++) {
             // RNG skipping: match zeldovich.cpp - skip at Nyquist boundary (z == Nhalf + 1)
@@ -960,98 +949,7 @@ void generate_hermitian_slice_pair_local(
             PRIM_SLICE(a, 0, Nhalf)[1] = 0.0;
             PRIM_SLICE(a, Nhalf, Nhalf)[1] = 0.0;
         }
-        // OBSOLETE CODE REMOVED: The non-zeldovich_method path has been removed
-        // because zeldovich_method is the only supported path. The obsolete code
-        // (previously at lines 1325-1734) was buggy and is no longer needed.
-        #endif  // End of USE_ZELDOVICH_METHOD conditional
-        // ========== DEBUG: Check nskip value immediately after #endif ==========
-        #if DEBUG_RNG_SKIP
-        if (global_y <= MAX_DEBUG_COORD || global_y == Nhalf - 1) {
-            fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d: IMMEDIATELY AFTER #endif (line 1527) - nskip=%lld (0x%llx)\n",
-                    N, global_y, (long long)nskip, (unsigned long long)nskip);
-            fflush(stderr);
-        }
-        #endif
-        // ========== DEBUG: Check nskip value right before loop ends ==========
-        #if DEBUG_RNG_SKIP
-        if (global_y <= MAX_DEBUG_COORD || global_y == Nhalf - 1) {
-            fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d: RIGHT BEFORE LOOP ENDS (inside #endif) - nskip=%lld (0x%llx)\n",
-                    N, global_y, (long long)nskip, (unsigned long long)nskip);
-            fflush(stderr);
-        }
-        #endif
     }
-    
-    // ========== DEBUG: Check nskip value right after loop ends ==========
-    #if DEBUG_RNG_SKIP
-    if (global_y <= MAX_DEBUG_COORD || global_y == Nhalf - 1) {
-        fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d: AFTER LOOP ENDS - nskip=%lld (0x%llx)\n",
-                N, global_y, (long long)nskip, (unsigned long long)nskip);
-        fflush(stderr);
-    }
-    #endif
-    
-    // ========== DEBUG: Check values BEFORE 2D FFT (Fourier space - expect non-zero imag) ==========
-    #if DEBUG_PRINTS && !SKIP_VERIFICATION
-    if (rank == 0 && global_y <= 2) {
-        real_t debug_max_real_before[4] = {0, 0, 0, 0};
-        real_t debug_max_imag_before[4] = {0, 0, 0, 0};
-        for (int a = 0; a < narray; a++) {
-            for (int x = 0; x < N; x++) {
-                for (int z = 0; z < N; z++) {
-                    double re = fabs_t(PRIM_SLICE(a, x, z)[0]);
-                    double im = fabs_t(PRIM_SLICE(a, x, z)[1]);
-                    debug_max_real_before[a] = fmax_t(debug_max_real_before[a], re);
-                    debug_max_imag_before[a] = fmax_t(debug_max_imag_before[a], im);
-                }
-            }
-        }
-        printf("[DEBUG Y=%d] Before 2D FFT (Fourier space) - PRIMARY slice - Max real/imag per array: ", global_y);
-        for (int a = 0; a < narray; a++) {
-            printf("A%d: re=%.3e im=%.3e ", a, debug_max_real_before[a], debug_max_imag_before[a]);
-        }
-        printf("(NOTE: Non-zero imag expected in Fourier space)\n");
-        
-        // Also check conjugate slice for conjugate pairs
-        if (y_mirror != global_y) {
-            real_t debug_max_real_conj_before[4] = {0, 0, 0, 0};
-            real_t debug_max_imag_conj_before[4] = {0, 0, 0, 0};
-            for (int a = 0; a < narray; a++) {
-                for (int x = 0; x < N; x++) {
-                    for (int z = 0; z < N; z++) {
-                        double re = fabs_t(CONJ_SLICE(a, x, z)[0]);
-                        double im = fabs_t(CONJ_SLICE(a, x, z)[1]);
-                        debug_max_real_conj_before[a] = fmax_t(debug_max_real_conj_before[a], re);
-                        debug_max_imag_conj_before[a] = fmax_t(debug_max_imag_conj_before[a], im);
-                    }
-                }
-            }
-            printf("[DEBUG Y=%d] Before 2D FFT (Fourier space) - CONJUGATE slice - Max real/imag per array: ", global_y);
-            for (int a = 0; a < narray; a++) {
-                printf("A%d: re=%.3e im=%.3e ", a, debug_max_real_conj_before[a], debug_max_imag_conj_before[a]);
-            }
-            printf("(NOTE: Should be conjugate of primary!)\n");
-            
-            // Check a few sample points to verify conjugate relationship
-            printf("[DEBUG Y=%d] Sample conjugate check (first 3 points): ", global_y);
-            for (int a = 0; a < narray && a < 2; a++) {
-                for (int x = 0; x < 2 && x < N; x++) {
-                    for (int z = 0; z < 2 && z < N; z++) {
-                        double prim_re = PRIM_SLICE(a, x, z)[0];
-                        double prim_im = PRIM_SLICE(a, x, z)[1];
-                        int x_mirror = (x == 0) ? 0 : N - x;
-                        int z_mirror = (z == 0) ? 0 : N - z;
-                        double conj_re = CONJ_SLICE(a, x_mirror, z_mirror)[0];
-                        double conj_im = CONJ_SLICE(a, x_mirror, z_mirror)[1];
-                        printf("A%d[%d,%d]: prim=(%.3e,%.3e) conj[%d,%d]=(%.3e,%.3e) ", 
-                               a, x, z, prim_re, prim_im, x_mirror, z_mirror, conj_re, conj_im);
-                    }
-                }
-            }
-            printf("\n");
-        }
-    }
-    #endif
     
     // Verify Hermitian symmetry BEFORE 2D FFT
     // STAGE 7: Updated to check all arrays independently
@@ -1060,72 +958,6 @@ void generate_hermitian_slice_pair_local(
         fftw_complex_t *prim_array = &PRIM_SLICE(a, 0, 0);
         fftw_complex_t *conj_array = (y_mirror != global_y) ? &CONJ_SLICE(a, 0, 0) : NULL;
         verify_initial_fourier_hermitian_symmetry(N, prim_array, global_y, y_mirror, conj_array, a);
-    }
-    #endif
-    
-    // DEBUG: Check if conjugate pair is correct BEFORE 2D FFT
-    // STAGE 7: Updated to check all arrays independently
-    #if PRINT_DETAILED_SLICES
-    if (y_mirror != global_y && N <= 16) {
-        printf("\n[RANK %d - BEFORE FFT] Checking Y=%d and Y=%d conjugate relationship (all arrays):\n", rank, global_y, y_mirror);
-        for (int a = 0; a < narray; a++) {
-            fftw_complex_t *prim_array = &PRIM_SLICE(a, 0, 0);
-            fftw_complex_t *conj_array = &CONJ_SLICE(a, 0, 0);
-            verify_hermitian_pair(rank, global_y, y_mirror, prim_array, conj_array, N, a, false);
-        }
-    }
-    #endif
-    
-    // ========== DUMP MATRIX BEFORE FFT (Fourier space, after generation) ==========
-    #ifdef DUMP_MATRIX_BEFORE_FFT
-    if (N <= 16) {  // Only for small N
-        char dump_filename[256];
-        snprintf(dump_filename, sizeof(dump_filename), "matrix_before_fft.txt");
-        FILE *dump_fp = fopen(dump_filename, "a");
-        if (dump_fp) {
-            // Write header on first Y-slice
-            if (global_y == 0 && rank == 0) {
-                fprintf(dump_fp, "# Matrix values before FFT (Fourier space)\n");
-                fprintf(dump_fp, "# Format: Y=<y> X=<x> Z=<z> Array=<array_idx> Re=<real> Im=<imag>\n");
-                fflush(dump_fp);
-            }
-            // Dump primary slice
-            int count = 0;
-            for (int x = 0; x < N; x++) {
-                for (int z = 0; z < N; z++) {
-                    for (int array_idx = 0; array_idx < narray; array_idx++) {
-                        int ret = fprintf(dump_fp, "Y=%d X=%d Z=%d Array=%d Re=%.15e Im=%.15e\n",
-                                global_y, x, z, array_idx, PRIM_SLICE(array_idx, x, z)[0], PRIM_SLICE(array_idx, x, z)[1]);
-                        if (ret < 0 && count == 0) {
-                            fprintf(stderr, "[DUMP-DEBUG] fprintf failed for Y=%d X=%d Z=%d\n", global_y, x, z);
-                        }
-                        count++;
-                    }
-                }
-            }
-            // Dump conjugate slice if it exists
-            if (y_mirror != global_y) {
-                for (int x = 0; x < N; x++) {
-                    for (int z = 0; z < N; z++) {
-                        for (int array_idx = 0; array_idx < narray; array_idx++) {
-                            fprintf(dump_fp, "Y=%d X=%d Z=%d Array=%d Re=%.15e Im=%.15e\n",
-                                    y_mirror, x, z, array_idx, CONJ_SLICE(array_idx, x, z)[0], CONJ_SLICE(array_idx, x, z)[1]);
-                            count++;
-                        }
-                    }
-                }
-            }
-            fflush(dump_fp);  // Ensure data is written before closing
-            fclose(dump_fp);
-            if (rank == 0 && global_y == 0) {
-                fprintf(stderr, "[DUMP-DEBUG] Wrote %d matrix elements for Y=%d to matrix_before_fft.txt\n", count, global_y);
-            }
-        } else {
-            // Debug: Print error if file couldn't be opened
-            if (rank == 0 && global_y == 0) {
-                fprintf(stderr, "[DUMP-DEBUG] Failed to open matrix_before_fft.txt for writing\n");
-            }
-        }
     }
     #endif
     
