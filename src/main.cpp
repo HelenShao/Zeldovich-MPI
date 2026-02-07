@@ -44,7 +44,6 @@ extern "C" {
 
 // --- PCG RNG MODULE (zeldovich-PLT power spectrum / cgauss) ---
 #include "utils/rng.h"
-#include "utils/power_spectrum.h"
 #include "utils/zeldovich_wrapper.h"  // For zeldovich-PLT functions
 #include "utils/plt_eigenmodes.h"    // For PLT eigenmode loading
 #include "output/output_new.h"
@@ -62,12 +61,11 @@ int main(int argc, char **argv)
     int N = 64;
     const char* param_file = NULL;
     
-    if (argc < 2) {
+    if (argc < 3) {
         if (rank == 0) {
-            fprintf(stderr, "Usage: %s N [param_file.par]\n", argv[0]);
+            fprintf(stderr, "Usage: %s N param_file.par\n", argv[0]);
             fprintf(stderr, "  N: Grid size (e.g, 256)\n");
-            fprintf(stderr, "  param_file.par: Optional zeldovich-PLT parameter file\n");
-            fprintf(stderr, "                 If provided, enables power spectrum mode\n");
+            fprintf(stderr, "  param_file.par: zeldovich-PLT parameter file (required)\n");
         }
         MPI_Finalize();
         return 1;
@@ -84,6 +82,14 @@ int main(int argc, char **argv)
     
     if (argc >= 3) {
         param_file = argv[2];
+    }
+    if (param_file == NULL) {
+        if (rank == 0) {
+            fprintf(stderr, "Error: Parameter file required (power spectrum mode only)\n");
+            fprintf(stderr, "Usage: %s N param_file.par\n", argv[0]);
+        }
+        MPI_Finalize();
+        return 1;
     }
     
     // ========================================================================
@@ -190,16 +196,6 @@ int main(int argc, char **argv)
     
     ParametersHandle params = NULL;
     PowerSpectrumHandle ps = NULL;
-    
-    power_spectrum_params_t ps_params;
-    power_spectrum_params_t *ps_params_ptr = NULL;
-    init_power_spectrum_params(&ps_params, 
-        -2.0,      // powerlaw_index: P(k) ~ k^-2 (scale-invariant)
-        1.0,       // normalization: adjust based on desired amplitude
-        0.0,       // Pk_smooth: no smoothing
-        0          // fixed_power: random amplitude (not fixed)
-    );
-    ps_params_ptr = &ps_params;  // Enable power spectrum mode
     
     if (param_file != NULL) {
         // Load parameters from file
@@ -518,7 +514,7 @@ int main(int argc, char **argv)
                 N, y_batch_primary, y_batch_mirror,
                 primary_ptr, conjugate_ptr,
                 narray, plan_2d, rank,
-                ps_params_ptr, ps, params
+                ps, params
             );
             
             if (local_y_slices == NULL) {
@@ -846,27 +842,6 @@ int main(int argc, char **argv)
                     printf("A%d=%.3e ", a, debug_max_imag[a]);
                 }
                 printf("\n");
-            }
-            #endif
-            
-            // ========== DEBUG: Extract real(FFT(D + i*F)) or real(FFT(D)) for comparison ==========
-            #if DEBUG_RNG_CONSISTENCY && !SKIP_VERIFICATION
-            // After 3D FFT, Array 0 contains either FFT(D + i*F) or FFT(D) depending on just_density
-            if (N <= DEBUG_FULL_PRINT_MAX_N && z < 4 && rank == 0 && params != NULL) {
-                int qdensity = zeldovich_params_get_qdensity(params);
-                int just_density_flag = (qdensity == 2) ? 1 : 0;
-                int max_test_coord = (N <= DEBUG_FULL_PRINT_MAX_N) ? N : MAX_DEBUG_COORD;
-                for (int x_test = 0; x_test < max_test_coord && x_test < x_count; x_test++) {
-                    for (int y_test = 0; y_test < max_test_coord && y_test < N; y_test++) {
-                        // Array 0: Contains FFT(D + i*F) when just_density=false, or FFT(D) when just_density=true
-                        double real_part = ZSLAB(0, x_test, y_test, N, narray, x_count)[0];
-                        double imag_part = ZSLAB(0, x_test, y_test, N, narray, x_count)[1];
-                        fprintf(stderr, "[REAL-FFT-DEBUG] N=%d just_density=%d Z=%d (x,y)=(%d,%d): "
-                                "real(Array0)=%.10e imag(Array0)=%.10e\n",
-                                N, just_density_flag, z, x_test, y_test, real_part, imag_part);
-                    }
-                }
-                fflush(stderr);
             }
             #endif
             

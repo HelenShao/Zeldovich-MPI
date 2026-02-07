@@ -4,17 +4,6 @@
 // Modify flags or override them at compile time using -D flags.
 // Ex. make CFLAGS="-DUSE_DOUBLE_PRECISION -DDEBUG_PRINTS=0"
 
-// Parallelization strategy for (x,z) loops within Y-slice generation
-// 0 = Sequential (x,z) loops - no locks needed, each thread processes different Y-slice
-//     Similar to zeldovich.cpp approach: parallelize over Y-slices, sequential within slice
-//     [RECOMMENDED] Avoids lock contention
-// 1 = Parallel (x,z) loops with locks - may be faster but requires locks for thread safety
-//     All threads process same Y-slice, need locks to protect RNG access
-//     Lock contention can serialize execution, reducing parallel benefit
-#ifndef PARALLELIZE_XZ_WITHIN_SLICE
-#define PARALLELIZE_XZ_WITHIN_SLICE 0  // default
-#endif
-
 // Use Zeldovich method for self-conjugate planes (Y=0, Y=N/2)
 // 0 = Original approach (first quadrant only)
 // 1 = Zeldovich.cpp approach (copy first half plane) [RECOMMENDED]
@@ -73,13 +62,7 @@
 #define DEBUG_PRINTS 1
 #endif
 
-// RNG skip consistency
-// 1 = Print D, F, G, H for test coordinates up to MAX_DEBUG_COORD
-#ifndef DEBUG_RNG_CONSISTENCY
-#define DEBUG_RNG_CONSISTENCY 1
-#endif
-
-// Maximum coordinate value to test for RNG consistency debugging
+// Maximum coordinate value to test for RNG skip debugging (DEBUG_RNG_SKIP)
 #ifndef MAX_DEBUG_COORD
 #define MAX_DEBUG_COORD 10
 #endif
@@ -314,7 +297,6 @@
     if (rank == 0) { \
         printf("Configuration:\n"); \
         printf("  USE_DOUBLE_PRECISION: %d\n", USE_DOUBLE_PRECISION); \
-        printf("  PARALLELIZE_XZ_WITHIN_SLICE: %d\n", PARALLELIZE_XZ_WITHIN_SLICE); \
         printf("  USE_ZELDOVICH_METHOD: %d\n", USE_ZELDOVICH_METHOD); \
         printf("  USE_X_PADDING: %d (X_PADDING=%d)\n", USE_X_PADDING, X_PADDING); \
         printf("  DEBUG_PRINTS: %d\n", DEBUG_PRINTS); \

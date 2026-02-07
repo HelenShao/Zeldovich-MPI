@@ -14,8 +14,6 @@
 
 // External RNG functions (from utils/rng.h)
 #include "../utils/rng.h"
-// Power spectrum functions (from utils/power_spectrum.h)
-#include "../utils/power_spectrum.h"
 // zeldovich-PLT wrapper (for v15.2)
 #include "../utils/zeldovich_wrapper.h"
 
@@ -35,9 +33,8 @@ extern "C" {
 //      - narray: Number of arrays per slice
 //      - plan_2d: Precomputed 2D FFT plan
 //      - rank: MPI rank (for debug output only)
-//      - ps_params: Legacy power spectrum parameters (NULL = use uniform RNG)
-//      - ps_handle: zeldovich-PLT PowerSpectrum handle (NULL = use legacy or uniform RNG)
-//      - params_handle: zeldovich-PLT Parameters handle (needed for fundamental wavenumber)
+//      - ps_handle: zeldovich-PLT PowerSpectrum handle
+//      - params_handle: zeldovich-PLT Parameters handle
 //
 // Uses OpenMP to parallelize X-Z loops within the rank (not recommended)
 // Uses global_y for deterministic RNG seeding (thread-safe)
@@ -52,9 +49,8 @@ void generate_hermitian_slice_pair_local(
     int narray,                       // Number of arrays per slice
     fftw_plan_t plan_2d,              // 2D FFT plan
     int rank,                         // MPI rank (for debug output)
-    const power_spectrum_params_t *ps_params,  // Legacy power spectrum parameters (NULL = use uniform RNG)
-    PowerSpectrumHandle ps_handle,   // v15.2: zeldovich-PLT PowerSpectrum handle (NULL = use legacy or uniform RNG)
-    ParametersHandle params_handle);  // v15.2: zeldovich-PLT Parameters handle (needed for fundamental wavenumber)
+    PowerSpectrumHandle ps_handle,   // zeldovich-PLT PowerSpectrum handle
+    ParametersHandle params_handle);  // zeldovich-PLT Parameters handle
 
 #ifdef __cplusplus
 }
