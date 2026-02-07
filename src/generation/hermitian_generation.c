@@ -16,7 +16,7 @@
 
 // ====================================================================================
 // Generates one pair of Hermitian Y-slices (primary + conjugate) in Fourier space
-// Gaussian w/ power spectrum weighting (via zeldovich-PLT functions or legacy code)
+// Gaussian w/ power spectrum weighting (via zeldovich-PLT ps_handle and params_handle)
 // 2D FFT: Fourier --> real space (X,Z)
 // Handles RNG nskip tracking
 // ====================================================================================
@@ -30,9 +30,8 @@ void generate_hermitian_slice_pair_local(
     int narray,                       // 4 arrays per slice, 7 C numbers
     fftw_plan_t plan_2d,
     int rank,
-    const power_spectrum_params_t *ps_params,  // Legacy power spectrum parameters (NULL = use uniform RNG)
-    PowerSpectrumHandle ps_handle,   // v15.2: zeldovich-PLT PowerSpectrum handle (NULL = use legacy or uniform RNG)
-    ParametersHandle params_handle)  // v15.2: zeldovich-PLT Parameters handle
+    PowerSpectrumHandle ps_handle,   // zeldovich-PLT PowerSpectrum handle
+    ParametersHandle params_handle)  // zeldovich-PLT Parameters handle
 {
     // Debug: Log entry for seg fault error
     // #if DEBUG_PRINTS
@@ -119,52 +118,13 @@ void generate_hermitian_slice_pair_local(
     // so we can reproduce sim boxes w/ up to MAX_PPD x MAX_PPD grid generators
     int64_t nskip = 0;
     if (N < MAX_PPD) {
-        // Calculate skip for missing grid points
-        // For parallel execution, calculate upfront; for sequential, track incrementally
-        #if PARALLELIZE_XZ_WITHIN_SLICE
-        // Parallel case: calculate total skip upfront (deterministic)
-        // Missing z-rows: (MAX_PPD - N) * MAX_PPD (all missing z-rows, each with MAX_PPD x-values)
-        // Missing x-values: N * (MAX_PPD - N) (for each z from 0 to N-1, skip missing x-values when crossing Nyquist)
-        // Total: (MAX_PPD - N) * MAX_PPD + N * (MAX_PPD - N) = (MAX_PPD - N) * (MAX_PPD + N)
-        nskip = (int64_t)(MAX_PPD - N) * (int64_t)MAX_PPD + (int64_t)N * (int64_t)(MAX_PPD - N);
-        #else
-        // Sequential case: track incrementally during iteration (like zeldovich.cpp)
+        // Sequential: track skip incrementally during iteration (like zeldovich.cpp)
         nskip = 0;  // Will be accumulated during loops
-        #endif
     }
-    
-    // In parallel mode, advance upfront skip before starting parallel loops
-    #if PARALLELIZE_XZ_WITHIN_SLICE
-    if (N < MAX_PPD && nskip > 0) {
-        // Advance upfront skip before parallel loops to maintain RNG consistency
-        if (ps_handle != NULL && params_handle != NULL) {
-            int64_t rng_index = global_y;
-            zeldovich_ps_advance_rng(ps_handle, params_handle, rng_index, nskip);
-            #if VERIFY_RNG_CALLS
-            total_rng_skips += nskip;
-            #endif
-        } else if (params_handle == NULL) {
-            uint64_t advance_amount = (uint64_t)2 * (uint64_t)nskip;
-            advance_pcg_global(global_y, advance_amount);
-            #if VERIFY_RNG_CALLS
-            total_rng_skips += nskip;
-            #endif
-        }
-        nskip = 0;  // Reset after advancing
-    }
-    #endif
     
     if (y_mirror != global_y) {
         // ========== CONJUGATE PAIR: Y=i and Y=N-i ==========
-        // PARALLELIZATION STRATEGY:
-        // - PARALLELIZE_XZ_WITHIN_SLICE=1: Parallel (x,z) loops with locks (faster, needs locks)
-        // - PARALLELIZE_XZ_WITHIN_SLICE=0: Sequential (x,z) loops (no locks, like zeldovich.cpp)
-        #if PARALLELIZE_XZ_WITHIN_SLICE
-        // requires locks for thread-safe RNG access
-        #pragma omp parallel for collapse(2)
-        #else
-        // Sequential (x,z) loops: no locks needed, each thread processes different Y-slice
-        #endif
+        // Sequential (x,z) loops: each rank processes different Y-slice
         for (int z = 0; z < N; z++) {
             // RNG consistency: When crossing Nyquist boundary (z == Nhalf + 1),
             // skip ALL missing z-rows (z = N to MAX_PPD-1, each containing MAX_PPD x-values)
@@ -173,7 +133,6 @@ void generate_hermitian_slice_pair_local(
             // due to FFT ordering: [0, 1, ..., N/2, -N/2+1, ..., -1]
             // High frequencies (both positive and negative) are located in the middle,
             // so we skip them all at once when we first enter the mirrored region
-            #if !PARALLELIZE_XZ_WITHIN_SLICE
             if (z == Nhalf + 1 && N < MAX_PPD) {
                 // Skip ALL missing z-rows: from z=N to z=MAX_PPD-1
                 // This accounts for the "gap" in frequency space (high frequencies in the middle of array)
@@ -190,7 +149,6 @@ void generate_hermitian_slice_pair_local(
                 }
                 #endif
             }
-            #endif
             
             // ky, kz, abs_ky, abs_kz are constant over x for this (z, global_y); compute once per z-row
             int ky = (global_y > Nhalf) ? global_y - N : global_y;
@@ -204,7 +162,6 @@ void generate_hermitian_slice_pair_local(
                 
                 // ========== STEP 1: Calculate k-vector components ==========
                 // RNG consistency: When crossing Nyquist boundary (x == Nhalf + 1),
-                #if !PARALLELIZE_XZ_WITHIN_SLICE
                 if (x == Nhalf + 1 && N < MAX_PPD) {
                     // Skip ALL missing x-values: from x=N to x=MAX_PPD-1
                     int64_t skip_amount = MAX_PPD - N;
@@ -221,7 +178,6 @@ void generate_hermitian_slice_pair_local(
                     }
                     #endif
                 }
-                #endif
                 
                 // kx depends on x; ky, kz, abs_ky, abs_kz already set above
                 int kx = (x > Nhalf) ? x - N : x;
@@ -245,7 +201,6 @@ void generate_hermitian_slice_pair_local(
                     D[0] = D[1] = 0.0;
                     // RNG consistency: When D=0, we skip the RNG call, so accumulate skip
                     // This matches zeldovich.cpp line 361: nskip++ (accumulate, don't advance immediately)
-                    #if !PARALLELIZE_XZ_WITHIN_SLICE
                     nskip++;  // Accumulate skip, will be applied before next cgauss() call
                     #if DEBUG_RNG_SKIP
                     int log_skip = (x <= MAX_DEBUG_COORD && global_y <= MAX_DEBUG_COORD && z <= MAX_DEBUG_COORD) ||
@@ -264,7 +219,6 @@ void generate_hermitian_slice_pair_local(
                         fflush(stderr);
                     }
                     #endif
-                    #endif
                 } 
                 else if (ps_handle != NULL && params_handle != NULL) {
                     // v15.2: Use zeldovich-PLT power spectrum-weighted Gaussian
@@ -280,7 +234,6 @@ void generate_hermitian_slice_pair_local(
                     
                     // RNG consistency: Advance zeldovich-PLT's RNG when crossing Nyquist boundaries
                     // This matches zeldovich.cpp behavior: advance before calling cgauss
-                    #if !PARALLELIZE_XZ_WITHIN_SLICE
                     #if DEBUG_RNG_SKIP
                     // Debug: Log skip application for test coordinates
                     int log_skip = (x <= MAX_DEBUG_COORD && global_y <= MAX_DEBUG_COORD && z <= MAX_DEBUG_COORD) ||
@@ -305,7 +258,6 @@ void generate_hermitian_slice_pair_local(
                         #endif
                         nskip = 0;  // Reset after advancing
                     }
-                    #endif
                     
                     double D_real, D_imag;
                     #if DEBUG_RNG_SKIP
@@ -324,55 +276,7 @@ void generate_hermitian_slice_pair_local(
                     D[0] = (real_t)D_real;
                     D[1] = (real_t)D_imag;
                     // Note: For VERIFY_HERMITIAN_SYMMETRY==2, we set D=0 AFTER computing F and H
-                } 
-                // else if (ps_params != NULL) {
-                //     // Legacy: Use legacy power spectrum-weighted Gaussian (cgauss)
-                //     double fundamental = 1.0;  // TODO: Add to power_spectrum_params_t
-                //     double k2_phys = k2 * fundamental * fundamental;
-                //     double kmag = sqrt(k2_phys);
-                    
-                //     // Advance RNG when crossing Nyquist boundaries
-                //     #if !PARALLELIZE_XZ_WITHIN_SLICE
-                //     if (nskip > 0 && N < MAX_PPD) {
-                //         advance_pcg_global(global_y, 2 * nskip);
-                //         #if VERIFY_RNG_CALLS
-                //         total_rng_skips += nskip;  // Track accumulated skip value
-                //         #endif
-                //         nskip = 0;  // Reset after advancing
-                //     }
-                //     #endif
-                    
-                //     cgauss(ps_params, kmag, global_y, &D);
-                //     #if VERIFY_RNG_CALLS
-                //     total_rng_calls++;  // Each cgauss() call uses 2 random numbers
-                //     #endif
-                //     // Note: For VERIFY_HERMITIAN_SYMMETRY==2, we set D=0 AFTER computing F and H
-                // } 
-                // else {
-                //     // Fallback: use uniform random numbers (white noise mode, no power spectrum)
-                //     // This should only happen when ps_handle is NULL (no parameter file provided)
-                //     // Note: If ps_handle is available, we should have used cgauss() above
-                //     // This branch is only for backward compatibility (no power spectrum mode)
-                    
-                //     // Advance RNG when crossing Nyquist boundaries
-                //     #if !PARALLELIZE_XZ_WITHIN_SLICE
-                //     if (nskip > 0 && N < MAX_PPD) {
-                //         advance_pcg_global(global_y, 2 * nskip);
-                //         #if VERIFY_RNG_CALLS
-                //         total_rng_skips += nskip;  // Track accumulated skip value
-                //         #endif
-                //         nskip = 0;  // Reset after advancing
-                //     }
-                //     #endif
-                    
-                //     double D_re = random_real_pcg_global(global_y);
-                //     double D_im = random_real_pcg_global(global_y);
-                //     #if VERIFY_RNG_CALLS
-                //     total_rng_calls++;  // Two random_real calls = 1 complex number = 2 random numbers
-                //     #endif
-                //     D[0] = D_re;
-                //     D[1] = D_im;
-                // }
+                }
                 
                 // ========== STEP 3: Compute F, G, H from D ==========
                 fftw_complex F, G, H;
@@ -554,81 +458,8 @@ void generate_hermitian_slice_pair_local(
                     H[0] = -kz * factor * D[1];
                     H[1] =  kz * factor * D[0];
                 }
-                
-                // ========== DEBUG: Verify F Hermitian symmetry ==========
-                #if DEBUG_RNG_CONSISTENCY && !SKIP_VERIFICATION
-                // For small N, verify that F has proper Hermitian symmetry
-                // Check: F(-k) should equal conj(F(k))
-                if (N <= DEBUG_FULL_PRINT_MAX_N && y_mirror != global_y) {
-                    // Only check for conjugate pairs (not self-conjugate)
-                    int x_mirror_check = (x == 0) ? 0 : N - x;
-                    int z_mirror_check = (z == 0) ? 0 : N - z;
-                    int kx_mirror = (x_mirror_check > Nhalf) ? x_mirror_check - N : x_mirror_check;
-                    int kz_mirror = (z_mirror_check > Nhalf) ? z_mirror_check - N : z_mirror_check;
-                    
-                    // Compute what F(-k) should be: F(-k) = i * (-kx) * factor * D(-k)
-                    // But we're storing conj(F) at -k, so we need to verify that matches
-                    // For now, just print F values for comparison
-                    if (x <= MAX_DEBUG_COORD && global_y <= MAX_DEBUG_COORD && z <= MAX_DEBUG_COORD) {
-                        fprintf(stderr, "[F-HERMITIAN-DEBUG] N=%d Y=%d (x,z)=(%d,%d) k=(%d,%d,%d): "
-                                "F=(%.10e,%.10e) factor=%.10e kx=%d\n",
-                                N, global_y, x, z, kx, ky, kz, F[0], F[1], factor, kx);
-                        if (x_mirror_check <= MAX_DEBUG_COORD && z_mirror_check <= MAX_DEBUG_COORD) {
-                            fprintf(stderr, "[F-HERMITIAN-DEBUG] N=%d Y=%d (x,z)=(%d,%d) k_mirror=(%d,%d,%d): "
-                                    "Will store conj(F)=(%.10e,%.10e) at mirror position\n",
-                                    N, y_mirror, x_mirror_check, z_mirror_check, kx_mirror, 
-                                    (global_y > Nhalf) ? global_y - N : N - global_y, kz_mirror,
-                                    F[0], -F[1]);
-                        }
-                        fflush(stderr);
-                    }
-                }
-                #endif
-                #endif
+                #endif  // VERIFY_HERMITIAN_SYMMETRY
                 }  // End of else block for !just_density
-                
-                // ========== DEBUG: Print RNG values for consistency checking ==========
-                #if DEBUG_RNG_CONSISTENCY
-                // Print D, F, G, H for test coordinates to verify RNG consistency across N
-                // Tests all coordinates (x,y,z) where x,y,z <= MAX_DEBUG_COORD
-                // Also tests coordinates at (N/2)-1 to ensure boundary of overlapping region is tested
-                // This ensures overlapping regions are tested for any pair of N values
-                // where min(N1, N2) >= 2*MAX_DEBUG_COORD
-                int boundary_coord = Nhalf - 1;  // (N/2)-1 for current N
-                int test_boundary = (boundary_coord >= 0 && 
-                                     x == boundary_coord && global_y == boundary_coord && z == boundary_coord);
-                int effective_boundary = (boundary_coord <= MAX_DEBUG_BOUNDARY_COORD) ? boundary_coord : MAX_DEBUG_BOUNDARY_COORD;
-                int max_test_coord = (MAX_DEBUG_COORD > effective_boundary) ? MAX_DEBUG_COORD : effective_boundary;
-                // Check if coordinate is in test range
-                int in_test_range = (x <= max_test_coord && global_y <= max_test_coord && z <= max_test_coord);
-                // For large N, use sampling to reduce output volume
-                // Always print boundary coordinates and coordinates in small N range
-                int should_print = 0;
-                if (test_boundary) {
-                    // Always print boundary coordinate (N/2)-1, (N/2)-1, (N/2)-1
-                    should_print = 1;
-                } else if (N <= DEBUG_FULL_PRINT_MAX_N) {
-                    // For small N, print all coordinates in test range
-                    should_print = in_test_range;
-                } else {
-                    // For large N, print only sampled coordinates 
-                    if (x <= MAX_DEBUG_COORD && global_y <= MAX_DEBUG_COORD && z <= MAX_DEBUG_COORD) {
-                        should_print = 1;  // Print small coordinate cube
-                    } else if (in_test_range) {
-                        // Sample: only print if x, y, z are multiples of stride
-                        should_print = (x % DEBUG_SAMPLE_STRIDE == 0 &&
-                                       global_y % DEBUG_SAMPLE_STRIDE == 0 &&
-                                       z % DEBUG_SAMPLE_STRIDE == 0);
-                    }
-                }
-                if (should_print) {
-                    fprintf(stderr, "[RNG-DEBUG] N=%d Y=%d (x,z)=(%d,%d): k=(%d,%d,%d) k2=%.6f | "
-                            "D=(%.10e,%.10e) F=(%.10e,%.10e) G=(%.10e,%.10e) H=(%.10e,%.10e)\n",
-                            N, global_y, x, z, kx, ky, kz, k2,
-                            D[0], D[1], F[0], F[1], G[0], G[1], H[0], H[1]);
-                    fflush(stderr);
-                }
-                #endif
                 
                 // ========== STEP 4: Store in arrays ==========
                 if (just_density) {
@@ -646,28 +477,6 @@ void generate_hermitian_slice_pair_local(
                     // D + i*F = (D[0] + i*D[1]) + i*(F[0] + i*F[1]) = (D[0] - F[1]) + i*(D[1] + F[0])
                     PRIM_SLICE(0, x, z)[0] = D[0] - F[1];  // Real = D_re - F_im
                     PRIM_SLICE(0, x, z)[1] = D[1] + F[0];  // Imag = D_im + F_re
-                    
-                    // ========== DEBUG: Verify stored D+i*F values ==========
-                    #if DEBUG_RNG_CONSISTENCY && !SKIP_VERIFICATION
-                    if (N <= DEBUG_FULL_PRINT_MAX_N && x <= MAX_DEBUG_COORD && global_y <= MAX_DEBUG_COORD && z <= MAX_DEBUG_COORD) {
-                        double stored_re = PRIM_SLICE(0, x, z)[0];
-                        double stored_im = PRIM_SLICE(0, x, z)[1];
-                        double expected_re = D[0] - F[1];
-                        double expected_im = D[1] + F[0];
-                        double diff_re = fabs_t(stored_re - expected_re);
-                        double diff_im = fabs_t(stored_im - expected_im);
-                        if (diff_re > 1e-10 || diff_im > 1e-10) {
-                            fprintf(stderr, "[STORAGE-DEBUG] N=%d Y=%d (x,z)=(%d,%d): Storage mismatch! "
-                                    "stored=(%.10e,%.10e) expected=(%.10e,%.10e) diff=(%.10e,%.10e)\n",
-                                    N, global_y, x, z, stored_re, stored_im, expected_re, expected_im, diff_re, diff_im);
-                            fflush(stderr);
-                        }
-                        fprintf(stderr, "[STORAGE-DEBUG] N=%d Y=%d (x,z)=(%d,%d): D=(%.10e,%.10e) F=(%.10e,%.10e) "
-                                "stored D+i*F=(%.10e,%.10e)\n",
-                                N, global_y, x, z, D[0], D[1], F[0], F[1], stored_re, stored_im);
-                        fflush(stderr);
-                    }
-                    #endif
                     
                     // Array 1: G + i*H (Y-displacement + Z-displacement)
                     // G + i*H = (G[0] + i*G[1]) + i*(H[0] + i*H[1]) = (G[0] - H[1]) + i*(G[1] + H[0])
@@ -730,38 +539,11 @@ void generate_hermitian_slice_pair_local(
         // ========== SELF-CONJUGATE: Y=0 or Y=N/2 ==========
         // Reset nskip for self-conjugate case
         // For self-conjugate slices, we process full N×N plane (like zeldovich.cpp)
-        // So we DO need to skip for missing MAX_PPD grid points to match zeldovich behavior
         if (N < MAX_PPD) {
-            #if PARALLELIZE_XZ_WITHIN_SLICE
-            // Parallel case: calculate total skip upfront
-            nskip = (int64_t)(MAX_PPD - N) * (int64_t)MAX_PPD + (int64_t)N * (int64_t)(MAX_PPD - N);
-            #else
-            // Sequential case: track incrementally during iteration (like zeldovich.cpp)
             nskip = 0;  // Will be accumulated during loops
-            #endif
         } else {
             nskip = 0;
         }
-        
-        // In parallel mode, advance upfront skip before starting parallel loops
-        #if PARALLELIZE_XZ_WITHIN_SLICE
-        if (N < MAX_PPD && nskip > 0) {
-            // Advance upfront skip before parallel loops to maintain RNG consistency
-            if (ps_handle != NULL && params_handle != NULL) {
-                int64_t rng_index = global_y;
-                zeldovich_ps_advance_rng(ps_handle, params_handle, rng_index, nskip);
-                #if VERIFY_RNG_CALLS
-                total_rng_skips += nskip;
-                #endif
-            } else if (params_handle == NULL) {
-                advance_pcg_global(global_y, 2 * nskip);
-                #if VERIFY_RNG_CALLS
-                total_rng_skips += nskip;
-                #endif
-            }
-            nskip = 0;  // Reset after advancing
-        }
-        #endif
         
         #if USE_ZELDOVICH_METHOD
         // Zeldovich method: Fill half the plane, mirror the rest
@@ -771,16 +553,10 @@ void generate_hermitian_slice_pair_local(
             fflush(stderr);
         }
         #endif
-        #if PARALLELIZE_XZ_WITHIN_SLICE
-        // Parallel z-loop: requires locks for thread-safe RNG access
-        #pragma omp parallel for
-        #else
-        #endif
         // Process FULL plane first: z = 0 to N-1, x = 0 to N-1
         for (int z = 0; z < N; z++) {
             // RNG skipping: match zeldovich.cpp - skip at Nyquist boundary (z == Nhalf + 1)
             // This applies to ALL Y slices including self-conjugate (Y=0 and Y=N/2)
-            #if !PARALLELIZE_XZ_WITHIN_SLICE
             if (z == Nhalf + 1 && N < MAX_PPD) {
                 // Skip ALL missing z-rows: from z=N to z=MAX_PPD-1
                 // Use explicit int64_t casts to avoid integer overflow
@@ -796,7 +572,6 @@ void generate_hermitian_slice_pair_local(
                 }
                 #endif
             }
-            #endif
             
             int ky = (global_y > Nhalf) ? global_y - N : global_y;
             int kz = (z > Nhalf) ? z - N : z;
@@ -806,7 +581,6 @@ void generate_hermitian_slice_pair_local(
             for (int x = 0; x < N; x++) {
                 // RNG skipping: match zeldovich.cpp - skip at Nyquist boundary (x == Nhalf + 1)
                 // This applies to ALL Y slices including self-conjugate (Y=0 and Y=N/2)
-                #if !PARALLELIZE_XZ_WITHIN_SLICE
                 if (x == Nhalf + 1 && N < MAX_PPD) {
                     // Skip ALL missing x-values: from x=N to x=MAX_PPD-1
                     int64_t skip_amount = (int64_t)(MAX_PPD - N);
@@ -822,7 +596,6 @@ void generate_hermitian_slice_pair_local(
                     }
                     #endif
                 }
-                #endif
                 
                 int kx = (x > Nhalf) ? x - N : x;
                 int k2_int = kx*kx + ky*ky + kz*kz;  // Integer k² for k_cutoff comparison
@@ -843,7 +616,6 @@ void generate_hermitian_slice_pair_local(
                     // This matches zeldovich.cpp line 360-364: zeroing conditions
                     D[0] = D[1] = 0.0;
                     // RNG consistency: When D=0, we skip the RNG call, so accumulate skip
-                    #if !PARALLELIZE_XZ_WITHIN_SLICE
                     nskip++;  // Accumulate skip, will be applied before next cgauss() call
                     #if DEBUG_RNG_SKIP
                     int log_skip = (x <= MAX_DEBUG_COORD && global_y <= MAX_DEBUG_COORD && z <= MAX_DEBUG_COORD) ||
@@ -862,7 +634,6 @@ void generate_hermitian_slice_pair_local(
                         fflush(stderr);
                     }
                     #endif
-                    #endif
                 } else if (ps_handle != NULL && params_handle != NULL) {
                     // v15.2: Use zeldovich-PLT power spectrum-weighted Gaussian
                     // Convert k indices to physical wavenumber: k_phys = k_index * fundamental
@@ -875,7 +646,6 @@ void generate_hermitian_slice_pair_local(
                     int64_t rng_index = global_y;
                     
                     // Advance zeldovich-PLT's RNG when crossing Nyquist boundaries
-                    #if !PARALLELIZE_XZ_WITHIN_SLICE
                     if (nskip > 0) {
                         zeldovich_ps_advance_rng(ps_handle, params_handle, rng_index, nskip);
                         #if VERIFY_RNG_CALLS
@@ -883,7 +653,6 @@ void generate_hermitian_slice_pair_local(
                         #endif
                         nskip = 0;  // Reset after advancing
                     }
-                    #endif
                     
                     double D_real, D_imag;
                     zeldovich_ps_cgauss(ps_handle, kmag, rng_index, &D_real, &D_imag);
@@ -894,56 +663,6 @@ void generate_hermitian_slice_pair_local(
                     D[1] = (real_t)D_imag;
                     // Note: For VERIFY_HERMITIAN_SYMMETRY==2, we set D=0 AFTER computing F and H
                 } 
-                // else if (ps_params != NULL) {
-                //     // Legacy: Use standalone power spectrum-weighted Gaussian (cgauss)
-                //     double fundamental = 1.0;  // TODO: Add to power_spectrum_params_t
-                //     double k2_phys = k2 * fundamental * fundamental;
-                //     double kmag = sqrt(k2_phys);
-                    
-                //     // RNG consistency: Advance our own RNG when crossing Nyquist boundaries
-                //     // This matches the zeldovich-PLT branch behavior
-                //     #if !PARALLELIZE_XZ_WITHIN_SLICE
-                //     if (nskip > 0 && N < MAX_PPD) {
-                //         advance_pcg_global(global_y, 2 * nskip);
-                //         #if VERIFY_RNG_CALLS
-                //         total_rng_skips += nskip;
-                //         #endif  // Each complex number uses 2 random numbers
-                //         nskip = 0;  // Reset after advancing
-                //     }
-                //     #endif
-                    
-                //     cgauss(ps_params, kmag, global_y, &D);
-                //     #if VERIFY_RNG_CALLS
-                //     total_rng_calls++;  // Each cgauss() call uses 2 random numbers
-                //     #endif
-                //     // Note: For VERIFY_HERMITIAN_SYMMETRY==2, we set D=0 AFTER computing F and H
-                // } 
-                // else {
-                //     // Fallback: use uniform random numbers (white noise mode, no power spectrum)
-                //     // This should only happen when ps_handle is NULL (no parameter file provided)
-                //     // Note: If ps_handle is available, we should have used cgauss() above
-                    
-                //     // RNG consistency: Advance our own RNG when crossing Nyquist boundaries
-                //     #if !PARALLELIZE_XZ_WITHIN_SLICE
-                //     if (nskip > 0 && N < MAX_PPD) {
-                //         advance_pcg_global(global_y, 2 * nskip);
-                //         #if VERIFY_RNG_CALLS
-                //         total_rng_skips += nskip;
-                //         #endif  // Each complex number uses 2 random numbers
-                //         nskip = 0;  // Reset after advancing
-                //     }
-                //     #endif
-                    
-                //     double D_re = random_real_pcg_global(global_y);
-                //     double D_im = random_real_pcg_global(global_y);
-                //     #if VERIFY_RNG_CALLS
-                //     total_rng_calls++;  // Two random_real calls = 1 complex number = 2 random numbers
-                //     #endif
-                //     D[0] = D_re;
-                //     D[1] = D_im;
-                //     // Note: For VERIFY_HERMITIAN_SYMMETRY==2, we set D=0 AFTER computing F and H
-                // }
-                
                 // Compute F, G, H from D
                 // Skip F, G, H computation in density-only mode (qdensity == 2)
                 fftw_complex F, G, H;
@@ -1108,97 +827,8 @@ void generate_hermitian_slice_pair_local(
                         H[0] = -kz * factor * D[1];
                         H[1] =  kz * factor * D[0];
                     }
-                    
-                    // Print factor debug info while variables are in scope (self-conjugate path)
-                    #if DEBUG_RNG_CONSISTENCY
-                    int boundary_coord_sc = Nhalf - 1;
-                    int test_boundary_sc = (boundary_coord_sc >= 0 && 
-                                             x == boundary_coord_sc && global_y == boundary_coord_sc && z == boundary_coord_sc);
-                    int effective_boundary_sc = (boundary_coord_sc <= MAX_DEBUG_BOUNDARY_COORD) ? boundary_coord_sc : MAX_DEBUG_BOUNDARY_COORD;
-                    int max_test_coord_sc = (MAX_DEBUG_COORD > effective_boundary_sc) ? MAX_DEBUG_COORD : effective_boundary_sc;
-                    int in_test_range_sc = (x <= max_test_coord_sc && global_y <= max_test_coord_sc && z <= max_test_coord_sc);
-                    int should_print_factor_sc = 0;
-                    if (test_boundary_sc) {
-                        should_print_factor_sc = 1;
-                    } else if (N <= DEBUG_FULL_PRINT_MAX_N) {
-                        should_print_factor_sc = in_test_range_sc;
-                    } else {
-                        if (x <= MAX_DEBUG_COORD && global_y <= MAX_DEBUG_COORD && z <= MAX_DEBUG_COORD) {
-                            should_print_factor_sc = 1;
-                        } else if (in_test_range_sc) {
-                            should_print_factor_sc = (x % DEBUG_SAMPLE_STRIDE == 0 &&
-                                                       global_y % DEBUG_SAMPLE_STRIDE == 0 &&
-                                                       z % DEBUG_SAMPLE_STRIDE == 0);
-                        }
-                    }
-                    if (should_print_factor_sc) {
-                        if (use_plt_sc && params_handle != NULL) {
-                            fprintf(stderr, "[FACTOR-DEBUG] N=%d Y=%d (x,z)=(%d,%d): fundamental=%.10e rescale=%.10e "
-                                    "e.vec=[%.10e,%.10e,%.10e] e.val=%.10e factor=%.10e\n",
-                                    N, global_y, x, z, fundamental_sc, rescale_sc,
-                                    e_sc.vec[0], e_sc.vec[1], e_sc.vec[2], e_sc.val, factor);
-                        } else {
-                            fprintf(stderr, "[FACTOR-DEBUG] N=%d Y=%d (x,z)=(%d,%d): fundamental=%.10e rescale=%.10e "
-                                    "k=[%d,%d,%d] factor=%.10e\n",
-                                    N, global_y, x, z, fundamental_sc, rescale_sc, kx, ky, kz, factor);
-                        }
-                        fflush(stderr);
-                    }
-                    #endif
                     #endif
                 }
-                
-                // ========== DEBUG: Print RNG values for consistency checking ==========
-                #if DEBUG_RNG_CONSISTENCY
-                // Print D, F, G, H for test coordinates to verify RNG consistency across N
-                // Tests all coordinates (x,y,z) where x,y,z <= MAX_DEBUG_COORD
-                // Also tests coordinates at (N/2)-1 to ensure boundary of overlapping region is tested
-                // This ensures overlapping regions are tested for any pair of N values
-                // where min(N1, N2) >= 2*MAX_DEBUG_COORD
-                // For N=4 and N=6: overlapping region is x,y,z <= 2 (Nhalf for N=4)
-                //   (N/2)-1 = 1 for N=4, so (1,1,1) should match between N=4 and N=6
-                // For N=8 and N=10: overlapping region is x,y,z <= 4 (Nhalf for N=8)
-                //   (N/2)-1 = 3 for N=8, so (3,3,3) should match between N=8 and N=10
-                int boundary_coord = Nhalf - 1;  // (N/2)-1 for current N
-                // Test coordinate (N/2)-1, (N/2)-1, (N/2)-1) to verify boundary of overlapping region
-                // This ensures that when comparing N1 and N2, the boundary coordinate of the
-                // smaller N (which is in the overlapping region) is tested for both N values
-                int test_boundary = (boundary_coord >= 0 && 
-                                     x == boundary_coord && global_y == boundary_coord && z == boundary_coord);
-                // Test coordinates up to max(MAX_DEBUG_COORD, min((N/2)-1, MAX_DEBUG_BOUNDARY_COORD))
-                int effective_boundary = (boundary_coord <= MAX_DEBUG_BOUNDARY_COORD) ? boundary_coord : MAX_DEBUG_BOUNDARY_COORD;
-                int max_test_coord = (MAX_DEBUG_COORD > effective_boundary) ? MAX_DEBUG_COORD : effective_boundary;
-                // Check if coordinate is in test range
-                int in_test_range = (x <= max_test_coord && global_y <= max_test_coord && z <= max_test_coord);
-                // For large N, use sampling to reduce output volume
-                // Always print boundary coordinates and coordinates in small N range
-                int should_print = 0;
-                if (test_boundary) {
-                    // Always print boundary coordinate (N/2)-1, (N/2)-1, (N/2)-1
-                    should_print = 1;
-                } else if (N <= DEBUG_FULL_PRINT_MAX_N) {
-                    // For small N, print all coordinates in test range
-                    should_print = in_test_range;
-                } else {
-                    // For large N, print only sampled coordinates (multiples of stride)
-                    // Also always print coordinates <= MAX_DEBUG_COORD (small coordinate cube)
-                    if (x <= MAX_DEBUG_COORD && global_y <= MAX_DEBUG_COORD && z <= MAX_DEBUG_COORD) {
-                        should_print = 1;  // print small coordinate cube
-                    } else if (in_test_range) {
-                        // Sample: only print if x, y, z are multiples of stride
-                        should_print = (x % DEBUG_SAMPLE_STRIDE == 0 &&
-                                       global_y % DEBUG_SAMPLE_STRIDE == 0 &&
-                                       z % DEBUG_SAMPLE_STRIDE == 0);
-                    }
-                }
-                if (should_print) {
-                    fprintf(stderr, "[RNG-DEBUG] N=%d Y=%d (x,z)=(%d,%d): k=(%d,%d,%d) k2=%.6f | "
-                            "D=(%.10e,%.10e) F=(%.10e,%.10e) G=(%.10e,%.10e) H=(%.10e,%.10e)\n",
-                            N, global_y, x, z, kx, ky, kz, k2,
-                            D[0], D[1], F[0], F[1], G[0], G[1], H[0], H[1]);
-                    fflush(stderr);
-                }
-                #endif
                 
                 // Compute mirror indices for self-conjugate slices (like zeldovich's zHer, xHer)
                 int x_mirror = (x == 0) ? 0 : N - x;
@@ -1533,7 +1163,6 @@ void generate_hermitian_slice_pair_local(
     // See zeldovich.cpp: Pk.v2rng[y].advance(2 * nskip)
     // Ensures that exactly MAX_PPD * MAX_PPD complex numbers (2 * MAX_PPD * MAX_PPD real numbers)
     // were consumed/skipped for this y-row
-    #if !PARALLELIZE_XZ_WITHIN_SLICE
     if (nskip > 0) {
         if (ps_handle != NULL && params_handle != NULL) {
             int64_t rng_index = global_y;
@@ -1541,26 +1170,9 @@ void generate_hermitian_slice_pair_local(
             #if VERIFY_RNG_CALLS
             total_rng_skips += nskip;
             #endif
-        } 
-        // else if (params_handle == NULL) {
-        //     // Local PCG: advance by 2 * nskip (each complex number uses 2 random numbers)
-        //     // Cast to uint64_t explicitly to avoid overflow in multiplication
-        //     uint64_t advance_amount = (uint64_t)2 * (uint64_t)nskip;
-        //     advance_pcg_global(global_y, advance_amount);
-        //     #if VERIFY_RNG_CALLS
-        //     total_rng_skips += nskip;
-        //     #endif
-        //     #if DEBUG_RNG_SKIP
-        //     if (global_y <= MAX_DEBUG_COORD || global_y == Nhalf - 1) {
-        //         fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d: END OF FUNCTION - Applied remaining nskip=%lld (PCG: 2*%lld)\n",
-        //                 N, global_y, (long long)nskip, (long long)nskip);
-        //         fflush(stderr);
-        //     }
-        //     #endif
-        // }
+        }
         nskip = 0;  // Reset after applying
     }
-    #endif
     
     // // ========== RNG VERIFICATION: Verify total RNG calls match expected ==========
 

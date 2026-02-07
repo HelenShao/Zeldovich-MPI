@@ -6,18 +6,13 @@
 // ====================================================================================
 
 #include "rng.h"
-#include "../config.h"  // For PARALLELIZE_XZ_WITHIN_SLICE
+#include "../config.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
 #include <math.h>       // For ldexp()
 #include "pcg-rng/pcg_random.hpp"
-
-// Conditional OpenMP includes (only needed when using locks)
-#if PARALLELIZE_XZ_WITHIN_SLICE
-#include <omp.h>
-#endif
 
 // ====================================================================================
 // GLOBAL PCG GENERATORS (shared among threads within a rank)
@@ -27,11 +22,6 @@
 static pcg64 *v2rng_global = NULL;
 static int v2rng_global_initialized = 0;
 static int v2rng_global_size = 0;
-
-// OpenMP locks for thread-safe generator access
-#if PARALLELIZE_XZ_WITHIN_SLICE
-static omp_lock_t *v2rng_locks = NULL;
-#endif
 
 // Initialize global PCG generators array (NxNxN)
 // Each Y-slice (Y = 0, 1, 2, ..., N/2) has its own RNG generator
@@ -65,18 +55,6 @@ void initialize_global_pcg(int L, int M, int N, uint64_t seed) {
             v2rng_global[i].advance((uint64_t)2 * MAX_PPD * MAX_PPD); 
         }
         
-        // Initialize OpenMP locks for thread-safe access
-        #if PARALLELIZE_XZ_WITHIN_SLICE
-        v2rng_locks = (omp_lock_t*)malloc(v2rng_global_size * sizeof(omp_lock_t));
-        if (v2rng_locks == NULL) {
-            printf("ERROR: Failed to allocate v2rng_locks array!\n");
-            exit(1);
-        }
-        for (int i = 0; i < v2rng_global_size; i++) {
-            omp_init_lock(&v2rng_locks[i]);
-        }
-        #endif
-        
         v2rng_global_initialized = 1;
     }
 }
@@ -84,17 +62,6 @@ void initialize_global_pcg(int L, int M, int N, uint64_t seed) {
 // Clean up global PCG generators
 void cleanup_global_pcg() {
     if (v2rng_global_initialized) {
-        // Destroy OpenMP locks (only if they were allocated)
-        #if PARALLELIZE_XZ_WITHIN_SLICE
-        if (v2rng_locks != NULL) {
-            for (int i = 0; i < v2rng_global_size; i++) {
-                omp_destroy_lock(&v2rng_locks[i]);
-            }
-            free(v2rng_locks);
-            v2rng_locks = NULL;
-        }
-        #endif
-        
         free(v2rng_global);
         v2rng_global = NULL;
         v2rng_global_initialized = 0;
@@ -107,8 +74,6 @@ void cleanup_global_pcg() {
 // Returns: Random double in (0, 1] (matches zeldovich-PLT's one_rand<2>)
 //
 // Each call advances the generator for that Y-slice by +1
-// Thread-safety: Uses OpenMP locks when PARALLELIZE_XZ_WITHIN_SLICE=1
-// When PARALLELIZE_XZ_WITHIN_SLICE=0, sequential access doesn't need locks
 //
 // Implementation matches zeldovich-PLT's PowerSpectrum::one_rand<2>():
 // - Shifts [0,1) to (0,1] to avoid log(0) in Box-Muller
@@ -125,15 +90,7 @@ double random_real_pcg_global(int slice_index) {
         exit(1);
     }
     
-    #if PARALLELIZE_XZ_WITHIN_SLICE
-    // Thread-safe access: acquire lock, generate number (advances generator), release lock
-    omp_set_lock(&v2rng_locks[slice_index]);
     uint64_t r = v2rng_global[slice_index]();
-    omp_unset_lock(&v2rng_locks[slice_index]);
-
-    #else 
-    uint64_t r = v2rng_global[slice_index]();
-    #endif
     
     // Match zeldovich-PLT's one_rand<2>() implementation:
     // Can't return 0! That will immediately break the log in Box-Muller
@@ -167,15 +124,6 @@ void advance_pcg_global(int slice_index, uint64_t n) {
         return;  // Nothing to advance
     }
     
-    // Conditional thread-safety: use locks only when parallelizing (x,z) within slice
-    #if PARALLELIZE_XZ_WITHIN_SLICE
-    // Thread-safe access: acquire lock, advance generator, release lock
-    omp_set_lock(&v2rng_locks[slice_index]);
     v2rng_global[slice_index].advance(n);
-    omp_unset_lock(&v2rng_locks[slice_index]);
-    #else
-    // Sequential access: no locks needed
-    v2rng_global[slice_index].advance(n);
-    #endif
 }
 
