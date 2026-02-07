@@ -4,13 +4,6 @@
 // Modify flags or override them at compile time using -D flags.
 // Ex. make CFLAGS="-DUSE_DOUBLE_PRECISION -DDEBUG_PRINTS=0"
 
-// Use Zeldovich method for self-conjugate planes (Y=0, Y=N/2)
-// 0 = Original approach (first quadrant only)
-// 1 = Zeldovich.cpp approach (copy first half plane) [RECOMMENDED]
-#ifndef USE_ZELDOVICH_METHOD
-#define USE_ZELDOVICH_METHOD 1
-#endif
-
 // Use X-direction padding with periodic boundary conditions
 // 1 = Enable X-padding with periodic wrap-around
 #ifndef USE_X_PADDING
@@ -297,7 +290,6 @@
     if (rank == 0) { \
         printf("Configuration:\n"); \
         printf("  USE_DOUBLE_PRECISION: %d\n", USE_DOUBLE_PRECISION); \
-        printf("  USE_ZELDOVICH_METHOD: %d\n", USE_ZELDOVICH_METHOD); \
         printf("  USE_X_PADDING: %d (X_PADDING=%d)\n", USE_X_PADDING, X_PADDING); \
         printf("  DEBUG_PRINTS: %d\n", DEBUG_PRINTS); \
         printf("  VERIFY_HERMITIAN_SYMMETRY: %d\n", VERIFY_HERMITIAN_SYMMETRY); \
