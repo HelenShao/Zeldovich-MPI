@@ -1,4 +1,47 @@
-// MPI multi-batch Y-slice generation, Z-slab streaming, zeldovich-PLT compatible output
+/*
+ * 1. INITIALIZATION
+ *    - MPI_Init; parse N (grid size) and param_file (required)
+ *    - Validate N (positive, even); validate num_ranks vs total_pairs
+ *
+ * 2. Y-SLICE PAIR DISTRIBUTION
+ *    - total_pairs = N/2 + 1 (conjugate pairs: (0,0), (1,N-1), ..., N/2 self-conj)
+ *    - Distribute pairs across ranks; build my_pair_list for this rank
+ *
+ * 3. PARAMETER AND SPECTRUM LOADING
+ *    - Load zeldovich-PLT params; create power spectrum (spline, power law)
+ *    - Load PLT eigenmodes if qPLT; set narray (1/2/4 by qdensity/qPLT)
+ *
+ * 4. FFT SETUP
+ *    - setup_fftw_plans_full(plan_2d, plan_1d_y) using dummy memory (avoids FFTW
+ *      overwriting during planning)
+ *
+ * 5. GRID DECOMPOSITION
+ *    - get_extended_grid_bounds; my_pencils for this rank’s XZ region
+ *
+ * 6. PRE-COMPUTATION (V11 PERSISTENT RECV_BUFFER)
+ *    - global_max_batches; src_total_slices per source; prefix-sum recv_displs_src
+ *    - Allocate persistent recv_buffer (source-grouped: [src][y][pencil][array])
+ *    - Build y_owner_src, y_src_local_idx, y_batch_idx, y_slice_idx_in_batch
+ *    - Allocate local_y_slices (reused per batch)
+ *
+ * 7. MULTI-BATCH LOOP (for each batch)
+ *    a. Get batch’s (y_primary, y_mirror)
+ *    b. generate_hermitian_slice_pair_local → Generate + 2D FFT
+ *    c. calculate_batch_send_recv_counts; pack_slices_to_send_buffer
+ *    d. MPI_Ialltoallv(send_buffer → recv_buffer); MPI_Wait
+ *    e. Update src_write_cursor; free per-batch send buffer
+ *
+ * 8. Z-SLAB STREAMING (for each Z owned by this rank)
+ *    - Allocate local_z_slab (one Z-slab: [Array][X][Y])
+ *    - For each z: z_streaming_unpack(recv_buffer → local_z_slab, 1D FFT in Y)
+ *    - Write output: PARTICLE_OUTPUT_MODE 0 → WriteParticlesSlab_range
+ *                    PARTICLE_OUTPUT_MODE 1 → .bin files
+ *                    PARTICLE_OUTPUT_MODE 2 → .bin then read-back → WriteParticlesSlab_range
+ *
+ * 9. CLEANUP
+ *    - Free plans, recv_buffer, local buffers, params, ps, PLT eigenmodes
+ *    - MPI_Finalize
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,7 +55,7 @@
 #include <fftw3.h>
 #include <sys/stat.h>
 #include <errno.h>
-#include <execinfo.h>  // For backtrace
+#include <execinfo.h>  
 #include <unistd.h>    // For getpid
 
 // Include PCG RNG and STimer
@@ -44,8 +87,8 @@ extern "C" {
 
 // --- PCG RNG MODULE (zeldovich-PLT power spectrum / cgauss) ---
 #include "utils/rng.h"
-#include "utils/zeldovich_wrapper.h"  // For zeldovich-PLT functions
-#include "utils/plt_eigenmodes.h"    // For PLT eigenmode loading
+#include "utils/zeldovich_wrapper.h"  
+#include "utils/plt_eigenmodes.h"    
 #include "output/output_new.h"
 
 // --- MAIN ---
@@ -57,7 +100,9 @@ int main(int argc, char **argv)
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &num_ranks);
     
-    // --- PARSE RESOLUTION, PARAMETER FILE ---
+    // ========================================================================
+    // Stage 1: Parse arguments
+    // ========================================================================
     int N = 64;
     const char* param_file = NULL;
     
@@ -85,7 +130,7 @@ int main(int argc, char **argv)
     }
     if (param_file == NULL) {
         if (rank == 0) {
-            fprintf(stderr, "Error: Parameter file required (power spectrum mode only)\n");
+            fprintf(stderr, "Error: Parameter file required \n");
             fprintf(stderr, "Usage: %s N param_file.par\n", argv[0]);
         }
         MPI_Finalize();
@@ -93,12 +138,12 @@ int main(int argc, char **argv)
     }
     
     // ========================================================================
-    // VERIFY RANK COUNT
+    // Stage 2: Initialization
     // ========================================================================
     
     int total_pairs = N/2 + 1;  // Number of Y-slice pairs to distribute
     
-    // Allow any number of ranks (within reason)
+    // Check rank count is valid
     if (num_ranks < 1 || num_ranks > total_pairs) {
         if (rank == 0) {
             fprintf(stderr, "Error: Invalid num_ranks=%d for N=%d (total_pairs=%d)\n",
@@ -107,24 +152,19 @@ int main(int argc, char **argv)
         MPI_Finalize();
         return 1;
     }
-    
-    int pairs_per_rank_base = total_pairs / num_ranks;
-    int remainder_pairs = total_pairs % num_ranks;
+
     if (rank == 0) {
         printf("N=%d ranks=%d\n", N, num_ranks);
     }
     
-    // --- MULTI-BATCH SLICE DISTRIBUTION ---
-    
     // Struct to hold a pair of Y-slices (primary + conjugate)
     typedef struct {
-        int y_primary;    // Primary Y-index
-        int y_mirror;     // Conjugate Y-index (may equal y_primary if self-conjugate)
+        int y_primary;    
+        int y_mirror;     // may equal y_primary if self-conjugate
         bool is_self_conjugate;  
     } YSlicePair;
     
-    // Conjugate pairs: (0,0), (1,N-1), (2,N-2), ..., up to N/2 self-conj.
-    // STEP 2: Distribute pairs across ranks
+    // Distribute pairs across ranks
     int pairs_per_rank = total_pairs / num_ranks;
     int remainder = total_pairs % num_ranks;
     
@@ -139,7 +179,7 @@ int main(int argc, char **argv)
         my_pair_start = remainder * (pairs_per_rank + 1) + (rank - remainder) * pairs_per_rank;
     }
     
-    // STEP 3: Create list of pairs assigned to this rank
+    // Allocate memory for the list of pairs assigned to this rank
     YSlicePair *my_pair_list = NULL; // Array of YSlicePair structs
     bool is_idle_rank = (my_num_pairs == 0); // no pairs assigned to rank
     
@@ -157,7 +197,7 @@ int main(int argc, char **argv)
         }
     } else {
         if (rank == num_ranks - 1 || (rank < num_ranks && rank + 1 >= num_ranks)) {
-            printf("[WARNING] Rank %d is IDLE (total_pairs=%d, num_ranks=%d)\n",
+            printf("[WARNING] Rank %d is y-slice IDLE (total_pairs=%d, num_ranks=%d)\n",
                    rank, total_pairs, num_ranks);
         }
     }
@@ -168,18 +208,6 @@ int main(int argc, char **argv)
     ExtendedGridBounds my_extended_bounds;
     int my_pencils = 0;
 
-    // --- V11: PERSISTENT RECV_BUFFER ---
-    int *src_total_slices = NULL;       // [num_ranks] - total Y-slices from each source
-    int64_t *recv_displs_src = NULL;    // [num_ranks] - base offset per source (elements)
-    int64_t *src_write_cursor = NULL;   // [num_ranks] - current write position per source (int64_t to avoid overflow for large N)
-    int *y_owner_src = NULL;            // [N] - which rank generated Y=i
-    int *y_src_local_idx = NULL;        // [N] - index within that source's chunk
-    int *y_batch_idx = NULL;            // [N] - which batch Y=i came from (for unpacking)
-    int *y_slice_idx_in_batch = NULL;     // [N] - slice_idx (0 or 1) in that batch (for unpacking)
-    int **src_batch_slice_counts = NULL; // [num_ranks][global_max_batches] - slices per batch per source
-    fftw_complex_t *recv_buffer = NULL; // Persistent recv buffer (source-grouped layout)
-    int64_t recv_total_elems = 0;       // Total elements in recv_buffer
-    
     if (is_idle_rank) {
         num_my_slices = 0;
         my_extended_bounds.core.x_start = my_extended_bounds.core.x_end = 0;
@@ -190,9 +218,6 @@ int main(int argc, char **argv)
         my_extended_bounds.num_pencils_padded = 0;
         my_pencils = 0;
     }
-    
-    uint64_t seed = 4;
-    initialize_global_pcg(N, N, N, seed);
     
     ParametersHandle params = NULL;
     PowerSpectrumHandle ps = NULL;
@@ -207,6 +232,10 @@ int main(int argc, char **argv)
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
         
+        uint64_t seed = (uint64_t)zeldovich_params_get_seed(params);
+        initialize_global_pcg(N, N, N, seed);
+        
+        // Clean output directory and initialize output buffers
         SetupOutputDir(*static_cast<Parameters*>(params));
         InitOutputBuffers(*static_cast<Parameters*>(params));
         
@@ -220,7 +249,6 @@ int main(int argc, char **argv)
         
         // Create PowerSpectrum object (each rank creates its own)
         // Spline resolution: configured via SPLINE_RESOLUTION (default 128)
-        // Higher resolution (256, 512) may reduce numerical differences between N values
         ps = zeldovich_ps_create(SPLINE_RESOLUTION, params);
         if (!ps) {
             if (rank == 0) {
@@ -233,7 +261,6 @@ int main(int argc, char **argv)
         if (powerlaw_index == 1000.0) {
             if (rank == 0) {
                 fprintf(stderr, "ERROR: ZD_Pk_powerlaw_index not specified in parameter file\n");
-                fprintf(stderr, "       Add 'ZD_Pk_powerlaw_index = -2.0' (or desired value) to parameter file\n");
             }
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
@@ -245,6 +272,7 @@ int main(int argc, char **argv)
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
         
+        // Load PLT eigenmodes from file
         int qPLT = zeldovich_params_get_qPLT(params);
         if (qPLT) {
 
@@ -274,12 +302,9 @@ int main(int argc, char **argv)
                 printf("[INIT] Loaded PLT eigenmodes from: %s\n", PLT_filename);
             }
         }
-    } else {
-        if (rank == 0) {
-            printf("[INIT] No param file provided, using uniform random mode\n");
-        }
     }
 
+    // Determine the number of arrays
     int narray;
     if (params != NULL) {
         int qdensity = zeldovich_params_get_qdensity(params);
@@ -294,34 +319,23 @@ int main(int argc, char **argv)
         // No parameter file: use compile-time default
         narray = NARRAY;
     }
-    
-    // --- FFT PLANS ---
-    fftw_plan_t plan_2d, plan_1d_y;
-    
-    // ========================================================================
-    // STAGE 3: SETUP FFT PLANS (BEFORE DATA ALLOCATION)
-    // ========================================================================
-    // Create FFT plans using dummy memory before allocating actual data
-    // This prevents data destruction during planning (FFTW_MEASURE/PATIENT modes)
-    setup_fftw_plans_full(N, &plan_2d, &plan_1d_y);
-    
-    // --- STAGE 1/2: Generation and metadata are in MULTI-BATCH LOOP below ---
-    // V14: Verify grid decomposition (show both core and padded with periodic BC)
-    // Calculate grid factors first (needed for get_extended_grid_bounds)
-    int grid_x_verify, grid_z_verify;
-    calculate_grid_factors(num_ranks, &grid_x_verify, &grid_z_verify);
-    
+
     if (rank == 0) {
         printf("[Stage 2] Complete.\n");
     }
     
     // ========================================================================
-    // MULTI-BATCH PROCESSING LOOP (NEW IN MULTI-BATCH V10)
+    // STAGE 3: SETUP FFT PLANS 
     // ========================================================================
-    // Process each Y-slice pair assigned to this rank in batches
-    // Each batch: Generate --> 2D FFT --> Pack --> Communicate --> Accumulate
-    // After ALL batches: Streaming z unpack --> 1D FFT --> Write
+    // Create FFT plans using dummy memory before allocating actual data
+    // This prevents data destruction during planning (FFTW_MEASURE/PATIENT modes)
+    fftw_plan_t plan_2d, plan_1d_y;
+    setup_fftw_plans_full(N, &plan_2d, &plan_1d_y);
     
+    // Calculate grid factors first (needed for get_extended_grid_bounds)
+    int grid_x_verify, grid_z_verify;
+    calculate_grid_factors(num_ranks, &grid_x_verify, &grid_z_verify);
+
     if (rank == 0) {
         printf("\n[MULTI-BATCH] Starting batch processing...\n");
         printf("              Ranks will process %d pairs each (approx)\n", 
@@ -339,15 +353,10 @@ int main(int argc, char **argv)
 #endif
         
     }
-    
-    // V11: No recv_buffer_accumulator, y_value_received, or y_to_local_idx needed
-    // Receiving directly into persistent recv_buffer (source rank-grouped layout)
-    
+
     // ========================================================================
-    // STEP 1: CALCULATE MAXIMUM BATCH COUNT
-    // ========================================================================
-    // All ranks must loop over the same number of batches (some may have no data in later batches)
-    
+    // STAGE 4: METADATA CALCULATION AND ALLOCATION
+    // ========================================================================    
     int max_batches = 0;
     if (!is_idle_rank && my_num_pairs > max_batches) {
         max_batches = my_num_pairs;
@@ -355,10 +364,17 @@ int main(int argc, char **argv)
     int global_max_batches = 0;
     MPI_Allreduce(&max_batches, &global_max_batches, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
     
-    // ========================================================================
-    // V11: PHASE 1 - PRE-COMPUTATION (BEFORE BATCH LOOP)
-    // ========================================================================
     // Calculate per-source totals and allocate persistent recv_buffer
+    int *src_total_slices = NULL;       // [num_ranks] - total Y-slices from each source
+    int64_t *recv_displs_src = NULL;    // [num_ranks] - base offset per source (elements)
+    int64_t *src_write_cursor = NULL;   // [num_ranks] - current write position per source
+    int *y_owner_src = NULL;            // [N] - which rank generated Y=i
+    int *y_src_local_idx = NULL;        // [N] - index within that source's chunk
+    int *y_batch_idx = NULL;            // [N] - which batch Y=i came from (for unpacking)
+    int *y_slice_idx_in_batch = NULL;   // [N] - slice_idx (0 or 1) in that batch (for unpacking)
+    int **src_batch_slice_counts = NULL; // [num_ranks][global_max_batches] - slices per batch per source
+    fftw_complex_t *recv_buffer = NULL; // Persistent recv buffer (source-grouped layout)
+    int64_t recv_total_elems = 0;       // Total elements in recv_buffer
 
     src_total_slices = (int*)calloc(num_ranks, sizeof(int));
     
@@ -369,11 +385,8 @@ int main(int argc, char **argv)
             src_total_slices[src] += count;
         }
     }
-    
-    // ========================================================================
-    // V11: STEP 2 - COMPUTE RECEIVE DISPLACEMENTS (PREFIX SUM)
-    // ========================================================================
-    
+
+    // Compute receive displacements (pre fix the sum)
     recv_displs_src = (int64_t*)malloc(sizeof(int64_t) * num_ranks);
     recv_total_elems = 0;
     
@@ -382,11 +395,7 @@ int main(int argc, char **argv)
         recv_total_elems += (int64_t)src_total_slices[src] * my_pencils * narray;
     }
     
-    // ========================================================================
-    // V11: STEP 3 - ALLOCATE PERSISTENT RECV_BUFFER (SOURCE-GROUPED LAYOUT)
-    // ========================================================================
-    // Layout: [src_rank][y_idx_for_src][pencil_idx][array_idx]
-    // This replaces V10's recv_buffer_accumulator
+    // Allocate persistent recv_buffer: [src_rank][y_idx_for_src][pencil_idx][array_idx]
     
     if (!is_idle_rank && recv_total_elems > 0) {
         if (posix_memalign((void**)&recv_buffer, ALIGN_BYTES,
@@ -398,28 +407,23 @@ int main(int argc, char **argv)
         memset(recv_buffer, 0, sizeof(fftw_complex_t) * recv_total_elems);
     }
     
-    // ========================================================================
-    // V11: STEP 4 - INITIALIZE WRITE CURSORS
-    // ========================================================================
-    // Write cursors to track progress across batches for each source
-    //
-    // WRITE CURSORS:
-    //   - recv_displs_src[src] = base offset in recv_buffer for each source (computed once)
-    //   - src_write_cursor[src] = current write position within each source's region (starts at 0)
-    //   - Each batch, displacement = recv_displs_src[src] + src_write_cursor[src]
-    //   - After receiving data, cursor advances: src_write_cursor[src] += recvcounts_batch[src]
-    //
-    // This allows multiple batches to write sequentially into recv_buffer
-    // w/o overwriting. Cursor "shifts" through each src's allocated region
-    // as batches are processed, so that data from batch N is written after data from
-    // batches 0 to N-1 for that src.
+    /*
+     * Initialize write cursors to track progress across batches for each src
+     *   - recv_displs_src[src] = base offset in recv_buffer for each src (computed once)
+     *   - src_write_cursor[src] = current write position within each src's region (starts at 0)
+     *   - Each batch, displacement = recv_displs_src[src] + src_write_cursor[src]
+     *   - After receiving data, cursor advances: src_write_cursor[src] += recvcounts_batch[src]
+     *
+     * This allows multiple batches to write sequentially into recv_buffer
+     * w/o overwriting. Cursor "shifts" through each src's allocated region
+     * as batches are processed, so that data from batch N is written after data from
+     * batches 0 to N-1 for that src.
+     */
 
     src_write_cursor = (int64_t*)calloc(num_ranks, sizeof(int64_t));
     
-    // ========================================================================
-    // V11: PHASE 2 - BUILD Y --> (SRC, LOCAL_IDX) MAPPING
-    // ========================================================================
     
+    // Build Y --> (SRC, LOCAL_IDX) mapping
     y_owner_src = (int*)malloc(sizeof(int) * N);
     y_src_local_idx = (int*)malloc(sizeof(int) * N);
     y_batch_idx = (int*)malloc(sizeof(int) * N);
@@ -467,12 +471,8 @@ int main(int argc, char **argv)
     
     free(src_y_counter);
         
-    // ========================================================================
-    // STEP 4: ALLOCATE local_y_slices (REUSED PER BATCH)
-    // ========================================================================
-    
+    // Allocate local_y_slices buffer for maximum 2 slices (reused per batch)
     if (!is_idle_rank) {
-        // Allocate buffer for maximum 2 slices (conjugate pair)
         int max_slices_per_batch = 2;
         int64_t slice_buffer_size = (int64_t)max_slices_per_batch * narray * N * N;
         size_t requested_bytes = (size_t)slice_buffer_size * sizeof(fftw_complex_t);
@@ -482,8 +482,10 @@ int main(int argc, char **argv)
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
     }
-    
-    // --- MULTI-BATCH LOOP: GENERATION + COMMUNICATION + ACCUMULATION ---
+    // ========================================================================
+    // STAGE 5: MAIN MULTI-BATCH LOOP
+    // ========================================================================
+    // GENERATION + COMMUNICATION + ACCUMULATION
     STimer t_gen, t_comm;
     t_gen.Start();
     
@@ -567,7 +569,7 @@ int main(int argc, char **argv)
             }
         }
         
-        // ===== BATCH STEP 5: Pack =====
+        // ===== BATCH STEP 5: Pack to send buffer=====
         if (!is_idle_rank && my_batch_slice_count > 0 && total_send_batch > 0) {
             pack_slices_to_send_buffer(
                 rank, num_ranks, N, narray,
