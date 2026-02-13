@@ -1,0 +1,24 @@
+---
+description: Load environment modules before building hermitian_3d_matrix_production or zeldovich-plt
+globs: Makefile **/Makefile **/*.sh
+alwaysApply: false
+---
+
+# Build environment: load modules first
+
+When building **hermitian_3d_matrix_production** or **zeldovich-plt**, load these modules **before** running `make` or any build/run script:
+
+```bash
+module load frameworks
+module load fftw/3.3.10
+```
+
+Then build or run, e.g.:
+
+```bash
+make -j4
+# or
+./run_omp_sweep.sh
+```
+
+If a build fails with missing FFTW (e.g. `cannot find -lfftw3f` or `-lfftw3f_omp`), remind the user to run the two `module load` commands above and retry.
