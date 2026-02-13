@@ -1,4 +1,5 @@
 #include "mpi_exchange.h"
+#include "../mpi_topology.h"
 #include "../utils/decomposition.h"
 #include "../utils/verification.h"
 #include "../types.h" 
@@ -31,7 +32,7 @@ void exchange_metadata(int rank, int num_y_ranks, int N,
     // array containing the number of Y-slices for each rank
     int *all_num_my_slices = (int*)malloc(sizeof(int) * num_y_ranks);
     MPI_Allgather(&num_my_slices, 1, MPI_INT, 
-                  all_num_my_slices, 1, MPI_INT, MPI_COMM_WORLD);
+                  all_num_my_slices, 1, MPI_INT, comm_2d);
     
     // Step 2: Share y_global_map using MPI_Allgatherv
     // Calculate displacements and total size
@@ -48,7 +49,7 @@ void exchange_metadata(int rank, int num_y_ranks, int N,
     int *all_y_maps_flat = (int*)malloc(sizeof(int) * total_slices);
     
     MPI_Allgatherv(y_global_map, num_my_slices, MPI_INT,
-                   all_y_maps_flat, recvcounts, displs, MPI_INT, MPI_COMM_WORLD);
+                   all_y_maps_flat, recvcounts, displs, MPI_INT, comm_2d);
     
     // Step 3: Rebuild pointer array (allocate separately for each rank to avoid pointer issues)
     int **all_y_global_maps = (int**)malloc(sizeof(int*) * num_y_ranks);
@@ -126,14 +127,14 @@ void exchange_metadata(int rank, int num_y_ranks, int N,
     }
     
     // Broadcast all_num_my_slices
-    MPI_Bcast(all_num_my_slices, num_y_ranks, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(all_num_my_slices, num_y_ranks, MPI_INT, 0, comm_2d);
     
     // Broadcast each y_global_map
     for (int i = 0; i < num_y_ranks; i++) {
         if (rank != 0) {
             all_y_global_maps[i] = (int*)malloc(sizeof(int) * all_num_my_slices[i]);
         }
-        MPI_Bcast(all_y_global_maps[i], all_num_my_slices[i], MPI_INT, 0, MPI_COMM_WORLD);
+        MPI_Bcast(all_y_global_maps[i], all_num_my_slices[i], MPI_INT, 0, comm_2d);
     }
     
     // Assign outputs to the function args ("return values")
@@ -162,7 +163,6 @@ void exchange_metadata(int rank, int num_y_ranks, int N,
 // ====================================================================================
 //  Pack the Y-slices into send buffer in rank-contiguous manner for MPI comm
 //  For each destination rank, extracts the (X,Z) region it owns from all local Y-slices
-//  Also checks bounds and detects buffer overflows
 // ====================================================================================
 
 void pack_slices_to_send_buffer(
@@ -174,88 +174,83 @@ void pack_slices_to_send_buffer(
     (void)rank;  // Unused, kept for consistency
     (void)y_global_map;  // Unused currently, kept for future use
     
-    // Calculate total send buffer size for bounds checking
+    // Phase 1 (sequential): Compute sdispls, sendcounts, and per-dest bounds.
+    // This avoids 32 separate fork/join cycles; we use one parallel region below.
     int total_send_size = 0;
-    for (int dest = 0; dest < num_ranks; dest++) {
-        total_send_size += sendcounts[dest];
+    int offset = 0;
+    GridBounds *bounds_arr = (GridBounds *)malloc((size_t)num_ranks * sizeof(GridBounds));
+    int *z_count_arr = (int *)malloc((size_t)num_ranks * sizeof(int));
+    if (bounds_arr == NULL || z_count_arr == NULL) {
+        fprintf(stderr, "[PACK ERROR] Rank %d: Failed to allocate bounds/z_count arrays\n", rank);
+        MPI_Abort(comm_2d, 1);
     }
     
-    int offset = 0; // offset in the send buffer
-    
-    // For each destination rank, pack the (X,Z) region they own
     for (int dest = 0; dest < num_ranks; dest++) {
         sdispls[dest] = offset;
         
-        // V13: Use PADDED bounds for destination (includes overlap regions)
         GridBounds bounds = get_padded_bounds_simple(dest, N, num_ranks);
+        bounds_arr[dest] = bounds;
         int region_size = (bounds.x_end - bounds.x_start) * (bounds.z_end - bounds.z_start);
         
-        // Calculate the size of the destination's (X,Z) chunk (how many elements to send)
-        // NOW INCLUDES narray FACTOR: region_size * num_my_slices * narray
         sendcounts[dest] = region_size * num_my_slices * narray;
+        z_count_arr[dest] = bounds.z_end - bounds.z_start;
         
-        // Pre-calculate dimensions for indexing (used in parallel region)
-        int z_count = bounds.z_end - bounds.z_start;
+        offset += sendcounts[dest];
+    }
+    total_send_size = offset;
+    
+    // Phase 2: One parallel region, one thread team; for each dest, workshare the inner loops.
+    // This replaces 32 fork/joins with 1 fork + 32 lightweight barriers (~20x less overhead).
+    #pragma omp parallel
+    for (int dest = 0; dest < num_ranks; dest++) {
+        int dest_offset = sdispls[dest];
+        GridBounds bounds = bounds_arr[dest];
+        int z_count = z_count_arr[dest];
+        int region_size = (bounds.x_end - bounds.x_start) * (bounds.z_end - bounds.z_start);
         
-        // OpenMP: Parallelize over arrays, Y-slices, and (X,Z) points
-        // Collapse(4) combines all four loops for better load balancing
-        // Packing order: [array][slice][x][z] - each iteration is fully independent = parallel-safe
-        // V14: Apply optional PERIODIC_X/Z to handle wrap-around at boundaries
-        #pragma omp parallel for collapse(4)
+        #pragma omp for collapse(4)
         for (int array_idx = 0; array_idx < narray; array_idx++) {
             for (int slice_idx = 0; slice_idx < num_my_slices; slice_idx++) {
-                // Loop over all X-Z points in the destination's (X,Z) chunk
                 for (int x = bounds.x_start; x < bounds.x_end; x++) {
                     for (int z = bounds.z_start; z < bounds.z_end; z++) {
-                        // V14: Apply periodic boundary conditions if padding enabled
-                        // x can be negative (wraps from right) or >= N (wraps to left)
                         int x_actual = PERIODIC_X(x, N);
                         int z_actual = PERIODIC_Z(z, N);
                         
-                        // Calculate pack index for this thread's iteration
                         int local_x = x - bounds.x_start;
                         int local_z = z - bounds.z_start;
                         
-                        // Pack index: [array][slice][x][z]
-                        // Layout: array_idx * (num_my_slices * region_size) 
-                        //        + slice_idx * region_size
-                        //        + local_x * z_count + local_z
                         int64_t pack_idx = (int64_t)array_idx * num_my_slices * region_size
                                          + slice_idx * region_size
                                          + local_x * z_count + local_z;
 
-                        // Bounds check to detect buffer overflow
-                        // Ensures the absolute write position is within the entire send_buffer
-                        int64_t buffer_idx = offset + pack_idx;
+                        int64_t buffer_idx = dest_offset + pack_idx;
                         if (buffer_idx < 0 || buffer_idx >= total_send_size) {
                             fprintf(stderr, "[PACK ERROR] Rank %d: buffer_idx=%ld out of bounds [0, %d) for dest=%d\n",
                                    rank, (long)buffer_idx, total_send_size, dest);
                             fprintf(stderr, "  array_idx=%d, slice_idx=%d, x=%d, z=%d, local_x=%d, local_z=%d\n",
                                    array_idx, slice_idx, x, z, local_x, local_z);
                             fprintf(stderr, "  pack_idx=%ld, offset=%d, region_size=%d, sendcounts[dest]=%d\n",
-                                   (long)pack_idx, offset, region_size, sendcounts[dest]);
-                            MPI_Abort(MPI_COMM_WORLD, 1);
+                                   (long)pack_idx, dest_offset, region_size, sendcounts[dest]);
+                            MPI_Abort(comm_2d, 1);
                         }
-                        // Ensures the relative index is within the current destination's block
                         if (pack_idx < 0 || pack_idx >= sendcounts[dest]) {
                             fprintf(stderr, "[PACK ERROR] Rank %d: pack_idx=%ld out of dest region [0, %d) for dest=%d\n",
                                    rank, (long)pack_idx, sendcounts[dest], dest);
-                            MPI_Abort(MPI_COMM_WORLD, 1);
+                            MPI_Abort(comm_2d, 1);
                         }
 
-                        // Use Y_SLICE macro to access source data with PERIODIC coordinates
-                        // Note: local_y_slices is the flat buffer, Y_SLICE macro handles indexing
-                        send_buffer[offset + pack_idx][0] = 
+                        send_buffer[dest_offset + pack_idx][0] = 
                             Y_SLICE(slice_idx, array_idx, x_actual, z_actual, N, narray)[0];
-                        send_buffer[offset + pack_idx][1] = 
+                        send_buffer[dest_offset + pack_idx][1] = 
                             Y_SLICE(slice_idx, array_idx, x_actual, z_actual, N, narray)[1];
                     }
                 }
             }
         }
-        
-        offset += sendcounts[dest];
     }
+    
+    free(bounds_arr);
+    free(z_count_arr);
     
     if (DEBUG_PRINTS && rank < 3) {
         printf("[PACK] Rank %d: Packed %d total elements to send_buffer\n", rank, offset);

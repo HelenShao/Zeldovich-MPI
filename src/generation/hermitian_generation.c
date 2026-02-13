@@ -961,7 +961,8 @@ void generate_hermitian_slice_pair_local(
     }
     #endif
     
-    // Apply 2D FFT to all arrays independently
+    // Apply 2D FFT to all arrays independently (single-threaded plans; OMP provides outer parallelism)
+    #pragma omp parallel for
     for (int a = 0; a < narray; a++) {
         // Primary slice
         fftw_complex_t *prim_array_start = &PRIM_SLICE(a, 0, 0);
