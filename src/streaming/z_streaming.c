@@ -251,56 +251,56 @@ void z_streaming_unpack(
     // #endif
     
     // ========== DEBUG: Check for Inf values at specific indices AFTER 1D FFT ==========
-    #if 1  // Always enable for debugging
-    if (rank == 0) {
-        // Check specific (y, x_idx) locations where Inf was found
-        int debug_y_vals[] = {133, 133, 134};
-        int debug_x_vals[] = {126, 127, 0};
-        int num_debug_points = 3;
+    // #if 1  // Always enable for debugging
+    // if (rank == 0) {
+    //     // Check specific (y, x_idx) locations where Inf was found
+    //     int debug_y_vals[] = {133, 133, 134};
+    //     int debug_x_vals[] = {126, 127, 0};
+    //     int num_debug_points = 3;
         
-        for (int d = 0; d < num_debug_points; d++) {
-            int y = debug_y_vals[d];
-            int x_idx = debug_x_vals[d];
+    //     for (int d = 0; d < num_debug_points; d++) {
+    //         int y = debug_y_vals[d];
+    //         int x_idx = debug_x_vals[d];
             
-            if (x_idx < x_count) {
-                for (int array_idx = 0; array_idx < narray; array_idx++) {
-                    real_t re = ZSLAB(array_idx, x_idx, y, N, narray, x_count)[0];
-                    real_t im = ZSLAB(array_idx, x_idx, y, N, narray, x_count)[1];
+    //         if (x_idx < x_count) {
+    //             for (int array_idx = 0; array_idx < narray; array_idx++) {
+    //                 real_t re = ZSLAB(array_idx, x_idx, y, N, narray, x_count)[0];
+    //                 real_t im = ZSLAB(array_idx, x_idx, y, N, narray, x_count)[1];
                     
-                    int is_inf = (isinf(re) || isinf(im) || isnan(re) || isnan(im));
-                    if (is_inf) {
-                        fprintf(stderr, "[INF-DEBUG Z=%d AFTER FFT] array=%d x_idx=%d y=%d: re=%.6e im=%.6e\n",
-                                z_global, array_idx, x_idx, y, (double)re, (double)im);
-                    }
-                }
-            }
-        }
+    //                 int is_inf = (isinf(re) || isinf(im) || isnan(re) || isnan(im));
+    //                 if (is_inf) {
+    //                     fprintf(stderr, "[INF-DEBUG Z=%d AFTER FFT] array=%d x_idx=%d y=%d: re=%.6e im=%.6e\n",
+    //                             z_global, array_idx, x_idx, y, (double)re, (double)im);
+    //                 }
+    //             }
+    //         }
+    //     }
         
-        // Also scan entire buffer for any Inf values
-        int inf_count_after[4] = {0, 0, 0, 0};
-        for (int array_idx = 0; array_idx < narray; array_idx++) {
-            for (int x_idx = 0; x_idx < x_count; x_idx++) {
-                for (int y = 0; y < N; y++) {
-                    real_t re = ZSLAB(array_idx, x_idx, y, N, narray, x_count)[0];
-                    real_t im = ZSLAB(array_idx, x_idx, y, N, narray, x_count)[1];
-                    if (isinf(re) || isinf(im) || isnan(re) || isnan(im)) {
-                        inf_count_after[array_idx]++;
-                    }
-                }
-            }
-        }
+    //     // Also scan entire buffer for any Inf values
+    //     int inf_count_after[4] = {0, 0, 0, 0};
+    //     for (int array_idx = 0; array_idx < narray; array_idx++) {
+    //         for (int x_idx = 0; x_idx < x_count; x_idx++) {
+    //             for (int y = 0; y < N; y++) {
+    //                 real_t re = ZSLAB(array_idx, x_idx, y, N, narray, x_count)[0];
+    //                 real_t im = ZSLAB(array_idx, x_idx, y, N, narray, x_count)[1];
+    //                 if (isinf(re) || isinf(im) || isnan(re) || isnan(im)) {
+    //                     inf_count_after[array_idx]++;
+    //                 }
+    //             }
+    //         }
+    //     }
         
-        int total_inf_after = 0;
-        for (int a = 0; a < narray; a++) total_inf_after += inf_count_after[a];
-        if (total_inf_after > 0) {
-            fprintf(stderr, "[INF-DEBUG Z=%d AFTER FFT] Total Inf/NaN count per array: ", z_global);
-            for (int a = 0; a < narray; a++) {
-                fprintf(stderr, "A%d=%d ", a, inf_count_after[a]);
-            }
-            fprintf(stderr, "\n");
-        }
-    }
-    #endif
+    //     int total_inf_after = 0;
+    //     for (int a = 0; a < narray; a++) total_inf_after += inf_count_after[a];
+    //     if (total_inf_after > 0) {
+    //         fprintf(stderr, "[INF-DEBUG Z=%d AFTER FFT] Total Inf/NaN count per array: ", z_global);
+    //         for (int a = 0; a < narray; a++) {
+    //             fprintf(stderr, "A%d=%d ", a, inf_count_after[a]);
+    //         }
+    //         fprintf(stderr, "\n");
+    //     }
+    // }
+    // #endif
     
     // local_z_slab now contains FFT'd data for this Z-slab, ready for writing
 }
