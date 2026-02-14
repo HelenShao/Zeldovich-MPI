@@ -1151,12 +1151,12 @@ int main(int argc, char **argv)
         printf("Stage 1 (Y-slice generation + 2D FFT): %.6f s\n", t_gen.Elapsed());
         printf("Stage 2 (Metadata exchange):            %.6f s\n", 0.0);  // Minimal time
         printf("Stage 3 (Communication: Alltoallv):    %.6f s\n", t_comm.Elapsed());
-        printf("Stage 3 (Streaming: Unpack+FFT+Write):  %.6f s\n", t_streaming.Elapsed());
+        printf("Stage 4 (Streaming: Unpack+FFT+Write):  %.6f s\n", t_streaming.Elapsed());
         printf("------------------------------------------------------------------------------------\n");
         printf("Total 3D FFT time (Gen + Comm + FFT):   %.6f s\n", 
-               t_gen.Elapsed() + t_comm.Elapsed());
+               t_gen.Elapsed() + t_comm.Elapsed() + t_streaming.Elapsed());
         printf("Total time (including all stages):      %.6f s\n", 
-               t_gen.Elapsed() + t_comm.Elapsed());
+               t_gen.Elapsed() + t_comm.Elapsed() + t_streaming.Elapsed());
         printf("====================================================================================\n");
     }
     #endif
