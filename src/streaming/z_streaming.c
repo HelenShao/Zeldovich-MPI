@@ -3,6 +3,7 @@
 // ====================================================================================
 
 #include "z_streaming.h"
+#include "../mpi_topology.h"
 #include "../types.h"  // For ZSLAB macro
 #include "../config.h"  // For DEBUG_PRINTS, SKIP_VERIFICATION
 #include "../precision.h"  // For real_t, fabs_t, fmax_t
@@ -54,7 +55,7 @@ void z_streaming_unpack(
     if (z_global < my_bounds.z_start || z_global >= my_bounds.z_end) {
         fprintf(stderr, "[ERROR] Rank %d: z_global=%d out of bounds [%d,%d)\n",
                 rank, z_global, my_bounds.z_start, my_bounds.z_end);
-        MPI_Abort(MPI_COMM_WORLD, 1);
+        MPI_Abort(comm_2d, 1);
     }
     
     // ========== UNPACKING: Extract this Z-slab from recv_buffer ==========
@@ -104,7 +105,7 @@ void z_streaming_unpack(
                             "[OFFSET-VERIFY] Rank %d: Invalid slices_in_this_batch=%d for src=%d, batch=%d "
                             "(src_total_slices=%d)\n",
                             rank, slices_in_this_batch, src, batch, src_total_slices[src]);
-                    MPI_Abort(MPI_COMM_WORLD, 1);
+                    MPI_Abort(comm_2d, 1);
                 }
 
                 // 2) recv_offset must lie within this source's allocated region in recv_buffer.
@@ -118,7 +119,7 @@ void z_streaming_unpack(
                             rank, src, batch, slice_idx, array_idx, pencil_idx, x_idx, z_idx,
                             (long long)rel_src, (long long)max_src,
                             src_total_slices[src], my_pencils, narray);
-                    MPI_Abort(MPI_COMM_WORLD, 1);
+                    MPI_Abort(comm_2d, 1);
                 }
 #endif
                 
@@ -134,61 +135,61 @@ void z_streaming_unpack(
         }
     }
     
-    // ========== DEBUG: Check for Inf values at specific indices BEFORE 1D FFT ==========
-    // Known problematic locations: (j=133, k_local=126), (j=133, k_local=127), (j=134, k_local=0)
-    // Pattern: even z_global -> array 1 has Inf; odd z_global -> array 3 has Inf
-    #if 1  // Always enable for debugging
-    if (rank == 0) {
-        // Check specific (y, x_idx) locations where Inf was found
-        int debug_y_vals[] = {133, 133, 134};
-        int debug_x_vals[] = {126, 127, 0};
-        int num_debug_points = 3;
+    // // ========== DEBUG: Check for Inf values at specific indices BEFORE 1D FFT ==========
+    // // Known problematic locations: (j=133, k_local=126), (j=133, k_local=127), (j=134, k_local=0)
+    // // Pattern: even z_global -> array 1 has Inf; odd z_global -> array 3 has Inf
+    // #if 1  // Always enable for debugging
+    // if (rank == 0) {
+    //     // Check specific (y, x_idx) locations where Inf was found
+    //     int debug_y_vals[] = {133, 133, 134};
+    //     int debug_x_vals[] = {126, 127, 0};
+    //     int num_debug_points = 3;
         
-        int found_inf_before = 0;
-        for (int d = 0; d < num_debug_points; d++) {
-            int y = debug_y_vals[d];
-            int x_idx = debug_x_vals[d];
+    //     int found_inf_before = 0;
+    //     for (int d = 0; d < num_debug_points; d++) {
+    //         int y = debug_y_vals[d];
+    //         int x_idx = debug_x_vals[d];
             
-            if (x_idx < x_count) {
-                for (int array_idx = 0; array_idx < narray; array_idx++) {
-                    real_t re = ZSLAB(array_idx, x_idx, y, N, narray, x_count)[0];
-                    real_t im = ZSLAB(array_idx, x_idx, y, N, narray, x_count)[1];
+    //         if (x_idx < x_count) {
+    //             for (int array_idx = 0; array_idx < narray; array_idx++) {
+    //                 real_t re = ZSLAB(array_idx, x_idx, y, N, narray, x_count)[0];
+    //                 real_t im = ZSLAB(array_idx, x_idx, y, N, narray, x_count)[1];
                     
-                    int is_inf = (isinf(re) || isinf(im) || isnan(re) || isnan(im));
-                    if (is_inf) {
-                        fprintf(stderr, "[INF-DEBUG Z=%d BEFORE FFT] array=%d x_idx=%d y=%d: re=%.6e im=%.6e\n",
-                                z_global, array_idx, x_idx, y, (double)re, (double)im);
-                        found_inf_before = 1;
-                    }
-                }
-            }
-        }
+    //                 int is_inf = (isinf(re) || isinf(im) || isnan(re) || isnan(im));
+    //                 if (is_inf) {
+    //                     fprintf(stderr, "[INF-DEBUG Z=%d BEFORE FFT] array=%d x_idx=%d y=%d: re=%.6e im=%.6e\n",
+    //                             z_global, array_idx, x_idx, y, (double)re, (double)im);
+    //                     found_inf_before = 1;
+    //                 }
+    //             }
+    //         }
+    //     }
         
-        // Also scan entire buffer for any Inf values
-        int inf_count_before[4] = {0, 0, 0, 0};
-        for (int array_idx = 0; array_idx < narray; array_idx++) {
-            for (int x_idx = 0; x_idx < x_count; x_idx++) {
-                for (int y = 0; y < N; y++) {
-                    real_t re = ZSLAB(array_idx, x_idx, y, N, narray, x_count)[0];
-                    real_t im = ZSLAB(array_idx, x_idx, y, N, narray, x_count)[1];
-                    if (isinf(re) || isinf(im) || isnan(re) || isnan(im)) {
-                        inf_count_before[array_idx]++;
-                    }
-                }
-            }
-        }
+    //     // Also scan entire buffer for any Inf values
+    //     int inf_count_before[4] = {0, 0, 0, 0};
+    //     for (int array_idx = 0; array_idx < narray; array_idx++) {
+    //         for (int x_idx = 0; x_idx < x_count; x_idx++) {
+    //             for (int y = 0; y < N; y++) {
+    //                 real_t re = ZSLAB(array_idx, x_idx, y, N, narray, x_count)[0];
+    //                 real_t im = ZSLAB(array_idx, x_idx, y, N, narray, x_count)[1];
+    //                 if (isinf(re) || isinf(im) || isnan(re) || isnan(im)) {
+    //                     inf_count_before[array_idx]++;
+    //                 }
+    //             }
+    //         }
+    //     }
         
-        int total_inf_before = 0;
-        for (int a = 0; a < narray; a++) total_inf_before += inf_count_before[a];
-        if (total_inf_before > 0) {
-            fprintf(stderr, "[INF-DEBUG Z=%d BEFORE FFT] Total Inf/NaN count per array: ", z_global);
-            for (int a = 0; a < narray; a++) {
-                fprintf(stderr, "A%d=%d ", a, inf_count_before[a]);
-            }
-            fprintf(stderr, "\n");
-        }
-    }
-    #endif
+    //     int total_inf_before = 0;
+    //     for (int a = 0; a < narray; a++) total_inf_before += inf_count_before[a];
+    //     if (total_inf_before > 0) {
+    //         fprintf(stderr, "[INF-DEBUG Z=%d BEFORE FFT] Total Inf/NaN count per array: ", z_global);
+    //         for (int a = 0; a < narray; a++) {
+    //             fprintf(stderr, "A%d=%d ", a, inf_count_before[a]);
+    //         }
+    //         fprintf(stderr, "\n");
+    //     }
+    // }
+    // #endif
     
     #if DEBUG_PRINTS && !SKIP_VERIFICATION
     if (rank == 0 && z_global == my_bounds.z_start) {

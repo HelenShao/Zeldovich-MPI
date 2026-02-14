@@ -91,14 +91,76 @@ extern "C" {
 #include "utils/plt_eigenmodes.h"    
 #include "output/output_new.h"
 
+// --- MPI TOPOLOGY ---
+#include "mpi_topology.h"
+MPI_Comm comm_2d;
+
 // --- MAIN ---
 int main(int argc, char **argv)
 {
     MPI_Init(&argc, &argv);
     
-    int rank, num_ranks;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    // ========================================================================
+    // MPI Cartesian Topology Setup
+    // ========================================================================
+    
+    // Get total number of ranks from COMM_WORLD
+    int num_ranks;
     MPI_Comm_size(MPI_COMM_WORLD, &num_ranks);
+    
+    // Calculate 2D grid decomposition (grid_x * grid_z)
+    int grid_x, grid_z;
+    calculate_grid_factors(num_ranks, &grid_x, &grid_z);
+    
+    // Create 2D Cartesian topology
+    int dims[2] = { grid_x, grid_z };
+    int periodic[2] = { 1, 1 };
+    int reorder = 1;
+    
+    MPI_Cart_create(MPI_COMM_WORLD, 2, dims, periodic, reorder, &comm_2d);
+    
+    // Require factorable (non-prime) num_ranks
+    if (comm_2d == MPI_COMM_NULL) {
+        int world_rank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+        if (world_rank == 0) {
+            fprintf(stderr, "Error: num_ranks=%d must be factorable into grid_x × grid_z.\n", num_ranks);
+            fprintf(stderr, "       Best factorization found: grid_x=%d, grid_z=%d (product=%d)\n",
+                    grid_x, grid_z, grid_x * grid_z);
+            fprintf(stderr, "       Please use a factorable rank count (e.g., 4, 8, 9, 16, 25, 32, 36, 64, 81, ...)\n");
+            fprintf(stderr, "       Or adjust grid dimensions to match: use %d ranks instead.\n", grid_x * grid_z);
+        }
+        MPI_Finalize();
+        return 1;
+    }
+    
+    // Get Cartesian rank (may differ from world_rank if reorder=1)
+    int rank;
+    MPI_Comm_rank(comm_2d, &rank);
+    
+    // Get Cartesian coordinates for this rank
+    int coords[2];
+    MPI_Cart_coords(comm_2d, rank, 2, coords);
+    int rank_x = coords[0];  // X position in grid
+    int rank_z = coords[1];  // Z position in grid
+    
+    if (rank == 0) {
+        printf("========================================================================\n");
+        printf("MPI Cartesian Topology Initialized\n");
+        printf("  Grid: %d × %d = %d ranks\n", grid_x, grid_z, num_ranks);
+        printf("  Periodic: [X=%s, Z=%s]\n", 
+               periodic[0] ? "yes" : "no", periodic[1] ? "yes" : "no");
+        printf("  Reorder: %s (hardware-aware rank assignment)\n", 
+               reorder ? "enabled" : "disabled");
+        printf("========================================================================\n");
+    }
+    
+    // Show rank mapping for verification
+    printf("[Rank %d] Cartesian coords: (rank_x=%d, rank_z=%d)\n", rank, rank_x, rank_z);
+    
+    // Suppress unused variable warnings (rank_x, rank_z available for future use/debugging)
+    (void)rank_x;
+    (void)rank_z;
     
     // ========================================================================
     // Stage 1: Parse arguments
@@ -229,7 +291,7 @@ int main(int argc, char **argv)
         params = zeldovich_params_create(param_file);
         if (!params) {
             if (rank == 0) {fprintf(stderr, "Failed to load param file: %s\n", param_file);}
-            MPI_Abort(MPI_COMM_WORLD, 1);
+            MPI_Abort(comm_2d, 1);
         }
         
         uint64_t seed = (uint64_t)zeldovich_params_get_seed(params);
@@ -254,7 +316,7 @@ int main(int argc, char **argv)
             if (rank == 0) {
                 fprintf(stderr, "ERROR: Failed to create PowerSpectrum object\n");
             }
-            MPI_Abort(MPI_COMM_WORLD, 1);
+            MPI_Abort(comm_2d, 1);
         }
         
         double powerlaw_index = zeldovich_params_get_Pk_powerlaw_index(params);
@@ -262,14 +324,14 @@ int main(int argc, char **argv)
             if (rank == 0) {
                 fprintf(stderr, "ERROR: ZD_Pk_powerlaw_index not specified in parameter file\n");
             }
-            MPI_Abort(MPI_COMM_WORLD, 1);
+            MPI_Abort(comm_2d, 1);
         }
         
         if (zeldovich_ps_init_powerlaw(ps, powerlaw_index, params) != 0) {
             if (rank == 0) {
                 fprintf(stderr, "ERROR: Failed to initialize power spectrum (power law index: %.2f)\n", powerlaw_index);
             }
-            MPI_Abort(MPI_COMM_WORLD, 1);
+            MPI_Abort(comm_2d, 1);
         }
         
         // Load PLT eigenmodes from file
@@ -286,7 +348,7 @@ int main(int argc, char **argv)
                     fprintf(stderr, "       Current ICFormat: '%s'\n", ICFormat ? ICFormat : "(empty)");
                     fprintf(stderr, "       Set 'ICFormat = RV' or 'ICFormat = RVDoubleZel' in parameter file\n");
                 }
-                MPI_Abort(MPI_COMM_WORLD, 1);
+                MPI_Abort(comm_2d, 1);
             }
             
             // Load PLT eigenmodes from file
@@ -295,7 +357,7 @@ int main(int argc, char **argv)
                     fprintf(stderr, "ERROR: Failed to load PLT eigenmodes from: %s\n", PLT_filename);
                     fprintf(stderr, "       Check that file exists and has correct format\n");
                 }
-                MPI_Abort(MPI_COMM_WORLD, 1);
+                MPI_Abort(comm_2d, 1);
             }
             
             if (rank == 0) {
@@ -342,8 +404,7 @@ int main(int argc, char **argv)
                is_idle_rank ? 0 : my_num_pairs);
     }
     
-    int grid_x, grid_z;
-    calculate_grid_factors(num_ranks, &grid_x, &grid_z);
+    // Note: grid_x and grid_z already calculated during MPI topology setup
     if (!is_idle_rank) {
         my_extended_bounds = get_extended_grid_bounds(rank, N, num_ranks, grid_x, grid_z);
 #if USE_X_PADDING
@@ -362,7 +423,7 @@ int main(int argc, char **argv)
         max_batches = my_num_pairs;
     }
     int global_max_batches = 0;
-    MPI_Allreduce(&max_batches, &global_max_batches, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+    MPI_Allreduce(&max_batches, &global_max_batches, 1, MPI_INT, MPI_MAX, comm_2d);
     
     // Calculate per-source totals and allocate persistent recv_buffer
     int *src_total_slices = NULL;       // [num_ranks] - total Y-slices from each source
@@ -401,7 +462,7 @@ int main(int argc, char **argv)
         if (posix_memalign((void**)&recv_buffer, ALIGN_BYTES,
                            sizeof(fftw_complex_t) * recv_total_elems) != 0) {
             fprintf(stderr, "Rank %d: posix_memalign failed for recv_buffer\n", rank);
-            MPI_Abort(MPI_COMM_WORLD, 1);
+            MPI_Abort(comm_2d, 1);
         }
         
         memset(recv_buffer, 0, sizeof(fftw_complex_t) * recv_total_elems);
@@ -457,7 +518,7 @@ int main(int argc, char **argv)
                 if (y_owner_src[y_global] != -1) {
                     fprintf(stderr, "[ERROR] Y=%d already assigned to src %d, now src %d wants it!\n",
                            y_global, y_owner_src[y_global], src);
-                    MPI_Abort(MPI_COMM_WORLD, 1);
+                    MPI_Abort(comm_2d, 1);
                 }
                 
                 y_owner_src[y_global] = src;
@@ -479,7 +540,7 @@ int main(int argc, char **argv)
         
         if (posix_memalign((void**)&local_y_slices, ALIGN_BYTES, requested_bytes) != 0) {
             fprintf(stderr, "Rank %d: posix_memalign failed for local_y_slices\n", rank);
-            MPI_Abort(MPI_COMM_WORLD, 1);
+            MPI_Abort(comm_2d, 1);
         }
     }
     // ========================================================================
@@ -545,13 +606,13 @@ int main(int argc, char **argv)
                        rank, src, (long long)new_displ, INT_MAX);
                 fprintf(stderr, "  recv_displs_src[%d] = %lld\n", src, (long long)recv_displs_src[src]);
                 fprintf(stderr, "  src_write_cursor[%d] = %lld\n", src, (long long)src_write_cursor[src]);
-                MPI_Abort(MPI_COMM_WORLD, 1);
+                MPI_Abort(comm_2d, 1);
             }
             
             if (new_displ < 0) {
                 fprintf(stderr, "[Rank %d] ERROR: Negative rdispls! src=%d, displ=%lld\n",
                        rank, src, (long long)new_displ);
-                MPI_Abort(MPI_COMM_WORLD, 1);
+                MPI_Abort(comm_2d, 1);
             }
             
             rdispls_batch[src] = (int)new_displ;
@@ -565,7 +626,7 @@ int main(int argc, char **argv)
             
             if (posix_memalign((void**)&send_buffer_batch, ALIGN_BYTES, requested_bytes) != 0) {
                 fprintf(stderr, "Rank %d: posix_memalign failed for send_buffer_batch\n", rank);
-                MPI_Abort(MPI_COMM_WORLD, 1);
+                MPI_Abort(comm_2d, 1);
             }
         }
         
@@ -588,7 +649,7 @@ int main(int argc, char **argv)
             if (sum_sendcounts != total_send_batch) {
                 fprintf(stderr, "[Rank %d] ERROR: sendcounts sum (%d) != total_send_batch (%d)!\n",
                        rank, sum_sendcounts, total_send_batch);
-                MPI_Abort(MPI_COMM_WORLD, 1);
+                MPI_Abort(comm_2d, 1);
             }
         }
         
@@ -605,7 +666,7 @@ int main(int argc, char **argv)
             if (sum_recvcounts != total_recv_batch) {
                 fprintf(stderr, "[Rank %d] ERROR: recvcounts sum (%d) != total_recv_batch (%d)!\n",
                        rank, sum_recvcounts, total_recv_batch);
-                MPI_Abort(MPI_COMM_WORLD, 1);
+                MPI_Abort(comm_2d, 1);
             }
             
             // Verify rdispls don't exceed recv_buffer bounds
@@ -616,7 +677,7 @@ int main(int argc, char **argv)
                     if (end_offset > recv_buffer_size) {
                         fprintf(stderr, "[Rank %d] ERROR: rdispls[%d] + recvcounts[%d] = %ld exceeds buffer size %ld!\n",
                                rank, i, i, (long)end_offset, (long)recv_buffer_size);
-                        MPI_Abort(MPI_COMM_WORLD, 1);
+                        MPI_Abort(comm_2d, 1);
                     }
                 }
             }
@@ -633,14 +694,14 @@ int main(int argc, char **argv)
             if (sdispls_batch[i] < 0 || rdispls_batch[i] < 0) {
                 fprintf(stderr, "[Rank %d] ERROR: Negative displacement! sdispls[%d]=%d, rdispls[%d]=%d\n",
                        rank, i, sdispls_batch[i], i, rdispls_batch[i]);
-                MPI_Abort(MPI_COMM_WORLD, 1);
+                MPI_Abort(comm_2d, 1);
             }
             
             // Check for overflow in individual displacements
             if (sdispls_batch[i] > INT_MAX || rdispls_batch[i] > INT_MAX) {
                 fprintf(stderr, "[Rank %d] ERROR: Displacement exceeds INT_MAX! sdispls[%d]=%d, rdispls[%d]=%d\n",
                        rank, i, sdispls_batch[i], i, rdispls_batch[i]);
-                MPI_Abort(MPI_COMM_WORLD, 1);
+                MPI_Abort(comm_2d, 1);
             }
         }
         
@@ -648,13 +709,13 @@ int main(int argc, char **argv)
         if (max_send_displ > total_send_batch) {
             fprintf(stderr, "[Rank %d] ERROR: Send displacement exceeds buffer! max=%lld > total=%d\n",
                    rank, (long long)max_send_displ, total_send_batch);
-            MPI_Abort(MPI_COMM_WORLD, 1);
+            MPI_Abort(comm_2d, 1);
         }
         
         if (max_recv_displ > recv_total_elems) {
             fprintf(stderr, "[Rank %d] ERROR: Recv displacement exceeds buffer! max=%lld > total=%lld\n",
                    rank, (long long)max_recv_displ, (long long)recv_total_elems);
-            MPI_Abort(MPI_COMM_WORLD, 1);
+            MPI_Abort(comm_2d, 1);
         }
         
         t_comm.Start();
@@ -662,7 +723,7 @@ int main(int argc, char **argv)
         MPI_Ialltoallv(
             send_buffer_batch, sendcounts_batch, sdispls_batch, MPI_COMPLEX_TYPE,
             recv_buffer, recvcounts_batch, rdispls_batch, MPI_COMPLEX_TYPE,  // <-- V11: Changed to persistent recv_buffer
-            MPI_COMM_WORLD, &comm_request_batch
+            comm_2d, &comm_request_batch
         );
         
         // ===== BATCH STEP 7: MPI_Wait =====
@@ -723,7 +784,7 @@ int main(int argc, char **argv)
         }
         
         if (cursor_error) {
-            MPI_Abort(MPI_COMM_WORLD, 1);
+            MPI_Abort(comm_2d, 1);
         }
     }
     
@@ -739,7 +800,7 @@ int main(int argc, char **argv)
         printf("\n[Stage 3] Z-slab streaming from recv_buffer...\n");
     }
     
-    // --- V12: Z-SLAB STREAMING (one Z-slab at a time, [Array][X][Y] then transpose to [Array][Y][X]) ---
+    // --- Z-SLAB STREAMING (one Z-slab at a time, [Array][X][Y] then transpose to [Array][Y][X]) ---
     STimer t_streaming;
     t_streaming.Start();
     
@@ -764,7 +825,7 @@ int main(int argc, char **argv)
         if (posix_memalign((void**)&local_z_slab, ALIGN_BYTES, 
                            sizeof(fftw_complex_t) * elements_per_z_slab) != 0) {
             fprintf(stderr, "Rank %d: posix_memalign failed for local_z_slab (one Z-slab)\n", rank);
-            MPI_Abort(MPI_COMM_WORLD, 1);
+            MPI_Abort(comm_2d, 1);
         }
     } else {
         // Idle ranks: local_z_slab stays NULL
@@ -777,7 +838,7 @@ int main(int argc, char **argv)
     int mkdir_result = mkdir(dirname, 0755);
     if (mkdir_result != 0 && errno != EEXIST) {
         fprintf(stderr, "Rank %d: ERROR creating directory %s (errno=%d)\n", rank, dirname, errno);
-        MPI_Abort(MPI_COMM_WORLD, 1);
+        MPI_Abort(comm_2d, 1);
     }
     
     // Process one Z-slab at a time (Zeldovich-compatible)
@@ -1047,9 +1108,9 @@ int main(int argc, char **argv)
     
     int total_files_written;
     size_t total_bytes_all_ranks;
-    MPI_Reduce(&files_written, &total_files_written, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&files_written, &total_files_written, 1, MPI_INT, MPI_SUM, 0, comm_2d);
     MPI_Reduce(&total_bytes_written, &total_bytes_all_ranks, 1, MPI_UNSIGNED_LONG, 
-               MPI_SUM, 0, MPI_COMM_WORLD);
+               MPI_SUM, 0, comm_2d);
 
     if (rank == 0) {
         printf("[Stage 3] Streaming complete. Time: %.6f s\n", t_streaming.Elapsed());
@@ -1182,6 +1243,9 @@ int main(int argc, char **argv)
     #else
     fftwf_cleanup_threads();
     #endif
+    
+    // Free the Cartesian communicator before finalizing MPI
+    MPI_Comm_free(&comm_2d);
     
     MPI_Finalize();
     

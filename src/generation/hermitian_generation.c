@@ -195,8 +195,7 @@ void generate_hermitian_slice_pair_local(
                     // Force all elements with wavenumber above k_cutoff (nominally k_Nyquist) to zero
                      || (!CornerModes && (double)k2_int >= k2_cutoff)) {
                     D[0] = D[1] = 0.0;
-                    // RNG consistency: When D=0, we skip the RNG call, so accumulate skip
-                    // This matches zeldovich.cpp line 361: nskip++ (accumulate, don't advance immediately)
+                    // RNG consistency: When D=0, we skip the RNG call - accumulate nskip, dont advance immediately
                     nskip++;  // Accumulate skip, will be applied before next cgauss() call
                     #if DEBUG_RNG_SKIP
                     int log_skip = (x <= MAX_DEBUG_COORD && global_y <= MAX_DEBUG_COORD && z <= MAX_DEBUG_COORD) ||
@@ -217,21 +216,17 @@ void generate_hermitian_slice_pair_local(
                     #endif
                 } 
                 else if (ps_handle != NULL && params_handle != NULL) {
-                    // v15.2: Use zeldovich-PLT power spectrum-weighted Gaussian
-                    // If ps_handle is available, we ALWAYS use power spectrum mode (cgauss)
                     // Convert k indices to physical wavenumber
                     double k2_phys = k2 * fundamental * fundamental;
                     double kmag = sqrt(k2_phys);
                     
                     // zeldovich_ps_cgauss returns double precision, convert to real_t
-                    // zeldovich-PLT's v2rng array is sized to ppd/2, so valid indices are 0 to (N/2 - 1)
+                    // v2rng array is sized to ppd/2, so valid indices are 0 to (N/2 - 1)
                     // In conjugate pair branch, global_y is in range [1, N/2-1] or [N/2+1, N-1]
                     int64_t rng_index = global_y;
                     
-                    // RNG consistency: Advance zeldovich-PLT's RNG when crossing Nyquist boundaries
-                    // This matches zeldovich.cpp behavior: advance before calling cgauss
+                    // RNG sync: Advance RNG when crossing Nyquist - advance before calling cgauss
                     #if DEBUG_RNG_SKIP
-                    // Debug: Log skip application for test coordinates
                     int log_skip = (x <= MAX_DEBUG_COORD && global_y <= MAX_DEBUG_COORD && z <= MAX_DEBUG_COORD) ||
                                    (x == Nhalf - 1 && global_y == Nhalf - 1 && z == Nhalf - 1);
                     if (log_skip && nskip > 0) {
@@ -256,6 +251,7 @@ void generate_hermitian_slice_pair_local(
                     }
                     
                     double D_real, D_imag;
+                    
                     #if DEBUG_RNG_SKIP
                     int log_cgauss = (x <= MAX_DEBUG_COORD && global_y <= MAX_DEBUG_COORD && z <= MAX_DEBUG_COORD) ||
                                      (x == Nhalf - 1 && global_y == Nhalf - 1 && z == Nhalf - 1);
@@ -265,7 +261,10 @@ void generate_hermitian_slice_pair_local(
                         fflush(stderr);
                     }
                     #endif
+
+                    // Call rng at rng_index to load into D_real & D_imag
                     zeldovich_ps_cgauss(ps_handle, kmag, rng_index, &D_real, &D_imag);
+
                     #if VERIFY_RNG_CALLS
                     total_rng_calls++;  // Each cgauss() call uses 2 random numbers
                     #endif

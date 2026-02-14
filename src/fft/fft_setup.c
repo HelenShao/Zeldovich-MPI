@@ -16,19 +16,10 @@ void setup_fftw_plans_full(int N, fftw_plan_t *plan_2d_out, fftw_plan_t *plan_1d
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     
     // ====================================================================================
-    // INITIALIZE FFTW THREADING
+    // INITIALIZE FFTW THREADING 
     // ====================================================================================
-    // All plans are created with nthreads=1 (single-threaded) so that they are SAFE
-    // for concurrent execution from multiple OMP threads via FFTW_EXECUTE_DFT.
-    //
-    // Why single-threaded plans + outer OMP parallelism?
-    //   1. FFTW plans with nthreads>1 have SHARED internal scratch buffers.
-    //      Calling FFTW_EXECUTE_DFT concurrently from multiple threads with the
-    //      same multi-threaded plan causes DATA RACES on those scratch buffers.
-    //   2. Outer OMP parallelism (many independent single-threaded FFTs) outperforms
-    //      inner FFTW threading when narray * x_count >> num_threads (always here).
-    //   3. Zero sync overhead between FFTs; better cache locality per thread.
-    // ====================================================================================
+    // FFTW threading must be initialized before creating plans (to use OMP)
+
     static int fftw_threads_initialized = 0;
     if (!fftw_threads_initialized) {
         int nthreads = omp_get_max_threads();
@@ -65,9 +56,6 @@ void setup_fftw_plans_full(int N, fftw_plan_t *plan_2d_out, fftw_plan_t *plan_1d
         MPI_Abort(MPI_COMM_WORLD, 1);
     }
     
-    if (rank == 0) {
-        printf("[FFTW-PLAN] Creating 2D plan (%d x %d) with FFTW_MEASURE...\n", N, N);
-    }
     *plan_2d_out = FFTW_PLAN_DFT_2D(N, N, dummy_2d, dummy_2d, 
                                      FFT_SIGN, FFTW_MEASURE);
     
@@ -80,21 +68,15 @@ void setup_fftw_plans_full(int N, fftw_plan_t *plan_2d_out, fftw_plan_t *plan_1d
         MPI_Abort(MPI_COMM_WORLD, 1);
     }
     
-    if (rank == 0) {
-        printf("[FFTW-PLAN] Creating 1D plan (N=%d) with FFTW_MEASURE...\n", N);
-    }
     *plan_1d_out = FFTW_PLAN_DFT_1D(N, dummy_1d, dummy_1d, 
                                      FFT_SIGN, FFTW_MEASURE);
     
     free(dummy_1d);
     
+    // Ceck plan creation
     if (*plan_2d_out == NULL || *plan_1d_out == NULL) {
         fprintf(stderr, "[ERROR] Failed to create FFT plans (one or both plans are NULL)\n");
         MPI_Abort(MPI_COMM_WORLD, 1);
-    }
-    
-    if (rank == 0) {
-        printf("[FFTW-PLAN] All plans created (single-threaded, FFTW_MEASURE)\n");
     }
 }
 

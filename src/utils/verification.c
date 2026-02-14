@@ -3,6 +3,7 @@
 // ====================================================================================
 
 #include "utils/verification.h"
+#include "../mpi_topology.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -182,7 +183,7 @@ void verify_pencil_completeness_with_flags(char *y_filled, int pencils_per_rank,
     
     // Global verification: Count missing across all ranks
     int global_missing;
-    MPI_Reduce(&missing_count, &global_missing, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&missing_count, &global_missing, 1, MPI_INT, MPI_SUM, 0, comm_2d);
     
     if (rank == 0) {
         if (global_missing > 0) {

@@ -23,7 +23,7 @@
 #include <complex>   // For std::real and std::imag functions
 
 // Include local headers
-#include "STimer.h"  // For STimer class
+#include <STimer.h>  // zeldovich-PLT's STimer (angle brackets so reassembly build gets zeldovich's, not src/STimer.h)
 #include "output_new.h" 
 #include "utils/decomposition.h"
 
