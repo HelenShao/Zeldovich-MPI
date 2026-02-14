@@ -6,6 +6,8 @@
 #include <power_spectrum.h>
 #include <parameters.h>
 #include <zeldovich.h>
+#include <cmath>
+#include <cstdint>
 
 extern "C" {
 
@@ -211,6 +213,47 @@ void zeldovich_ps_advance_rng(PowerSpectrumHandle ps, ParametersHandle params, i
         uint64_t advance_amount = (uint64_t)2 * (uint64_t)nskip;
         p->v2rng[rng_index].advance(advance_amount);
     }
+}
+
+void zeldovich_ps_get_rng_copy(PowerSpectrumHandle ps, int64_t rng_index, void* out_rng) {
+    if (!ps || !out_rng) return;
+    PowerSpectrum* p = static_cast<PowerSpectrum*>(ps);
+    pcg64 copy = p->get_rng_copy(rng_index);
+    new (out_rng) pcg64(copy);
+}
+
+size_t zeldovich_ps_rng_buffer_size(void) {
+    return sizeof(pcg64);
+}
+
+void zeldovich_ps_advance_rng_buffer(void* rng_buf, int64_t nskip) {
+    if (!rng_buf || nskip <= 0) return;
+    pcg64* rng = static_cast<pcg64*>(rng_buf);
+    rng->advance((uint64_t)2 * (uint64_t)nskip);
+}
+
+// Match zeldovich one_rand<2>: returns (0,1]
+static double one_rand_from_pcg64(pcg64* rng) {
+    uint64_t r = (*rng)();
+    if (r == UINT64_MAX) return 1.0;
+    r += (uint64_t)1;
+    return ldexp(static_cast<double>(r), -64);
+}
+
+void zeldovich_ps_cgauss_from_buffer(void* rng_buf, PowerSpectrumHandle ps, double wavenumber, double* real, double* imag) {
+    if (!rng_buf || !ps || !real || !imag) return;
+    pcg64* rng = static_cast<pcg64*>(rng_buf);
+    PowerSpectrum* p = static_cast<PowerSpectrum*>(ps);
+    double Pk = p->power(wavenumber);
+    double R = one_rand_from_pcg64(rng);
+    double theta = one_rand_from_pcg64(rng);
+    if (p->fixed_power)
+        R = sqrt(Pk);
+    else
+        R = sqrt(-Pk * log(R));
+    theta = 2 * M_PI * theta;
+    *real = R * cos(theta);
+    *imag = R * sin(theta);
 }
 
 double zeldovich_ps_get_normalization(PowerSpectrumHandle ps) {

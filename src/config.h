@@ -236,6 +236,13 @@
 // 1 = Free PCG RNG after Stage 1 (saves ~1 MB for N=32K)
 #define FREE_PCG_AFTER_STAGE1 1
 
+// Phase 4: Parallelize z-loop in Y-slice generation
+// 0 = Serial z-loop (original, reference implementation)
+// 1 = Parallel z-loop with thread-local RNG copies
+#ifndef PARALLELIZE_Z_LOOP
+#define PARALLELIZE_Z_LOOP 0
+#endif
+
 // When SKIP_FILE_WRITE is defined and non-zero, Stage 3 will skip writing rank_*/z*_slab_N*.bin
 // Use -DSKIP_FILE_WRITE=0 to enable file writes, or -USKIP_FILE_WRITE to undefine it
 #ifndef SKIP_FILE_WRITE

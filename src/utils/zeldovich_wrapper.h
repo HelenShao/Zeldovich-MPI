@@ -1,6 +1,7 @@
 #ifndef ZELDOVICH_WRAPPER_H
 #define ZELDOVICH_WRAPPER_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 #ifdef __cplusplus
@@ -111,6 +112,16 @@ void zeldovich_ps_cgauss(PowerSpectrumHandle ps, double wavenumber, int64_t rng_
 
 // Advance RNG for given Y-slice index
 void zeldovich_ps_advance_rng(PowerSpectrumHandle ps, ParametersHandle params, int64_t rng_index, int64_t nskip);
+
+// Phase 4: Thread-local RNG support for parallel z-loop
+// Get a copy of the RNG for Y-slice rng_index. Caller allocates out_rng (size from zeldovich_ps_rng_buffer_size).
+void zeldovich_ps_get_rng_copy(PowerSpectrumHandle ps, int64_t rng_index, void* out_rng);
+// Size in bytes for RNG buffer allocation
+size_t zeldovich_ps_rng_buffer_size(void);
+// Advance RNG in buffer by nskip (units: complex numbers = 2 random numbers each)
+void zeldovich_ps_advance_rng_buffer(void* rng_buf, int64_t nskip);
+// cgauss using RNG in buffer; needs ps for P(k) and fixed_power
+void zeldovich_ps_cgauss_from_buffer(void* rng_buf, PowerSpectrumHandle ps, double wavenumber, double* real, double* imag);
 
 // Get normalization
 double zeldovich_ps_get_normalization(PowerSpectrumHandle ps);

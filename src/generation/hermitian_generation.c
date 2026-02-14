@@ -11,6 +11,45 @@
 #include <omp.h>
 
 // ====================================================================================
+// Thread-local RNG helpers for parallel z-loop
+// ====================================================================================
+
+#if PARALLELIZE_Z_LOOP
+// Map (z, x) to virtual position in MAX_PPD x MAX_PPD grid (stream position in rand counts)
+static inline int64_t compute_virtual_position(int z, int x, int N, int Nhalf) {
+    int z_v = (z <= Nhalf) ? z : (MAX_PPD - N + z);
+    int x_v = (x <= Nhalf) ? x : (MAX_PPD - N + x);
+    return 2 * ((int64_t)z_v * MAX_PPD + x_v);
+}
+
+// Compute z-range for thread tid using static chunking
+static inline void get_thread_z_range(int tid, int nthreads, int N, int* z_start, int* z_end) {
+    int chunk_size = (N + nthreads - 1) / nthreads;
+    *z_start = tid * chunk_size;
+    *z_end = (*z_start + chunk_size > N) ? N : *z_start + chunk_size;
+}
+#endif
+
+// Choose which RNG to use based on local_rng_buf
+// local_rng_buf == NULL: use shared RNG (zeldovich_ps_advance_rng, zeldovich_ps_cgauss)
+// local_rng_buf != NULL: use buffer RNG (zeldovich_ps_advance_rng_buffer, zeldovich_ps_cgauss_from_buffer)
+static inline void get_cgauss(PowerSpectrumHandle ps_handle, ParametersHandle params_handle,
+    int64_t rng_index, double kmag, int64_t* nskip, void* local_rng_buf,
+    double* D_real, double* D_imag) {
+    if (*nskip > 0) {
+        if (local_rng_buf)
+            zeldovich_ps_advance_rng_buffer(local_rng_buf, *nskip);
+        else
+            zeldovich_ps_advance_rng(ps_handle, params_handle, rng_index, *nskip);
+        *nskip = 0;
+    }
+    if (local_rng_buf)
+        zeldovich_ps_cgauss_from_buffer(local_rng_buf, ps_handle, kmag, D_real, D_imag);
+    else
+        zeldovich_ps_cgauss(ps_handle, kmag, rng_index, D_real, D_imag);
+}
+
+// ====================================================================================
 // Generates one pair of Hermitian Y-slices (primary + conjugate) in Fourier space
 // Gaussian w/ power spectrum weighting (w/ zeldovich-PLT ps_handle & params_handle)
 // 2D FFT: Fourier --> real space (X,Z)
@@ -120,8 +159,26 @@ void generate_hermitian_slice_pair_local(
     
     if (y_mirror != global_y) {
         // ========== CONJUGATE PAIR: Y=i and Y=N-i ==========
-        // Sequential (x,z) loops: each rank processes different Y-slice
+#if PARALLELIZE_Z_LOOP
+        #pragma omp parallel
+        {
+            int64_t rng_index_cp = global_y;
+            int tid = omp_get_thread_num();
+            int nthreads = omp_get_num_threads();
+            int z_start, z_end;
+            get_thread_z_range(tid, nthreads, N, &z_start, &z_end);
+            size_t rng_size = zeldovich_ps_rng_buffer_size();
+            void* local_rng_buf = malloc(rng_size);
+            zeldovich_ps_get_rng_copy(ps_handle, rng_index_cp, local_rng_buf);
+            int64_t virtual_start = compute_virtual_position(z_start, 0, N, Nhalf) / 2;
+            if (virtual_start > 0)
+                zeldovich_ps_advance_rng_buffer(local_rng_buf, virtual_start);
+            int64_t nskip = 0;
+            for (int z = z_start; z < z_end; z++) {
+#else
+        void* local_rng_buf = NULL;
         for (int z = 0; z < N; z++) {
+#endif
             // RNG consistency: When crossing Nyquist boundary (z == Nhalf + 1),
             // skip ALL missing z-rows (z = N to MAX_PPD-1, each containing MAX_PPD x-values)
             // See zeldovich.cpp: skip at Nyquist boundary before processing negative kz region
@@ -225,45 +282,12 @@ void generate_hermitian_slice_pair_local(
                     // In conjugate pair branch, global_y is in range [1, N/2-1] or [N/2+1, N-1]
                     int64_t rng_index = global_y;
                     
-                    // RNG sync: Advance RNG when crossing Nyquist - advance before calling cgauss
-                    #if DEBUG_RNG_SKIP
-                    int log_skip = (x <= MAX_DEBUG_COORD && global_y <= MAX_DEBUG_COORD && z <= MAX_DEBUG_COORD) ||
-                                   (x == Nhalf - 1 && global_y == Nhalf - 1 && z == Nhalf - 1);
-                    if (log_skip && nskip > 0) {
-                        fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d (x,z)=(%d,%d): APPLYING skip=%lld BEFORE cgauss\n",
-                                N, global_y, x, z, (long long)nskip);
-                        fflush(stderr);
-                    }
-                    #endif
-                    if (nskip > 0) {
-                        zeldovich_ps_advance_rng(ps_handle, params_handle, rng_index, nskip);
-                        #if VERIFY_RNG_CALLS
-                        total_rng_skips += nskip;  // Track accumulated skip value
-                        #endif
-                        #if DEBUG_RNG_SKIP
-                        if (log_skip) {
-                            fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d (x,z)=(%d,%d): RNG advanced, nskip reset to 0\n",
-                                    N, global_y, x, z);
-                            fflush(stderr);
-                        }
-                        #endif
-                        nskip = 0;  // Reset after advancing
-                    }
-                    
                     double D_real, D_imag;
-                    
-                    #if DEBUG_RNG_SKIP
-                    int log_cgauss = (x <= MAX_DEBUG_COORD && global_y <= MAX_DEBUG_COORD && z <= MAX_DEBUG_COORD) ||
-                                     (x == Nhalf - 1 && global_y == Nhalf - 1 && z == Nhalf - 1);
-                    if (log_cgauss) {
-                        fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d (x,z)=(%d,%d): CALLING cgauss (nskip=%lld, kmag=%.6e)\n",
-                                N, global_y, x, z, (long long)nskip, kmag);
-                        fflush(stderr);
-                    }
+                    #if VERIFY_RNG_CALLS
+                    if (nskip > 0 && local_rng_buf == NULL) total_rng_skips += nskip;
                     #endif
-
-                    // Call rng at rng_index to load into D_real & D_imag
-                    zeldovich_ps_cgauss(ps_handle, kmag, rng_index, &D_real, &D_imag);
+                    // Phase 4: use get_cgauss (shared RNG when local_rng_buf==NULL, buffer RNG when parallel)
+                    get_cgauss(ps_handle, params_handle, rng_index, kmag, &nskip, local_rng_buf, &D_real, &D_imag);
 
                     #if VERIFY_RNG_CALLS
                     total_rng_calls++;  // Each cgauss() call uses 2 random numbers
@@ -530,6 +554,10 @@ void generate_hermitian_slice_pair_local(
             }
             
         }
+#if PARALLELIZE_Z_LOOP
+            free(local_rng_buf);
+        }
+#endif
     } else {
         // ========== SELF-CONJUGATE: Y=0 or Y=N/2 ==========
         // Reset nskip for self-conjugate case
@@ -542,7 +570,25 @@ void generate_hermitian_slice_pair_local(
         
         // Zeldovich method: Fill half the plane, mirror the rest
         // Process FULL plane first: z = 0 to N-1, x = 0 to N-1
+#if PARALLELIZE_Z_LOOP
+        #pragma omp parallel
+        {
+            int tid = omp_get_thread_num();
+            int nthreads = omp_get_num_threads();
+            int z_start, z_end;
+            get_thread_z_range(tid, nthreads, N, &z_start, &z_end);
+            size_t rng_size = zeldovich_ps_rng_buffer_size();
+            void* local_rng_buf = malloc(rng_size);
+            zeldovich_ps_get_rng_copy(ps_handle, global_y, local_rng_buf);
+            int64_t virtual_start = compute_virtual_position(z_start, 0, N, Nhalf) / 2;
+            if (virtual_start > 0)
+                zeldovich_ps_advance_rng_buffer(local_rng_buf, virtual_start);
+            int64_t nskip = 0;
+            for (int z = z_start; z < z_end; z++) {
+#else
         for (int z = 0; z < N; z++) {
+            void* local_rng_buf = NULL;
+#endif
             // RNG skipping: match zeldovich.cpp - skip at Nyquist boundary (z == Nhalf + 1)
             // This applies to ALL Y slices including self-conjugate (Y=0 and Y=N/2)
             if (z == Nhalf + 1 && N < MAX_PPD) {
@@ -633,17 +679,12 @@ void generate_hermitian_slice_pair_local(
                     // Since we've already handled global_y == N/2 above, global_y is now < N/2
                     int64_t rng_index = global_y;
                     
-                    // Advance zeldovich-PLT's RNG when crossing Nyquist boundaries
-                    if (nskip > 0) {
-                        zeldovich_ps_advance_rng(ps_handle, params_handle, rng_index, nskip);
-                        #if VERIFY_RNG_CALLS
-                        total_rng_skips += nskip;
-                        #endif
-                        nskip = 0;  // Reset after advancing
-                    }
-                    
                     double D_real, D_imag;
-                    zeldovich_ps_cgauss(ps_handle, kmag, rng_index, &D_real, &D_imag);
+                    #if VERIFY_RNG_CALLS
+                    if (nskip > 0 && local_rng_buf == NULL) total_rng_skips += nskip;
+                    #endif
+                    // Phase 4: use get_cgauss (shared RNG when local_rng_buf==NULL, buffer RNG when parallel)
+                    get_cgauss(ps_handle, params_handle, rng_index, kmag, &nskip, local_rng_buf, &D_real, &D_imag);
                     #if VERIFY_RNG_CALLS
                     total_rng_calls++;  // Each cgauss() call uses 2 random numbers
                     #endif
@@ -882,6 +923,10 @@ void generate_hermitian_slice_pair_local(
                 
             }
         }
+#if PARALLELIZE_Z_LOOP
+            free(local_rng_buf);
+        }
+#endif
         
         // Post-processing: Mirror first half to second half (match zeldovich.cpp lines 555-573)
         // This is done AFTER processing the full plane, matching zeldovich.cpp behavior
