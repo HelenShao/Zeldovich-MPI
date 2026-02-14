@@ -41,7 +41,15 @@
 #ifdef MAX_PPD
 #undef MAX_PPD
 #endif
+// Use zeldovich-PLT's STimer (via output.h -> block_array.h -> STimer.h) to avoid redefinition with src/STimer.h
+#include <output.h>
 #include "output/output_new.h"
+
+// Linking error: makefile builds this executable with UTILS library, which includes mpi_topology.h
+// mpi_topology.h declares MPI_Comm comm_2d - not defined in this executable
+// This executable does not use MPI ->; define a dummy so the linker resolves the symbol
+#include "mpi_topology.h"
+MPI_Comm comm_2d = MPI_COMM_NULL;
 
 // Include grid decomposition utilities
 extern "C" {
@@ -348,6 +356,8 @@ int main(int argc, char* argv[]) {
     calculate_grid_factors(num_ranks, &grid_x, &grid_z);
     printf("Grid decomposition: %d x %d = %d ranks\n", grid_x, grid_z, num_ranks);
     
+    STimer t_reassembly;
+    t_reassembly.Start();
     // Process each i-slab
     int processed = 0;
     for (int i = i_start; i < i_end; i++) {
@@ -407,6 +417,8 @@ int main(int argc, char* argv[]) {
             fprintf(stderr, "ERROR: Unknown exception in WriteParticlesSlab_new for i=%d\n", i);
         }
     }
+    t_reassembly.Stop();
+    printf("Reassembly (read+convert+write): %.6f s\n", t_reassembly.Elapsed());
     
     // Note: output_fp is NULL since WriteParticlesSlab_new uses internal buffers
     // Don't call fclose(NULL) - it causes undefined behavior

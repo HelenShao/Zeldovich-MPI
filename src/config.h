@@ -249,8 +249,15 @@
     #define PRINT_MATRICES 0
     #undef PRINT_DETAILED_SLICES
     #define PRINT_DETAILED_SLICES 0
+    #undef PRINT_Z_SLABS
+    #define PRINT_Z_SLABS 0
     #undef DEBUG_PRINTS
     #define DEBUG_PRINTS 0
+    #undef DEBUG_RNG_SKIP
+    #define DEBUG_RNG_SKIP 0
+    #define DEBUG_EIGENVECTOR 0
+    #undef VERBOSE_MPI_BUFFER_CHECKS
+    #define VERBOSE_MPI_BUFFER_CHECKS 0
     #undef VERIFY_HERMITIAN_SYMMETRY
     #define VERIFY_HERMITIAN_SYMMETRY 0
     #undef VERIFY_Y_FILLED
@@ -259,8 +266,6 @@
     #define SKIP_VERIFICATION 1
     #undef DETAILED_TIMING
     #define DETAILED_TIMING 1  // Keep ?
-    #undef VERBOSE_MPI_BUFFER_CHECKS
-    #define VERBOSE_MPI_BUFFER_CHECKS 0  
 #endif
 
 #ifdef DEBUG_MODE
