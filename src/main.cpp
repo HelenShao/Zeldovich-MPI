@@ -543,6 +543,23 @@ int main(int argc, char **argv)
             MPI_Abort(comm_2d, 1);
         }
     }
+    
+    // ===== Allocate persistent thread-local RNG buffers =====
+    void** thread_rng_buffers = NULL;
+#if PARALLELIZE_Z_LOOP
+    if (!is_idle_rank) {
+        int max_threads = omp_get_max_threads();
+        thread_rng_buffers = (void**)malloc(sizeof(void*) * max_threads);
+        size_t rng_size = zeldovich_ps_rng_buffer_size();
+        for (int t = 0; t < max_threads; t++) {
+            thread_rng_buffers[t] = malloc(rng_size);
+        }
+        if (rank == 0) {
+            printf("[PERFORMANCE] Allocated %d persistent RNG buffers of %zu bytes each\n",
+                   max_threads, rng_size);
+        }
+    }
+#endif
     // ========================================================================
     // STAGE 5: MAIN MULTI-BATCH LOOP
     // ========================================================================
@@ -577,7 +594,8 @@ int main(int argc, char **argv)
                 N, y_batch_primary, y_batch_mirror,
                 primary_ptr, conjugate_ptr,
                 narray, plan_2d, rank,
-                ps, params
+                ps, params,
+                thread_rng_buffers
             );
             
             if (local_y_slices == NULL) {
@@ -1230,6 +1248,18 @@ int main(int argc, char **argv)
         zeldovich_params_destroy(params);
         params = NULL;
     }
+    
+    // Free persistent thread-local RNG buffers
+#if PARALLELIZE_Z_LOOP
+    if (thread_rng_buffers != NULL) {
+        int max_threads = omp_get_max_threads();
+        for (int t = 0; t < max_threads; t++) {
+            free(thread_rng_buffers[t]);
+        }
+        free(thread_rng_buffers);
+        thread_rng_buffers = NULL;
+    }
+#endif
     
     // Free PLT eigenmodes if they were loaded
     plt_free_eigenmodes();
