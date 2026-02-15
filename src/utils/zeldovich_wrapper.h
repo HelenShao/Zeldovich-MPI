@@ -113,7 +113,7 @@ void zeldovich_ps_cgauss(PowerSpectrumHandle ps, double wavenumber, int64_t rng_
 // Advance RNG for given Y-slice index
 void zeldovich_ps_advance_rng(PowerSpectrumHandle ps, ParametersHandle params, int64_t rng_index, int64_t nskip);
 
-// Phase 4: Thread-local RNG support for parallel z-loop
+// Thread-local RNG support for parallel z-loop
 // Get a copy of the RNG for Y-slice rng_index. Caller allocates out_rng (size from zeldovich_ps_rng_buffer_size).
 void zeldovich_ps_get_rng_copy(PowerSpectrumHandle ps, int64_t rng_index, void* out_rng);
 // Size in bytes for RNG buffer allocation

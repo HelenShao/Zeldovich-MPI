@@ -66,7 +66,8 @@ void generate_hermitian_slice_pair_local(
     fftw_plan_t plan_2d,
     int rank,
     PowerSpectrumHandle ps_handle,   // zeldovich-PLT PowerSpectrum handle
-    ParametersHandle params_handle)  // zeldovich-PLT Parameters handle
+    ParametersHandle params_handle,  // zeldovich-PLT Parameters handle
+    void** thread_rng_buffers)        // Pre-allocated RNG buffers [nthreads] (NULL = use malloc)
 {
     // Debug: Log entry for seg fault error
     // #if DEBUG_PRINTS
@@ -167,8 +168,18 @@ void generate_hermitian_slice_pair_local(
             int nthreads = omp_get_num_threads();
             int z_start, z_end;
             get_thread_z_range(tid, nthreads, N, &z_start, &z_end);
-            size_t rng_size = zeldovich_ps_rng_buffer_size();
-            void* local_rng_buf = malloc(rng_size);
+            
+            // Use persistent buffer if provided, otherwise allocate
+            void* local_rng_buf;
+            int need_free = 0;
+            if (thread_rng_buffers != NULL && tid < omp_get_max_threads()) {
+                local_rng_buf = thread_rng_buffers[tid];
+            } else {
+                size_t rng_size = zeldovich_ps_rng_buffer_size();
+                local_rng_buf = malloc(rng_size);
+                need_free = 1;
+            }
+            
             zeldovich_ps_get_rng_copy(ps_handle, rng_index_cp, local_rng_buf);
             int64_t virtual_start = compute_virtual_position(z_start, 0, N, Nhalf) / 2;
             if (virtual_start > 0)
@@ -555,7 +566,7 @@ void generate_hermitian_slice_pair_local(
             
         }
 #if PARALLELIZE_Z_LOOP
-            free(local_rng_buf);
+            if (need_free) free(local_rng_buf);
         }
 #endif
     } else {
@@ -577,8 +588,18 @@ void generate_hermitian_slice_pair_local(
             int nthreads = omp_get_num_threads();
             int z_start, z_end;
             get_thread_z_range(tid, nthreads, N, &z_start, &z_end);
-            size_t rng_size = zeldovich_ps_rng_buffer_size();
-            void* local_rng_buf = malloc(rng_size);
+            
+            // Use persistent buffer if provided, otherwise allocate
+            void* local_rng_buf;
+            int need_free = 0;
+            if (thread_rng_buffers != NULL && tid < omp_get_max_threads()) {
+                local_rng_buf = thread_rng_buffers[tid];
+            } else {
+                size_t rng_size = zeldovich_ps_rng_buffer_size();
+                local_rng_buf = malloc(rng_size);
+                need_free = 1;
+            }
+            
             zeldovich_ps_get_rng_copy(ps_handle, global_y, local_rng_buf);
             int64_t virtual_start = compute_virtual_position(z_start, 0, N, Nhalf) / 2;
             if (virtual_start > 0)
@@ -924,7 +945,7 @@ void generate_hermitian_slice_pair_local(
             }
         }
 #if PARALLELIZE_Z_LOOP
-            free(local_rng_buf);
+            if (need_free) free(local_rng_buf);
         }
 #endif
         

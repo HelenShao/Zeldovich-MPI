@@ -50,7 +50,8 @@ void generate_hermitian_slice_pair_local(
     fftw_plan_t plan_2d,              // 2D FFT plan
     int rank,                         // MPI rank (for debug output)
     PowerSpectrumHandle ps_handle,   // zeldovich-PLT PowerSpectrum handle
-    ParametersHandle params_handle);  // zeldovich-PLT Parameters handle
+    ParametersHandle params_handle,  // zeldovich-PLT Parameters handle
+    void** thread_rng_buffers);       // Pre-allocated RNG buffers [nthreads] (NULL = use malloc)
 
 #ifdef __cplusplus
 }
