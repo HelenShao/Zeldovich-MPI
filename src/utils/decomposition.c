@@ -40,14 +40,23 @@ void calculate_grid_factors(int num_ranks, int *grid_x_out, int *grid_z_out)
     *grid_z_out = grid_z;
 }
 
-// ====================================================================================
-// Get the x,z range for given rank
-// ====================================================================================
-// When num_pencil_ranks is odd: use (num_pencil_ranks - 1) for grid so we get an even
-// factorisation (e.g. 13 -> 12 -> 3x4). Rank (num_pencil_ranks - 1) gets empty bounds (idle).
-// When num_pencil_ranks is even: use num_pencil_ranks for grid, no idle rank.
-// Optional: when s_first_idle_rank >= 0, ranks [s_first_idle_rank, num_ranks) also get empty
-// (e.g. num_ranks > total_pairs: ranks with no Y-pairs get no pencil chunk).
+// Return 1 if n is prime, 0 otherwise. n must be >= 2.
+static int is_prime(int n)
+{
+    if (n < 2) return 0;
+    if (n == 2) return 1;
+    if (n % 2 == 0) return 0;
+    int d = 3;
+    while (d * d <= n) {
+        if (n % d == 0) return 0;
+        d += 2;
+    }
+    return 1;
+}
+
+// When num_pencil_ranks is prime: use (num_pencil_ranks - 1) for grid (e.g. 13 -> 12 -> 3x4).
+// Rank (num_pencil_ranks - 1) gets empty bounds (idle). Composite odd numbers (9, 15, etc.) use full num_pencil_ranks.
+// Optional: when s_first_idle_rank >= 0, ranks [s_first_idle_rank, num_ranks) also get empty.
 static int s_first_idle_rank = -1;
 
 void decomposition_set_first_idle_rank(int first_idle_rank)
@@ -64,13 +73,14 @@ GridBounds get_grid_bounds(int dest, int N, int num_pencil_ranks)
         bounds.z_start = bounds.z_end = 0;
         return bounds;
     }
-    if (num_pencil_ranks % 2 == 1 && dest == num_pencil_ranks - 1) {
+    // Last rank is idle for prime num_pencil_ranks
+    if (is_prime(num_pencil_ranks) && dest == num_pencil_ranks - 1) {
         bounds.x_start = bounds.x_end = 0;
         bounds.z_start = bounds.z_end = 0;
         return bounds;
     }
 
-    int effective_ranks = (num_pencil_ranks % 2 == 1) ? num_pencil_ranks - 1 : num_pencil_ranks;
+    int effective_ranks = is_prime(num_pencil_ranks) ? num_pencil_ranks - 1 : num_pencil_ranks;
     int grid_x, grid_z;
     calculate_grid_factors(effective_ranks, &grid_x, &grid_z);
 

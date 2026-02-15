@@ -1433,6 +1433,7 @@ int main(int argc, char **argv)
     
     // V12: Allocate local_z_slab for ONE Z-SLAB ONLY
     // V13: Use appropriate bounds for allocation (padded if enabled, core otherwise)
+    // V15: Robust handling of empty decompositions (e.g., prime-idle ranks)
     int64_t elements_per_z_slab = 0;
     if (!is_idle_rank) {
 #if USE_X_PADDING
@@ -1445,45 +1446,60 @@ int main(int argc, char **argv)
         // Allocate for [Array][X][Y] format: narray * x_count * N (Y stride-1 for FFT)
         elements_per_z_slab = (int64_t)narray * x_count * N;
         
-        if (posix_memalign((void**)&local_z_slab, ALIGN_BYTES, 
-                           sizeof(fftw_complex_t) * elements_per_z_slab) != 0) {
-            fprintf(stderr, "Rank %d: posix_memalign failed for local_z_slab (one Z-slab)\n", rank);
-            MPI_Abort(MPI_COMM_WORLD, 1);
-        }
-        
-        if (rank == 0 && DEBUG_PRINTS) {
-            size_t total_bytes = (size_t)elements_per_z_slab * sizeof(fftw_complex_t);
+        // V15: Guard against zero-sized allocation (e.g., prime-idle ranks with empty XZ bounds)
+        if (elements_per_z_slab > 0 && my_pencils > 0) {
+            if (posix_memalign((void**)&local_z_slab, ALIGN_BYTES, 
+                               sizeof(fftw_complex_t) * elements_per_z_slab) != 0) {
+                fprintf(stderr, "Rank %d: posix_memalign failed for local_z_slab (one Z-slab)\n", rank);
+                MPI_Abort(MPI_COMM_WORLD, 1);
+            }
+            
+            if (rank == 0 && DEBUG_PRINTS) {
+                size_t total_bytes = (size_t)elements_per_z_slab * sizeof(fftw_complex_t);
 #if USE_X_PADDING
-            printf("[V13-MEMORY] Allocated local_z_slab (one Z-slab with padding): %zu bytes (%.2f GB)\n",
-                   total_bytes, total_bytes / (1024.0 * 1024.0 * 1024.0));
-            printf("         Processing %d Z-slabs sequentially (Z=[%d,%d))\n", 
-                   z_count, my_extended_bounds.padded.z_start, my_extended_bounds.padded.z_end);
-            printf("         Each Z-slab: %d arrays x %d X-values (PADDED) x %d Y-values\n",
-                   narray, x_count, N);
-            printf("         Memory layout: [Array][X][Y] (Y stride-1 for FFT, transpose for output)\n");
-            printf("         NOTE: X-count includes %d padding values\n", X_PADDING);
+                printf("[V13-MEMORY] Allocated local_z_slab (one Z-slab with padding): %zu bytes (%.2f GB)\n",
+                       total_bytes, total_bytes / (1024.0 * 1024.0 * 1024.0));
+                printf("         Processing %d Z-slabs sequentially (Z=[%d,%d))\n", 
+                       z_count, my_extended_bounds.padded.z_start, my_extended_bounds.padded.z_end);
+                printf("         Each Z-slab: %d arrays x %d X-values (PADDED) x %d Y-values\n",
+                       narray, x_count, N);
+                printf("         Memory layout: [Array][X][Y] (Y stride-1 for FFT, transpose for output)\n");
+                printf("         NOTE: X-count includes %d padding values\n", X_PADDING);
 #else
-            printf("[MEMORY] Allocated local_z_slab (one Z-slab, core grid): %zu bytes (%.2f GB)\n",
-                   total_bytes, total_bytes / (1024.0 * 1024.0 * 1024.0));
-            printf("         Processing %d Z-slabs sequentially (Z=[%d,%d))\n", 
-                   z_count, my_extended_bounds.core.z_start, my_extended_bounds.core.z_end);
-            printf("         Each Z-slab: %d arrays x %d X-values (CORE) x %d Y-values\n",
-                   narray, x_count, N);
-            printf("         Memory layout: [Array][X][Y] (Y stride-1 for FFT, transpose for output)\n");
+                printf("[MEMORY] Allocated local_z_slab (one Z-slab, core grid): %zu bytes (%.2f GB)\n",
+                       total_bytes, total_bytes / (1024.0 * 1024.0 * 1024.0));
+                printf("         Processing %d Z-slabs sequentially (Z=[%d,%d))\n", 
+                       z_count, my_extended_bounds.core.z_start, my_extended_bounds.core.z_end);
+                printf("         Each Z-slab: %d arrays x %d X-values (CORE) x %d Y-values\n",
+                       narray, x_count, N);
+                printf("         Memory layout: [Array][X][Y] (Y stride-1 for FFT, transpose for output)\n");
 #endif
+            }
+        } else {
+            // V15: Rank has Y-pairs but empty XZ decomposition (e.g., prime-idle)
+            local_z_slab = NULL;
+            if (DEBUG_PRINTS) {
+                printf("[Rank %d] Empty XZ decomposition (elements_per_z_slab=%ld, my_pencils=%d) - no Z-slab allocation\n",
+                       rank, elements_per_z_slab, my_pencils);
+            }
         }
     } else {
         // Idle ranks: local_z_slab stays NULL
         local_z_slab = NULL;
     }
     
-    // Create directory for this rank (before Z-loop)
+    // V15: Create directory only if rank will write files (my_pencils > 0)
     char dirname[64];
     snprintf(dirname, sizeof(dirname), "rank_%d", rank);
-    int mkdir_result = mkdir(dirname, 0755);
-    if (mkdir_result != 0 && errno != EEXIST) {
-        fprintf(stderr, "Rank %d: ERROR creating directory %s (errno=%d)\n", rank, dirname, errno);
-        MPI_Abort(MPI_COMM_WORLD, 1);
+    if (!is_idle_rank && my_pencils > 0) {
+        int mkdir_result = mkdir(dirname, 0755);
+        if (mkdir_result != 0 && errno != EEXIST) {
+            fprintf(stderr, "Rank %d: ERROR creating directory %s (errno=%d)\n", rank, dirname, errno);
+            MPI_Abort(MPI_COMM_WORLD, 1);
+        }
+    } else if (DEBUG_PRINTS && !is_idle_rank && my_pencils == 0) {
+        // Prime-idle rank: has Y-pairs but no XZ work
+        printf("[Rank %d] Skipping directory creation (empty XZ decomposition)\n", rank);
     }
     
     // V12: MAIN Z-LOOP: Process one Z-slab at a time (Zeldovich-compatible)
