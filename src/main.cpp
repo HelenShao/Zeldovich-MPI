@@ -615,25 +615,25 @@ int main(int argc, char **argv)
             &total_send_batch, &total_recv_batch
         );
         
+        // 4096 = safe upper bound for # ranks
+        int64_t rdispls_elem[4096];
         for (int src = 0; src < num_ranks; src++) {
             int64_t new_displ = recv_displs_src[src] + src_write_cursor[src];
-            
-            // CHECK FOR OVERFLOW!
-            if (new_displ > INT_MAX) {
-                fprintf(stderr, "[Rank %d] ERROR: rdispls overflow! src=%d, displ=%lld > INT_MAX (%d)\n",
-                       rank, src, (long long)new_displ, INT_MAX);
-                fprintf(stderr, "  recv_displs_src[%d] = %lld\n", src, (long long)recv_displs_src[src]);
-                fprintf(stderr, "  src_write_cursor[%d] = %lld\n", src, (long long)src_write_cursor[src]);
-                MPI_Abort(comm_2d, 1);
-            }
-            
             if (new_displ < 0) {
                 fprintf(stderr, "[Rank %d] ERROR: Negative rdispls! src=%d, displ=%lld\n",
                        rank, src, (long long)new_displ);
                 MPI_Abort(comm_2d, 1);
             }
-            
+#if 1  /* TEMP: when forcing MPI_Ialltoallv (USE_MPI_IALLTOALLV_C=0), must fill rdispls_batch; else: MPI_VERSION < 4 */
+            if (new_displ > INT_MAX) {
+                fprintf(stderr, "[Rank %d] ERROR: rdispls overflow! src=%d, displ=%lld > INT_MAX (%d)\n",
+                       rank, src, (long long)new_displ, INT_MAX);
+                fprintf(stderr, "  Requires MPI-4 (MPI_Ialltoallv_c) for 64-bit displacements.\n");
+                MPI_Abort(comm_2d, 1);
+            }
             rdispls_batch[src] = (int)new_displ;
+#endif
+            rdispls_elem[src] = new_displ;
         }
         
         // ===== BATCH STEP 4: Allocate per-batch send buffer =====
@@ -691,7 +691,7 @@ int main(int argc, char **argv)
             int64_t recv_buffer_size = recv_total_elems;
             for (int i = 0; i < num_ranks; i++) {
                 if (recvcounts_batch[i] > 0) {
-                    int64_t end_offset = rdispls_batch[i] + recvcounts_batch[i];
+                    int64_t end_offset = rdispls_elem[i] + recvcounts_batch[i];
                     if (end_offset > recv_buffer_size) {
                         fprintf(stderr, "[Rank %d] ERROR: rdispls[%d] + recvcounts[%d] = %ld exceeds buffer size %ld!\n",
                                rank, i, i, (long)end_offset, (long)recv_buffer_size);
@@ -703,24 +703,23 @@ int main(int argc, char **argv)
         int64_t max_send_displ = 0, max_recv_displ = 0;
         for (int i = 0; i < num_ranks; i++) {
             int64_t send_end = (int64_t)sdispls_batch[i] + sendcounts_batch[i];
-            int64_t recv_end = (int64_t)rdispls_batch[i] + recvcounts_batch[i];
+            int64_t recv_end = rdispls_elem[i] + recvcounts_batch[i];
             
             if (send_end > max_send_displ) max_send_displ = send_end;
             if (recv_end > max_recv_displ) max_recv_displ = recv_end;
             
-            // Check individual displacements
-            if (sdispls_batch[i] < 0 || rdispls_batch[i] < 0) {
-                fprintf(stderr, "[Rank %d] ERROR: Negative displacement! sdispls[%d]=%d, rdispls[%d]=%d\n",
-                       rank, i, sdispls_batch[i], i, rdispls_batch[i]);
+            if (sdispls_batch[i] < 0 || rdispls_elem[i] < 0) {
+                fprintf(stderr, "[Rank %d] ERROR: Negative displacement! sdispls[%d]=%d, rdispls[%d]=%lld\n",
+                       rank, i, sdispls_batch[i], i, (long long)rdispls_elem[i]);
                 MPI_Abort(comm_2d, 1);
             }
-            
-            // Check for overflow in individual displacements
-            if (sdispls_batch[i] > INT_MAX || rdispls_batch[i] > INT_MAX) {
-                fprintf(stderr, "[Rank %d] ERROR: Displacement exceeds INT_MAX! sdispls[%d]=%d, rdispls[%d]=%d\n",
-                       rank, i, sdispls_batch[i], i, rdispls_batch[i]);
+#if 1  /* TEMP: same guard as rdispls_batch fill - when using MPI_Ialltoallv */
+            if (sdispls_batch[i] > INT_MAX || rdispls_elem[i] > INT_MAX) {
+                fprintf(stderr, "[Rank %d] ERROR: Displacement exceeds INT_MAX! sdispls[%d]=%d, rdispls[%d]=%lld\n",
+                       rank, i, sdispls_batch[i], i, (long long)rdispls_elem[i]);
                 MPI_Abort(comm_2d, 1);
             }
+#endif
         }
         
         // Check that displacements don't exceed buffer bounds
@@ -738,11 +737,30 @@ int main(int argc, char **argv)
         
         t_comm.Start();
         MPI_Request comm_request_batch;
+#if 0  /* TEMP: force MPI_Ialltoallv (not _c) to test cxil_map write error; was: MPI_VERSION >= 4 */
+        {
+            MPI_Count sendcounts_c[4096], recvcounts_c[4096];
+            MPI_Aint sdispls_c[4096], rdispls_c[4096];
+            size_t elem_size = sizeof(fftw_complex_t);
+            for (int i = 0; i < num_ranks; i++) {
+                sendcounts_c[i] = (MPI_Count)sendcounts_batch[i];
+                recvcounts_c[i] = (MPI_Count)recvcounts_batch[i];
+                sdispls_c[i] = (MPI_Aint)sdispls_batch[i] * elem_size;
+                rdispls_c[i] = (MPI_Aint)rdispls_elem[i] * elem_size;
+            }
+            MPI_Ialltoallv_c(
+                send_buffer_batch, sendcounts_c, sdispls_c, MPI_COMPLEX_TYPE,
+                recv_buffer, recvcounts_c, rdispls_c, MPI_COMPLEX_TYPE,
+                comm_2d, &comm_request_batch
+            );
+        }
+#else
         MPI_Ialltoallv(
             send_buffer_batch, sendcounts_batch, sdispls_batch, MPI_COMPLEX_TYPE,
-            recv_buffer, recvcounts_batch, rdispls_batch, MPI_COMPLEX_TYPE,  // <-- V11: Changed to persistent recv_buffer
+            recv_buffer, recvcounts_batch, rdispls_batch, MPI_COMPLEX_TYPE,
             comm_2d, &comm_request_batch
         );
+#endif
         
         // ===== BATCH STEP 7: MPI_Wait =====
         MPI_Wait(&comm_request_batch, MPI_STATUS_IGNORE);
@@ -951,7 +969,11 @@ int main(int argc, char **argv)
                 fflush(stdout);
             }
             
-            // Unified output mode selection
+            // Unified output mode selection (skip when SKIP_FILE_WRITE defined for OMP scaling tests)
+#if defined(SKIP_FILE_WRITE) && SKIP_FILE_WRITE
+            // Skip all output writes - Stage 3 still does unpack+FFT, but no I/O
+            (void)0;
+#else
             switch (PARTICLE_OUTPUT_MODE) {
                 case 0: {
                     // =======================================================================================
@@ -1104,6 +1126,7 @@ int main(int argc, char **argv)
                 default:
                     break;
             }
+#endif // !SKIP_FILE_WRITE
 
             // =======================================================================================
             
