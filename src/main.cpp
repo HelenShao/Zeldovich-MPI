@@ -37,6 +37,7 @@
  *    - Write output: PARTICLE_OUTPUT_MODE 0 → WriteParticlesSlab_range
  *                    PARTICLE_OUTPUT_MODE 1 → .bin files
  *                    PARTICLE_OUTPUT_MODE 2 → .bin then read-back → WriteParticlesSlab_range
+ *                    PARTICLE_OUTPUT_MODE 3 → CPD-slab-ordered streaming append (one file/rank)
  *
  * 9. CLEANUP
  *    - Free plans, recv_buffer, local buffers, params, ps, PLT eigenmodes
@@ -158,7 +159,7 @@ int main(int argc, char **argv)
     // Show rank mapping for verification
     printf("[Rank %d] Cartesian coords: (rank_x=%d, rank_z=%d)\n", rank, rank_x, rank_z);
     
-    // Suppress unused variable warnings (rank_x, rank_z available for future use/debugging)
+    // rank_x, rank_z used by MODE 3 (CPD-slab-ordered output file naming)
     (void)rank_x;
     (void)rank_z;
     
@@ -863,6 +864,72 @@ int main(int argc, char **argv)
     int files_written = 0;
     size_t total_bytes_written = 0;
     
+    // MODE 3: Streaming-append CPD-slab-ordered output
+    // Open one file per rank before the z-loop; compute overlapping CPD slabs
+    CPDSlabInfo *slab_infos = NULL;
+    int num_cpd_slabs = 0;
+    FILE *subslab_fp = NULL;
+    FILE *subslab_dens_fp = NULL;
+    int z_slabs_written = 0;
+    
+    if (PARTICLE_OUTPUT_MODE == 3 && params != NULL && !is_idle_rank) {
+        Parameters *p = static_cast<Parameters*>(params);
+        int cpd = p->cpd;
+        int x_start = my_extended_bounds.core.x_start;
+        int x_end   = my_extended_bounds.core.x_end;
+        
+        // Count which CPD slabs overlap this rank's x-range
+        for (int s = 0; s < cpd; s++) {
+            int firstx_s = (s * N + cpd - 1) / cpd;       // ceil_div(s*N, cpd)
+            int lastx_s  = ((s + 1) * N + cpd - 1) / cpd; // ceil_div((s+1)*N, cpd)
+            if (firstx_s < x_end && lastx_s > x_start)
+                num_cpd_slabs++;
+        }
+        
+        slab_infos = new CPDSlabInfo[num_cpd_slabs];
+        int idx = 0;
+        for (int s = 0; s < cpd; s++) {
+            int firstx_s = (s * N + cpd - 1) / cpd;
+            int lastx_s  = ((s + 1) * N + cpd - 1) / cpd;
+            if (firstx_s < x_end && lastx_s > x_start) {
+                slab_infos[idx].slab_index = s;
+                slab_infos[idx].firstx = firstx_s;
+                slab_infos[idx].lastx  = lastx_s;
+                slab_infos[idx].ox_start = (x_start > firstx_s) ? x_start : firstx_s;
+                slab_infos[idx].ox_end   = (x_end < lastx_s) ? x_end : lastx_s;
+                slab_infos[idx].ox_count = slab_infos[idx].ox_end - slab_infos[idx].ox_start;
+                idx++;
+            }
+        }
+        
+        // Open one particle file per rank
+        char fp_path[PATH_MAX];
+        snprintf(fp_path, sizeof(fp_path), "%s/ic2D_xr%d_zr%d_N%d.bin",
+                 p->output_dir.c_str(), rank_x, rank_z, N);
+        subslab_fp = fopen(fp_path, "wb");
+        if (!subslab_fp) {
+            fprintf(stderr, "Rank %d: ERROR opening %s for writing (errno=%d)\n",
+                    rank, fp_path, errno);
+        }
+        
+        // Open companion density file if requested
+        if (p->qdensity && subslab_fp != NULL) {
+            char fd_path[PATH_MAX];
+            snprintf(fd_path, sizeof(fd_path), "%s/ic2D_xr%d_zr%d_N%d_dens.bin",
+                     p->output_dir.c_str(), rank_x, rank_z, N);
+            subslab_dens_fp = fopen(fd_path, "wb");
+            if (!subslab_dens_fp) {
+                fprintf(stderr, "Rank %d: ERROR opening %s for density writing (errno=%d)\n",
+                        rank, fd_path, errno);
+            }
+        }
+        
+        if (rank == 0) {
+            printf("[MODE 3] CPD-slab-ordered streaming: cpd=%d, slabs_per_rank=%d, file=ic2D_xr*_zr*_N%d.bin\n",
+                   cpd, num_cpd_slabs, N);
+        }
+    }
+    
     if (!is_idle_rank && my_pencils > 0) {
         // Use appropriate bounds for Z-loop (padded if enabled, core otherwise)
 #if USE_X_PADDING
@@ -1101,6 +1168,47 @@ int main(int argc, char **argv)
                     break;
                 }
                 
+                case 3: {
+                    // =======================================================================================
+                    // MODE 3: Streaming-append CPD-slab-ordered particles
+                    // =======================================================================================
+                    // Appends one z-block to the single rank file:
+                    //   [slab s0 segment][slab s1 segment]...[slab sK segment]
+                    // Each segment is contiguous: ox_count * N particles in (y, x) order
+                    if (subslab_fp == NULL || slab_infos == NULL) {
+                        break;
+                    }
+                    
+                    int k_start_global = my_extended_bounds.core.x_start;
+                    int k_extent = x_count;
+                    
+                    AppendZSlabParticles(
+                        subslab_fp,
+                        subslab_dens_fp,
+                        slab_infos,
+                        num_cpd_slabs,
+                        z,                          // global z index
+                        k_start_global,
+                        k_extent,
+                        (Complx*)local_z_slab,
+                        N,
+                        narray,
+                        *static_cast<Parameters*>(params)
+                    );
+                    
+                    // Track bytes: sum of all slab segments for this z
+                    for (int si = 0; si < num_cpd_slabs; si++) {
+                        size_t seg_particles = (size_t)slab_infos[si].ox_count * N;
+                        total_bytes_written += seg_particles * sizeof(RVZelParticle);
+                        if (subslab_dens_fp)
+                            total_bytes_written += seg_particles * sizeof(float);
+                    }
+                    
+                    z_slabs_written++;  // track z-slabs appended
+                    files_written++;    // for MPI_Reduce compatibility
+                    break;
+                }
+                
                 default:
                     break;
             }
@@ -1122,6 +1230,54 @@ int main(int argc, char **argv)
         }
     }
     // Idle ranks: files_written = 0, total_bytes_written = 0 (already initialized)
+    
+    // MODE 3: Close files and write metadata after z-loop completes
+    if (PARTICLE_OUTPUT_MODE == 3 && params != NULL) {
+        if (subslab_fp != NULL) {
+            fclose(subslab_fp);
+            subslab_fp = NULL;
+        }
+        if (subslab_dens_fp != NULL) {
+            fclose(subslab_dens_fp);
+            subslab_dens_fp = NULL;
+        }
+        if (slab_infos != NULL) {
+            delete[] slab_infos;
+            slab_infos = NULL;
+        }
+        
+        // Barrier: ensure all ranks finish writing before metadata
+        MPI_Barrier(comm_2d);
+        
+        // Rank 0 writes ic_metadata.txt
+        if (rank == 0) {
+            Parameters *p = static_cast<Parameters*>(params);
+            int dims_grid[2], periods_dummy[2], coords_dummy[2];
+            MPI_Cart_get(comm_2d, 2, dims_grid, periods_dummy, coords_dummy);
+            
+            char meta_path[PATH_MAX];
+            snprintf(meta_path, sizeof(meta_path), "%s/ic_metadata.txt", p->output_dir.c_str());
+            FILE *mfp = fopen(meta_path, "w");
+            if (mfp) {
+                fprintf(mfp, "format = subslab_cpd\n");
+                fprintf(mfp, "ppd = %d\n", N);
+                fprintf(mfp, "cpd = %d\n", p->cpd);
+                fprintf(mfp, "mpi_grid_x = %d\n", dims_grid[0]);
+                fprintf(mfp, "mpi_grid_z = %d\n", dims_grid[1]);
+                fprintf(mfp, "narray = %d\n", narray);
+                fprintf(mfp, "ICFormat = %s\n", p->ICFormat.c_str());
+                fprintf(mfp, "qdensity = %d\n", p->qdensity);
+                fprintf(mfp, "particle_bytes = %d\n", (int)sizeof(RVZelParticle));
+                fprintf(mfp, "file_pattern = ic2D_xr<rx>_zr<rz>_N%d.bin\n", N);
+                fclose(mfp);
+                printf("[MODE 3] Wrote metadata: %s\n", meta_path);
+            } else {
+                fprintf(stderr, "Rank 0: ERROR opening %s for writing (errno=%d)\n",
+                        meta_path, errno);
+            }
+        }
+    }
+    
     t_streaming.Stop();
     
     int total_files_written;

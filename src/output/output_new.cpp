@@ -916,3 +916,116 @@ void TeardownOutput() {
        output_bytes_written / 1e6 / outtimer.Elapsed()
     );
 }
+
+// ====================================================================================
+// MODE 3: AppendZSlabParticles — streaming-append CPD-slab-ordered output
+// ====================================================================================
+//
+// For one z-slab, writes particles to the rank's single output file grouped by
+// CPD slab. Each slab is contiguous in file so Abacus can search+read 
+//
+// File layout per z-block: [slab s0 segment][slab s1 segment]...[slab sK segment]
+// Within each segment: (y outer, x inner), N * ox_count particles (overlapping)
+//
+// Uses OpenMP Option 2: parallel over y, direct to shared buffer (disjoint y-stripes).
+
+void AppendZSlabParticles(
+    FILE *fp,
+    FILE *fp_dens,
+    CPDSlabInfo *slab_infos,
+    int num_slabs,
+    int z,
+    int k_start_global,
+    int k_extent,
+    Complx *slab_data,
+    int N,
+    int narray,
+    Parameters &param
+) {
+    // Extract array pointers from slab_data in [array][x_local][y] layout
+    Complx *slab1 = &slab_data[0 * k_extent * N];
+    Complx *slab2 = &slab_data[1 * k_extent * N];
+    Complx *slab3 = (narray > 2) ? &slab_data[2 * k_extent * N] : NULL;
+    Complx *slab4 = (narray > 3) ? &slab_data[3 * k_extent * N] : NULL;
+
+    // Normalization factors (same as WriteParticlesSlab_unified)
+    double norm = 1.0;
+    double densitynorm = 1.0;
+    double vnorm;
+    if (param.qPLT) {
+        vnorm = 1.0;
+    } else {
+        vnorm = (sqrt(1.0 + 24.0 * param.f_cluster) - 1.0) * 0.25;
+    }
+
+    bool write_dens = (param.qdensity && fp_dens != NULL);
+
+    // Write one contiguous slab segment per CPD slab
+    for (int si = 0; si < num_slabs; si++) {
+        CPDSlabInfo &info = slab_infos[si];
+        int ox_count = info.ox_count;
+        int64_t seg_particles = (int64_t)N * ox_count;
+
+        // Allocate buffers for this slab segment
+        RVZelParticle *buf = new RVZelParticle[seg_particles];
+        float *dens_buf = write_dens ? new float[seg_particles] : NULL;
+
+        // Convert complex -> particles, parallel over y (Option 2: direct to shared buffer)
+        #pragma omp parallel for schedule(static)
+        for (int y = 0; y < N; y++) {
+            for (int x_global = info.ox_start; x_global < info.ox_end; x_global++) {
+                int x_local = x_global - k_start_global;
+                int idx = y * ox_count + (x_global - info.ox_start);
+
+                // Access complex data: slab[x_local * N + y] for ZSLAB layout
+                Complx s1_val = slab1[x_local * N + y];
+                Complx s2_val = slab2[x_local * N + y];
+                Complx s3_val = slab3 ? slab3[x_local * N + y] : Complx(0.0, 0.0);
+                Complx s4_val = slab4 ? slab4[x_local * N + y] : Complx(0.0, 0.0);
+
+                // Displacement: same extraction as WriteParticlesSlab_unified
+                double pos0 = std::imag(s2_val) * norm;   // axis0 (z-displacement)
+                double pos1 = std::real(s2_val) * norm;    // axis1 (y-displacement)
+                double pos2 = std::imag(s1_val) * norm;    // axis2 (x-displacement)
+
+                // Velocity
+                double vel0, vel1, vel2;
+                if (param.qPLT) {
+                    vel0 = std::imag(s4_val) * vnorm;
+                    vel1 = std::real(s4_val) * vnorm;
+                    vel2 = std::imag(s3_val) * vnorm;
+                } else {
+                    vel0 = std::imag(s2_val) * vnorm;
+                    vel1 = std::real(s2_val) * vnorm;
+                    vel2 = std::imag(s1_val) * vnorm;
+                }
+
+                // Build RVZelParticle (unsigned short i,j,k as in original zeldovich-PLT)
+                RVZelParticle &out = buf[idx];
+                out.i = (unsigned short)z;
+                out.j = (unsigned short)y;
+                out.k = (unsigned short)x_global;
+                out.displ[0] = (float)pos0;
+                out.displ[1] = (float)pos1;
+                out.displ[2] = (float)pos2;
+                out.vel[0] = (float)vel0;
+                out.vel[1] = (float)vel1;
+                out.vel[2] = (float)vel2;
+
+                // Density
+                if (dens_buf) {
+                    dens_buf[idx] = (float)(std::real(s1_val) * densitynorm);
+                }
+            }
+        }
+
+        // Write contiguous slab segment to file
+        fwrite(buf, sizeof(RVZelParticle), seg_particles, fp);
+        if (dens_buf) {
+            fwrite(dens_buf, sizeof(float), seg_particles, fp_dens);
+        }
+
+        delete[] buf;
+        if (dens_buf) delete[] dens_buf;
+    }
+}
