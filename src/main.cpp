@@ -619,14 +619,14 @@ int main(int argc, char **argv)
         }
         
         // ===== BATCH STEP 3: Calculate send/recv counts =====
-        int64_t *sendcounts_batch, *sdispls_batch, *recvcounts_batch, *rdispls_batch;
+        int64_t *sendcounts_batch, *sdispls_batch, *recvcounts_batch;
         int64_t total_send_batch, total_recv_batch;
 
         calculate_batch_send_recv_counts(
             rank, num_ranks, N, narray, batch_idx,
             my_batch_slice_count, my_pencils,
             &sendcounts_batch, &sdispls_batch,
-            &recvcounts_batch, &rdispls_batch,
+            &recvcounts_batch,
             &total_send_batch, &total_recv_batch
         );
         
@@ -734,6 +734,7 @@ int main(int argc, char **argv)
         {
             MPI_Count sendcounts_c[4096], recvcounts_c[4096];
             MPI_Aint sdispls_c[4096], rdispls_c[4096];
+            /* sdispls/rdispls are in element units (MPI multiplies by extent internally), NOT bytes */
             for (int i = 0; i < num_ranks; i++) {
                 sendcounts_c[i] = (MPI_Count)sendcounts_batch[i];
                 recvcounts_c[i] = (MPI_Count)recvcounts_batch[i];
@@ -761,7 +762,6 @@ int main(int argc, char **argv)
         free(sendcounts_batch);
         free(sdispls_batch);
         free(recvcounts_batch);
-        free(rdispls_batch);
         
         // Progress indicator
         if (rank == 0 && global_max_batches > 5) {
@@ -1160,7 +1160,7 @@ int main(int argc, char **argv)
     }
     
     // NOTE: In multi-batch mode, communication buffers are freed per-batch within the batch loop
-    // (sendcounts_batch, sdispls_batch, recvcounts_batch, rdispls_batch)
+    // (sendcounts_batch, sdispls_batch, recvcounts_batch)
     
     // ========================================================================
     // TIMING SUMMARY

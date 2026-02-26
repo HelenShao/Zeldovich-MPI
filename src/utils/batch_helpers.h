@@ -23,15 +23,16 @@ void get_rank_batch_y_values(int target_rank, int batch_idx, int N, int num_rank
                               int *out_y_values, int *out_count);
 // ====================================================================================
 
-// Calculate sendcounts, recvcounts, total send and recv counts, and displacements for a given batch
+// Calculate sendcounts, recvcounts, total send and recv counts, and send displacements for a given batch
 // Allocates new arrays (caller must free them)
 // Uses int64_t to avoid overflow: dest_region_size * my_batch_slice_count * narray can exceed INT_MAX for large N
+// Note: recv displacements (rdispls) are computed in main.cpp using persistent recv_buffer cursors
 
 void calculate_batch_send_recv_counts(
     int rank, int num_ranks, int N, int narray, int batch_idx,
     int my_batch_slice_count, int my_pencils,
     int64_t **out_sendcounts, int64_t **out_sdispls,
-    int64_t **out_recvcounts, int64_t **out_rdispls,
+    int64_t **out_recvcounts,
     int64_t *out_total_send, int64_t *out_total_recv);
 // ====================================================================================
 

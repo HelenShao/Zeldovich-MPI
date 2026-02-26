@@ -98,8 +98,9 @@ void get_rank_batch_y_values(int target_rank, int batch_idx, int N, int num_rank
 }
 
 // ====================================================================================
-// Calculates MPI send/recv arrays for MPI_Ialltoallv
-// Allocates and returns: sendcounts, sdispls, recvcounts, rdispls
+// Calculates MPI send/recv arrays for MPI_Alltoallv_c
+// Allocates and returns: sendcounts, sdispls, recvcounts
+// Note: rdispls are computed in main.cpp using persistent recv_buffer cursors
 // Uses padded bounds for destination regions (includes overlap regions)
 // ====================================================================================
 
@@ -107,22 +108,21 @@ void calculate_batch_send_recv_counts(
     int rank, int num_ranks, int N, int narray, int batch_idx,
     int my_batch_slice_count, int my_pencils,
     int64_t **out_sendcounts, int64_t **out_sdispls,
-    int64_t **out_recvcounts, int64_t **out_rdispls,
+    int64_t **out_recvcounts,
     int64_t *out_total_send, int64_t *out_total_recv)
 {
-    (void)rank;  // Unused but kept for comptability
+    (void)rank;  // Unused but kept for compatibility
     
     // Allocate arrays, each array's size = num_ranks
     int64_t *sendcounts = (int64_t*)malloc(sizeof(int64_t) * num_ranks);
     int64_t *sdispls = (int64_t*)malloc(sizeof(int64_t) * num_ranks);
     int64_t *recvcounts = (int64_t*)malloc(sizeof(int64_t) * num_ranks);
-    int64_t *rdispls = (int64_t*)malloc(sizeof(int64_t) * num_ranks);
     
     // SEND COUNTS: I send my batch's Y-slices to all ranks (each gets their (X,Z) region)
     // Use int64_t to avoid overflow: dest_region_size * my_batch_slice_count * narray can exceed INT_MAX
     int64_t total_send = 0;
     for (int dest = 0; dest < num_ranks; dest++) {
-        // V13: Use (otpional) PADDED bounds for destination (includes overlap regions)
+        // V13: Use (optional) PADDED bounds for destination (includes overlap regions)
         GridBounds dest_bounds = get_padded_bounds_simple(dest, N, num_ranks);
         int64_t dest_region_size = (int64_t)(dest_bounds.x_end - dest_bounds.x_start) *
                                   (int64_t)(dest_bounds.z_end - dest_bounds.z_start);
@@ -141,7 +141,6 @@ void calculate_batch_send_recv_counts(
         
         // Receive: my pencils * src's Y-slices * narray
         recvcounts[src] = (int64_t)my_pencils * (int64_t)src_batch_slice_count * (int64_t)narray;
-        rdispls[src] = total_recv;
         total_recv += recvcounts[src];
     }
     
@@ -149,7 +148,6 @@ void calculate_batch_send_recv_counts(
     *out_sendcounts = sendcounts;
     *out_sdispls = sdispls;
     *out_recvcounts = recvcounts;
-    *out_rdispls = rdispls;
     *out_total_send = total_send;
     *out_total_recv = total_recv;
 }
