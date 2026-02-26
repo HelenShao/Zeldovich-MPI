@@ -397,7 +397,7 @@ int main(int argc, char **argv)
     // Create FFT plans using dummy memory before allocating actual data
     // This prevents data destruction during planning (FFTW_MEASURE/PATIENT modes)
     fftw_plan_t plan_2d, plan_1d_y;
-    setup_fftw_plans_full(N, &plan_2d, &plan_1d_y);
+    setup_fftw_plans_full(N, narray, &plan_2d, &plan_1d_y);
     
     // Calculate grid factors first (needed for get_extended_grid_bounds)
     int grid_x_verify, grid_z_verify;

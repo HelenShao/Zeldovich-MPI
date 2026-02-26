@@ -8,7 +8,7 @@
 // Double: fftw_import_wisdom_file("wisdom_double.txt")
 // Export wisdom after creating plans
 
-void setup_fftw_plans_full(int N, fftw_plan_t *plan_2d_out, fftw_plan_t *plan_1d_out)
+void setup_fftw_plans_full(int N, int narray, fftw_plan_t *plan_2d_out, fftw_plan_t *plan_1d_out)
 {
     fftw_complex_t *dummy_2d = NULL;
     fftw_complex_t *dummy_1d = NULL;
@@ -24,23 +24,30 @@ void setup_fftw_plans_full(int N, fftw_plan_t *plan_2d_out, fftw_plan_t *plan_1d
     if (!fftw_threads_initialized) {
         int nthreads = omp_get_max_threads();
         
+        // Hybrid parallelism: use subset of threads per FFT (outer parallelism over narray arrays)
+        // Example: with 50 threads and narray=4, each FFT gets ~12 threads
+        int fft_threads = (nthreads > narray && narray > 0) ? nthreads / narray : 1;
+        if (fft_threads < 1) fft_threads = 1;
+        
         #ifdef USE_DOUBLE_PRECISION
         if (fftw_init_threads() == 0) {
             fprintf(stderr, "[ERROR] Rank %d: Failed to initialize FFTW threads (double precision)\n", rank);
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
-        fftw_plan_with_nthreads(1);
+        fftw_plan_with_nthreads(fft_threads);
         if (rank == 0) {
-            printf("[FFTW-THREADING] Double precision: Plans use 1 thread (OMP_NUM_THREADS=%d for outer parallelism)\n", nthreads);
+            printf("[FFTW-THREADING] Double precision: Hybrid mode - %d threads per FFT, %d arrays in parallel (OMP_NUM_THREADS=%d)\n", 
+                   fft_threads, narray, nthreads);
         }
         #else
         if (fftwf_init_threads() == 0) {
             fprintf(stderr, "[ERROR] Rank %d: Failed to initialize FFTW threads (single precision)\n", rank);
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
-        fftwf_plan_with_nthreads(1);
+        fftwf_plan_with_nthreads(fft_threads);
         if (rank == 0) {
-            printf("[FFTW-THREADING] Single precision: Plans use 1 thread (OMP_NUM_THREADS=%d for outer parallelism)\n", nthreads);
+            printf("[FFTW-THREADING] Single precision: Hybrid mode - %d threads per FFT, %d arrays in parallel (OMP_NUM_THREADS=%d)\n", 
+                   fft_threads, narray, nthreads);
         }
         #endif
         

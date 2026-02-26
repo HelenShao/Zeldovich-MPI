@@ -175,6 +175,7 @@ void generate_hermitian_slice_pair_local(
             if (thread_rng_buffers != NULL && tid < omp_get_max_threads()) {
                 local_rng_buf = thread_rng_buffers[tid];
             } else {
+                fprintf(stderr, "[Rank %d] WARNING: No persistent RNG buffer for thread %d, allocating new one (EXPENSIVE!) \n", rank, tid);
                 size_t rng_size = zeldovich_ps_rng_buffer_size();
                 local_rng_buf = malloc(rng_size);
                 need_free = 1;
@@ -1026,8 +1027,9 @@ void generate_hermitian_slice_pair_local(
     }
     #endif
     
-    // Apply 2D FFT to all arrays independently (single-threaded plans; OMP provides outer parallelism)
-    #pragma omp parallel for
+    // Apply 2D FFT to all arrays independently (hybrid: outer parallelism over arrays, inner FFTW threading)
+    // Limit outer threads to narray to avoid oversubscription (each FFT uses multiple inner threads)
+    #pragma omp parallel for num_threads(narray)
     for (int a = 0; a < narray; a++) {
         // Primary slice
         fftw_complex_t *prim_array_start = &PRIM_SLICE(a, 0, 0);

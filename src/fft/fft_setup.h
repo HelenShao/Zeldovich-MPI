@@ -16,7 +16,7 @@ extern "C" {
 // Both plans use FFTW_ESTIMATE for fast planning (change this later)
 // ====================================================================================
 
-void setup_fftw_plans_full(int N, fftw_plan_t *plan_2d_out, fftw_plan_t *plan_1d_out);
+void setup_fftw_plans_full(int N, int narray, fftw_plan_t *plan_2d_out, fftw_plan_t *plan_1d_out);
 
 #ifdef __cplusplus
 }
