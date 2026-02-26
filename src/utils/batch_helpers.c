@@ -106,40 +106,41 @@ void get_rank_batch_y_values(int target_rank, int batch_idx, int N, int num_rank
 void calculate_batch_send_recv_counts(
     int rank, int num_ranks, int N, int narray, int batch_idx,
     int my_batch_slice_count, int my_pencils,
-    int **out_sendcounts, int **out_sdispls,
-    int **out_recvcounts, int **out_rdispls,
-    int *out_total_send, int *out_total_recv)
+    int64_t **out_sendcounts, int64_t **out_sdispls,
+    int64_t **out_recvcounts, int64_t **out_rdispls,
+    int64_t *out_total_send, int64_t *out_total_recv)
 {
     (void)rank;  // Unused but kept for comptability
     
     // Allocate arrays, each array's size = num_ranks
-    int *sendcounts = (int*)malloc(sizeof(int) * num_ranks);
-    int *sdispls = (int*)malloc(sizeof(int) * num_ranks);
-    int *recvcounts = (int*)malloc(sizeof(int) * num_ranks);
-    int *rdispls = (int*)malloc(sizeof(int) * num_ranks);
+    int64_t *sendcounts = (int64_t*)malloc(sizeof(int64_t) * num_ranks);
+    int64_t *sdispls = (int64_t*)malloc(sizeof(int64_t) * num_ranks);
+    int64_t *recvcounts = (int64_t*)malloc(sizeof(int64_t) * num_ranks);
+    int64_t *rdispls = (int64_t*)malloc(sizeof(int64_t) * num_ranks);
     
     // SEND COUNTS: I send my batch's Y-slices to all ranks (each gets their (X,Z) region)
-    int total_send = 0;
+    // Use int64_t to avoid overflow: dest_region_size * my_batch_slice_count * narray can exceed INT_MAX
+    int64_t total_send = 0;
     for (int dest = 0; dest < num_ranks; dest++) {
         // V13: Use (otpional) PADDED bounds for destination (includes overlap regions)
         GridBounds dest_bounds = get_padded_bounds_simple(dest, N, num_ranks);
-        int dest_region_size = (dest_bounds.x_end - dest_bounds.x_start) * 
-                               (dest_bounds.z_end - dest_bounds.z_start);
+        int64_t dest_region_size = (int64_t)(dest_bounds.x_end - dest_bounds.x_start) *
+                                  (int64_t)(dest_bounds.z_end - dest_bounds.z_start);
         
         // Send: my Y-slices * dest's (X,Z) region * narray
-        sendcounts[dest] = dest_region_size * my_batch_slice_count * narray;
+        sendcounts[dest] = dest_region_size * (int64_t)my_batch_slice_count * (int64_t)narray;
         sdispls[dest] = total_send;
         total_send += sendcounts[dest];
     }
     
     // RECV COUNTS: I receive all ranks' batch Y-slices for my (X,Z) region
-    int total_recv = 0;
+    int64_t total_recv = 0;
     for (int src = 0; src < num_ranks; src++) {
         // How many Y-slices is src sending in this batch? (0, 1, 2)
         int src_batch_slice_count = get_rank_batch_slice_count(src, batch_idx, N, num_ranks);
         
         // Receive: my pencils * src's Y-slices * narray
-        recvcounts[src] = my_pencils * src_batch_slice_count * narray;
+        recvcounts[src] = (int64_t)my_pencils * (int64_t)src_batch_slice_count * (int64_t)narray;
         rdispls[src] = total_recv;
         total_recv += recvcounts[src];
     }

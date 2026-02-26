@@ -9,6 +9,7 @@
 // Depends on: config.h, precision.h, types.h, utils/decomposition.h
 // ====================================================================================
 
+#include <stdint.h>
 #include "../config.h"
 #include "../precision.h"
 #include "../types.h"
@@ -50,7 +51,7 @@ void pack_slices_to_send_buffer(
     int rank, int num_ranks, int N, int narray,
     fftw_complex_t *local_y_slices,  // Flat buffer with all arrays
     int num_my_slices, int *y_global_map,
-    fftw_complex_t *send_buffer, int *sendcounts, int *sdispls);
+    fftw_complex_t *send_buffer, int64_t *sendcounts, int64_t *sdispls);
 
 // Unpack received data into local pencils
 // Each pencil is a Y-column for one (X,Z) point in my owned region

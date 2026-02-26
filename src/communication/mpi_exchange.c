@@ -169,15 +169,15 @@ void pack_slices_to_send_buffer(
     int rank, int num_ranks, int N, int narray,
     fftw_complex_t *local_y_slices,
     int num_my_slices, int *y_global_map,
-    fftw_complex_t *send_buffer, int *sendcounts, int *sdispls)
+    fftw_complex_t *send_buffer, int64_t *sendcounts, int64_t *sdispls)
 {
     (void)rank;  // Unused, kept for consistency
     (void)y_global_map;  // Unused currently, kept for future use
     
     // Phase 1 (sequential): Compute sdispls, sendcounts, and per-dest bounds.
-    // This avoids 32 separate fork/join cycles; we use one parallel region below.
-    int total_send_size = 0;
-    int offset = 0;
+    // Use int64_t to avoid overflow: region_size * num_my_slices * narray can exceed INT_MAX for large N.
+    int64_t total_send_size = 0;
+    int64_t offset = 0;
     GridBounds *bounds_arr = (GridBounds *)malloc((size_t)num_ranks * sizeof(GridBounds));
     int *z_count_arr = (int *)malloc((size_t)num_ranks * sizeof(int));
     if (bounds_arr == NULL || z_count_arr == NULL) {
@@ -190,9 +190,9 @@ void pack_slices_to_send_buffer(
         
         GridBounds bounds = get_padded_bounds_simple(dest, N, num_ranks);
         bounds_arr[dest] = bounds;
-        int region_size = (bounds.x_end - bounds.x_start) * (bounds.z_end - bounds.z_start);
+        int64_t region_size = (int64_t)(bounds.x_end - bounds.x_start) * (int64_t)(bounds.z_end - bounds.z_start);
         
-        sendcounts[dest] = region_size * num_my_slices * narray;
+        sendcounts[dest] = region_size * (int64_t)num_my_slices * (int64_t)narray;
         z_count_arr[dest] = bounds.z_end - bounds.z_start;
         
         offset += sendcounts[dest];
@@ -203,10 +203,10 @@ void pack_slices_to_send_buffer(
     // This replaces 32 fork/joins with 1 fork + 32 lightweight barriers (~20x less overhead).
     #pragma omp parallel
     for (int dest = 0; dest < num_ranks; dest++) {
-        int dest_offset = sdispls[dest];
+        int64_t dest_offset = sdispls[dest];
         GridBounds bounds = bounds_arr[dest];
         int z_count = z_count_arr[dest];
-        int region_size = (bounds.x_end - bounds.x_start) * (bounds.z_end - bounds.z_start);
+        int64_t region_size = (int64_t)(bounds.x_end - bounds.x_start) * (int64_t)(bounds.z_end - bounds.z_start);
         
         #pragma omp for collapse(4)
         for (int array_idx = 0; array_idx < narray; array_idx++) {
@@ -225,8 +225,8 @@ void pack_slices_to_send_buffer(
 
                         int64_t buffer_idx = dest_offset + pack_idx;
                         if (buffer_idx < 0 || buffer_idx >= total_send_size) {
-                            fprintf(stderr, "[PACK ERROR] Rank %d: buffer_idx=%ld out of bounds [0, %d) for dest=%d\n",
-                                   rank, (long)buffer_idx, total_send_size, dest);
+                            fprintf(stderr, "[PACK ERROR] Rank %d: buffer_idx=%ld out of bounds [0, %lld) for dest=%d\n",
+                                   rank, (long)buffer_idx, (long long)total_send_size, dest);
                             fprintf(stderr, "  array_idx=%d, slice_idx=%d, x=%d, z=%d, local_x=%d, local_z=%d\n",
                                    array_idx, slice_idx, x, z, local_x, local_z);
                             fprintf(stderr, "  pack_idx=%ld, offset=%d, region_size=%d, sendcounts[dest]=%d\n",
@@ -234,8 +234,8 @@ void pack_slices_to_send_buffer(
                             MPI_Abort(comm_2d, 1);
                         }
                         if (pack_idx < 0 || pack_idx >= sendcounts[dest]) {
-                            fprintf(stderr, "[PACK ERROR] Rank %d: pack_idx=%ld out of dest region [0, %d) for dest=%d\n",
-                                   rank, (long)pack_idx, sendcounts[dest], dest);
+                            fprintf(stderr, "[PACK ERROR] Rank %d: pack_idx=%ld out of dest region [0, %lld) for dest=%d\n",
+                                   rank, (long)pack_idx, (long long)sendcounts[dest], dest);
                             MPI_Abort(comm_2d, 1);
                         }
 
@@ -253,7 +253,7 @@ void pack_slices_to_send_buffer(
     free(z_count_arr);
     
     if (DEBUG_PRINTS && rank < 3) {
-        printf("[PACK] Rank %d: Packed %d total elements to send_buffer\n", rank, offset);
+        printf("[PACK] Rank %d: Packed %lld total elements to send_buffer\n", rank, (long long)offset);
         printf("       Sending to ranks: ");
         for (int dest = 0; dest < (num_ranks < 4 ? num_ranks : 4); dest++) {
             printf("%d elements to rank %d%s", sendcounts[dest], dest, 

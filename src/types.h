@@ -49,8 +49,9 @@ typedef struct {
 //   Index = 3 + 8*(5 + 8*(1 + 4*2)) = 3 + 8*(5 + 8*9) = 3 + 8*77 = 619
 // ====================================================================================
 
+/* Use (int64_t)(N) to avoid overflow: N*N can exceed INT_MAX for N > ~46340 */
 #define Y_SLICE(slice_idx, array_idx, x, z, N, narray) \
-    local_y_slices[(int64_t)(x) + (N) * ((z) + (N) * ((array_idx) + (narray) * (slice_idx)))]
+    local_y_slices[(int64_t)(x) + (int64_t)(N) * ((z) + (int64_t)(N) * ((array_idx) + (narray) * (slice_idx)))]
 
 // ====================================================================================
 // Pencil indexing: Access array 'array_idx' in pencil 'pencil_idx' at Y position 'y'

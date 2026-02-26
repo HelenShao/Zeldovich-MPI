@@ -52,7 +52,7 @@ void initialize_global_pcg(int L, int M, int N, uint64_t seed) {
         // Cast to uint64_t for integer overflow 
         for(int i = 1; i < v2rng_global_size; i++) {
             v2rng_global[i] = v2rng_global[i-1]; // Copy previous gen.
-            v2rng_global[i].advance((uint64_t)2 * MAX_PPD * MAX_PPD); 
+            v2rng_global[i].advance((uint64_t)2 * (uint64_t)MAX_PPD * (uint64_t)MAX_PPD); 
         }
         
         v2rng_global_initialized = 1;

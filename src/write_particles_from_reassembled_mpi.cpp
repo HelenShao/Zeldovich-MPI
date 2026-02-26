@@ -310,7 +310,7 @@ int main(int argc, char* argv[]) {
             fprintf(tmp_fp, "ZD_Version = 2\n");
             fprintf(tmp_fp, "ZD_PPD = %d\n", N);
             fprintf(tmp_fp, "ZD_Pk_scale = 1.0\n");
-            fprintf(tmp_fp, "NP = %d\n", N * N * N);
+            fprintf(tmp_fp, "NP = %lld\n", (long long)(int64_t)N * (int64_t)N * (int64_t)N);
             fprintf(tmp_fp, "ZD_NumBlock = 2\n");
             fprintf(tmp_fp, "CPD = %d\n", N);
             fprintf(tmp_fp, "ZD_Pk_norm = 1.0\n");

@@ -28,7 +28,7 @@
  *    a. Get batch’s (y_primary, y_mirror)
  *    b. generate_hermitian_slice_pair_local → Generate + 2D FFT
  *    c. calculate_batch_send_recv_counts; pack_slices_to_send_buffer
- *    d. MPI_Ialltoallv(send_buffer → recv_buffer); MPI_Wait
+ *    d. MPI_Alltoallv_c(send_buffer → recv_buffer)
  *    e. Update src_write_cursor; free per-batch send buffer
  *
  * 8. Z-SLAB STREAMING (for each Z owned by this rank)
@@ -72,6 +72,11 @@ extern "C" {
 #include "config.h"
 #include "precision.h"
 #include "types.h"
+
+// CXI/libfabric requires page-aligned (base, len) for memory registration.
+// Round allocation size up to page multiple to avoid cxil_map EINVAL.
+#define PAGE_SIZE_CXI 4096
+#define ROUND_UP_PAGE(x) ((((size_t)(x)) + PAGE_SIZE_CXI - 1) & ~((size_t)(PAGE_SIZE_CXI - 1)))
 
 // --- UTILITIES ---
 #include "utils/printing.h"
@@ -402,6 +407,11 @@ int main(int argc, char **argv)
         printf("\n[MULTI-BATCH] Starting batch processing...\n");
         printf("              Ranks will process %d pairs each (approx)\n", 
                is_idle_rank ? 0 : my_num_pairs);
+        printf("              sizeof(MPI_Aint)=%zu (%s), sizeof(MPI_Count)=%zu\n",
+               sizeof(MPI_Aint), sizeof(MPI_Aint) == 8 ? "int64" : (sizeof(MPI_Aint) == 4 ? "int32" : "other"),
+               sizeof(MPI_Count));
+
+        fflush(stdout);
     }
     
     // Note: grid_x and grid_z already calculated during MPI topology setup
@@ -457,15 +467,16 @@ int main(int argc, char **argv)
     }
     
     // Allocate persistent recv_buffer: [src_rank][y_idx_for_src][pencil_idx][array_idx]
-    
+    // Round size up to page multiple for CXI/libfabric memory registration (avoids cxil_map EINVAL).
     if (!is_idle_rank && recv_total_elems > 0) {
-        if (posix_memalign((void**)&recv_buffer, ALIGN_BYTES,
-                           sizeof(fftw_complex_t) * recv_total_elems) != 0) {
+        size_t recv_bytes = sizeof(fftw_complex_t) * (size_t)recv_total_elems;
+        size_t recv_alloc = ROUND_UP_PAGE(recv_bytes);
+        if (posix_memalign((void**)&recv_buffer, ALIGN_BYTES, recv_alloc) != 0) {
             fprintf(stderr, "Rank %d: posix_memalign failed for recv_buffer\n", rank);
             MPI_Abort(comm_2d, 1);
         }
         
-        memset(recv_buffer, 0, sizeof(fftw_complex_t) * recv_total_elems);
+        memset(recv_buffer, 0, recv_bytes);
     }
     
     /*
@@ -583,12 +594,16 @@ int main(int argc, char **argv)
         // ===== BATCH STEP 2: Generate + 2D FFT =====
         if (!is_idle_rank && my_batch_slice_count > 0) {
             // Clear buffer for reuse
-            memset(local_y_slices, 0, sizeof(fftw_complex_t) * 2 * narray * N * N);
-            
+            // Use int64_t to avoid overflow: 2*narray*N*N can exceed INT_MAX for large N
+            size_t slice_bytes = (size_t)2 * (size_t)narray * (size_t)N * (size_t)N * sizeof(fftw_complex_t);
+            memset(local_y_slices, 0, slice_bytes);
+
             // Generate this batch's pair
             // For self-conjugate slices, conjugate_slices acts as temporary storage
-            fftw_complex_t *primary_ptr = &local_y_slices[0 * narray * N * N];
-            fftw_complex_t *conjugate_ptr = &local_y_slices[1 * narray * N * N];
+            // Use int64_t index to avoid overflow: narray*N*N can exceed INT_MAX for N > ~23170
+            int64_t slice_elems = (int64_t)narray * (int64_t)N * (int64_t)N;
+            fftw_complex_t *primary_ptr   = &local_y_slices[0];
+            fftw_complex_t *conjugate_ptr = &local_y_slices[slice_elems];
             
             generate_hermitian_slice_pair_local(
                 N, y_batch_primary, y_batch_mirror,
@@ -604,9 +619,9 @@ int main(int argc, char **argv)
         }
         
         // ===== BATCH STEP 3: Calculate send/recv counts =====
-        int *sendcounts_batch, *sdispls_batch, *recvcounts_batch, *rdispls_batch;
-        int total_send_batch, total_recv_batch;
-        
+        int64_t *sendcounts_batch, *sdispls_batch, *recvcounts_batch, *rdispls_batch;
+        int64_t total_send_batch, total_recv_batch;
+
         calculate_batch_send_recv_counts(
             rank, num_ranks, N, narray, batch_idx,
             my_batch_slice_count, my_pencils,
@@ -624,15 +639,6 @@ int main(int argc, char **argv)
                        rank, src, (long long)new_displ);
                 MPI_Abort(comm_2d, 1);
             }
-#if 1  /* TEMP: when forcing MPI_Ialltoallv (USE_MPI_IALLTOALLV_C=0), must fill rdispls_batch; else: MPI_VERSION < 4 */
-            if (new_displ > INT_MAX) {
-                fprintf(stderr, "[Rank %d] ERROR: rdispls overflow! src=%d, displ=%lld > INT_MAX (%d)\n",
-                       rank, src, (long long)new_displ, INT_MAX);
-                fprintf(stderr, "  Requires MPI-4 (MPI_Ialltoallv_c) for 64-bit displacements.\n");
-                MPI_Abort(comm_2d, 1);
-            }
-            rdispls_batch[src] = (int)new_displ;
-#endif
             rdispls_elem[src] = new_displ;
         }
         
@@ -640,9 +646,9 @@ int main(int argc, char **argv)
         fftw_complex_t *send_buffer_batch = NULL;
         
         if (total_send_batch > 0) {
-            size_t requested_bytes = sizeof(fftw_complex_t) * (size_t)total_send_batch;
-            
-            if (posix_memalign((void**)&send_buffer_batch, ALIGN_BYTES, requested_bytes) != 0) {
+            size_t requested_bytes = (size_t)total_send_batch * sizeof(fftw_complex_t);
+            size_t alloc_bytes = ROUND_UP_PAGE(requested_bytes);
+            if (posix_memalign((void**)&send_buffer_batch, ALIGN_BYTES, alloc_bytes) != 0) {
                 fprintf(stderr, "Rank %d: posix_memalign failed for send_buffer_batch\n", rank);
                 MPI_Abort(comm_2d, 1);
             }
@@ -657,33 +663,29 @@ int main(int argc, char **argv)
             );
         }
         
-        // ===== BATCH STEP 6: MPI_Ialltoallv =====
+        // ===== BATCH STEP 6: MPI_Alltoallv_c =====
         // Verify sendcounts sum matches total_send_batch
         if (send_buffer_batch != NULL && total_send_batch > 0) {
-            int sum_sendcounts = 0;
+            int64_t sum_sendcounts = 0;
             for (int i = 0; i < num_ranks; i++) {
                 sum_sendcounts += sendcounts_batch[i];
             }
             if (sum_sendcounts != total_send_batch) {
-                fprintf(stderr, "[Rank %d] ERROR: sendcounts sum (%d) != total_send_batch (%d)!\n",
-                       rank, sum_sendcounts, total_send_batch);
+                fprintf(stderr, "[Rank %d] ERROR: sendcounts sum (%lld) != total_send_batch (%lld)!\n",
+                       rank, (long long)sum_sendcounts, (long long)total_send_batch);
                 MPI_Abort(comm_2d, 1);
             }
         }
         
         // Verify recvcounts sum matches
         if (recv_buffer != NULL) {
-            int total_recv_batch = 0;
-            for (int i = 0; i < num_ranks; i++) {
-                total_recv_batch += recvcounts_batch[i];
-            }
-            int sum_recvcounts = 0;
+            int64_t sum_recvcounts = 0;
             for (int i = 0; i < num_ranks; i++) {
                 sum_recvcounts += recvcounts_batch[i];
             }
             if (sum_recvcounts != total_recv_batch) {
-                fprintf(stderr, "[Rank %d] ERROR: recvcounts sum (%d) != total_recv_batch (%d)!\n",
-                       rank, sum_recvcounts, total_recv_batch);
+                fprintf(stderr, "[Rank %d] ERROR: recvcounts sum (%lld) != total_recv_batch (%lld)!\n",
+                       rank, (long long)sum_recvcounts, (long long)total_recv_batch);
                 MPI_Abort(comm_2d, 1);
             }
             
@@ -709,23 +711,16 @@ int main(int argc, char **argv)
             if (recv_end > max_recv_displ) max_recv_displ = recv_end;
             
             if (sdispls_batch[i] < 0 || rdispls_elem[i] < 0) {
-                fprintf(stderr, "[Rank %d] ERROR: Negative displacement! sdispls[%d]=%d, rdispls[%d]=%lld\n",
-                       rank, i, sdispls_batch[i], i, (long long)rdispls_elem[i]);
+                fprintf(stderr, "[Rank %d] ERROR: Negative displacement! sdispls[%d]=%lld, rdispls[%d]=%lld\n",
+                       rank, i, (long long)sdispls_batch[i], i, (long long)rdispls_elem[i]);
                 MPI_Abort(comm_2d, 1);
             }
-#if 1  /* TEMP: same guard as rdispls_batch fill - when using MPI_Ialltoallv */
-            if (sdispls_batch[i] > INT_MAX || rdispls_elem[i] > INT_MAX) {
-                fprintf(stderr, "[Rank %d] ERROR: Displacement exceeds INT_MAX! sdispls[%d]=%d, rdispls[%d]=%lld\n",
-                       rank, i, sdispls_batch[i], i, (long long)rdispls_elem[i]);
-                MPI_Abort(comm_2d, 1);
-            }
-#endif
         }
         
         // Check that displacements don't exceed buffer bounds
         if (max_send_displ > total_send_batch) {
-            fprintf(stderr, "[Rank %d] ERROR: Send displacement exceeds buffer! max=%lld > total=%d\n",
-                   rank, (long long)max_send_displ, total_send_batch);
+            fprintf(stderr, "[Rank %d] ERROR: Send displacement exceeds buffer! max=%lld > total=%lld\n",
+                   rank, (long long)max_send_displ, (long long)total_send_batch);
             MPI_Abort(comm_2d, 1);
         }
         
@@ -736,45 +731,32 @@ int main(int argc, char **argv)
         }
         
         t_comm.Start();
-        MPI_Request comm_request_batch;
-#if 0  /* TEMP: force MPI_Ialltoallv (not _c) to test cxil_map write error; was: MPI_VERSION >= 4 */
         {
             MPI_Count sendcounts_c[4096], recvcounts_c[4096];
             MPI_Aint sdispls_c[4096], rdispls_c[4096];
-            size_t elem_size = sizeof(fftw_complex_t);
             for (int i = 0; i < num_ranks; i++) {
                 sendcounts_c[i] = (MPI_Count)sendcounts_batch[i];
                 recvcounts_c[i] = (MPI_Count)recvcounts_batch[i];
-                sdispls_c[i] = (MPI_Aint)sdispls_batch[i] * elem_size;
-                rdispls_c[i] = (MPI_Aint)rdispls_elem[i] * elem_size;
+                sdispls_c[i] = (MPI_Aint)sdispls_batch[i];
+                rdispls_c[i] = (MPI_Aint)rdispls_elem[i];
             }
-            MPI_Ialltoallv_c(
+            MPI_Alltoallv_c(
                 send_buffer_batch, sendcounts_c, sdispls_c, MPI_COMPLEX_TYPE,
                 recv_buffer, recvcounts_c, rdispls_c, MPI_COMPLEX_TYPE,
-                comm_2d, &comm_request_batch
+                comm_2d
             );
         }
-#else
-        MPI_Ialltoallv(
-            send_buffer_batch, sendcounts_batch, sdispls_batch, MPI_COMPLEX_TYPE,
-            recv_buffer, recvcounts_batch, rdispls_batch, MPI_COMPLEX_TYPE,
-            comm_2d, &comm_request_batch
-        );
-#endif
-        
-        // ===== BATCH STEP 7: MPI_Wait =====
-        MPI_Wait(&comm_request_batch, MPI_STATUS_IGNORE);
         t_comm.Stop();
         
-        // ===== BATCH STEP 8: Update write cursors =====
-        // After MPI_Ialltoallv completes, the cursor is advanced by recvcounts_batch[src]
+        // ===== BATCH STEP 7: Update write cursors =====
+        // After MPI_Alltoallv_c completes, the cursor is advanced by recvcounts_batch[src]
         // The next batch then calculates a displacement that points after the current batch's data
 
         for (int src = 0; src < num_ranks; src++) {
             src_write_cursor[src] += recvcounts_batch[src];
         }
         
-        // ===== BATCH STEP 9: Free per-batch buffers =====
+        // ===== BATCH STEP 8: Free per-batch buffers =====
         if (send_buffer_batch) free(send_buffer_batch);
         free(sendcounts_batch);
         free(sdispls_batch);
