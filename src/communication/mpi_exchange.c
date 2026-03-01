@@ -208,7 +208,7 @@ void pack_slices_to_send_buffer(
         int z_count = z_count_arr[dest];
         int64_t region_size = (int64_t)(bounds.x_end - bounds.x_start) * (int64_t)(bounds.z_end - bounds.z_start);
         
-        #pragma omp for collapse(4)
+        #pragma omp for collapse(4) nowait
         for (int array_idx = 0; array_idx < narray; array_idx++) {
             for (int slice_idx = 0; slice_idx < num_my_slices; slice_idx++) {
                 for (int x = bounds.x_start; x < bounds.x_end; x++) {
@@ -288,6 +288,9 @@ void unpack_recv_buffer_to_pencils(
     #endif
     
     // Unpack data from each source rank
+    // Use single parallel region to avoid ~8000 fork/join operations
+    // (64 sources x 4 arrays x ~32 slices = ~8000 combinations)
+    #pragma omp parallel
     for (int src = 0; src < num_ranks; src++) {
         // Get offset of source's data in the recv buffer
         int src_offset = rdispls[src];
@@ -301,9 +304,9 @@ void unpack_recv_buffer_to_pencils(
                 // Get global Y index of slice
                 int y_global = all_y_global_maps[src][slice_idx]; // <-- keeps track of global pos of y-slice!!
                 
-                // OpenMP: Parallelize over (X,Z) points in my owned chunk
-                // Collapse(2) combines both loops for better load balancing
-                #pragma omp parallel for collapse(2)
+                // OpenMP: Workshare over (X,Z) points in my owned chunk
+                // Using existing thread team (no fork/join overhead)
+                #pragma omp for collapse(2) nowait
                 for (int x = my_bounds.x_start; x < my_bounds.x_end; x++) {
                     for (int z = my_bounds.z_start; z < my_bounds.z_end; z++) {
                         // Calculate unpack and pencil indices for this thread's iteration

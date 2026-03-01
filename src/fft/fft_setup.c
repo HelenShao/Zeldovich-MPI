@@ -24,10 +24,13 @@ void setup_fftw_plans_full(int N, int narray, fftw_plan_t *plan_2d_out, fftw_pla
     if (!fftw_threads_initialized) {
         int nthreads = omp_get_max_threads();
         
-        // Hybrid parallelism: use subset of threads per FFT (outer parallelism over narray arrays)
-        // Example: with 50 threads and narray=4, each FFT gets ~12 threads
+        // Hybrid parallelism: outer parallelism over arrays + inner FFTW threading
+        // With narray independent FFTs, we can run them concurrently.
+        // Each FFT uses (nthreads / narray) threads internally.
+        // Example: 8 threads, 4 arrays -> 4 concurrent FFTs, each using 2 FFTW threads.
+        // Note: With OMP_MAX_ACTIVE_LEVELS=1 (default), inner FFTW threads are serialized,
+        // but 4 concurrent single-threaded FFTs still outperform sequential 8-thread FFTs.
         int fft_threads = (nthreads > narray && narray > 0) ? nthreads / narray : 1;
-        if (fft_threads < 1) fft_threads = 1;
         
         #ifdef USE_DOUBLE_PRECISION
         if (fftw_init_threads() == 0) {
@@ -36,7 +39,7 @@ void setup_fftw_plans_full(int N, int narray, fftw_plan_t *plan_2d_out, fftw_pla
         }
         fftw_plan_with_nthreads(fft_threads);
         if (rank == 0) {
-            printf("[FFTW-THREADING] Double precision: Hybrid mode - %d threads per FFT, %d arrays in parallel (OMP_NUM_THREADS=%d)\n", 
+            printf("[FFTW-THREADING] Double precision: Hybrid parallelism with %d FFTW threads per FFT (narray=%d, total_threads=%d)\n", 
                    fft_threads, narray, nthreads);
         }
         #else
@@ -46,7 +49,7 @@ void setup_fftw_plans_full(int N, int narray, fftw_plan_t *plan_2d_out, fftw_pla
         }
         fftwf_plan_with_nthreads(fft_threads);
         if (rank == 0) {
-            printf("[FFTW-THREADING] Single precision: Hybrid mode - %d threads per FFT, %d arrays in parallel (OMP_NUM_THREADS=%d)\n", 
+            printf("[FFTW-THREADING] Single precision: Hybrid parallelism with %d FFTW threads per FFT (narray=%d, total_threads=%d)\n", 
                    fft_threads, narray, nthreads);
         }
         #endif

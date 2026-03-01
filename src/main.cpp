@@ -468,6 +468,7 @@ int main(int argc, char **argv)
     
     // Allocate persistent recv_buffer: [src_rank][y_idx_for_src][pencil_idx][array_idx]
     // Round size up to page multiple for CXI/libfabric memory registration (avoids cxil_map EINVAL).
+    // NUMA-aware: parallel first-touch to distribute pages across NUMA nodes
     if (!is_idle_rank && recv_total_elems > 0) {
         size_t recv_bytes = sizeof(fftw_complex_t) * (size_t)recv_total_elems;
         size_t recv_alloc = ROUND_UP_PAGE(recv_bytes);
@@ -476,7 +477,20 @@ int main(int argc, char **argv)
             MPI_Abort(comm_2d, 1);
         }
         
-        memset(recv_buffer, 0, recv_bytes);
+        // NUMA first-touch: parallel zeroing distributes pages across NUMA nodes
+        #pragma omp parallel
+        {
+            int tid = omp_get_thread_num();
+            int nthreads = omp_get_num_threads();
+            int64_t chunk = recv_total_elems / nthreads;
+            int64_t start = tid * chunk;
+            int64_t end = (tid == nthreads - 1) ? recv_total_elems : start + chunk;
+            
+            for (int64_t i = start; i < end; i++) {
+                recv_buffer[i][0] = 0.0;
+                recv_buffer[i][1] = 0.0;
+            }
+        }
     }
     
     /*
@@ -544,6 +558,7 @@ int main(int argc, char **argv)
     free(src_y_counter);
         
     // Allocate local_y_slices buffer for maximum 2 slices (reused per batch)
+    // NUMA-aware: parallel first-touch to distribute pages across NUMA nodes
     if (!is_idle_rank) {
         int max_slices_per_batch = 2;
         int64_t slice_buffer_size = (int64_t)max_slices_per_batch * narray * N * N;
@@ -553,20 +568,47 @@ int main(int argc, char **argv)
             fprintf(stderr, "Rank %d: posix_memalign failed for local_y_slices\n", rank);
             MPI_Abort(comm_2d, 1);
         }
+        
+        // NUMA first-touch: each thread touches its portion of the buffer
+        // Pages are placed on the NUMA node of the first thread to write them
+        #pragma omp parallel
+        {
+            int tid = omp_get_thread_num();
+            int nthreads = omp_get_num_threads();
+            int64_t chunk = slice_buffer_size / nthreads;
+            int64_t start = tid * chunk;
+            int64_t end = (tid == nthreads - 1) ? slice_buffer_size : start + chunk;
+            
+            for (int64_t i = start; i < end; i++) {
+                local_y_slices[i][0] = 0.0;
+                local_y_slices[i][1] = 0.0;
+            }
+        }
     }
     
     // ===== Allocate persistent thread-local RNG buffers =====
+    // NUMA-aware: Each thread allocates and first-touches its own buffer
+    // so the memory is placed on the correct NUMA node
     void** thread_rng_buffers = NULL;
 #if PARALLELIZE_Z_LOOP
     if (!is_idle_rank) {
         int max_threads = omp_get_max_threads();
         thread_rng_buffers = (void**)malloc(sizeof(void*) * max_threads);
         size_t rng_size = zeldovich_ps_rng_buffer_size();
-        for (int t = 0; t < max_threads; t++) {
-            thread_rng_buffers[t] = malloc(rng_size);
+        
+        // Parallel allocation: each thread allocates its own buffer
+        // This ensures memory is placed on the NUMA node closest to the thread
+        #pragma omp parallel num_threads(max_threads)
+        {
+            int tid = omp_get_thread_num();
+            thread_rng_buffers[tid] = malloc(rng_size);
+            // First-touch: zero the buffer to ensure pages are faulted in
+            // on this thread's NUMA node
+            memset(thread_rng_buffers[tid], 0, rng_size);
         }
+        
         if (rank == 0) {
-            printf("[PERFORMANCE] Allocated %d persistent RNG buffers of %zu bytes each\n",
+            printf("[PERFORMANCE] Allocated %d persistent RNG buffers of %zu bytes each (NUMA-aware)\n",
                    max_threads, rng_size);
         }
     }
@@ -592,11 +634,24 @@ int main(int argc, char **argv)
         }
         
         // ===== BATCH STEP 2: Generate + 2D FFT =====
+        double t_batch_start = 0, t_memset_end = 0, t_gen_end = 0;
         if (!is_idle_rank && my_batch_slice_count > 0) {
-            // Clear buffer for reuse
+            t_batch_start = MPI_Wtime();
+            
+            // Clear buffer for reuse (parallel memset for NUMA locality + SIMD optimization)
             // Use int64_t to avoid overflow: 2*narray*N*N can exceed INT_MAX for large N
-            size_t slice_bytes = (size_t)2 * (size_t)narray * (size_t)N * (size_t)N * sizeof(fftw_complex_t);
-            memset(local_y_slices, 0, slice_bytes);
+            int64_t slice_elems_total = (int64_t)2 * (int64_t)narray * (int64_t)N * (int64_t)N;
+            size_t total_bytes = slice_elems_total * sizeof(fftw_complex_t);
+            #pragma omp parallel
+            {
+                int tid = omp_get_thread_num();
+                int nthreads = omp_get_num_threads();
+                size_t chunk_bytes = total_bytes / nthreads;
+                size_t start = tid * chunk_bytes;
+                size_t my_bytes = (tid == nthreads - 1) ? (total_bytes - start) : chunk_bytes;
+                memset((char*)local_y_slices + start, 0, my_bytes);
+            }
+            t_memset_end = MPI_Wtime();
 
             // Generate this batch's pair
             // For self-conjugate slices, conjugate_slices acts as temporary storage
@@ -612,6 +667,16 @@ int main(int argc, char **argv)
                 ps, params,
                 thread_rng_buffers
             );
+            t_gen_end = MPI_Wtime();
+            
+            // Print batch timing for first few batches
+            if (batch_idx <= 3 || (batch_idx % 32 == 0)) {
+                fprintf(stderr, "[BATCH-TIMING] Rank=%d Batch=%d Y=%d/%d | memset=%.3fms gen+fft=%.3fms\n",
+                        rank, batch_idx, y_batch_primary, y_batch_mirror,
+                        (t_memset_end - t_batch_start) * 1000.0,
+                        (t_gen_end - t_memset_end) * 1000.0);
+                fflush(stderr);
+            }
             
             if (local_y_slices == NULL) {
                 fprintf(stderr, "[Rank %d] WARNING: local_y_slices is NULL!\n", rank);
@@ -655,12 +720,22 @@ int main(int argc, char **argv)
         }
         
         // ===== BATCH STEP 5: Pack to send buffer=====
+        double t_pack_start = 0, t_pack_end = 0;
         if (!is_idle_rank && my_batch_slice_count > 0 && total_send_batch > 0) {
+            t_pack_start = MPI_Wtime();
             pack_slices_to_send_buffer(
                 rank, num_ranks, N, narray,
                 local_y_slices, my_batch_slice_count, NULL,
                 send_buffer_batch, sendcounts_batch, sdispls_batch
             );
+            t_pack_end = MPI_Wtime();
+            
+            // Print pack timing for first few batches
+            if (batch_idx <= 3 || (batch_idx % 32 == 0)) {
+                fprintf(stderr, "[PACK-TIMING] Rank=%d Batch=%d | pack=%.3fms\n",
+                        rank, batch_idx, (t_pack_end - t_pack_start) * 1000.0);
+                fflush(stderr);
+            }
         }
         
         // ===== BATCH STEP 6: MPI_Alltoallv_c =====
@@ -730,6 +805,7 @@ int main(int argc, char **argv)
             MPI_Abort(comm_2d, 1);
         }
         
+        double t_comm_batch_start = MPI_Wtime();
         t_comm.Start();
         {
             MPI_Count sendcounts_c[4096], recvcounts_c[4096];
@@ -748,6 +824,15 @@ int main(int argc, char **argv)
             );
         }
         t_comm.Stop();
+        double t_comm_batch_end = MPI_Wtime();
+        
+        // Print comm timing for first few batches
+        if (batch_idx <= 3 || (batch_idx % 32 == 0)) {
+            fprintf(stderr, "[COMM-TIMING] Rank=%d Batch=%d | alltoallv=%.3fms send=%lld recv=%lld\n",
+                    rank, batch_idx, (t_comm_batch_end - t_comm_batch_start) * 1000.0,
+                    (long long)total_send_batch, (long long)total_recv_batch);
+            fflush(stderr);
+        }
         
         // ===== BATCH STEP 7: Update write cursors =====
         // After MPI_Alltoallv_c completes, the cursor is advanced by recvcounts_batch[src]

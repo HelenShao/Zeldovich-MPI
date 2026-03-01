@@ -19,7 +19,7 @@
 static inline int64_t compute_virtual_position(int z, int x, int N, int Nhalf) {
     int z_v = (z <= Nhalf) ? z : (MAX_PPD - N + z);
     int x_v = (x <= Nhalf) ? x : (MAX_PPD - N + x);
-    return 2 * ((int64_t)z_v * MAX_PPD + x_v);
+    return 2 * ((int64_t)z_v * MAX_PPD + x_v); // divide by 2 later
 }
 
 // Compute z-range for thread tid using static chunking
@@ -69,6 +69,10 @@ void generate_hermitian_slice_pair_local(
     ParametersHandle params_handle,  // zeldovich-PLT Parameters handle
     void** thread_rng_buffers)        // Pre-allocated RNG buffers [nthreads] (NULL = use malloc)
 {
+    // ========== DIAGNOSTIC TIMING: Function-level ==========
+    double t_func_start = omp_get_wtime();
+    double t_setup_end, t_zloop_end, t_verify_end, t_fft_end;
+    
     // Debug: Log entry for seg fault error
     // #if DEBUG_PRINTS
     // fprintf(stderr,
@@ -158,6 +162,8 @@ void generate_hermitian_slice_pair_local(
         nskip = 0;  // Will be accumulated during loops
     }
     
+    t_setup_end = omp_get_wtime();
+    
     if (y_mirror != global_y) {
         // ========== CONJUGATE PAIR: Y=i and Y=N-i ==========
 #if PARALLELIZE_Z_LOOP
@@ -168,6 +174,9 @@ void generate_hermitian_slice_pair_local(
             int nthreads = omp_get_num_threads();
             int z_start, z_end;
             get_thread_z_range(tid, nthreads, N, &z_start, &z_end);
+            
+            // Diagnostic timing
+            double t_start = omp_get_wtime();
             
             // Use persistent buffer if provided, otherwise allocate
             void* local_rng_buf;
@@ -181,10 +190,16 @@ void generate_hermitian_slice_pair_local(
                 need_free = 1;
             }
             
+            double t_after_alloc = omp_get_wtime();
+            
             zeldovich_ps_get_rng_copy(ps_handle, rng_index_cp, local_rng_buf);
+            double t_after_copy = omp_get_wtime();
+            
             int64_t virtual_start = compute_virtual_position(z_start, 0, N, Nhalf) / 2;
             if (virtual_start > 0)
                 zeldovich_ps_advance_rng_buffer(local_rng_buf, virtual_start);
+            double t_after_advance = omp_get_wtime();
+            
             int64_t nskip = 0;
             for (int z = z_start; z < z_end; z++) {
 #else
@@ -567,6 +582,24 @@ void generate_hermitian_slice_pair_local(
             
         }
 #if PARALLELIZE_Z_LOOP
+            double t_after_loop = omp_get_wtime();
+            
+            // Print timing diagnostics (only for first Y-slice to reduce output)
+            if (global_y == 1 || global_y == 2) {
+                #pragma omp critical
+                {
+                    fprintf(stderr, "[OMP-TIMING] Rank=%d Y=%d Thread=%d/%d z=[%d,%d) vstart=%lld | "
+                            "alloc=%.3fms copy=%.3fms advance=%.3fms loop=%.3fms total=%.3fms\n",
+                            rank, global_y, tid, nthreads, z_start, z_end, (long long)virtual_start,
+                            (t_after_alloc - t_start) * 1000.0,
+                            (t_after_copy - t_after_alloc) * 1000.0,
+                            (t_after_advance - t_after_copy) * 1000.0,
+                            (t_after_loop - t_after_advance) * 1000.0,
+                            (t_after_loop - t_start) * 1000.0);
+                    fflush(stderr);
+                }
+            }
+            
             if (need_free) free(local_rng_buf);
         }
 #endif
@@ -590,6 +623,9 @@ void generate_hermitian_slice_pair_local(
             int z_start, z_end;
             get_thread_z_range(tid, nthreads, N, &z_start, &z_end);
             
+            // Diagnostic timing
+            double t_start = omp_get_wtime();
+            
             // Use persistent buffer if provided, otherwise allocate
             void* local_rng_buf;
             int need_free = 0;
@@ -601,10 +637,16 @@ void generate_hermitian_slice_pair_local(
                 need_free = 1;
             }
             
+            double t_after_alloc = omp_get_wtime();
+            
             zeldovich_ps_get_rng_copy(ps_handle, global_y, local_rng_buf);
+            double t_after_copy = omp_get_wtime();
+            
             int64_t virtual_start = compute_virtual_position(z_start, 0, N, Nhalf) / 2;
             if (virtual_start > 0)
                 zeldovich_ps_advance_rng_buffer(local_rng_buf, virtual_start);
+            double t_after_advance = omp_get_wtime();
+            
             int64_t nskip = 0;
             for (int z = z_start; z < z_end; z++) {
 #else
@@ -946,6 +988,24 @@ void generate_hermitian_slice_pair_local(
             }
         }
 #if PARALLELIZE_Z_LOOP
+            double t_after_loop = omp_get_wtime();
+            
+            // Print timing diagnostics for self-conjugate slices (Y=0 and Y=N/2)
+            if (global_y == 0) {
+                #pragma omp critical
+                {
+                    fprintf(stderr, "[OMP-TIMING] Rank=%d Y=%d (self-conj) Thread=%d/%d z=[%d,%d) vstart=%lld | "
+                            "alloc=%.3fms copy=%.3fms advance=%.3fms loop=%.3fms total=%.3fms\n",
+                            rank, global_y, tid, nthreads, z_start, z_end, (long long)virtual_start,
+                            (t_after_alloc - t_start) * 1000.0,
+                            (t_after_copy - t_after_alloc) * 1000.0,
+                            (t_after_advance - t_after_copy) * 1000.0,
+                            (t_after_loop - t_after_advance) * 1000.0,
+                            (t_after_loop - t_start) * 1000.0);
+                    fflush(stderr);
+                }
+            }
+            
             if (need_free) free(local_rng_buf);
         }
 #endif
@@ -1017,6 +1077,8 @@ void generate_hermitian_slice_pair_local(
         }
     }
     
+    t_zloop_end = omp_get_wtime();
+    
     // Verify Hermitian symmetry BEFORE 2D FFT
     // STAGE 7: Updated to check all arrays independently
     #if VERIFY_HERMITIAN_SYMMETRY
@@ -1027,8 +1089,12 @@ void generate_hermitian_slice_pair_local(
     }
     #endif
     
+    t_verify_end = omp_get_wtime();
+    
     // Apply 2D FFT to all arrays independently (hybrid: outer parallelism over arrays, inner FFTW threading)
     // Limit outer threads to narray to avoid oversubscription (each FFT uses multiple inner threads)
+    // Note: With OMP_MAX_ACTIVE_LEVELS=1 (default), inner FFTW threads are serialized,
+    // resulting in narray concurrent single-threaded FFTs - which is actually optimal!
     #pragma omp parallel for num_threads(narray)
     for (int a = 0; a < narray; a++) {
         // Primary slice
@@ -1057,6 +1123,21 @@ void generate_hermitian_slice_pair_local(
             // }
             // #endif
         }
+    }
+    
+    t_fft_end = omp_get_wtime();
+    
+    // ========== DIAGNOSTIC: Print per-Y timing breakdown ==========
+    // Print for first few Y-slices and occasionally thereafter to avoid flooding
+    if (global_y <= 3 || (global_y % 64 == 0)) {
+        fprintf(stderr, "[SLICE-TIMING] Rank=%d Y=%d/%d | setup=%.3fms zloop=%.3fms verify=%.3fms fft=%.3fms total=%.3fms\n",
+                rank, global_y, y_mirror,
+                (t_setup_end - t_func_start) * 1000.0,
+                (t_zloop_end - t_setup_end) * 1000.0,
+                (t_verify_end - t_zloop_end) * 1000.0,
+                (t_fft_end - t_verify_end) * 1000.0,
+                (t_fft_end - t_func_start) * 1000.0);
+        fflush(stderr);
     }
     
     // ========== Apply any remaining nskip at end of function ==========
