@@ -26,17 +26,17 @@
  *
  * 7. MULTI-BATCH LOOP (for each batch)
  *    a. Get batch’s (y_primary, y_mirror)
- *    b. generate_hermitian_slice_pair_local → Generate + 2D FFT
+ *    b. generate_hermitian_slice_pair_local -> Generate + 2D FFT
  *    c. calculate_batch_send_recv_counts; pack_slices_to_send_buffer
- *    d. MPI_Alltoallv_c(send_buffer → recv_buffer)
+ *    d. MPI_Alltoallv_c(send_buffer -> recv_buffer)
  *    e. Update src_write_cursor; free per-batch send buffer
  *
  * 8. Z-SLAB STREAMING (for each Z owned by this rank)
  *    - Allocate local_z_slab (one Z-slab: [Array][X][Y])
- *    - For each z: z_streaming_unpack(recv_buffer → local_z_slab, 1D FFT in Y)
- *    - Write output: PARTICLE_OUTPUT_MODE 0 → WriteParticlesSlab_range
- *                    PARTICLE_OUTPUT_MODE 1 → .bin files
- *                    PARTICLE_OUTPUT_MODE 2 → .bin then read-back → WriteParticlesSlab_range
+ *    - For each z: z_streaming_unpack(recv_buffer -> local_z_slab, 1D FFT in Y)
+ *    - Write output: PARTICLE_OUTPUT_MODE 0 -> WriteParticlesSlab_range
+ *                    PARTICLE_OUTPUT_MODE 1 -> .bin files
+ *                    PARTICLE_OUTPUT_MODE 2 -> .bin then read-back -> WriteParticlesSlab_range
  *
  * 9. CLEANUP
  *    - Free plans, recv_buffer, local buffers, params, ps, PLT eigenmodes

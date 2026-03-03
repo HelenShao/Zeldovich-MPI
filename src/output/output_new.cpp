@@ -1,12 +1,9 @@
-// #include "counts_in_cell.h"
-// CountCell *cic;
-
 #include <dirent.h>
 #include <libgen.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <errno.h>
-#include <limits.h> /* PATH_MAX */
+#include <limits.h>
 #include <mutex>
 #include <string.h>
 #include <filesystem>
@@ -20,9 +17,7 @@
 #include <zeldovich.h>
 #include <parameters.h>
 #include <output.h>  // For OutputType enum and particle struct definitions
-#include <complex>   // For std::real and std::imag functions
-
-// Include local headers
+#include <complex> 
 #include <STimer.h>  // zeldovich-PLT's STimer (angle brackets so reassembly build gets zeldovich's, not src/STimer.h)
 #include "output_new.h" 
 #include "utils/decomposition.h"
@@ -457,7 +452,7 @@ void WriteParticlesSlab_new(
 // Version 1: Accepts data in [array][x][y] layout (ZSLAB format) - NO TRANSPOSE NEEDED
 // Version 2: Accepts data in [y][x] layout (JK format) - for backward compatibility
 // ====================================================================================
-
+// version 1 takes as input slab_data and 4 slab pointers are made from it, while version 2 takes as input slab1, slab2, slab3, slab4. [y][x] vs [x][y]
 // Version 1: [array][x][y] layout (ZSLAB format) - eliminates transpose
 void WriteParticlesSlab_range(
    int rank,
