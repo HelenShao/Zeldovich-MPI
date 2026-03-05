@@ -215,6 +215,7 @@ void zeldovich_ps_advance_rng(PowerSpectrumHandle ps, ParametersHandle params, i
     }
 }
 
+// All threads read from the same v2rng[global_y] and write into their own buffers.
 void zeldovich_ps_get_rng_copy(PowerSpectrumHandle ps, int64_t rng_index, void* out_rng) {
     if (!ps || !out_rng) return;
     PowerSpectrum* p = static_cast<PowerSpectrum*>(ps);
