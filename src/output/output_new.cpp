@@ -916,3 +916,96 @@ void TeardownOutput() {
        output_bytes_written / 1e6 / outtimer.Elapsed()
     );
 }
+
+// ====================================================================================
+// MODE 3: AppendZSlabParticles — streaming-append CPD-slab-ordered output
+// ====================================================================================
+//
+// For one z-slab, writes particles to the rank's output file grouped by CPD slab.
+// Computes slab indices and x-ranges on the fly (no preallocated slab_infos buffer).
+//
+// File layout per z-block: [slab s0 segment][slab s1 segment]...[slab sK segment]
+
+void AppendZSlabParticles(
+    FILE *fp,
+    FILE *fp_dens,
+    int slab_x_start,
+    int slab_x_end,
+    int cpd,
+    int z,
+    int k_start_global,
+    int k_extent,
+    Complx *slab_data,
+    int N,
+    int narray,
+    Parameters &param
+) {
+    Complx *slab1 = &slab_data[0 * k_extent * N];
+    Complx *slab2 = &slab_data[1 * k_extent * N];
+    Complx *slab3 = (narray > 2) ? &slab_data[2 * k_extent * N] : NULL;
+    Complx *slab4 = (narray > 3) ? &slab_data[3 * k_extent * N] : NULL;
+
+    double norm = 1.0;
+    double densitynorm = 1.0;
+    double vnorm = param.qPLT ? 1.0 : (sqrt(1.0 + 24.0 * param.f_cluster) - 1.0) * 0.25;
+    bool write_dens = (param.qdensity && fp_dens != NULL);
+
+    for (int s = slab_x_start; s < slab_x_end; s++) {
+        int firstx = (s * N + cpd - 1) / cpd;
+        int lastx  = ((s + 1) * N + cpd - 1) / cpd;
+        int ox_count = lastx - firstx;
+        int64_t seg_particles = (int64_t)N * ox_count;
+
+        RVZelParticle *buf = new RVZelParticle[seg_particles];
+        float *dens_buf = write_dens ? new float[seg_particles] : NULL;
+
+        #pragma omp parallel for schedule(static)
+        for (int y = 0; y < N; y++) {
+            for (int x_global = firstx; x_global < lastx; x_global++) {
+                int x_local = x_global - k_start_global;
+                int idx = y * ox_count + (x_global - firstx);
+
+                Complx s1_val = slab1[x_local * N + y];
+                Complx s2_val = slab2[x_local * N + y];
+                Complx s3_val = slab3 ? slab3[x_local * N + y] : Complx(0.0, 0.0);
+                Complx s4_val = slab4 ? slab4[x_local * N + y] : Complx(0.0, 0.0);
+
+                double pos0 = std::imag(s2_val) * norm; // axis0 (z-displacement)
+                double pos1 = std::real(s2_val) * norm; // axis1 (y-displacement)
+                double pos2 = std::imag(s1_val) * norm; // axis2 (x-displacement)
+
+                double vel0, vel1, vel2;
+                if (param.qPLT) {
+                    vel0 = std::imag(s4_val) * vnorm;
+                    vel1 = std::real(s4_val) * vnorm;
+                    vel2 = std::imag(s3_val) * vnorm;
+                } else {
+                    vel0 = std::imag(s2_val) * vnorm;
+                    vel1 = std::real(s2_val) * vnorm;
+                    vel2 = std::imag(s1_val) * vnorm;
+                }
+
+                RVZelParticle &out = buf[idx];
+                out.i = (unsigned short)z;
+                out.j = (unsigned short)y;
+                out.k = (unsigned short)x_global;
+                out.displ[0] = (float)pos0;
+                out.displ[1] = (float)pos1;
+                out.displ[2] = (float)pos2;
+                out.vel[0] = (float)vel0;
+                out.vel[1] = (float)vel1;
+                out.vel[2] = (float)vel2;
+
+                if (dens_buf)
+                    dens_buf[idx] = (float)(std::real(s1_val) * densitynorm);
+            }
+        }
+
+        fwrite(buf, sizeof(RVZelParticle), seg_particles, fp);
+        if (dens_buf)
+            fwrite(dens_buf, sizeof(float), seg_particles, fp_dens);
+
+        delete[] buf;
+        if (dens_buf) delete[] dens_buf;
+    }
+}

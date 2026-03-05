@@ -14,6 +14,7 @@
 // Include zeldovich-PLT headers to get Complx and Parameters definitions
 #include <zeldovich.h>
 #include <parameters.h>
+#include <output.h>
 
 // WriteParticlesSlab_range - C++ function overloads (same name, different signatures)
 // The compiler selects the appropriate version based on the arguments provided.
@@ -76,5 +77,34 @@ void SetupOutputDir(Parameters &param);
 double InitOutputBuffers(Parameters &param);
 void TeardownOutput();
 
-#endif  // OUTPUT_NEW_H
+// ====================================================================================
+// MODE 3: Streaming-append CPD-ordered output (Bresenham division)
+// ====================================================================================
+//
+// Assumes Bresenham division; layout must match Abacus subslab reader.
+// Slab indices and x-ranges are computed on the fly (no preallocated buffer).
+
+// Append one z-slab's particles to the rank's output file, grouped by CPD slab.
+//
+// For each slab s in [slab_x_start, slab_x_end), computes firstx/lastx on the fly,
+// extracts the x-segment, converts complex -> RVZel particles in (y outer, x inner)
+// order, and writes a contiguous segment.
+//
+// One z-block in the file = [slab s0 segment][slab s1 segment]...[slab sK segment].
+void AppendZSlabParticles(
+    FILE *fp,                 // Open particle file to append to (caller owns)
+    FILE *fp_dens,            // Open density file, or NULL if !qdensity
+    int slab_x_start,         // First CPD slab index this rank owns
+    int slab_x_end,           // One past last (exclusive)
+    int cpd,                  // Cells per dimension
+    int z,                    // Global z index for this z-slab
+    int k_start_global,       // This rank's x start (global): maps x_global -> x_local = x_global - k_start_global
+    int k_extent,             // This rank's x count (slab_data uses local x in [0, k_extent))
+    Complx *slab_data,        // local_z_slab in [array][x_local][y] layout
+    int N,                    // Grid size (ppd)
+    int narray,               // Number of arrays (4)
+    Parameters &param         // For ICFormat, conversion factors, qdensity
+);
+
+#endif 
 
