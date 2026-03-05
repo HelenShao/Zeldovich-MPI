@@ -78,44 +78,33 @@ double InitOutputBuffers(Parameters &param);
 void TeardownOutput();
 
 // ====================================================================================
-// MODE 3: Streaming-append CPD-ordered output
+// MODE 3: Streaming-append CPD-ordered output (Bresenham division)
 // ====================================================================================
-
-// Info for one CPD slab that this rank overlaps.
-// Precomputed before the z-loop; used by AppendZSlabParticles() each z-iteration.
-typedef struct {
-    int slab_index;     // CPD slab index (0..cpd-1)
-    int firstx;         // CPD slab x-range start (global)
-    int lastx;          // CPD slab x-range end (global, exclusive)
-    int ox_start;       // Overlap x start = max(rank_x_start, firstx)
-    int ox_end;         // Overlap x end   = min(rank_x_end, lastx)
-    int ox_count;       // = ox_end - ox_start (number of x-indices this rank contributes to this slab)
-} CPDSlabInfo;
+//
+// Assumes Bresenham division; layout must match Abacus subslab reader.
+// Slab indices and x-ranges are computed on the fly (no preallocated buffer).
 
 // Append one z-slab's particles to the rank's output file, grouped by CPD slab.
 //
-// For each CPD slab in slab_infos (ascending order), extracts the x-segment
-// that overlaps this rank, converts complex -> RVZel particles in (y outer, x inner)
-// order, and writes a contiguous segment to fp (and optionally fp_dens).
+// For each slab s in [slab_x_start, slab_x_end), computes firstx/lastx on the fly,
+// extracts the x-segment, converts complex -> RVZel particles in (y outer, x inner)
+// order, and writes a contiguous segment.
 //
 // One z-block in the file = [slab s0 segment][slab s1 segment]...[slab sK segment].
-// Each slab segment = N * ox_count particles (y outer, x inner).
-//
-// Uses OpenMP parallel for over y within each slab segment (Option 2: direct to
-// shared buffer, disjoint y-stripes, no contention).
 void AppendZSlabParticles(
     FILE *fp,                 // Open particle file to append to (caller owns)
     FILE *fp_dens,            // Open density file, or NULL if !qdensity
-    CPDSlabInfo *slab_infos,  // Array of CPD slabs this rank overlaps (sorted by slab_index)
-    int num_slabs,            // Length of slab_infos array
+    int slab_x_start,         // First CPD slab index this rank owns
+    int slab_x_end,           // One past last (exclusive)
+    int cpd,                  // Cells per dimension
     int z,                    // Global z index for this z-slab
-    int k_start_global,       // This rank's x start (global)
-    int k_extent,             // This rank's x count
+    int k_start_global,       // This rank's x start (global): maps x_global -> x_local = x_global - k_start_global
+    int k_extent,             // This rank's x count (slab_data uses local x in [0, k_extent))
     Complx *slab_data,        // local_z_slab in [array][x_local][y] layout
     int N,                    // Grid size (ppd)
     int narray,               // Number of arrays (4)
     Parameters &param         // For ICFormat, conversion factors, qdensity
 );
 
-#endif  // OUTPUT_NEW_H
+#endif 
 
