@@ -397,14 +397,10 @@ int main(int argc, char **argv)
                is_idle_rank ? 0 : my_num_pairs);
     }
 
-    // Grid bounds: Bresenham when MODE 3
+    // Grid bounds: CPD-aligned when params/cpd present
     if (!is_idle_rank) {
         if (params != NULL && cpd > 0) {
-            if (PARTICLE_OUTPUT_MODE == 3) {
-                my_extended_bounds = get_extended_grid_bounds_bresenham(rank, N, num_ranks, grid_x, grid_z, cpd);
-            } else {
-                my_extended_bounds = get_extended_grid_bounds_cpd_aligned(rank, N, num_ranks, grid_x, grid_z, cpd);
-            }
+            my_extended_bounds = get_extended_grid_bounds_CPD_aligned(rank, N, num_ranks, grid_x, grid_z, cpd);
         } else {
             my_extended_bounds = get_extended_grid_bounds(rank, N, num_ranks, grid_x, grid_z);
         }
@@ -864,14 +860,14 @@ int main(int argc, char **argv)
     int files_written = 0;
     size_t total_bytes_written = 0;
     
-    // MODE 3: Streaming-append CPD-slab-ordered output (Bresenham; slab indices on the fly)
+    // MODE 3: Streaming-append CPD-slab-ordered output (CPD-aligned; slab indices on the fly)
     int slab_x_start = 0, slab_x_end = 0;
     FILE *subslab_fp = NULL;
     FILE *subslab_dens_fp = NULL;
     int z_slabs_written = 0;
     
     if (PARTICLE_OUTPUT_MODE == 3 && params != NULL && !is_idle_rank) {
-        // Bresenham: rank owns slabs [slab_x_start, slab_x_end) exactly
+        // CPD-aligned: rank owns slabs [slab_x_start, slab_x_end) exactly
         slab_x_start = (rank_x * cpd) / grid_x;
         slab_x_end   = ((rank_x + 1) * cpd) / grid_x;
         

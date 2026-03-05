@@ -87,46 +87,10 @@ void calculate_grid_factors_cpd_aligned(int num_ranks, int N, int cpd,
 }
 
 // ====================================================================================
-// Get the x,z range for given rank (CPD-aligned: boundaries = CPD slab boundaries)
+// CPD-aligned grid bounds: works when grid_x/grid_z do not divide cpd (integer division)
 // ====================================================================================
 
-GridBounds get_grid_bounds_cpd_aligned(int dest, int N, int num_ranks,
-                                        int grid_x, int grid_z, int cpd)
-{
-    GridBounds bounds;
-
-    if (cpd <= 0) {
-        return get_grid_bounds(dest, N, num_ranks);
-    }
-
-    // Row-major: dest = x_block * grid_z + z_block
-    int x_block = dest / grid_z;
-    int z_block = dest % grid_z;
-
-    // CPD slab index range for this rank in X: slabs [s_x_start, s_x_end] inclusive
-    int slabs_per_x = cpd / grid_x;
-    int s_x_start = x_block * slabs_per_x;
-    int s_x_end   = (x_block + 1) * slabs_per_x - 1;
-
-    // Same for Z
-    int slabs_per_z = cpd / grid_z;
-    int s_z_start = z_block * slabs_per_z;
-    int s_z_end   = (z_block + 1) * slabs_per_z - 1;
-
-    // Slab s covers x in [ (s*N+cpd-1)/cpd, ((s+1)*N+cpd-1)/cpd )
-    bounds.x_start = (s_x_start * N + cpd - 1) / cpd;
-    bounds.x_end   = ((s_x_end + 1) * N + cpd - 1) / cpd;
-    bounds.z_start = (s_z_start * N + cpd - 1) / cpd;
-    bounds.z_end   = ((s_z_end + 1) * N + cpd - 1) / cpd;
-
-    return bounds;
-}
-
-// ====================================================================================
-// Bresenham grid bounds: works when grid_x/grid_z do not divide cpd (integer division)
-// ====================================================================================
-
-GridBounds get_grid_bounds_bresenham(int dest, int N, int num_ranks,
+GridBounds get_grid_bounds_CPD_aligned(int dest, int N, int num_ranks,
                                      int grid_x, int grid_z, int cpd)
 {
     GridBounds bounds;
@@ -139,7 +103,7 @@ GridBounds get_grid_bounds_bresenham(int dest, int N, int num_ranks,
     int x_block = dest / grid_z;
     int z_block = dest % grid_z;
 
-    // Bresenham: slab indices [s_x_start, s_x_end) exclusive
+    // CPD-aligned: slab indices [s_x_start, s_x_end) exclusive
     int s_x_start = (x_block * cpd) / grid_x;
     int s_x_end   = ((x_block + 1) * cpd) / grid_x;
 
@@ -261,37 +225,12 @@ ExtendedGridBounds get_extended_grid_bounds(int rank, int N, int num_ranks, int 
     return ext_bounds;
 }
 
-ExtendedGridBounds get_extended_grid_bounds_cpd_aligned(int rank, int N, int num_ranks,
-                                                        int grid_x, int grid_z, int cpd)
-{
-    ExtendedGridBounds ext_bounds;
-
-    GridBounds core = get_grid_bounds_cpd_aligned(rank, N, num_ranks, grid_x, grid_z, cpd);
-    ext_bounds.core = core;
-
-#if USE_X_PADDING
-    ext_bounds.padded.x_start = core.x_start - X_PADDING;
-    ext_bounds.padded.x_end = core.x_end + X_PADDING;
-#else
-    ext_bounds.padded.x_start = core.x_start;
-    ext_bounds.padded.x_end = core.x_end;
-#endif
-    ext_bounds.padded.z_start = core.z_start;
-    ext_bounds.padded.z_end = core.z_end;
-
-    ext_bounds.num_pencils_core = (core.x_end - core.x_start) * (core.z_end - core.z_start);
-    ext_bounds.num_pencils_padded = (ext_bounds.padded.x_end - ext_bounds.padded.x_start) *
-                                    (ext_bounds.padded.z_end - ext_bounds.padded.z_start);
-
-    return ext_bounds;
-}
-
-ExtendedGridBounds get_extended_grid_bounds_bresenham(int rank, int N, int num_ranks,
+ExtendedGridBounds get_extended_grid_bounds_CPD_aligned(int rank, int N, int num_ranks,
                                                       int grid_x, int grid_z, int cpd)
 {
     ExtendedGridBounds ext_bounds;
 
-    GridBounds core = get_grid_bounds_bresenham(rank, N, num_ranks, grid_x, grid_z, cpd);
+    GridBounds core = get_grid_bounds_CPD_aligned(rank, N, num_ranks, grid_x, grid_z, cpd);
     ext_bounds.core = core;
 
 #if USE_X_PADDING
