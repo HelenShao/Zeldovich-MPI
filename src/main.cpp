@@ -50,7 +50,8 @@
 #include <math.h>
 #include <stdint.h>
 #include <assert.h>
-#include <limits.h> 
+#include <limits.h>
+#include <vector>
 #include <mpi.h>
 #include <omp.h> 
 #include <fftw3.h>
@@ -878,18 +879,16 @@ int main(int argc, char **argv)
     int files_written = 0;
     size_t total_bytes_written = 0;
     
-    // MODE 3: Streaming-append CPD-slab-ordered output (CPD-aligned; slab indices on the fly)
+    // MODE 3: One file per x-slab (ic2D_{xslab}_z{rz}.bin)
     int slab_x_start = 0, slab_x_end = 0;
-    FILE *subslab_fp = NULL;
-    FILE *subslab_dens_fp = NULL;
-    int z_slabs_written = 0;
+    std::vector<FILE*> slab_fp;
+    std::vector<FILE*> slab_dens_fp;
     
     if (PARTICLE_OUTPUT_MODE == 3 && params != NULL && !is_idle_rank) {
-        // CPD-aligned: rank owns slabs [slab_x_start, slab_x_end) exactly
+        Parameters *p = static_cast<Parameters*>(params);
         slab_x_start = (rank_x * cpd) / grid_x;
         slab_x_end   = ((rank_x + 1) * cpd) / grid_x;
         
-        // Create rank subdirectory: {output_dir}/x{rx}_z{rz}
         char subdir[PATH_MAX];
         snprintf(subdir, sizeof(subdir), "%s/x%d_z%d", p->output_dir.c_str(), rank_x, rank_z);
         int mkdir_sub = mkdir(subdir, 0755);
@@ -898,30 +897,32 @@ int main(int argc, char **argv)
             MPI_Abort(comm_2d, 1);
         }
         
-        // Open one particle file per rank: {output_dir}/x{rx}_z{rz}/ic2D_x{rx}_z{rz}.bin
-        char fp_path[PATH_MAX];
-        snprintf(fp_path, sizeof(fp_path), "%s/x%d_z%d/ic2D_x%d_z%d.bin",
-                 p->output_dir.c_str(), rank_x, rank_z, rank_x, rank_z);
-        subslab_fp = fopen(fp_path, "wb");
-        if (!subslab_fp) {
-            fprintf(stderr, "Rank %d: ERROR opening %s for writing (errno=%d)\n",
-                    rank, fp_path, errno);
-        }
+        slab_fp.resize(slab_x_end - slab_x_start, NULL);
+        slab_dens_fp.resize(slab_x_end - slab_x_start, NULL);
         
-        // Open companion density file if requested: {output_dir}/x{rx}_z{rz}/ic2D_x{rx}_z{rz}_dens.bin
-        if (p->qdensity && subslab_fp != NULL) {
-            char fd_path[PATH_MAX];
-            snprintf(fd_path, sizeof(fd_path), "%s/x%d_z%d/ic2D_x%d_z%d_dens.bin",
-                     p->output_dir.c_str(), rank_x, rank_z, rank_x, rank_z);
-            subslab_dens_fp = fopen(fd_path, "wb");
-            if (!subslab_dens_fp) {
-                fprintf(stderr, "Rank %d: ERROR opening %s for density writing (errno=%d)\n",
-                        rank, fd_path, errno);
+        for (int s = slab_x_start; s < slab_x_end; s++) {
+            char fp_path[PATH_MAX];
+            snprintf(fp_path, sizeof(fp_path), "%s/x%d_z%d/ic2D_%d_z%d.bin",
+                     p->output_dir.c_str(), rank_x, rank_z, s, rank_z);
+            slab_fp[s - slab_x_start] = fopen(fp_path, "wb");
+            if (!slab_fp[s - slab_x_start]) {
+                fprintf(stderr, "Rank %d: ERROR opening %s for writing (errno=%d)\n",
+                        rank, fp_path, errno);
+            }
+            if (p->qdensity && slab_fp[s - slab_x_start] != NULL) {
+                char fd_path[PATH_MAX];
+                snprintf(fd_path, sizeof(fd_path), "%s/x%d_z%d/ic2D_%d_z%d_dens.bin",
+                         p->output_dir.c_str(), rank_x, rank_z, s, rank_z);
+                slab_dens_fp[s - slab_x_start] = fopen(fd_path, "wb");
+                if (!slab_dens_fp[s - slab_x_start]) {
+                    fprintf(stderr, "Rank %d: ERROR opening %s for density (errno=%d)\n",
+                            rank, fd_path, errno);
+                }
             }
         }
         
         if (rank == 0) {
-            printf("[MODE 3] CPD-slab-ordered streaming: cpd=%d, slabs_per_rank=%d, file=x*/z*/ic2D_x*_z*.bin\n",
+            printf("[MODE 3] One file per x-slab: cpd=%d, slabs_per_rank=%d, ic2D_{xslab}_z{rz}.bin\n",
                    cpd, slab_x_end - slab_x_start);
         }
     }
@@ -1170,33 +1171,33 @@ int main(int argc, char **argv)
                 
                 case 3: {
                     // =======================================================================================
-                    // MODE 3: Streaming-append CPD-slab-ordered particles (slab indices on the fly)
+                    // MODE 3: One file per x-slab; write one segment per (slab, z)
                     // =======================================================================================
-                    if (subslab_fp == NULL) {
-                        break;
+                    for (int s = slab_x_start; s < slab_x_end; s++) {
+                        FILE *fp = slab_fp[s - slab_x_start];
+                        FILE *fp_dens = slab_dens_fp[s - slab_x_start];
+                        if (fp == NULL) continue;
+                        
+                        AppendSlabZSegment(
+                            fp,
+                            fp_dens,
+                            s,
+                            cpd,
+                            z,
+                            my_extended_bounds.core.x_start,
+                            x_count,
+                            (Complx*)local_z_slab,
+                            N,
+                            narray,
+                            *static_cast<Parameters*>(params)
+                        );
                     }
                     
-                    AppendZSlabParticles(
-                        subslab_fp,
-                        subslab_dens_fp,
-                        slab_x_start,
-                        slab_x_end,
-                        cpd,
-                        z,
-                        my_extended_bounds.core.x_start,
-                        x_count,
-                        (Complx*)local_z_slab,
-                        N,
-                        narray,
-                        *static_cast<Parameters*>(params)
-                    );
+                    int ox_total = my_extended_bounds.core.x_end - my_extended_bounds.core.x_start;
+                    total_bytes_written += (size_t)ox_total * N * sizeof(RVZelParticle);
+                    if (static_cast<Parameters*>(params)->qdensity)
+                        total_bytes_written += (size_t)ox_total * N * sizeof(float);
                     
-                    total_bytes_written += (size_t)x_count * N * sizeof(RVZelParticle);
-                    if (subslab_dens_fp)
-                        total_bytes_written += (size_t)x_count * N * sizeof(float);
-                    
-                    z_slabs_written++;
-                    files_written++;
                     break;
                 }
                 
@@ -1223,17 +1224,19 @@ int main(int argc, char **argv)
     }
     // Idle ranks: files_written = 0, total_bytes_written = 0 (already initialized)
     
-    // MODE 3: Close files after z-loop completes
+    // MODE 3: Close slab files and set file count
     if (PARTICLE_OUTPUT_MODE == 3 && params != NULL) {
-        if (subslab_fp != NULL) {
-            fclose(subslab_fp);
-            subslab_fp = NULL;
+        for (size_t i = 0; i < slab_fp.size(); i++) {
+            if (slab_fp[i] != NULL) {
+                fclose(slab_fp[i]);
+                slab_fp[i] = NULL;
+            }
+            if (i < slab_dens_fp.size() && slab_dens_fp[i] != NULL) {
+                fclose(slab_dens_fp[i]);
+                slab_dens_fp[i] = NULL;
+            }
         }
-        if (subslab_dens_fp != NULL) {
-            fclose(subslab_dens_fp);
-            subslab_dens_fp = NULL;
-        }
-        
+        files_written = slab_x_end - slab_x_start;
         MPI_Barrier(comm_2d);
     }
     
