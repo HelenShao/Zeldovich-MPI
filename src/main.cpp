@@ -882,6 +882,7 @@ int main(int argc, char **argv)
         slab_fp.resize(slab_x_end - slab_x_start, NULL);
         slab_dens_fp.resize(slab_x_end - slab_x_start, NULL);
         
+        // build paths for each x-slab in my rank
         for (int s = slab_x_start; s < slab_x_end; s++) {
             char fp_path[PATH_MAX];
             snprintf(fp_path, sizeof(fp_path), "%s/x%d_z%d/ic2D_%d_z%d.bin",
