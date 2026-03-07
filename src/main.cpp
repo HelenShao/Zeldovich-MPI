@@ -37,7 +37,7 @@
  *    - Write output: PARTICLE_OUTPUT_MODE 0 -> WriteParticlesSlab_range
  *                    PARTICLE_OUTPUT_MODE 1 -> .bin files
  *                    PARTICLE_OUTPUT_MODE 2 -> .bin then read-back -> WriteParticlesSlab_range
- *                    PARTICLE_OUTPUT_MODE 3 -> CPD-slab-ordered streaming append (one file/rank)
+ *                    PARTICLE_OUTPUT_MODE 3 → CPD-slab-ordered streaming append (one file per x-slab per rank)
  *
  * 9. CLEANUP
  *    - Free plans, recv_buffer, local buffers, params, ps, PLT eigenmodes
