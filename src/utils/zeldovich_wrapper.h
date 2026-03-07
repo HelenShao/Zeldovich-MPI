@@ -37,6 +37,9 @@ double zeldovich_params_get_Pk_scale(ParametersHandle params);
 // Get ppd (grid size)
 int64_t zeldovich_params_get_ppd(ParametersHandle params);
 
+// Get cpd (coarse particle decomposition; number of slabs for output alignment)
+int zeldovich_params_get_cpd(ParametersHandle params);
+
 // Get seed
 int zeldovich_params_get_seed(ParametersHandle params);
 

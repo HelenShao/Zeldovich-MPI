@@ -175,6 +175,14 @@
 //     - Writes .bin files first (same as Mode 1)
 //     - Then reads them back and calls WriteParticlesSlab_range on local data
 //     - Writes particle ICs from .bin file data (useful for verifying .bin format)
+// 3 = Streaming-append CPD-slab-ordered: one particle file per rank
+//     - Opens one file ic2D_xr<rx>_zr<rz>_N<N>.bin before z-loop
+//     - For each z: converts complex -> RVZel particles, grouped by CPD slab
+//     - Each z-block: [slab s0 segment][slab s1 segment]...[slab sK segment]
+//     - Abacus seeks directly to the contiguous segment for its CPD slab
+//     - Rank 0: Writes ic_metadata.txt at the end
+//     - Reads CPD param from param file
+//     - Optional: companion _dens.bin file when param.qdensity is set
 #ifndef PARTICLE_OUTPUT_MODE
 #define PARTICLE_OUTPUT_MODE 1  // Default: Write .bin files for later re-assembly
 #endif

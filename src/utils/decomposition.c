@@ -41,6 +41,95 @@ void calculate_grid_factors(int num_ranks, int *grid_x_out, int *grid_z_out)
 }
 
 // ====================================================================================
+// CPD-aligned grid factors: choose grid_x, grid_z so rank x/z ranges align with
+// CPD slab boundaries (firstx_s = (s*N+cpd-1)/cpd, lastx_s = ((s+1)*N+cpd-1)/cpd).
+// Requires grid_x | cpd and grid_z | cpd so each rank gets whole slabs.
+// ====================================================================================
+
+void calculate_grid_factors_cpd_aligned(int num_ranks, int N, int cpd,
+                                        int *grid_x_out, int *grid_z_out)
+{
+    (void)N;
+    int grid_x = 1, grid_z = num_ranks;
+
+    if (cpd <= 0) {
+        calculate_grid_factors(num_ranks, grid_x_out, grid_z_out);
+        return;
+    }
+
+    // Find factor pair (gx, gz) of num_ranks such that gx divides cpd and gz divides cpd.
+    // Prefer square-ish (gx close to sqrt(num_ranks)).
+    int best_gx = 0, best_gz = 0;
+    int trial_x = (int)sqrt_t((double)num_ranks);
+    while (trial_x >= 1) {
+        if (num_ranks % trial_x != 0) {
+            trial_x--;
+            continue;
+        }
+        int trial_z = num_ranks / trial_x;
+        if (cpd % trial_x == 0 && cpd % trial_z == 0) {
+            best_gx = trial_x;
+            best_gz = trial_z;
+            break;
+        }
+        trial_x--;
+    }
+    if (best_gx != 0) {
+        grid_x = best_gx;
+        grid_z = best_gz;
+    } else {
+        // No CPD-aligned factor pair: use default and caller may warn
+        calculate_grid_factors(num_ranks, &grid_x, &grid_z);
+    }
+
+    *grid_x_out = grid_x;
+    *grid_z_out = grid_z;
+}
+
+// ====================================================================================
+// CPD-aligned grid bounds: works when grid_x/grid_z do not divide cpd (integer division)
+// ====================================================================================
+
+GridBounds get_grid_bounds_CPD_aligned(int dest, int N, int num_ranks,
+                                     int grid_x, int grid_z, int cpd)
+{
+    GridBounds bounds;
+
+    if (cpd <= 0) {
+        return get_grid_bounds(dest, N, num_ranks);
+    }
+
+    // Row-major: dest = x_block * grid_z + z_block
+    int x_block = dest / grid_z;
+    int z_block = dest % grid_z;
+
+    // CPD-aligned: slab indices [s_x_start, s_x_end) exclusive
+    int s_x_start = (x_block * cpd) / grid_x;
+    int s_x_end   = ((x_block + 1) * cpd) / grid_x;
+
+    int s_z_start = (z_block * cpd) / grid_z;
+    int s_z_end   = ((z_block + 1) * cpd) / grid_z;
+
+    // Slab s covers x in [ (s*N+cpd-1)/cpd, ((s+1)*N+cpd-1)/cpd )
+    bounds.x_start = (s_x_start * N + cpd - 1) / cpd;
+    bounds.x_end   = (s_x_end * N + cpd - 1) / cpd;
+    bounds.z_start = (s_z_start * N + cpd - 1) / cpd;
+    bounds.z_end   = (s_z_end * N + cpd - 1) / cpd;
+
+    return bounds;
+}
+
+// ====================================================================================
+// Inverse: given CPD slab index s (x-direction), which rx owns it?
+// ====================================================================================
+
+int slab_to_rx(int slab, int cpd, int grid_x)
+{
+    if (cpd <= 0 || grid_x <= 0) return 0;
+    return ((slab + 1) * grid_x - 1) / cpd;
+}
+
+// ====================================================================================
 // Get the x,z range for given rank
 // ====================================================================================
 
@@ -133,6 +222,31 @@ ExtendedGridBounds get_extended_grid_bounds(int rank, int N, int num_ranks, int 
     ext_bounds.num_pencils_padded = (ext_bounds.padded.x_end - ext_bounds.padded.x_start) * 
                                     (ext_bounds.padded.z_end - ext_bounds.padded.z_start);
     
+    return ext_bounds;
+}
+
+ExtendedGridBounds get_extended_grid_bounds_CPD_aligned(int rank, int N, int num_ranks,
+                                                      int grid_x, int grid_z, int cpd)
+{
+    ExtendedGridBounds ext_bounds;
+
+    GridBounds core = get_grid_bounds_CPD_aligned(rank, N, num_ranks, grid_x, grid_z, cpd);
+    ext_bounds.core = core;
+
+#if USE_X_PADDING
+    ext_bounds.padded.x_start = core.x_start - X_PADDING;
+    ext_bounds.padded.x_end = core.x_end + X_PADDING;
+#else
+    ext_bounds.padded.x_start = core.x_start;
+    ext_bounds.padded.x_end = core.x_end;
+#endif
+    ext_bounds.padded.z_start = core.z_start;
+    ext_bounds.padded.z_end = core.z_end;
+
+    ext_bounds.num_pencils_core = (core.x_end - core.x_start) * (core.z_end - core.z_start);
+    ext_bounds.num_pencils_padded = (ext_bounds.padded.x_end - ext_bounds.padded.x_start) *
+                                    (ext_bounds.padded.z_end - ext_bounds.padded.z_start);
+
     return ext_bounds;
 }
 

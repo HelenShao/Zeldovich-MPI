@@ -16,7 +16,7 @@
  *      overwriting during planning)
  *
  * 5. GRID DECOMPOSITION
- *    - get_extended_grid_bounds; my_pencils for this rank's XZ region
+ *    - get_extended_grid_bounds; my_pencils for this rank’s XZ region
  *
  * 6. PRE-COMPUTATION (V11 PERSISTENT RECV_BUFFER)
  *    - global_max_batches; src_total_slices per source; prefix-sum recv_displs_src
@@ -25,18 +25,19 @@
  *    - Allocate local_y_slices (reused per batch)
  *
  * 7. MULTI-BATCH LOOP (for each batch)
- *    a. Get batch's (y_primary, y_mirror)
+ *    a. Get batch’s (y_primary, y_mirror)
  *    b. generate_hermitian_slice_pair_local -> Generate + 2D FFT
  *    c. calculate_batch_send_recv_counts; pack_slices_to_send_buffer
- *    d. MPI_Alltoallv_c(send_buffer -> recv_buffer)
+ *    d. MPI_Alltoallv_c(send_buffer → recv_buffer)
  *    e. Update src_write_cursor; free per-batch send buffer
  *
  * 8. Z-SLAB STREAMING (for each Z owned by this rank)
  *    - Allocate local_z_slab (one Z-slab: [Array][X][Y])
  *    - For each z: z_streaming_unpack(recv_buffer -> local_z_slab, 1D FFT in Y)
  *    - Write output: PARTICLE_OUTPUT_MODE 0 -> WriteParticlesSlab_range
- *                    PARTICLE_OUTPUT_MODE 1 -> .bin files per rank
+ *                    PARTICLE_OUTPUT_MODE 1 -> .bin files
  *                    PARTICLE_OUTPUT_MODE 2 -> .bin then read-back -> WriteParticlesSlab_range
+ *                    PARTICLE_OUTPUT_MODE 3 → CPD-slab-ordered streaming append (one file per x-slab per rank)
  *
  * 9. CLEANUP
  *    - Free plans, recv_buffer, local buffers, params, ps, PLT eigenmodes
@@ -49,14 +50,15 @@
 #include <math.h>
 #include <stdint.h>
 #include <assert.h>
-#include <limits.h> 
+#include <limits.h>
+#include <vector>
 #include <mpi.h>
 #include <omp.h> 
 #include <fftw3.h>
 #include <sys/stat.h>
 #include <errno.h>
 #include <execinfo.h>  
-#include <unistd.h>   
+#include <unistd.h>    // For getpid
 
 // Include PCG RNG and STimer
 #include "pcg-rng/pcg_random.hpp"
@@ -72,6 +74,11 @@ extern "C" {
 #include "config.h"
 #include "precision.h"
 #include "types.h"
+
+// CXI/libfabric requires page-aligned (base, len) for memory registration.
+// Round allocation size up to page multiple to avoid cxil_map EINVAL.
+#define PAGE_SIZE_CXI 4096
+#define ROUND_UP_PAGE(x) ((((size_t)(x)) + PAGE_SIZE_CXI - 1) & ~((size_t)(PAGE_SIZE_CXI - 1)))
 
 // --- UTILITIES ---
 #include "utils/printing.h"
@@ -99,30 +106,81 @@ MPI_Comm comm_2d;
 int main(int argc, char **argv)
 {
     MPI_Init(&argc, &argv);
-    
-    // ========================================================================
-    // MPI Cartesian Topology Setup
-    // ========================================================================
-    
-    // Get total number of ranks from COMM_WORLD
+
     int num_ranks;
     MPI_Comm_size(MPI_COMM_WORLD, &num_ranks);
-    
-    // Calculate 2D grid decomposition (grid_x * grid_z)
+    int world_rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+
+    // ========================================================================
+    // Stage 1: Parse arguments (before topology so we can load params for CPD/PPD)
+    // ========================================================================
+    int N = 64;
+    const char* param_file = NULL;
+
+    if (argc < 3) {
+        if (world_rank == 0) {
+            fprintf(stderr, "Usage: %s N param_file.par\n", argv[0]);
+            fprintf(stderr, "  N: Grid size (e.g, 256)\n");
+            fprintf(stderr, "  param_file.par: zeldovich-PLT parameter file (required)\n");
+        }
+        MPI_Finalize();
+        return 1;
+    }
+
+    N = atoi(argv[1]);
+    if (N <= 0 || N % 2 != 0) {
+        if (world_rank == 0) {
+            fprintf(stderr, "Error: N must be positive even integer\n");
+        }
+        MPI_Finalize();
+        return 1;
+    }
+
+    if (argc >= 3) {
+        param_file = argv[2];
+    }
+    if (param_file == NULL) {
+        if (world_rank == 0) {
+            fprintf(stderr, "Error: Parameter file required \n");
+            fprintf(stderr, "Usage: %s N param_file.par\n", argv[0]);
+        }
+        MPI_Finalize();
+        return 1;
+    }
+
+    // ========================================================================
+    // Load param file early for CPD/PPD (used for CPD-aligned MPI grid)
+    // ========================================================================
+    ParametersHandle params = NULL;
+    params = zeldovich_params_create(param_file);
+    if (!params) {
+        if (world_rank == 0) {
+            fprintf(stderr, "Failed to load param file: %s\n", param_file);
+        }
+        MPI_Abort(MPI_COMM_WORLD, 1);
+    }
+
+    int cpd = zeldovich_params_get_cpd(params);
+    int64_t ppd_from_file = zeldovich_params_get_ppd(params);
+    if (ppd_from_file != (int64_t)N && world_rank == 0) {
+        fprintf(stderr, "WARNING: Parameter file ppd=%ld != N=%d; using N=%d from command line\n",
+                (long)ppd_from_file, N, N);
+    }
+
+    // ========================================================================
+    // MPI Cartesian Topology Setup (CPD-aligned: grid_x|cpd, grid_z|cpd)
+    // ========================================================================
     int grid_x, grid_z;
-    calculate_grid_factors(num_ranks, &grid_x, &grid_z);
-    
-    // Create 2D Cartesian topology
+    calculate_grid_factors_cpd_aligned(num_ranks, N, cpd, &grid_x, &grid_z);
+
     int dims[2] = { grid_x, grid_z };
     int periodic[2] = { 1, 1 };
     int reorder = 1;
-    
+
     MPI_Cart_create(MPI_COMM_WORLD, 2, dims, periodic, reorder, &comm_2d);
-    
-    // Require factorable (non-prime) num_ranks
+
     if (comm_2d == MPI_COMM_NULL) {
-        int world_rank;
-        MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
         if (world_rank == 0) {
             fprintf(stderr, "Error: num_ranks=%d must be factorable into grid_x x grid_z.\n", num_ranks);
             fprintf(stderr, "       Best factorization found: grid_x=%d, grid_z=%d (product=%d)\n",
@@ -133,72 +191,31 @@ int main(int argc, char **argv)
         MPI_Finalize();
         return 1;
     }
-    
-    // Get Cartesian rank (may differ from world_rank if reorder=1)
+
     int rank;
     MPI_Comm_rank(comm_2d, &rank);
-    
-    // Get Cartesian coordinates for this rank
+
     int coords[2];
     MPI_Cart_coords(comm_2d, rank, 2, coords);
-    int rank_x = coords[0];  // X position in grid
-    int rank_z = coords[1];  // Z position in grid
-    
+    int rank_x = coords[0];
+    int rank_z = coords[1];
+
     if (rank == 0) {
         printf("========================================================================\n");
-        printf("MPI Cartesian Topology Initialized\n");
-        printf("  Grid: %d x %d = %d ranks\n", grid_x, grid_z, num_ranks);
-        printf("  Periodic: [X=%s, Z=%s]\n", 
+        printf("MPI Cartesian Topology Initialized (CPD-aligned)\n");
+        printf("  Grid: %d x %d = %d ranks (cpd=%d, N=%d)\n", grid_x, grid_z, num_ranks, cpd, N);
+        printf("  Periodic: [X=%s, Z=%s]\n",
                periodic[0] ? "yes" : "no", periodic[1] ? "yes" : "no");
-        printf("  Reorder: %s (hardware-aware rank assignment)\n", 
+        printf("  Reorder: %s (hardware-aware rank assignment)\n",
                reorder ? "enabled" : "disabled");
         printf("========================================================================\n");
     }
-    
-    // Show rank mapping for verification
+
     printf("[Rank %d] Cartesian coords: (rank_x=%d, rank_z=%d)\n", rank, rank_x, rank_z);
-    
-    // Suppress unused variable warnings (rank_x, rank_z available for future use/debugging)
+
     (void)rank_x;
     (void)rank_z;
-    
-    // ========================================================================
-    // Stage 1: Parse arguments
-    // ========================================================================
-    int N = 64;
-    const char* param_file = NULL;
-    
-    if (argc < 3) {
-        if (rank == 0) {
-            fprintf(stderr, "Usage: %s N param_file.par\n", argv[0]);
-            fprintf(stderr, "  N: Grid size (e.g, 256)\n");
-            fprintf(stderr, "  param_file.par: zeldovich-PLT parameter file (required)\n");
-        }
-        MPI_Finalize();
-        return 1;
-    }
-    
-    N = atoi(argv[1]);
-    if (N <= 0 || N % 2 != 0) { 
-        if (rank == 0) {
-            fprintf(stderr, "Error: N must be positive even integer\n");
-        }
-        MPI_Finalize();
-        return 1; 
-    }
-    
-    if (argc >= 3) {
-        param_file = argv[2];
-    }
-    if (param_file == NULL) {
-        if (rank == 0) {
-            fprintf(stderr, "Error: Parameter file required \n");
-            fprintf(stderr, "Usage: %s N param_file.par\n", argv[0]);
-        }
-        MPI_Finalize();
-        return 1;
-    }
-    
+
     // ========================================================================
     // Stage 2: Initialization
     // ========================================================================
@@ -281,34 +298,20 @@ int main(int argc, char **argv)
         my_pencils = 0;
     }
     
-    ParametersHandle params = NULL;
     PowerSpectrumHandle ps = NULL;
-    
-    if (param_file != NULL) {
-        // Load parameters from file
-        if (rank == 0) {printf("[INIT] Loading zeldovich-PLT parameters from: %s\n", param_file);}
-        
-        params = zeldovich_params_create(param_file);
-        if (!params) {
-            if (rank == 0) {fprintf(stderr, "Failed to load param file: %s\n", param_file);}
-            MPI_Abort(comm_2d, 1);
+
+    // Params already loaded earlier for CPD-aligned grid
+    if (params != NULL) {
+        if (rank == 0) {
+            printf("[INIT] Using zeldovich-PLT parameters from: %s (cpd=%d)\n", param_file, cpd);
         }
-        
+
         uint64_t seed = (uint64_t)zeldovich_params_get_seed(params);
         initialize_global_pcg(N, N, N, seed);
-        
-        // Clean output directory and initialize output buffers
+
         SetupOutputDir(*static_cast<Parameters*>(params));
         InitOutputBuffers(*static_cast<Parameters*>(params));
-        
-        int64_t ppd = zeldovich_params_get_ppd(params);
-        if (ppd != N) {
-            if (rank == 0) {
-                fprintf(stderr, "WARNING: Parameter file ppd=%ld != N=%d\n", ppd, N);
-                fprintf(stderr, "         Using N=%d from command line\n", N);
-            }
-        }
-        
+
         // Create PowerSpectrum object (each rank creates its own)
         // Spline resolution: configured via SPLINE_RESOLUTION (default 128)
         ps = zeldovich_ps_create(SPLINE_RESOLUTION, params);
@@ -392,15 +395,11 @@ int main(int argc, char **argv)
     // Create FFT plans using dummy memory before allocating actual data
     // This prevents data destruction during planning (FFTW_MEASURE/PATIENT modes)
     fftw_plan_t plan_2d, plan_1d_y;
-    setup_fftw_plans_full(N, narray, &plan_2d, &plan_1d_y);
+    setup_fftw_plans_full(N, &plan_2d, &plan_1d_y);
     
-    // Calculate grid factors first (needed for get_extended_grid_bounds)
-    int grid_x_verify, grid_z_verify;
-    calculate_grid_factors(num_ranks, &grid_x_verify, &grid_z_verify);
-
     if (rank == 0) {
         printf("\n[MULTI-BATCH] Starting batch processing...\n");
-        printf("              Ranks will process %d pairs each (approx)\n", 
+        printf("              Ranks will process %d pairs each (approx)\n",
                is_idle_rank ? 0 : my_num_pairs);
         printf("              sizeof(MPI_Aint)=%zu (%s), sizeof(MPI_Count)=%zu\n",
                sizeof(MPI_Aint), sizeof(MPI_Aint) == 8 ? "int64" : (sizeof(MPI_Aint) == 4 ? "int32" : "other"),
@@ -408,10 +407,14 @@ int main(int argc, char **argv)
 
         fflush(stdout);
     }
-    
-    // Note: grid_x and grid_z already calculated during MPI topology setup
+
+    // Grid bounds: CPD-aligned when params/cpd present
     if (!is_idle_rank) {
-        my_extended_bounds = get_extended_grid_bounds(rank, N, num_ranks, grid_x, grid_z);
+        if (params != NULL && cpd > 0) {
+            my_extended_bounds = get_extended_grid_bounds_CPD_aligned(rank, N, num_ranks, grid_x, grid_z, cpd);
+        } else {
+            my_extended_bounds = get_extended_grid_bounds(rank, N, num_ranks, grid_x, grid_z);
+        }
 #if USE_X_PADDING
         my_pencils = my_extended_bounds.num_pencils_padded;
 #else
@@ -462,28 +465,16 @@ int main(int argc, char **argv)
     }
     
     // Allocate persistent recv_buffer: [src_rank][y_idx_for_src][pencil_idx][array_idx]
-    // NUMA-aware: parallel first-touch to distribute pages across NUMA nodes
+    // Round size up to page multiple for CXI/libfabric memory registration (avoids cxil_map EINVAL).
     if (!is_idle_rank && recv_total_elems > 0) {
         size_t recv_bytes = sizeof(fftw_complex_t) * (size_t)recv_total_elems;
-        if (posix_memalign((void**)&recv_buffer, ALIGN_BYTES, recv_bytes) != 0) {
+        size_t recv_alloc = ROUND_UP_PAGE(recv_bytes);
+        if (posix_memalign((void**)&recv_buffer, ALIGN_BYTES, recv_alloc) != 0) {
             fprintf(stderr, "Rank %d: posix_memalign failed for recv_buffer\n", rank);
             MPI_Abort(comm_2d, 1);
         }
         
-        // NUMA first-touch: parallel zeroing distributes pages across NUMA nodes
-        #pragma omp parallel
-        {
-            int tid = omp_get_thread_num();
-            int nthreads = omp_get_num_threads();
-            int64_t chunk = recv_total_elems / nthreads;
-            int64_t start = tid * chunk;
-            int64_t end = (tid == nthreads - 1) ? recv_total_elems : start + chunk;
-            
-            for (int64_t i = start; i < end; i++) {
-                recv_buffer[i][0] = 0.0;
-                recv_buffer[i][1] = 0.0;
-            }
-        }
+        memset(recv_buffer, 0, recv_bytes);
     }
     
     /*
@@ -551,7 +542,6 @@ int main(int argc, char **argv)
     free(src_y_counter);
         
     // Allocate local_y_slices buffer for maximum 2 slices (reused per batch)
-    // NUMA-aware: parallel first-touch to distribute pages across NUMA nodes
     if (!is_idle_rank) {
         int max_slices_per_batch = 2;
         int64_t slice_buffer_size = (int64_t)max_slices_per_batch * narray * N * N;
@@ -561,47 +551,20 @@ int main(int argc, char **argv)
             fprintf(stderr, "Rank %d: posix_memalign failed for local_y_slices\n", rank);
             MPI_Abort(comm_2d, 1);
         }
-        
-        // NUMA first-touch: each thread touches its portion of the buffer
-        // Pages are placed on the NUMA node of the first thread to write them
-        #pragma omp parallel
-        {
-            int tid = omp_get_thread_num();
-            int nthreads = omp_get_num_threads();
-            int64_t chunk = slice_buffer_size / nthreads;
-            int64_t start = tid * chunk;
-            int64_t end = (tid == nthreads - 1) ? slice_buffer_size : start + chunk;
-            
-            for (int64_t i = start; i < end; i++) {
-                local_y_slices[i][0] = 0.0;
-                local_y_slices[i][1] = 0.0;
-            }
-        }
     }
     
     // ===== Allocate persistent thread-local RNG buffers =====
-    // NUMA-aware: Each thread allocates and first-touches its own buffer
-    // so the memory is placed on the correct NUMA node
     void** thread_rng_buffers = NULL;
 #if PARALLELIZE_Z_LOOP
     if (!is_idle_rank) {
         int max_threads = omp_get_max_threads();
         thread_rng_buffers = (void**)malloc(sizeof(void*) * max_threads);
         size_t rng_size = zeldovich_ps_rng_buffer_size();
-        
-        // Parallel allocation: each thread allocates its own buffer
-        // This ensures memory is placed on the NUMA node closest to the thread
-        #pragma omp parallel num_threads(max_threads)
-        {
-            int tid = omp_get_thread_num();
-            thread_rng_buffers[tid] = malloc(rng_size);
-            // First-touch: zero the buffer to ensure pages are faulted in
-            // on this thread's NUMA node
-            memset(thread_rng_buffers[tid], 0, rng_size);
+        for (int t = 0; t < max_threads; t++) {
+            thread_rng_buffers[t] = malloc(rng_size);
         }
-        
         if (rank == 0) {
-            printf("[PERFORMANCE] Allocated %d persistent RNG buffers of %zu bytes each (NUMA-aware)\n",
+            printf("[PERFORMANCE] Allocated %d persistent RNG buffers of %zu bytes each\n",
                    max_threads, rng_size);
         }
     }
@@ -627,24 +590,11 @@ int main(int argc, char **argv)
         }
         
         // ===== BATCH STEP 2: Generate + 2D FFT =====
-        double t_batch_start = 0, t_memset_end = 0, t_gen_end = 0;
         if (!is_idle_rank && my_batch_slice_count > 0) {
-            t_batch_start = MPI_Wtime();
-            
-            // Clear buffer for reuse (parallel memset for NUMA locality + SIMD optimization)
+            // Clear buffer for reuse
             // Use int64_t to avoid overflow: 2*narray*N*N can exceed INT_MAX for large N
-            int64_t slice_elems_total = (int64_t)2 * (int64_t)narray * (int64_t)N * (int64_t)N;
-            size_t total_bytes = slice_elems_total * sizeof(fftw_complex_t);
-            #pragma omp parallel
-            {
-                int tid = omp_get_thread_num();
-                int nthreads = omp_get_num_threads();
-                size_t chunk_bytes = total_bytes / nthreads;
-                size_t start = tid * chunk_bytes;
-                size_t my_bytes = (tid == nthreads - 1) ? (total_bytes - start) : chunk_bytes;
-                memset((char*)local_y_slices + start, 0, my_bytes);
-            }
-            t_memset_end = MPI_Wtime();
+            size_t slice_bytes = (size_t)2 * (size_t)narray * (size_t)N * (size_t)N * sizeof(fftw_complex_t);
+            memset(local_y_slices, 0, slice_bytes);
 
             // Generate this batch's pair
             // For self-conjugate slices, conjugate_slices acts as temporary storage
@@ -660,16 +610,6 @@ int main(int argc, char **argv)
                 ps, params,
                 thread_rng_buffers
             );
-            t_gen_end = MPI_Wtime();
-            
-            // Print batch timing for first few batches
-            if (batch_idx <= 3 || (batch_idx % 32 == 0)) {
-                fprintf(stderr, "[BATCH-TIMING] Rank=%d Batch=%d Y=%d/%d | memset=%.3fms gen+fft=%.3fms\n",
-                        rank, batch_idx, y_batch_primary, y_batch_mirror,
-                        (t_memset_end - t_batch_start) * 1000.0,
-                        (t_gen_end - t_memset_end) * 1000.0);
-                fflush(stderr);
-            }
             
             if (local_y_slices == NULL) {
                 fprintf(stderr, "[Rank %d] WARNING: local_y_slices is NULL!\n", rank);
@@ -705,29 +645,20 @@ int main(int argc, char **argv)
         
         if (total_send_batch > 0) {
             size_t requested_bytes = (size_t)total_send_batch * sizeof(fftw_complex_t);
-            if (posix_memalign((void**)&send_buffer_batch, ALIGN_BYTES, requested_bytes) != 0) {
+            size_t alloc_bytes = ROUND_UP_PAGE(requested_bytes);
+            if (posix_memalign((void**)&send_buffer_batch, ALIGN_BYTES, alloc_bytes) != 0) {
                 fprintf(stderr, "Rank %d: posix_memalign failed for send_buffer_batch\n", rank);
                 MPI_Abort(comm_2d, 1);
             }
         }
         
         // ===== BATCH STEP 5: Pack to send buffer=====
-        double t_pack_start = 0, t_pack_end = 0;
         if (!is_idle_rank && my_batch_slice_count > 0 && total_send_batch > 0) {
-            t_pack_start = MPI_Wtime();
             pack_slices_to_send_buffer(
                 rank, num_ranks, N, narray,
                 local_y_slices, my_batch_slice_count, NULL,
                 send_buffer_batch, sendcounts_batch, sdispls_batch
             );
-            t_pack_end = MPI_Wtime();
-            
-            // Print pack timing for first few batches
-            if (batch_idx <= 3 || (batch_idx % 32 == 0)) {
-                fprintf(stderr, "[PACK-TIMING] Rank=%d Batch=%d | pack=%.3fms\n",
-                        rank, batch_idx, (t_pack_end - t_pack_start) * 1000.0);
-                fflush(stderr);
-            }
         }
         
         // ===== BATCH STEP 6: MPI_Alltoallv_c =====
@@ -797,7 +728,6 @@ int main(int argc, char **argv)
             MPI_Abort(comm_2d, 1);
         }
         
-        double t_comm_batch_start = MPI_Wtime();
         t_comm.Start();
         {
             MPI_Count sendcounts_c[4096], recvcounts_c[4096];
@@ -816,15 +746,6 @@ int main(int argc, char **argv)
             );
         }
         t_comm.Stop();
-        double t_comm_batch_end = MPI_Wtime();
-        
-        // Print comm timing for first few batches
-        if (batch_idx <= 3 || (batch_idx % 32 == 0)) {
-            fprintf(stderr, "[COMM-TIMING] Rank=%d Batch=%d | alltoallv=%.3fms send=%lld recv=%lld\n",
-                    rank, batch_idx, (t_comm_batch_end - t_comm_batch_start) * 1000.0,
-                    (long long)total_send_batch, (long long)total_recv_batch);
-            fflush(stderr);
-        }
         
         // ===== BATCH STEP 7: Update write cursors =====
         // After MPI_Alltoallv_c completes, the cursor is advanced by recvcounts_batch[src]
@@ -939,6 +860,55 @@ int main(int argc, char **argv)
     // Process one Z-slab at a time (Zeldovich-compatible)
     int files_written = 0;
     size_t total_bytes_written = 0;
+    
+    // MODE 3: One file per x-slab (ic2D_{xslab}_z{rz}.bin)
+    int slab_x_start = 0, slab_x_end = 0;
+    std::vector<FILE*> slab_fp;
+    std::vector<FILE*> slab_dens_fp;
+    
+    if (PARTICLE_OUTPUT_MODE == 3 && params != NULL && !is_idle_rank) {
+        Parameters *p = static_cast<Parameters*>(params);
+        slab_x_start = (rank_x * cpd) / grid_x;
+        slab_x_end   = ((rank_x + 1) * cpd) / grid_x;
+        
+        char subdir[PATH_MAX];
+        snprintf(subdir, sizeof(subdir), "%s/x%d_z%d", p->output_dir.c_str(), rank_x, rank_z);
+        int mkdir_sub = mkdir(subdir, 0755);
+        if (mkdir_sub != 0 && errno != EEXIST) {
+            fprintf(stderr, "Rank %d: ERROR creating directory %s (errno=%d)\n", rank, subdir, errno);
+            MPI_Abort(comm_2d, 1);
+        }
+        
+        slab_fp.resize(slab_x_end - slab_x_start, NULL);
+        slab_dens_fp.resize(slab_x_end - slab_x_start, NULL);
+        
+        // build paths for each x-slab in my rank
+        for (int s = slab_x_start; s < slab_x_end; s++) {
+            char fp_path[PATH_MAX];
+            snprintf(fp_path, sizeof(fp_path), "%s/x%d_z%d/ic2D_%d_z%d.bin",
+                     p->output_dir.c_str(), rank_x, rank_z, s, rank_z);
+            slab_fp[s - slab_x_start] = fopen(fp_path, "wb");
+            if (!slab_fp[s - slab_x_start]) {
+                fprintf(stderr, "Rank %d: ERROR opening %s for writing (errno=%d)\n",
+                        rank, fp_path, errno);
+            }
+            if (p->qdensity && slab_fp[s - slab_x_start] != NULL) {
+                char fd_path[PATH_MAX];
+                snprintf(fd_path, sizeof(fd_path), "%s/x%d_z%d/ic2D_%d_z%d_dens.bin",
+                         p->output_dir.c_str(), rank_x, rank_z, s, rank_z);
+                slab_dens_fp[s - slab_x_start] = fopen(fd_path, "wb");
+                if (!slab_dens_fp[s - slab_x_start]) {
+                    fprintf(stderr, "Rank %d: ERROR opening %s for density (errno=%d)\n",
+                            rank, fd_path, errno);
+                }
+            }
+        }
+        
+        if (rank == 0) {
+            printf("[MODE 3] One file per x-slab: cpd=%d, slabs_per_rank=%d, ic2D_{xslab}_z{rz}.bin\n",
+                   cpd, slab_x_end - slab_x_start);
+        }
+    }
     
     if (!is_idle_rank && my_pencils > 0) {
         // Use appropriate bounds for Z-loop (padded if enabled, core otherwise)
@@ -1182,6 +1152,38 @@ int main(int argc, char **argv)
                     break;
                 }
                 
+                case 3: {
+                    // =======================================================================================
+                    // MODE 3: One file per x-slab; write one segment per (slab, z)
+                    // =======================================================================================
+                    for (int s = slab_x_start; s < slab_x_end; s++) {
+                        FILE *fp = slab_fp[s - slab_x_start];
+                        FILE *fp_dens = slab_dens_fp[s - slab_x_start];
+                        if (fp == NULL) continue;
+                        
+                        AppendSlabZSegment(
+                            fp,
+                            fp_dens,
+                            s,
+                            cpd,
+                            z,
+                            my_extended_bounds.core.x_start,
+                            x_count,
+                            (Complx*)local_z_slab,
+                            N,
+                            narray,
+                            *static_cast<Parameters*>(params)
+                        );
+                    }
+                    
+                    int ox_total = my_extended_bounds.core.x_end - my_extended_bounds.core.x_start;
+                    total_bytes_written += (size_t)ox_total * N * sizeof(RVZelParticle);
+                    if (static_cast<Parameters*>(params)->qdensity)
+                        total_bytes_written += (size_t)ox_total * N * sizeof(float);
+                    
+                    break;
+                }
+                
                 default:
                     break;
             }
@@ -1204,6 +1206,23 @@ int main(int argc, char **argv)
         }
     }
     // Idle ranks: files_written = 0, total_bytes_written = 0 (already initialized)
+    
+    // MODE 3: Close slab files and set file count
+    if (PARTICLE_OUTPUT_MODE == 3 && params != NULL) {
+        for (size_t i = 0; i < slab_fp.size(); i++) {
+            if (slab_fp[i] != NULL) {
+                fclose(slab_fp[i]);
+                slab_fp[i] = NULL;
+            }
+            if (i < slab_dens_fp.size() && slab_dens_fp[i] != NULL) {
+                fclose(slab_dens_fp[i]);
+                slab_dens_fp[i] = NULL;
+            }
+        }
+        files_written = slab_x_end - slab_x_start;
+        MPI_Barrier(comm_2d);
+    }
+    
     t_streaming.Stop();
     
     int total_files_written;

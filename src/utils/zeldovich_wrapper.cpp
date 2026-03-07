@@ -54,6 +54,12 @@ int64_t zeldovich_params_get_ppd(ParametersHandle params) {
     return p->ppd;
 }
 
+int zeldovich_params_get_cpd(ParametersHandle params) {
+    if (!params) return 0;
+    Parameters* p = static_cast<Parameters*>(params);
+    return p->cpd;
+}
+
 int zeldovich_params_get_seed(ParametersHandle params) {
     if (!params) return 0;
     Parameters* p = static_cast<Parameters*>(params);
