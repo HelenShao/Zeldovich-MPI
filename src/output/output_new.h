@@ -14,6 +14,7 @@
 // Include zeldovich-PLT headers to get Complx and Parameters definitions
 #include <zeldovich.h>
 #include <parameters.h>
+#include <output.h>
 
 // WriteParticlesSlab_range - C++ function overloads (same name, different signatures)
 // The compiler selects the appropriate version based on the arguments provided.
@@ -76,5 +77,27 @@ void SetupOutputDir(Parameters &param);
 double InitOutputBuffers(Parameters &param);
 void TeardownOutput();
 
-#endif  // OUTPUT_NEW_H
+// ====================================================================================
+// MODE 3: One file per x-slab (ic2D_{xslab}_z{rz}.bin)
+// ====================================================================================
+//
+// CPD-aligned; layout must match Abacus RVZel_2D reader.
+// Each file contains [z0 segment][z1 segment]... for one x-slab (sequential, no offset).
+
+// Write one x-slab segment for one z to that slab's file.
+void AppendSlabZSegment(
+    FILE *fp,                 // This slab's particle file (caller owns)
+    FILE *fp_dens,            // This slab's density file, or NULL
+    int slab_s,               // CPD slab index (for firstx/lastx)
+    int cpd,                  // Cells per dimension
+    int z,                    // Global z index for this segment
+    int k_start_global,
+    int k_extent,
+    Complx *slab_data,
+    int N,
+    int narray,
+    Parameters &param
+);
+
+#endif 
 
