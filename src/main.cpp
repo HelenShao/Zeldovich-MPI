@@ -37,7 +37,7 @@
  *    - Write output: PARTICLE_OUTPUT_MODE 0 -> WriteParticlesSlab_range
  *                    PARTICLE_OUTPUT_MODE 1 -> .bin files
  *                    PARTICLE_OUTPUT_MODE 2 -> .bin then read-back -> WriteParticlesSlab_range
- *                    PARTICLE_OUTPUT_MODE 3 → CPD-slab-ordered streaming append (one file per x-slab per rank)
+ *                    PARTICLE_OUTPUT_MODE 3 -> CPD-slab-ordered streaming append (one file per slab, optionally split by z-rank)
  *
  * 9. CLEANUP
  *    - Free plans, recv_buffer, local buffers, params, ps, PLT eigenmodes
@@ -169,10 +169,20 @@ int main(int argc, char **argv)
     }
 
     // ========================================================================
-    // MPI Cartesian Topology Setup (CPD-aligned: grid_x|cpd, grid_z|cpd)
+    // MPI Cartesian Topology Setup (writer-specified grid from param file)
     // ========================================================================
     int grid_x, grid_z;
-    calculate_grid_factors_cpd_aligned(num_ranks, N, cpd, &grid_x, &grid_z);
+    grid_x = zeldovich_params_get_grid_x(params);
+    grid_z = zeldovich_params_get_grid_z(params);
+
+    if (grid_x * grid_z != num_ranks) {
+        if (world_rank == 0) {
+            fprintf(stderr, "Error: parameter file grid_x=%d and grid_z=%d do not match num_ranks=%d.\n",
+                    grid_x, grid_z, num_ranks);
+            fprintf(stderr, "       Expected grid_x * grid_z == num_ranks.\n");
+        }
+        MPI_Abort(MPI_COMM_WORLD, 1);
+    }
 
     int dims[2] = { grid_x, grid_z };
     int periodic[2] = { 1, 1 };
@@ -182,11 +192,9 @@ int main(int argc, char **argv)
 
     if (comm_2d == MPI_COMM_NULL) {
         if (world_rank == 0) {
-            fprintf(stderr, "Error: num_ranks=%d must be factorable into grid_x x grid_z.\n", num_ranks);
-            fprintf(stderr, "       Best factorization found: grid_x=%d, grid_z=%d (product=%d)\n",
-                    grid_x, grid_z, grid_x * grid_z);
-            fprintf(stderr, "       Please use a factorable rank count (e.g., 4, 8, 9, 16, 25, 32, 36, 64, 81, ...)\n");
-            fprintf(stderr, "       Or adjust grid dimensions to match: use %d ranks instead.\n", grid_x * grid_z);
+            fprintf(stderr, "Error: unable to create MPI Cartesian grid with grid_x=%d, grid_z=%d.\n",
+                    grid_x, grid_z);
+            fprintf(stderr, "       Check that the supplied grid dimensions are valid for this MPI launch.\n");
         }
         MPI_Finalize();
         return 1;
@@ -202,7 +210,7 @@ int main(int argc, char **argv)
 
     if (rank == 0) {
         printf("========================================================================\n");
-        printf("MPI Cartesian Topology Initialized (CPD-aligned)\n");
+        printf("MPI Cartesian Topology Initialized (parameter-driven)\n");
         printf("  Grid: %d x %d = %d ranks (cpd=%d, N=%d)\n", grid_x, grid_z, num_ranks, cpd, N);
         printf("  Periodic: [X=%s, Z=%s]\n",
                periodic[0] ? "yes" : "no", periodic[1] ? "yes" : "no");
@@ -861,7 +869,7 @@ int main(int argc, char **argv)
     int files_written = 0;
     size_t total_bytes_written = 0;
     
-    // MODE 3: One file per x-slab (ic2D_{xslab}_z{rz}.bin)
+    // MODE 3: One file per x-slab, written under ic/ with optional zNNN split
     int slab_x_start = 0, slab_x_end = 0;
     std::vector<FILE*> slab_fp;
     std::vector<FILE*> slab_dens_fp;
@@ -870,13 +878,24 @@ int main(int argc, char **argv)
         Parameters *p = static_cast<Parameters*>(params);
         slab_x_start = (rank_x * cpd) / grid_x;
         slab_x_end   = ((rank_x + 1) * cpd) / grid_x;
-        
-        char subdir[PATH_MAX];
-        snprintf(subdir, sizeof(subdir), "%s/x%d_z%d", p->output_dir.c_str(), rank_x, rank_z);
-        int mkdir_sub = mkdir(subdir, 0755);
-        if (mkdir_sub != 0 && errno != EEXIST) {
-            fprintf(stderr, "Rank %d: ERROR creating directory %s (errno=%d)\n", rank, subdir, errno);
+
+        char ic_dir[PATH_MAX];
+        snprintf(ic_dir, sizeof(ic_dir), "%s/ic", p->output_dir.c_str());
+        int mkdir_ic = mkdir(ic_dir, 0755);
+        if (mkdir_ic != 0 && errno != EEXIST) {
+            fprintf(stderr, "Rank %d: ERROR creating directory %s (errno=%d)\n", rank, ic_dir, errno);
             MPI_Abort(comm_2d, 1);
+        }
+
+        char z_dir[PATH_MAX];
+        z_dir[0] = '\0';
+        if (grid_z > 1) {
+            snprintf(z_dir, sizeof(z_dir), "%s/ic/z%03d", p->output_dir.c_str(), rank_z);
+            int mkdir_z = mkdir(z_dir, 0755);
+            if (mkdir_z != 0 && errno != EEXIST) {
+                fprintf(stderr, "Rank %d: ERROR creating directory %s (errno=%d)\n", rank, z_dir, errno);
+                MPI_Abort(comm_2d, 1);
+            }
         }
         
         slab_fp.resize(slab_x_end - slab_x_start, NULL);
@@ -885,8 +904,13 @@ int main(int argc, char **argv)
         // build paths for each x-slab in my rank
         for (int s = slab_x_start; s < slab_x_end; s++) {
             char fp_path[PATH_MAX];
-            snprintf(fp_path, sizeof(fp_path), "%s/x%d_z%d/ic2D_%d_z%d.bin",
-                     p->output_dir.c_str(), rank_x, rank_z, s, rank_z);
+            if (grid_z > 1) {
+                snprintf(fp_path, sizeof(fp_path), "%s/ic/z%03d/ic_%04d_z%03d",
+                         p->output_dir.c_str(), rank_z, s, rank_z);
+            } else {
+                snprintf(fp_path, sizeof(fp_path), "%s/ic/ic_%04d",
+                         p->output_dir.c_str(), s);
+            }
             slab_fp[s - slab_x_start] = fopen(fp_path, "wb");
             if (!slab_fp[s - slab_x_start]) {
                 fprintf(stderr, "Rank %d: ERROR opening %s for writing (errno=%d)\n",
@@ -894,8 +918,13 @@ int main(int argc, char **argv)
             }
             if (p->qdensity && slab_fp[s - slab_x_start] != NULL) {
                 char fd_path[PATH_MAX];
-                snprintf(fd_path, sizeof(fd_path), "%s/x%d_z%d/ic2D_%d_z%d_dens.bin",
-                         p->output_dir.c_str(), rank_x, rank_z, s, rank_z);
+                if (grid_z > 1) {
+                    snprintf(fd_path, sizeof(fd_path), "%s/ic/z%03d/ic_%04d_z%03d_dens",
+                             p->output_dir.c_str(), rank_z, s, rank_z);
+                } else {
+                    snprintf(fd_path, sizeof(fd_path), "%s/ic/ic_%04d_dens",
+                             p->output_dir.c_str(), s);
+                }
                 slab_dens_fp[s - slab_x_start] = fopen(fd_path, "wb");
                 if (!slab_dens_fp[s - slab_x_start]) {
                     fprintf(stderr, "Rank %d: ERROR opening %s for density (errno=%d)\n",
@@ -905,8 +934,13 @@ int main(int argc, char **argv)
         }
         
         if (rank == 0) {
-            printf("[MODE 3] One file per x-slab: cpd=%d, slabs_per_rank=%d, ic2D_{xslab}_z{rz}.bin\n",
-                   cpd, slab_x_end - slab_x_start);
+            if (grid_z > 1) {
+                printf("[MODE 3] One file per x-slab and z-rank: cpd=%d, slabs_per_rank=%d, ic/z%%03d/ic_%%04d_z%%03d\n",
+                       cpd, slab_x_end - slab_x_start);
+            } else {
+                printf("[MODE 3] One file per x-slab: cpd=%d, slabs_per_rank=%d, ic/ic_%%04d\n",
+                       cpd, slab_x_end - slab_x_start);
+            }
         }
     }
     
@@ -1154,7 +1188,7 @@ int main(int argc, char **argv)
                 
                 case 3: {
                     // =======================================================================================
-                    // MODE 3: One file per x-slab; write one segment per (slab, z)
+                    // MODE 3: One file per x-slab; each file stores all z segments for that slab
                     // =======================================================================================
                     for (int s = slab_x_start; s < slab_x_end; s++) {
                         FILE *fp = slab_fp[s - slab_x_start];
