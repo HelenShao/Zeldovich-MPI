@@ -32,27 +32,16 @@ void setup_fftw_plans_full(int N, int narray, fftw_plan_t *plan_2d_out, fftw_pla
         // but 4 concurrent single-threaded FFTs still outperform sequential 8-thread FFTs.
         int fft_threads = (nthreads > narray && narray > 0) ? nthreads / narray : 1;
         
-        #ifdef USE_DOUBLE_PRECISION
-        if (fftw_init_threads() == 0) {
-            fprintf(stderr, "[ERROR] Rank %d: Failed to initialize FFTW threads (double precision)\n", rank);
+        // Using macros from precision.h for double or single 
+        if (FFTW_INIT_THREADS() == 0) {
+            fprintf(stderr, "[ERROR] Rank %d: Failed to initialize FFTW threads (%s precision)\n", rank, PRECISION_NAME);
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
-        fftw_plan_with_nthreads(fft_threads);
+        FFTW_PLAN_WITH_NTHREADS(fft_threads);
         if (rank == 0) {
-            printf("[FFTW-THREADING] Double precision: Hybrid parallelism with %d FFTW threads per FFT (narray=%d, total_threads=%d)\n", 
-                   fft_threads, narray, nthreads);
+            printf("[FFTW-THREADING] %s precision: Hybrid parallelism with %d FFTW threads per FFT (narray=%d, total_threads=%d)\n", 
+                   PRECISION_NAME, fft_threads, narray, nthreads);
         }
-        #else
-        if (fftwf_init_threads() == 0) {
-            fprintf(stderr, "[ERROR] Rank %d: Failed to initialize FFTW threads (single precision)\n", rank);
-            MPI_Abort(MPI_COMM_WORLD, 1);
-        }
-        fftwf_plan_with_nthreads(fft_threads);
-        if (rank == 0) {
-            printf("[FFTW-THREADING] Single precision: Hybrid parallelism with %d FFTW threads per FFT (narray=%d, total_threads=%d)\n", 
-                   fft_threads, narray, nthreads);
-        }
-        #endif
         
         fftw_threads_initialized = 1;
     }

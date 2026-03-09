@@ -17,9 +17,11 @@
     typedef fftw_plan fftw_plan_t;
     
     // FFTW 
-    #define FFTW_PLAN_DFT_2D fftw_plan_dft_2d
-    #define FFTW_PLAN_DFT_1D fftw_plan_dft_1d
-    #define FFTW_EXECUTE_DFT fftw_execute_dft
+    #define FFTW_INIT_THREADS       fftw_init_threads
+    #define FFTW_PLAN_WITH_NTHREADS fftw_plan_with_nthreads
+    #define FFTW_PLAN_DFT_2D        fftw_plan_dft_2d
+    #define FFTW_PLAN_DFT_1D        fftw_plan_dft_1d
+    #define FFTW_EXECUTE_DFT        fftw_execute_dft
     #define FFTW_DESTROY_PLAN fftw_destroy_plan
     #define FFTW_MALLOC fftw_malloc
     #define FFTW_FREE fftw_free
@@ -42,9 +44,11 @@
     typedef fftwf_plan fftw_plan_t;
     
     // FFTW 
-    #define FFTW_PLAN_DFT_2D fftwf_plan_dft_2d
-    #define FFTW_PLAN_DFT_1D fftwf_plan_dft_1d
-    #define FFTW_EXECUTE_DFT fftwf_execute_dft
+    #define FFTW_INIT_THREADS       fftwf_init_threads
+    #define FFTW_PLAN_WITH_NTHREADS fftwf_plan_with_nthreads
+    #define FFTW_PLAN_DFT_2D        fftwf_plan_dft_2d
+    #define FFTW_PLAN_DFT_1D        fftwf_plan_dft_1d
+    #define FFTW_EXECUTE_DFT        fftwf_execute_dft
     #define FFTW_DESTROY_PLAN fftwf_destroy_plan
     #define FFTW_MALLOC fftwf_malloc
     #define FFTW_FREE fftwf_free

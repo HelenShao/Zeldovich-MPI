@@ -22,14 +22,6 @@ static inline int64_t compute_virtual_position(int z, int x, int N, int Nhalf) {
     return 2 * ((int64_t)z_v * MAX_PPD + x_v); // divide by 2 later
 }
 
-// manual static chunking:
-// split z = 0..N-1 range into ~equal chunks for each thread 
-// last thread may get slightly shorter chunk if N not divisible by nthreads.
-static inline void get_thread_z_range(int tid, int nthreads, int N, int* z_start, int* z_end) {
-    int chunk_size = (N + nthreads - 1) / nthreads;
-    *z_start = tid * chunk_size;
-    *z_end = (*z_start + chunk_size > N) ? N : *z_start + chunk_size;
-}
 #endif
 
 // Choose which RNG to use based on local_rng_buf
@@ -174,13 +166,13 @@ void generate_hermitian_slice_pair_local(
             int64_t rng_index_cp = global_y;
             int tid = omp_get_thread_num();
             int nthreads = omp_get_num_threads();
-            int z_start, z_end;
-            get_thread_z_range(tid, nthreads, N, &z_start, &z_end);
+            int chunk = (N + nthreads - 1) / nthreads;
+            int z_start = (tid * chunk < N) ? tid * chunk : N;
             
             // Diagnostic timing
             double t_start = omp_get_wtime();
             
-            // Use persistent buffer if provided, otherwise allocate
+            // Use persistent buffer (allocated in main) if exists. Else, allocate
             void* local_rng_buf;
             int need_free = 0;
             int max_t = omp_get_max_threads();
@@ -204,7 +196,8 @@ void generate_hermitian_slice_pair_local(
             double t_after_advance = omp_get_wtime();
             
             int64_t nskip = 0;
-            for (int z = z_start; z < z_end; z++) {
+            #pragma omp for schedule(static)
+            for (int z = 0; z < N; z++) {
 #else
         void* local_rng_buf = NULL;
         for (int z = 0; z < N; z++) {
@@ -314,12 +307,16 @@ void generate_hermitian_slice_pair_local(
                     
                     double D_real, D_imag;
                     #if VERIFY_RNG_CALLS
-                    if (nskip > 0 && local_rng_buf == NULL) total_rng_skips += nskip;
+                    if (nskip > 0 && local_rng_buf == NULL) {
+                        #pragma omp atomic
+                        total_rng_skips += nskip;
+                    }
                     #endif
                     // Phase 4: use get_cgauss (shared RNG when local_rng_buf==NULL, buffer RNG when parallel)
                     get_cgauss(ps_handle, params_handle, rng_index, kmag, &nskip, local_rng_buf, &D_real, &D_imag);
 
                     #if VERIFY_RNG_CALLS
+                    #pragma omp atomic
                     total_rng_calls++;  // Each cgauss() call uses 2 random numbers
                     #endif
                     D[0] = (real_t)D_real;
@@ -590,6 +587,7 @@ void generate_hermitian_slice_pair_local(
             
             // Print timing diagnostics (only for first Y-slice to reduce output)
             if (global_y == 1 || global_y == 2) {
+                int z_end = (z_start + chunk > N) ? N : z_start + chunk;
                 #pragma omp critical
                 {
                     fprintf(stderr, "[OMP-TIMING] Rank=%d Y=%d Thread=%d/%d z=[%d,%d) vstart=%lld | "
@@ -624,8 +622,8 @@ void generate_hermitian_slice_pair_local(
         {
             int tid = omp_get_thread_num();
             int nthreads = omp_get_num_threads();
-            int z_start, z_end;
-            get_thread_z_range(tid, nthreads, N, &z_start, &z_end);
+            int chunk = (N + nthreads - 1) / nthreads;
+            int z_start = (tid * chunk < N) ? tid * chunk : N;
             
             // Diagnostic timing
             double t_start = omp_get_wtime();
@@ -652,7 +650,8 @@ void generate_hermitian_slice_pair_local(
             double t_after_advance = omp_get_wtime();
             
             int64_t nskip = 0;
-            for (int z = z_start; z < z_end; z++) {
+            #pragma omp for schedule(static)
+            for (int z = 0; z < N; z++) {
 #else
         // Non-omp-parallel: Process z range sequentially
         for (int z = 0; z < N; z++) {
@@ -750,11 +749,15 @@ void generate_hermitian_slice_pair_local(
                     
                     double D_real, D_imag;
                     #if VERIFY_RNG_CALLS
-                    if (nskip > 0 && local_rng_buf == NULL) total_rng_skips += nskip;
+                    if (nskip > 0 && local_rng_buf == NULL) {
+                        #pragma omp atomic
+                        total_rng_skips += nskip;
+                    }
                     #endif
                     // Phase 4: use get_cgauss (shared RNG when local_rng_buf==NULL, buffer RNG when parallel)
                     get_cgauss(ps_handle, params_handle, rng_index, kmag, &nskip, local_rng_buf, &D_real, &D_imag);
                     #if VERIFY_RNG_CALLS
+                    #pragma omp atomic
                     total_rng_calls++;  // Each cgauss() call uses 2 random numbers
                     #endif
                     D[0] = (real_t)D_real;
@@ -997,6 +1000,7 @@ void generate_hermitian_slice_pair_local(
             
             // Print timing diagnostics for self-conjugate slices (Y=0 and Y=N/2)
             if (global_y == 0) {
+                int z_end = (z_start + chunk > N) ? N : z_start + chunk;
                 #pragma omp critical
                 {
                     fprintf(stderr, "[OMP-TIMING] Rank=%d Y=%d (self-conj) Thread=%d/%d z=[%d,%d) vstart=%lld | "

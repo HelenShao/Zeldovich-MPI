@@ -28,7 +28,7 @@
  *    a. Get batch’s (y_primary, y_mirror)
  *    b. generate_hermitian_slice_pair_local -> Generate + 2D FFT
  *    c. calculate_batch_send_recv_counts; pack_slices_to_send_buffer
- *    d. MPI_Alltoallv_c(send_buffer → recv_buffer)
+ *    d. MPI_Alltoallv_c(send_buffer -> recv_buffer)
  *    e. Update src_write_cursor; free per-batch send buffer
  *
  * 8. Z-SLAB STREAMING (for each Z owned by this rank)
@@ -37,7 +37,7 @@
  *    - Write output: PARTICLE_OUTPUT_MODE 0 -> WriteParticlesSlab_range
  *                    PARTICLE_OUTPUT_MODE 1 -> .bin files
  *                    PARTICLE_OUTPUT_MODE 2 -> .bin then read-back -> WriteParticlesSlab_range
- *                    PARTICLE_OUTPUT_MODE 3 → CPD-slab-ordered streaming append (one file per x-slab per rank)
+ *                    PARTICLE_OUTPUT_MODE 3 -> CPD-slab-ordered streaming append (one file per x-slab per rank)
  *
  * 9. CLEANUP
  *    - Free plans, recv_buffer, local buffers, params, ps, PLT eigenmodes
@@ -60,15 +60,9 @@
 #include <execinfo.h>  
 #include <unistd.h>    // For getpid
 
-// Include PCG RNG and STimer
+// Include PCG RNG
+// STimer comes from output_new.h -> output.h -> block_array.h -> zeldovich-PLT STimer.h
 #include "pcg-rng/pcg_random.hpp"
-#ifdef __cplusplus
-extern "C" {
-#endif
-#include "STimer.h"
-#ifdef __cplusplus
-}
-#endif
 
 // --- CONFIGURATION AND TYPES (config.h, precision.h, types.h) ---
 #include "config.h"
@@ -395,7 +389,7 @@ int main(int argc, char **argv)
     // Create FFT plans using dummy memory before allocating actual data
     // This prevents data destruction during planning (FFTW_MEASURE/PATIENT modes)
     fftw_plan_t plan_2d, plan_1d_y;
-    setup_fftw_plans_full(N, &plan_2d, &plan_1d_y);
+    setup_fftw_plans_full(N, narray, &plan_2d, &plan_1d_y);
     
     if (rank == 0) {
         printf("\n[MULTI-BATCH] Starting batch processing...\n");
