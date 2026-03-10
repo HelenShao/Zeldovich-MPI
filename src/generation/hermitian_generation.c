@@ -1100,38 +1100,11 @@ void generate_hermitian_slice_pair_local(
     
     t_verify_end = omp_get_wtime();
     
-    // Apply 2D FFT to all arrays independently (hybrid: outer parallelism over arrays, inner FFTW threading)
-    // Limit outer threads to narray to avoid oversubscription (each FFT uses multiple inner threads)
-    // Note: With OMP_MAX_ACTIVE_LEVELS=1 (default), inner FFTW threads are serialized,
-    // resulting in narray concurrent single-threaded FFTs - which is actually optimal!
-    #pragma omp parallel for num_threads(narray)
-    for (int a = 0; a < narray; a++) {
-        // Primary slice
-        fftw_complex_t *prim_array_start = &PRIM_SLICE(a, 0, 0);
-        
-        FFTW_EXECUTE_DFT(plan_2d, prim_array_start, prim_array_start);
-        
-        // Conjugate slice (if not self-conjugate)
-        if (y_mirror != global_y) {
-            fftw_complex_t *conj_array_start = &CONJ_SLICE(a, 0, 0);
-
-            FFTW_EXECUTE_DFT(plan_2d, conj_array_start, conj_array_start);
-            
-            // // DEBUG: Memory guard after conjugate FFT
-            // #if DEBUG_PRINTS
-            // if (rank < 4 && global_y <= 2) {
-            //     // Verify buffer is still valid after FFT
-            //     size_t conj_array_size = (size_t)N * N * sizeof(fftw_complex_t);
-            //     volatile char checksum = 0;
-            //     for (size_t i = 0; i < conj_array_size && i < 1024*1024; i += 4096) {
-            //         checksum ^= ((char*)conj_array_start)[i];
-            //     }
-            //     fprintf(stderr, "[Rank %d] After conjugate FFT (array %d, Y=%d): buffer OK (checksum=%d)\n",
-            //            rank, a, global_y, (int)checksum);
-            //     fflush(stderr);
-            // }
-            // #endif
-        }
+    // Removed loop over narray!
+    // Apply 2D FFT: batched plan_many_dft (howmany=narray) on primary and conjugate
+    FFTW_EXECUTE_DFT(plan_2d, primary_slices, primary_slices);
+    if (y_mirror != global_y) {
+        FFTW_EXECUTE_DFT(plan_2d, conjugate_slices, conjugate_slices);
     }
     
     t_fft_end = omp_get_wtime();

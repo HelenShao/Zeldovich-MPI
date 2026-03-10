@@ -392,12 +392,25 @@ int main(int argc, char **argv)
     }
     
     // ========================================================================
+    // ALLOCATE local_y_slices (before FFT setup: plan_many_dft plans on primary_ptr)
+    // ========================================================================
+    if (!is_idle_rank) {
+        int max_slices_per_batch = 2;
+        int64_t slice_buffer_size = (int64_t)max_slices_per_batch * narray * N * N;
+        size_t requested_bytes = (size_t)slice_buffer_size * sizeof(fftw_complex_t);
+        if (posix_memalign((void**)&local_y_slices, ALIGN_BYTES, requested_bytes) != 0) {
+            fprintf(stderr, "Rank %d: posix_memalign failed for local_y_slices\n", rank);
+            MPI_Abort(comm_2d, 1);
+        }
+    }
+
+    // ========================================================================
     // STAGE 3: SETUP FFT PLANS 
     // ========================================================================
-    // Create FFT plans using dummy memory before allocating actual data
-    // This prevents data destruction during planning (FFTW_MEASURE/PATIENT modes)
-    fftw_plan_t plan_2d, plan_1d_y;
-    setup_fftw_plans_full(N, narray, &plan_2d, &plan_1d_y);
+    // plan_2d: plan_many_dft on primary slice (requires plan_buffer)
+    fftw_complex_t *plan_buffer = (!is_idle_rank && local_y_slices != NULL) ? &local_y_slices[0] : nullptr;
+    fftw_plan_t plan_2d, plan_1d_y; // setup both plans
+    setup_fftw_plans_full(N, narray, plan_buffer, &plan_2d, &plan_1d_y);
     
     if (rank == 0) {
         printf("\n[MULTI-BATCH] Starting batch processing...\n");
@@ -542,19 +555,7 @@ int main(int argc, char **argv)
     }
     
     free(src_y_counter);
-        
-    // Allocate local_y_slices buffer for maximum 2 slices (reused per batch)
-    if (!is_idle_rank) {
-        int max_slices_per_batch = 2;
-        int64_t slice_buffer_size = (int64_t)max_slices_per_batch * narray * N * N;
-        size_t requested_bytes = (size_t)slice_buffer_size * sizeof(fftw_complex_t);
-        
-        if (posix_memalign((void**)&local_y_slices, ALIGN_BYTES, requested_bytes) != 0) {
-            fprintf(stderr, "Rank %d: posix_memalign failed for local_y_slices\n", rank);
-            MPI_Abort(comm_2d, 1);
-        }
-    }
-    
+
     // ===== Allocate persistent thread-local RNG buffers =====
     void** thread_rng_buffers = NULL;
 #if PARALLELIZE_Z_LOOP
