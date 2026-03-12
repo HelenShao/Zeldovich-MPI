@@ -15,6 +15,13 @@ void setup_fftw_plans_full(int N, int narray, fftw_complex_t *plan_buffer,
     fftw_complex_t *dummy_1d = NULL;
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    // Ensure N^2 * sizeof(fftw_complex_t) is a multiple of 64 for AVX-512 alignment
+    // of consecutive arrays in plan_many_dft (N divisible by 4 is sufficient)
+    if (N <= 0 || (N % 4) != 0) {
+        fprintf(stderr, "[ERROR] N (PPD) must be positive and divisible by 4 for FFT alignment (got N=%d)\n", N);
+        MPI_Abort(MPI_COMM_WORLD, 1);
+    }
     
     // ====================================================================================
     // INITIALIZE FFTW THREADING 
