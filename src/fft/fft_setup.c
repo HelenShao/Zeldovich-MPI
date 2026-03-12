@@ -24,13 +24,9 @@ void setup_fftw_plans_full(int N, int narray, fftw_plan_t *plan_2d_out, fftw_pla
     if (!fftw_threads_initialized) {
         int nthreads = omp_get_max_threads();
         
-        // Hybrid parallelism: outer parallelism over arrays + inner FFTW threading
-        // With narray independent FFTs, we can run them concurrently.
-        // Each FFT uses (nthreads / narray) threads internally.
-        // Example: 8 threads, 4 arrays -> 4 concurrent FFTs, each using 2 FFTW threads.
-        // Note: With OMP_MAX_ACTIVE_LEVELS=1 (default), inner FFTW threads are serialized,
-        // but 4 concurrent single-threaded FFTs still outperform sequential 8-thread FFTs.
-        int fft_threads = (nthreads > narray && narray > 0) ? nthreads / narray : 1;
+        // Use all OpenMP threads inside FFTW for each plan execution.
+        // We no longer split threads between outer narray parallelism and inner FFTW threading.
+        int fft_threads = nthreads;
         
         // Using macros from precision.h for double or single 
         if (FFTW_INIT_THREADS() == 0) {
@@ -39,7 +35,7 @@ void setup_fftw_plans_full(int N, int narray, fftw_plan_t *plan_2d_out, fftw_pla
         }
         FFTW_PLAN_WITH_NTHREADS(fft_threads);
         if (rank == 0) {
-            printf("[FFTW-THREADING] %s precision: Hybrid parallelism with %d FFTW threads per FFT (narray=%d, total_threads=%d)\n", 
+            printf("[FFTW-THREADING] %s precision: Using %d FFTW threads per FFT (narray=%d, total_threads=%d)\n", 
                    PRECISION_NAME, fft_threads, narray, nthreads);
         }
         
