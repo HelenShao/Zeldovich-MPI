@@ -1,0 +1,12 @@
+Experiment directory: /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/MPI-9/plan_many_dft
+
+Submit jobs (wait for Q to clear between each):
+  qsub /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/MPI-9/plan_many_dft/runs/omp-1/N1024_CPD_225_MPI_9.pbs
+  qsub /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/MPI-9/plan_many_dft/runs/omp-2/N1024_CPD225_MPI9_OMP2.pbs
+  qsub /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/MPI-9/plan_many_dft/runs/omp-4/N1024_CPD225_MPI9_OMP4.pbs
+  qsub /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/MPI-9/plan_many_dft/runs/omp-8/N1024_CPD225_MPI9_OMP8.pbs
+  qsub /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/MPI-9/plan_many_dft/runs/omp-16/N1024_CPD225_MPI9_OMP16.pbs
+  qsub /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/MPI-9/plan_many_dft/runs/omp-32/N1024_CPD225_MPI9_OMP32.pbs
+
+After all jobs finish:
+  ./omp_sweep.sh analyze --dir /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/MPI-9/plan_many_dft

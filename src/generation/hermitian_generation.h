@@ -53,6 +53,10 @@ void generate_hermitian_slice_pair_local(
     ParametersHandle params_handle,  // zeldovich-PLT Parameters handle
     void** thread_rng_buffers);       // Pre-allocated RNG buffers [nthreads] (NULL = use malloc)
 
+// Print accumulated PTimerWall breakdown for Stage 1 sub-phases
+// (generation vs FFT), then reset timers. Call once after the batch loop.
+void print_hermitian_gen_timers(int rank);
+
 #ifdef __cplusplus
 }
 #endif

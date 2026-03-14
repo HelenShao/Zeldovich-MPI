@@ -1,0 +1,392 @@
+=== ic_0 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_1 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_2 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_3 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_4 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_5 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_6 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_7 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_8 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_9 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_10 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_11 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_12 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MISMATCH (max diff >= 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_13 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_14 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_15 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_16 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_17 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_18 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_19 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_20 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_21 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_22 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_23 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MISMATCH (max diff >= 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_24 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_25 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MISMATCH (max diff >= 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_26 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_27 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_28 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_29 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MISMATCH (max diff >= 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_30 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_31 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_32 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_33 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_34 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_35 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_36 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_37 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_38 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_39 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_40 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_41 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_42 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_43 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_44 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_45 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_46 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_47 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+
+=== ic_48 ===
+  Z-displacement: Status: MATCH (max diff < 1e-5)
+  Y-displacement: Status: MATCH (max diff < 1e-5)
+  X-displacement: Status: MATCH (max diff < 1e-5)
+  Z-velocity: Status: MATCH (max diff < 1e-5)
+  Y-velocity: Status: MATCH (max diff < 1e-5)
+  X-velocity: Status: MATCH (max diff < 1e-5)
+

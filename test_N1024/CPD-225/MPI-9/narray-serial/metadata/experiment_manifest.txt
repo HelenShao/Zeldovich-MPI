@@ -1,0 +1,10 @@
+experiment_dir=/home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/MPI-9/narray-serial
+created_at=2026-03-09T13:01:38+00:00
+code_change_summary=Removed the OpenMP parallelization over narray and allocated nthreads to FFTs in the y-slice-generation stage only.
+hypothesis=Expect y-slice-generation stage behavior to change because nthreads are now dedicated to FFTW rather than split across narray work.
+parameter_file=/home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/MPI-9/narray-serial/metadata/param_N1024_CPD_225.par
+omp_threads=1 2 4 8 16
+pbs_mode=experiment_local_copies
+plotting_script=/home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/MPI-9/narray-serial/scripts/plot_omp_stage_scaling.py
+project_root=/home/helenshao/InitialConditions/hermitian_3d_matrix_production
+workflow_root=/home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/MPI-9

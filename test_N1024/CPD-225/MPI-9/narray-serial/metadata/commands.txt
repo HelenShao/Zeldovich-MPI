@@ -1,0 +1,9 @@
+# Workflow commands
+queue_poll_command=qstat -u $USER
+plot_command=python3 "/home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/MPI-9/narray-serial/scripts/plot_omp_stage_scaling.py" --base-dir "/home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/MPI-9/narray-serial" --runs-dir "/home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/MPI-9/narray-serial/runs" --results "/home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/MPI-9/narray-serial/results"
+
+qsub "/home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/MPI-9/narray-serial/runs/omp-1/N1024_CPD_225_MPI_9.pbs"
+qsub "/home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/MPI-9/narray-serial/runs/omp-2/N1024_CPD225_MPI9_OMP2.pbs"
+qsub "/home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/MPI-9/narray-serial/runs/omp-4/N1024_CPD225_MPI9_OMP4.pbs"
+qsub "/home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/MPI-9/narray-serial/runs/omp-8/N1024_CPD225_MPI9_OMP8.pbs"
+qsub "/home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/MPI-9/narray-serial/runs/omp-16/N1024_CPD225_MPI9_OMP16.pbs"

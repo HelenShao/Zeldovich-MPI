@@ -665,6 +665,7 @@ int main(int argc, char **argv)
         }
         
         // ===== BATCH STEP 6: MPI_Alltoallv_c =====
+        #if DEBUG_PRINTS
         // Verify sendcounts sum matches total_send_batch
         if (send_buffer_batch != NULL && total_send_batch > 0) {
             int64_t sum_sendcounts = 0;
@@ -703,33 +704,35 @@ int main(int argc, char **argv)
                 }
             }
         }
-        int64_t max_send_displ = 0, max_recv_displ = 0;
-        for (int i = 0; i < num_ranks; i++) {
-            int64_t send_end = (int64_t)sdispls_batch[i] + sendcounts_batch[i];
-            int64_t recv_end = rdispls_elem[i] + recvcounts_batch[i];
+        {
+            int64_t max_send_displ = 0, max_recv_displ = 0;
+            for (int i = 0; i < num_ranks; i++) {
+                int64_t send_end = (int64_t)sdispls_batch[i] + sendcounts_batch[i];
+                int64_t recv_end = rdispls_elem[i] + recvcounts_batch[i];
+                
+                if (send_end > max_send_displ) max_send_displ = send_end;
+                if (recv_end > max_recv_displ) max_recv_displ = recv_end;
+                
+                if (sdispls_batch[i] < 0 || rdispls_elem[i] < 0) {
+                    fprintf(stderr, "[Rank %d] ERROR: Negative displacement! sdispls[%d]=%lld, rdispls[%d]=%lld\n",
+                           rank, i, (long long)sdispls_batch[i], i, (long long)rdispls_elem[i]);
+                    MPI_Abort(comm_2d, 1);
+                }
+            }
             
-            if (send_end > max_send_displ) max_send_displ = send_end;
-            if (recv_end > max_recv_displ) max_recv_displ = recv_end;
+            if (max_send_displ > total_send_batch) {
+                fprintf(stderr, "[Rank %d] ERROR: Send displacement exceeds buffer! max=%lld > total=%lld\n",
+                       rank, (long long)max_send_displ, (long long)total_send_batch);
+                MPI_Abort(comm_2d, 1);
+            }
             
-            if (sdispls_batch[i] < 0 || rdispls_elem[i] < 0) {
-                fprintf(stderr, "[Rank %d] ERROR: Negative displacement! sdispls[%d]=%lld, rdispls[%d]=%lld\n",
-                       rank, i, (long long)sdispls_batch[i], i, (long long)rdispls_elem[i]);
+            if (max_recv_displ > recv_total_elems) {
+                fprintf(stderr, "[Rank %d] ERROR: Recv displacement exceeds buffer! max=%lld > total=%lld\n",
+                       rank, (long long)max_recv_displ, (long long)recv_total_elems);
                 MPI_Abort(comm_2d, 1);
             }
         }
-        
-        // Check that displacements don't exceed buffer bounds
-        if (max_send_displ > total_send_batch) {
-            fprintf(stderr, "[Rank %d] ERROR: Send displacement exceeds buffer! max=%lld > total=%lld\n",
-                   rank, (long long)max_send_displ, (long long)total_send_batch);
-            MPI_Abort(comm_2d, 1);
-        }
-        
-        if (max_recv_displ > recv_total_elems) {
-            fprintf(stderr, "[Rank %d] ERROR: Recv displacement exceeds buffer! max=%lld > total=%lld\n",
-                   rank, (long long)max_recv_displ, (long long)recv_total_elems);
-            MPI_Abort(comm_2d, 1);
-        }
+        #endif
         
         t_comm.Start();
         {
@@ -775,6 +778,8 @@ int main(int argc, char **argv)
     }
     
     t_gen.Stop();
+    
+    print_hermitian_gen_timers(rank);
     
     if (rank == 0) {
         printf("[MULTI-BATCH] All batches complete.\n");

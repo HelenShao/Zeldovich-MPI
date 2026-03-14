@@ -4,11 +4,17 @@
 #include "../utils/plt_eigenmodes.h" 
 #include "../config.h"  
 #include "../precision.h"  
+#include "../PTimer.h"
 #include <stdio.h>
 #include <stdlib.h>  
 #include <stdint.h> 
 #include <math.h>    
 #include <omp.h>
+
+// Fine-grained PTimerWall accumulators for Stage 1 sub-phases.
+// These accumulate wall-clock time across all Y-slice calls.
+static PTimerWall pt_generation(1);  // Z-loop (RNG + Fourier coefficient generation)
+static PTimerWall pt_fft(1);         // 2D FFT (plan_many_dft execution)
 
 // ====================================================================================
 // Thread-local RNG helpers for parallel z-loop
@@ -157,6 +163,8 @@ void generate_hermitian_slice_pair_local(
     }
     
     t_setup_end = omp_get_wtime();
+    
+    pt_generation.Start(0);
     
     if (y_mirror != global_y) {
         // ========== CONJUGATE PAIR: Y=i and Y=N-i ==========
@@ -585,7 +593,7 @@ void generate_hermitian_slice_pair_local(
 #if PARALLELIZE_Z_LOOP
             double t_after_loop = omp_get_wtime();
             
-            // Print timing diagnostics (only for first Y-slice to reduce output)
+            #if DEBUG_PRINTS
             if (global_y == 1 || global_y == 2) {
                 int z_end = (z_start + chunk > N) ? N : z_start + chunk;
                 #pragma omp critical
@@ -601,6 +609,7 @@ void generate_hermitian_slice_pair_local(
                     fflush(stderr);
                 }
             }
+            #endif
             
             if (need_free) free(local_rng_buf);
         }
@@ -998,7 +1007,7 @@ void generate_hermitian_slice_pair_local(
 #if PARALLELIZE_Z_LOOP
             double t_after_loop = omp_get_wtime();
             
-            // Print timing diagnostics for self-conjugate slices (Y=0 and Y=N/2)
+            #if DEBUG_PRINTS
             if (global_y == 0) {
                 int z_end = (z_start + chunk > N) ? N : z_start + chunk;
                 #pragma omp critical
@@ -1014,6 +1023,7 @@ void generate_hermitian_slice_pair_local(
                     fflush(stderr);
                 }
             }
+            #endif
             
             if (need_free) free(local_rng_buf);
         }
@@ -1088,6 +1098,8 @@ void generate_hermitian_slice_pair_local(
     
     t_zloop_end = omp_get_wtime();
     
+    pt_generation.Stop(0);
+    
     // Verify Hermitian symmetry BEFORE 2D FFT
     // STAGE 7: Updated to check all arrays independently
     #if VERIFY_HERMITIAN_SYMMETRY
@@ -1102,15 +1114,16 @@ void generate_hermitian_slice_pair_local(
     
     // Removed loop over narray!
     // Apply 2D FFT: batched plan_many_dft (howmany=narray) on primary and conjugate
+    pt_fft.Start(0);
     FFTW_EXECUTE_DFT(plan_2d, primary_slices, primary_slices);
     if (y_mirror != global_y) {
         FFTW_EXECUTE_DFT(plan_2d, conjugate_slices, conjugate_slices);
     }
+    pt_fft.Stop(0);
     
     t_fft_end = omp_get_wtime();
     
-    // ========== DIAGNOSTIC: Print per-Y timing breakdown ==========
-    // Print for first few Y-slices and occasionally thereafter to avoid flooding
+    #if DEBUG_PRINTS
     if (global_y <= 3 || (global_y % 64 == 0)) {
         fprintf(stderr, "[SLICE-TIMING] Rank=%d Y=%d/%d | setup=%.3fms zloop=%.3fms verify=%.3fms fft=%.3fms total=%.3fms\n",
                 rank, global_y, y_mirror,
@@ -1121,6 +1134,7 @@ void generate_hermitian_slice_pair_local(
                 (t_fft_end - t_func_start) * 1000.0);
         fflush(stderr);
     }
+    #endif
     
     // ========== Apply any remaining nskip at end of function ==========
     // See zeldovich.cpp: Pk.v2rng[y].advance(2 * nskip)
@@ -1171,5 +1185,24 @@ void generate_hermitian_slice_pair_local(
     // Clean up local macros
     #undef PRIM_SLICE
     #undef CONJ_SLICE
+}
+
+void print_hermitian_gen_timers(int rank) {
+    double gen_s = pt_generation.Elapsed();
+    double fft_s = pt_fft.Elapsed();
+    double total = gen_s + fft_s;
+    if (rank == 0) {
+        fprintf(stdout,
+            "  [PTimerWall] Stage 1 sub-phase breakdown (accumulated over all Y-slices):\n"
+            "    Generation (z-loop + RNG):  %.6f s  (%.1f%%)\n"
+            "    FFT (plan_many_dft):        %.6f s  (%.1f%%)\n"
+            "    Sum:                        %.6f s\n",
+            gen_s, total > 0 ? 100.0 * gen_s / total : 0.0,
+            fft_s, total > 0 ? 100.0 * fft_s / total : 0.0,
+            total);
+        fflush(stdout);
+    }
+    pt_generation.Clear();
+    pt_fft.Clear();
 }
 

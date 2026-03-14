@@ -1,0 +1,37 @@
+Date: Mon 09 Mar 2026 01:01:38 PM UTC
+Hostname: aurora-uan-0009
+Shell: /bin/bash
+PWD: /home/helenshao
+
+[relevant env vars]
+OMP_NUM_THREADS=unset
+OMP_PLACES=unset
+OMP_PROC_BIND=unset
+OMP_MAX_ACTIVE_LEVELS=unset
+
+[module list]
+
+Currently Loaded Modules:
+  1) gcc-runtime/13.3.0-ghotoln (H)   8) hwloc/2.12.1-level-zero
+  2) gmp/6.3.0-mtokfaw          (H)   9) mpich/opt/develop-git.6037a7a
+  3) mpfr/4.2.1-gkcdl5w         (H)  10) libfabric/1.22.0
+  4) mpc/1.3.1-rdrlvsl          (H)  11) cray-pals/1.8.0
+  5) gcc/13.3.0                      12) cray-libpals/1.8.0
+  6) oneapi/release/2025.2.0         13) hdf5/1.14.6
+  7) libxml2/2.13.5                  14) frameworks/2025.2.0
+
+  Where:
+   H:  Hidden Module
+
+ 
+
+
+[make check-omp]
+make: Entering directory '/home/helenshao/InitialConditions/hermitian_3d_matrix_production'
+CXX         = mpicxx
+OPENMP_FLAGS = -qopenmp
+CXX version:
+Intel(R) oneAPI DPC++/C++ Compiler 2025.2.0 (2025.2.0.20250605)
+Target: x86_64-unknown-linux-gnu
+Thread model: posix
+make: Leaving directory '/home/helenshao/InitialConditions/hermitian_3d_matrix_production'

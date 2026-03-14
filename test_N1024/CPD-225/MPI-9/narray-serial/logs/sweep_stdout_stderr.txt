@@ -1,0 +1,93 @@
+[2026-03-09 04:33:19] Experiment directory: /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/MPI-9/narray-serial
+[2026-03-09 04:33:24] Prepared OMP sweep for thread counts: 2 4 8 16
+[2026-03-09 04:33:24] Prepare-only mode enabled; not submitting jobs
+[2026-03-09 04:37:12] Experiment directory: /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/MPI-9/narray-serial
+[2026-03-09 04:37:17] Prepared OMP sweep for thread counts: 2 4 8 16
+[2026-03-09 04:37:17] qstat-me failed on attempt 1; retrying in 10 seconds
+[2026-03-09 04:37:27] qstat-me failed on attempt 2; retrying in 10 seconds
+[2026-03-09 04:37:37] Queue not empty yet: before submitting OMP=2
+[2026-03-09 04:38:37] qstat-me failed on attempt 1; retrying in 10 seconds
+[2026-03-09 04:38:47] qstat-me failed on attempt 2; retrying in 10 seconds
+[2026-03-09 04:38:57] Queue not empty yet: before submitting OMP=2
+[2026-03-09 04:39:57] qstat-me failed on attempt 1; retrying in 10 seconds
+[2026-03-09 04:40:07] qstat-me failed on attempt 2; retrying in 10 seconds
+[2026-03-09 04:40:17] Queue not empty yet: before submitting OMP=2
+[2026-03-09 04:41:17] qstat-me failed on attempt 1; retrying in 10 seconds
+[2026-03-09 04:41:27] qstat-me failed on attempt 2; retrying in 10 seconds
+[2026-03-09 04:41:37] Queue not empty yet: before submitting OMP=2
+[2026-03-09 04:42:37] qstat-me failed on attempt 1; retrying in 10 seconds
+[2026-03-09 04:42:47] qstat-me failed on attempt 2; retrying in 10 seconds
+[2026-03-09 04:42:57] Queue not empty yet: before submitting OMP=2
+[2026-03-09 04:43:31] Experiment directory: /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/MPI-9/narray-serial
+[2026-03-09 04:43:36] Prepared OMP sweep for thread counts: 2 4 8 16
+[2026-03-09 04:43:36] Queue clear: before submitting OMP=2
+[2026-03-09 04:43:36] Submitting OMP=2 with /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/MPI-9/narray-serial/runs/omp-2/N1024_CPD225_MPI9_OMP2.pbs
+[2026-03-09 04:43:36] Submitted OMP=2: 8376801.aurora-pbs-0001.hostmgmt.cm.aurora.alcf.anl.gov
+[2026-03-09 04:43:36] Queue not empty yet: waiting for OMP=2 to finish
+[2026-03-09 04:43:57] qstat-me failed on attempt 1; retrying in 10 seconds
+[2026-03-09 04:44:07] qstat-me failed on attempt 2; retrying in 10 seconds
+[2026-03-09 04:44:17] Queue not empty yet: before submitting OMP=2
+[2026-03-09 04:44:36] Queue not empty yet: waiting for OMP=2 to finish
+[2026-03-09 04:45:17] qstat-me failed on attempt 1; retrying in 10 seconds
+[2026-03-09 04:45:27] qstat-me failed on attempt 2; retrying in 10 seconds
+[2026-03-09 04:45:36] Queue not empty yet: waiting for OMP=2 to finish
+[2026-03-09 04:45:37] Queue not empty yet: before submitting OMP=2
+[2026-03-09 04:46:36] Queue not empty yet: waiting for OMP=2 to finish
+[2026-03-09 04:46:37] qstat-me failed on attempt 1; retrying in 10 seconds
+[2026-03-09 04:46:47] qstat-me failed on attempt 2; retrying in 10 seconds
+[2026-03-09 04:46:57] Queue not empty yet: before submitting OMP=2
+[2026-03-09 04:47:37] Queue not empty yet: waiting for OMP=2 to finish
+[2026-03-09 04:47:57] qstat-me failed on attempt 1; retrying in 10 seconds
+[2026-03-09 04:48:07] qstat-me failed on attempt 2; retrying in 10 seconds
+[2026-03-09 04:48:17] Queue not empty yet: before submitting OMP=2
+[2026-03-09 04:48:37] Queue clear: waiting for OMP=2 to finish
+[2026-03-09 04:49:17] qstat-me failed on attempt 1; retrying in 10 seconds
+[2026-03-09 04:49:27] qstat-me failed on attempt 2; retrying in 10 seconds
+[2026-03-09 04:49:37] Queue not empty yet: before submitting OMP=2
+[2026-03-09 04:50:37] Validation failed for OMP=2: missing bin log /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/MPI-9/narray-serial/runs/omp-2/N1024_CPD225_MPI9_OMP2_bin_generation.log
+[2026-03-09 04:50:37] qstat-me failed on attempt 1; retrying in 10 seconds
+[2026-03-09 04:50:47] qstat-me failed on attempt 2; retrying in 10 seconds
+[2026-03-09 04:50:57] Queue not empty yet: before submitting OMP=2
+[2026-03-09 04:51:57] qstat-me failed on attempt 1; retrying in 10 seconds
+[2026-03-09 04:52:07] qstat-me failed on attempt 2; retrying in 10 seconds
+[2026-03-09 04:52:17] Queue not empty yet: before submitting OMP=2
+[2026-03-09 04:53:17] qstat-me failed on attempt 1; retrying in 10 seconds
+[2026-03-09 04:53:27] qstat-me failed on attempt 2; retrying in 10 seconds
+[2026-03-09 04:53:37] Queue not empty yet: before submitting OMP=2
+[2026-03-09 04:54:37] qstat-me failed on attempt 1; retrying in 10 seconds
+[2026-03-09 04:54:47] qstat-me failed on attempt 2; retrying in 10 seconds
+[2026-03-09 04:54:57] Queue not empty yet: before submitting OMP=2
+[2026-03-09 04:55:57] qstat-me failed on attempt 1; retrying in 10 seconds
+[2026-03-09 04:56:07] qstat-me failed on attempt 2; retrying in 10 seconds
+[2026-03-09 04:56:17] Queue not empty yet: before submitting OMP=2
+[2026-03-09 04:57:17] qstat-me failed on attempt 1; retrying in 10 seconds
+[2026-03-09 04:57:27] qstat-me failed on attempt 2; retrying in 10 seconds
+[2026-03-09 04:57:37] Queue not empty yet: before submitting OMP=2
+[2026-03-09 04:58:37] qstat-me failed on attempt 1; retrying in 10 seconds
+[2026-03-09 04:58:47] qstat-me failed on attempt 2; retrying in 10 seconds
+[2026-03-09 04:58:57] Queue not empty yet: before submitting OMP=2
+[2026-03-09 04:59:57] qstat-me failed on attempt 1; retrying in 10 seconds
+[2026-03-09 05:00:07] qstat-me failed on attempt 2; retrying in 10 seconds
+[2026-03-09 05:00:17] Queue not empty yet: before submitting OMP=2
+[2026-03-09 05:01:17] qstat-me failed on attempt 1; retrying in 10 seconds
+[2026-03-09 05:01:27] qstat-me failed on attempt 2; retrying in 10 seconds
+[2026-03-09 05:01:37] Queue not empty yet: before submitting OMP=2
+[2026-03-09 05:02:37] qstat-me failed on attempt 1; retrying in 10 seconds
+[2026-03-09 05:02:47] qstat-me failed on attempt 2; retrying in 10 seconds
+[2026-03-09 05:02:57] Queue not empty yet: before submitting OMP=2
+[2026-03-09 05:19:14] Experiment directory: /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/MPI-9/narray-serial
+[2026-03-09 05:19:19] Prepared OMP sweep for thread counts: 1 2 4 8 16
+[2026-03-09 05:19:19] Prepare-only mode enabled; not submitting jobs
+[2026-03-09 05:30:06] Experiment directory: /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/MPI-9/narray-serial
+[2026-03-09 05:30:11] Prepared OMP sweep for thread counts: 1 2 4 8 16
+[2026-03-09 05:30:11] Queue clear: before submitting OMP=1
+[2026-03-09 05:30:11] Submitting OMP=1 with /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/MPI-9/N1024_CPD_225_MPI_9.pbs
+[2026-03-09 05:30:11] Submitted OMP=1: 8376839.aurora-pbs-0001.hostmgmt.cm.aurora.alcf.anl.gov
+[2026-03-09 05:30:12] Queue not empty yet: waiting for OMP=1 to finish
+[2026-03-09 05:31:12] Queue not empty yet: waiting for OMP=1 to finish
+[2026-03-09 12:56:52] Experiment directory: /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/MPI-9/narray-serial
+[2026-03-09 12:56:57] Prepared OMP sweep for thread counts: 1 2 4 8 16
+[2026-03-09 12:56:57] Prepare-only mode enabled; not submitting jobs
+[2026-03-09 13:01:38] Experiment directory: /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/MPI-9/narray-serial
+[2026-03-09 13:01:43] Prepared OMP sweep for thread counts: 1 2 4 8 16
+[2026-03-09 13:01:43] Prepare-only mode enabled; not submitting jobs

@@ -1,0 +1,227 @@
+# CPD-225 Test (32 nodes, 1 rank per node) — CPD=225 parameter
+# N=1024 grid - Compare 1 OMP thread vs 8 OMP threads (threading test)
+# Testing PLT mode with k_cutoff implementation (k_cutoff=1.0, CornerModes=0)
+# Compare random number draws and particle ICs between hermitian_3d_matrix_production and zeldovich-PLT
+# Both codes print [RNG-DEBUG] output before any FFT for coordinates x,y,z <= 10
+# Using ZD_qdensity=1 (density + displacement, narray=2 - just_density=1 mode)
+# PLT ENABLED (ZD_qPLT=1), rescaling ENABLED (ZD_qPLTrescale=1)
+# NOTE: The two codes process Y-slices in different orders, so logs must be sorted before comparison
+# For N=1024: k_Nyquist=512, k2_cutoff = (512)² / (1.0)² = 262144
+# This test uses 32 nodes with 1 rank per node (4x8 grid)
+# With 32 ranks: each rank owns X-range of 256 values (1024/4) and Z-range of 128 values (1024/8)
+
+0. (First time only) Rebuild zeldovich-PLT to include RNG debug code:
+$ cd /home/helenshao/InitialConditions/zeldovich-PLT
+$ meson compile -C build
+
+1. Run hermitian_3d_matrix (MPI: 32 nodes, 1 rank per node; start with 1 thread, then compare with 8 threads):
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225
+$ qsub N1024_CPD_225_test.pbs
+# For 8-thread comparison: edit PBS to use ompthreads=8 and ncpus=8 per node, then qsub
+
+2. Run zeldovich-PLT (serial, single-threaded):
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225
+$ ./run_zeldovich_PLT.sh
+# OR manually:
+# $ cd /home/helenshao/InitialConditions/zeldovich-PLT
+# $ ./build/zeldovich /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/param_N1024_CPD_225.par
+
+2.5 Fix corrupted RNG-debug log file (MPI runs can have concatenated lines):
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225
+$ python3 fix_rng_log.py --input rng_logs/hermitian_rng_debug.log --output rng_logs/hermitian_rng_debug_fixed.txt
+# This script:
+#   - Splits concatenated lines (e.g., [FACTOR-DEBUG]...[RNG-DEBUG])
+#   - Filters out [FACTOR-DEBUG] lines
+#   - Validates complete RNG-DEBUG lines
+#   - Removes duplicates
+
+2.6 Extract rng-debug lines into filtered txt file:
+$ cd rng_logs
+$ grep "\[RNG-DEBUG\]" hermitian_rng_debug_fixed.txt > hermitian_rng_debug_filtered.txt
+# OR use the fixed file directly:
+$ cp hermitian_rng_debug_fixed.txt hermitian_rng_debug_filtered.txt
+
+3. Sort and compare RNG debug output (files have different Y ordering):
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225
+# Note: If using the fixed log file, use hermitian_rng_debug_filtered.txt (from step 2.6)
+# Option A: Sort and save diff in one step
+$ python3 sort_rng_logs.py --hermitian rng_logs/hermitian_rng_debug_filtered.txt --diff-output rng_logs/rng_diff.txt
+# OR Option B: Sort first, then diff manually
+$ python3 sort_rng_logs.py --hermitian rng_logs/hermitian_rng_debug_filtered.txt
+$ cd rng_logs
+$ diff hermitian_rng_debug_filtered.txt zeldovich_rng_debug_sorted.txt > rng_diff.txt 2>&1
+# Differences saved to rng_logs/rng_diff.txt
+# If files match, rng_diff.txt will be empty (check with: wc -l rng_logs/rng_diff.txt)
+# View differences: cat rng_logs/rng_diff.txt
+
+4. Count RNG debug lines (should match):
+$ wc -l hermitian_rng_debug_filtered.txt zeldovich_rng_debug_filtered.txt
+$ wc -l hermitian_rng_debug_sorted.txt zeldovich_rng_debug_sorted.txt
+# Line counts should match between filtered and sorted versions
+
+5. Compare specific coordinates (e.g., Y=0, x=0, z=0):
+$ grep "Y=0.*(x,z)=(0,0)" hermitian_rng_debug_filtered.txt
+$ grep "Y=0.*(x,z)=(0,0)" zeldovich_rng_debug_filtered.txt
+
+6. Compare D values (random Gaussian draws) - Detailed comparison:
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225
+$ python3 compare_rng_d_values.py
+# This creates a detailed report showing D value differences for each coordinate
+# Report saved to: rng_logs/d_value_comparison.txt
+#
+# Compare all values (D, F, G, H):
+$ python3 compare_rng_all_values.py
+# This compares D, F, G, H values and creates a detailed report
+# Report saved to: rng_logs/all_values_comparison.txt
+#
+# Note: With ZD_qdensity=1 (just_density=1 mode, narray=2), all arrays (D+iF, G+iH) should be non-zero
+# Both density and displacement values are generated
+# With PLT enabled, velocities use PLT growth rate f instead of f=1.0
+#
+# To compare only specific values (e.g., D only):
+# $ python3 compare_rng_all_values.py --compare D --output rng_logs/d_comparison.txt
+#
+# Quick check for specific coordinates:
+$ grep "Y=0.*(x,z)=(0,1)" rng_logs/hermitian_rng_debug_filtered.txt | head -1
+$ grep "Y=0.*(x,z)=(0,1)" rng_logs/zeldovich_rng_debug_filtered.txt | head -1
+# D values should match exactly if same random numbers are drawn
+
+7. Verify k_cutoff zeroing:
+# For N=1024, k_cutoff=1.0: k2_cutoff = (512)² / (1.0)² = 262144
+# All modes with k² >= 262144 should have D=0 in both codes
+$ grep "k2=[2-9][6-9][0-9][0-9][0-9]\|k2=[3-9][0-9][0-9][0-9][0-9]" rng_logs/hermitian_rng_debug_sorted.txt | grep -v "D=(0.000000e+00,0.000000e+00)"
+$ grep "k2=[2-9][6-9][0-9][0-9][0-9]\|k2=[3-9][0-9][0-9][0-9][0-9]" rng_logs/zeldovich_rng_debug_sorted.txt | grep -v "D=(0.000000e+00,0.000000e+00)"
+# Both commands should return no results (all high-k modes should be zeroed)
+
+8. Compare REAL-FFT-DEBUG output (after 2D FFT, before 1D FFT):
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225
+$ python3 compare_real_fft_D_iF.py
+# This compares the real parts of Array 0 after 2D FFT (should be real(FFT(D+i*F)))
+# Report saved to: rng_logs/real_fft_comparison.txt
+#
+# Extract REAL-FFT-DEBUG lines manually:
+# $ grep "\[REAL-FFT-DEBUG\]" rng_logs/hermitian_rng_debug.log > rng_logs/hermitian_real_fft_debug.txt
+# $ grep "\[REAL-FFT-DEBUG\]" rng_logs/zeldovich_rng_debug.log > rng_logs/zeldovich_real_fft_debug.txt
+
+9. Extract density values to text files:
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225
+# Extract hermitian density values
+$ python3 extract_density_values.py particle_ics/density1024 hermitian_density_values.txt 1024
+# Extract zeldovich density values
+$ python3 extract_density_values.py /home/helenshao/InitialConditions/zeldovich-PLT/output_N1024_CPD_225/density1024 zeldovich_density_values.txt 1024
+# This creates text files with all density values and their (i,j,k) coordinates
+
+10. Compare and visualize density files:
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225
+# Run comparison with default paths
+$ python3 visualize_density_comparison.py
+# OR specify custom paths:
+# $ python3 visualize_density_comparison.py particle_ics/density1024 /home/helenshao/InitialConditions/zeldovich-PLT/output_N1024_CPD_225/density1024 visualizations
+#
+# This creates:
+#   - visualizations/density_histograms.png: Distribution comparison
+#   - visualizations/density_scatter.png: Scatter plot with correlation
+#   - visualizations/density_differences.png: Difference distribution
+#   - Prints detailed statistics to console
+#
+# Expected results:
+#   - Correlation should be very close to 1.0 if codes match
+#   - Mean difference should be near zero
+#   - Max absolute difference should be small (within numerical precision)
+#   - With ZD_qdensity=1 (just_density=1, narray=2), density values should match those from ZD_qdensity=2
+#   - Both density and displacement arrays are generated, but density should be identical to ZD_qdensity=2 case
+#   - With 32 nodes, 1 rank per node, results should match serial version (1 rank) - MPI communication should not affect results
+
+11. Compare particle IC files:
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225
+# Hermitian IC files: particle_ics/ic_*
+# Zeldovich IC files: /home/helenshao/InitialConditions/zeldovich-PLT/output_N1024_CPD_225/ic_*
+#
+# Both should contain particle data with:
+#   - Density (real part of Array 0)
+#   - Displacements: X = imag(Array 0), Y = real(Array 1), Z = imag(Array 1)
+#   - Velocities: With PLT enabled, velocities use PLT growth rate f instead of f=1.0
+#     Array 2: X-velocity = imag(Array 2) = F_re * f
+#     Array 3: Y-velocity = real(Array 3) = (G_re - H_im) * f, Z-velocity = imag(Array 3) = (G_im + H_re) * f
+#
+# Compare using the comparison script:
+$ python3 compare_particle_ics.py particle_ics/ic_0 /home/helenshao/InitialConditions/zeldovich-PLT/output_N1024_CPD_225/ic_0 1024 visualizations/
+$ python3 compare_particle_ics.py particle_ics/ic_1 /home/helenshao/InitialConditions/zeldovich-PLT/output_N1024_CPD_225/ic_1 1024 visualizations/
+#
+# This creates:
+#   - Displacement comparison plots (histograms, scatter plots, difference histograms)
+#   - Velocity comparison plots (histograms, scatter plots, difference histograms)
+#   - Prints statistics (mean difference, max difference, correlation) for each component
+#
+# Or compare using binary diff (should match exactly if everything is correct):
+# $ diff particle_ics/ic_0 /home/helenshao/InitialConditions/zeldovich-PLT/output_N1024_CPD_225/ic_0
+# $ diff particle_ics/ic_1 /home/helenshao/InitialConditions/zeldovich-PLT/output_N1024_CPD_225/ic_1
+#
+# Note: Binary diff may show differences due to floating-point representation,
+# but the comparison script provides more detailed analysis with tolerance checks
+#
+# IMPORTANT: With PLT enabled, velocities should match up to single-precision tolerance
+# If velocities differ significantly, check:
+#   1. PLT eigenmode interpolation (eigenmode values e.val)
+#   2. PLT growth rate f calculation: f = (sqrt(1 + 24*e.val*f_cluster) - 1) / 4
+#   3. Velocity storage format: Array 2 = i*F*f, Array 3 = G*f + i*H*f
+#
+# IMPORTANT: With 32 nodes, 1 rank per node, results should match serial version (1 rank)
+# If results differ, check:
+#   1. MPI communication correctness (all-to-all communication)
+#   2. Y-slice distribution across ranks
+#   3. Reassembly process correctness
+
+12. Compare all particle IC files (simpler comparison without visualization):
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225
+# Compare all IC files in both directories:
+$ python3 compare_ic_files.py particle_ics /home/helenshao/InitialConditions/zeldovich-PLT/output_N1024_CPD_225 > ic_comparison.txt 2>&1
+#
+# OR use default paths (script auto-detects current directory):
+$ python3 compare_ic_files.py
+#
+# This creates a text report showing:
+#   - Total particles in each directory
+#   - Common particles (same i,j,k indices)
+#   - Exact matches vs differences
+#   - Maximum differences for displacements and velocities
+#   - Average ratios (for detecting scaling factors)
+#   - Example particles with differences
+#
+# View the comparison:
+$ cat ic_comparison.txt
+#
+# Note: This script uses a simpler comparison method than compare_particle_ics.py
+# It's useful for quick checks and detecting systematic differences (e.g., scaling factors)
+# For detailed visualizations, use compare_particle_ics.py (step 11)
+
+13. Dump particle IC values for manual inspection:
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225
+# Dump all particles from a specific IC file:
+$ python3 dump_particle_ics.py particle_ics/ic_0 1024 > hermitian_ic_0_all_slabs.txt
+$ python3 dump_particle_ics.py /home/helenshao/InitialConditions/zeldovich-PLT/output_N1024_CPD_225/ic_0 1024 > zeldovich_ic_0_all_slabs.txt
+#
+# Compare the dumped files and save differences to a text file:
+$ python3 compare_ic_differences.py hermitian_ic_0_all_slabs.txt zeldovich_ic_0_all_slabs.txt ic_0_differences.txt
+#
+# This creates ic_0_differences.txt with detailed comparison statistics:
+#   - Displacement differences (Z, Y, X): mean, std, max abs, min, max
+#   - Velocity differences (Z, Y, X): mean, std, max abs, min, max
+#   - Summary: total differences, mean absolute, max absolute, std
+#   - Verification: tolerance check, warning if differences exceed tolerance
+#   - Example particle differences (first 10 particles)
+#
+# View the results:
+$ cat ic_0_differences.txt
+#
+# Expected results with PLT enabled:
+#   - Displacements should match up to single-precision tolerance (~1e-6)
+#   - Velocities should match up to single-precision tolerance (~1e-6)
+#   - If velocities differ significantly (order 0.1-0.8), check PLT growth rate f calculation
+#   - With 32 nodes, 1 rank per node, results should match serial version (1 rank) - MPI communication should not affect results
+
+14. Compare 1-thread vs 8-thread timing (N=1024 threading test):
+# After running with 1 thread (N1024_CPD_225_test.pbs) and with 8 threads (separate PBS with ompthreads=8):
+$ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225
+$ grep "Total time\|Generation time\|Communication time\|Streaming complete" N1024_CPD_225_bin_generation.log
+# Compare with 8-thread run log to see OpenMP threading speedup for N=1024.
