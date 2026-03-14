@@ -13,7 +13,9 @@
 
 // Fine-grained PTimerWall accumulators for Stage 1 sub-phases.
 // These accumulate wall-clock time across all Y-slice calls.
-static PTimerWall pt_generation(1);  // Z-loop (RNG + Fourier coefficient generation)
+static PTimerWall pt_rng_setup(1);   // RNG buffer alloc + copy + advance to z-start
+static PTimerWall pt_zloop(1);       // Z-loop computation (RNG calls + coefficient math + stores)
+static PTimerWall pt_mirror(1);      // Self-conjugate mirroring post-processing
 static PTimerWall pt_fft(1);         // 2D FFT (plan_many_dft execution)
 
 // ====================================================================================
@@ -47,6 +49,111 @@ static inline void get_cgauss(PowerSpectrumHandle ps_handle, ParametersHandle pa
         zeldovich_ps_cgauss_from_buffer(local_rng_buf, ps_handle, kmag, D_real, D_imag);
     else
         zeldovich_ps_cgauss(ps_handle, kmag, rng_index, D_real, D_imag);
+}
+
+// ====================================================================================
+// PLT eigenmode: lookup, sign-flip, normalization, and k2/(k*e) scaling.
+// Returns 1 on success (use_plt=1), 0 on failure (falls back to k-vector mode).
+// ====================================================================================
+static inline int compute_plt_eigenmode(
+    int kx, int ky, int kz, int N, double k2,
+    eigenmode *e, int rank, int x, int z)
+{
+    int ikx = (kx < 0) ? N + kx : kx;
+    int iky = (ky < 0) ? N + ky : ky;
+    int ikz = (kz < 0) ? N + kz : kz;
+    if (ikz > N / 2) ikz = N - ikz;
+
+    if (plt_get_eigenmode(ikx, iky, ikz, (int64_t)N, e) != 0) {
+        if (rank == 0 && x == 0 && z == 0) {
+            fprintf(stderr, "[WARNING] Failed to get PLT eigenmode for (kx=%d, ky=%d, kz=%d), using normal computation\n",
+                    kx, ky, kz);
+        }
+        return 0;
+    }
+
+    // Set sign of z component (real FFT only gives +kz half-space)
+    // see zeldovich.cpp line 255: ehat.vec[2] *= copysign(1, kz);
+    if (kz < 0) {
+        e->vec[2] = -e->vec[2];
+    }
+
+    // Normalize eigenvector (interpolation might not preserve |e| = 1)
+    // see zeldovich.cpp lines 257-263
+    double e_mag = sqrt(e->vec[0] * e->vec[0] + e->vec[1] * e->vec[1] + e->vec[2] * e->vec[2]);
+    if (e_mag > 0.0) {
+        e->vec[0] /= e_mag;
+        e->vec[1] /= e_mag;
+        e->vec[2] /= e_mag;
+    }
+
+    // norm = k2 / (k * e) upweights each mode by 1/(khat*ehat), see zeldovich.cpp line 266
+    double k_dot_e = kx * e->vec[0] + ky * e->vec[1] + kz * e->vec[2];
+    double norm = (k2 > 0.0 && k_dot_e != 0.0) ? k2 / k_dot_e : 0.0;
+    if (!isfinite(norm)) norm = 0.0;
+
+    // Scale eigenvector by norm (see zeldovich.cpp lines 268-270)
+    e->vec[0] *= norm;
+    e->vec[1] *= norm;
+    e->vec[2] *= norm;
+
+    return 1;
+}
+
+// ====================================================================================
+// Store D, F, G, H into primary and conjugate slices (Zeldovich packing scheme).
+// Primary:   D + i*F,  G + i*H,   i*F*f,  (G + i*H)*f
+// Conjugate: conj(D) + i*conj(F), conj(G) + i*conj(H), i*conj(F*f), ...
+// ====================================================================================
+static inline void store_prim_conj(
+    fftw_complex_t *prim, fftw_complex_t *conj_buf,
+    int N, int x, int z, int x_mirror, int z_mirror,
+    const double *D, const double *F, const double *G, const double *H,
+    double f_vel, int narray, int just_density)
+{
+    #define _SP(a, xx, zz) prim[(int64_t)(xx) + (N) * ((zz) + (N) * (a))]
+    #define _SC(a, xx, zz) conj_buf[(int64_t)(xx) + (N) * ((zz) + (N) * (a))]
+
+    if (just_density) {
+        _SP(0, x, z)[0] = D[0];
+        _SP(0, x, z)[1] = D[1];
+
+        _SC(0, x_mirror, z_mirror)[0] =  D[0];
+        _SC(0, x_mirror, z_mirror)[1] = -D[1];
+    } else {
+        // Array 0: D + i*F = (D_re - F_im) + i*(D_im + F_re)
+        _SP(0, x, z)[0] = D[0] - F[1];
+        _SP(0, x, z)[1] = D[1] + F[0];
+        // Array 1: G + i*H = (G_re - H_im) + i*(G_im + H_re)
+        _SP(1, x, z)[0] = G[0] - H[1];
+        _SP(1, x, z)[1] = G[1] + H[0];
+
+        // conj(D) + i*conj(F) = (D_re + F_im) + i*(F_re - D_im)
+        _SC(0, x_mirror, z_mirror)[0] = D[0] + F[1];
+        _SC(0, x_mirror, z_mirror)[1] = F[0] - D[1];
+        // conj(G) + i*conj(H) = (G_re + H_im) + i*(H_re - G_im)
+        _SC(1, x_mirror, z_mirror)[0] = G[0] + H[1];
+        _SC(1, x_mirror, z_mirror)[1] = H[0] - G[1];
+
+        if (narray >= 4) {
+            // i*F*f = (-F_im*f) + i*(F_re*f)
+            _SP(2, x, z)[0] = -F[1] * f_vel;
+            _SP(2, x, z)[1] =  F[0] * f_vel;
+            // (G + i*H)*f
+            _SP(3, x, z)[0] = (G[0] - H[1]) * f_vel;
+            _SP(3, x, z)[1] = (G[1] + H[0]) * f_vel;
+
+            // i*conj(F*f) = (F_im*f) + i*(F_re*f)
+            _SC(2, x_mirror, z_mirror)[0] = F[1] * f_vel;
+            _SC(2, x_mirror, z_mirror)[1] = F[0] * f_vel;
+            // conj(G*f) + i*conj(H*f) = (G_re + H_im)*f + i*(H_re - G_im)*f
+            _SC(3, x_mirror, z_mirror)[0] = (G[0] + H[1]) * f_vel;
+            _SC(3, x_mirror, z_mirror)[1] = (H[0] - G[1]) * f_vel;
+        }
+    }
+
+    #undef _SP
+    #undef _SC
 }
 
 // ====================================================================================
@@ -135,7 +242,7 @@ void generate_hermitian_slice_pair_local(
     double Nhalf_dbl = (double)Nhalf;
     k2_cutoff = (Nhalf_dbl * Nhalf_dbl) / (k_cutoff * k_cutoff);
 
-    // Fundamental wavenumber (same for conjugate-pair and self-conjugate; set once per function call)
+    // Fundamental wavenumber (set once per function call)
     double fundamental = 1.0;
     if (params_handle != NULL) {
         fundamental = zeldovich_params_get_fundamental(params_handle);
@@ -164,906 +271,292 @@ void generate_hermitian_slice_pair_local(
     
     t_setup_end = omp_get_wtime();
     
-    pt_generation.Start(0);
-    
-    if (y_mirror != global_y) {
-        // ========== CONJUGATE PAIR: Y=i and Y=N-i ==========
+    // ========== Unified z-loop: handles both conjugate-pair and self-conjugate ==========
 #if PARALLELIZE_Z_LOOP
-        #pragma omp parallel
-        {
-            int64_t rng_index_cp = global_y;
-            int tid = omp_get_thread_num();
-            int nthreads = omp_get_num_threads();
-            int chunk = (N + nthreads - 1) / nthreads;
-            int z_start = (tid * chunk < N) ? tid * chunk : N;
-            
-            // Diagnostic timing
-            double t_start = omp_get_wtime();
-            
-            // Use persistent buffer (allocated in main) if exists. Else, allocate
-            void* local_rng_buf;
-            int need_free = 0;
-            int max_t = omp_get_max_threads();
-            if (thread_rng_buffers != NULL && tid < max_t) {
-                local_rng_buf = thread_rng_buffers[tid];
-            } else {
-                fprintf(stderr, "[Rank %d] WARNING: No persistent RNG buffer for thread %d, allocating new one (EXPENSIVE!) \n", rank, tid);
-                size_t rng_size = zeldovich_ps_rng_buffer_size();
-                local_rng_buf = malloc(rng_size);
-                need_free = 1;
+    {
+    pt_rng_setup.Start(0);
+    int _max_t = omp_get_max_threads();
+    size_t _rng_size = zeldovich_ps_rng_buffer_size();
+    void** _rng_bufs = (void**)calloc(_max_t, sizeof(void*));
+    void* local_rng_buf = NULL;
+    int _rng_ready = 0;
+    int _zloop_started = 0;
+
+    #pragma omp parallel for schedule(static) firstprivate(local_rng_buf, nskip, _rng_ready)
+    for (int z = 0; z < N; z++) {
+        if (!_rng_ready) {
+            int _tid = omp_get_thread_num();
+            local_rng_buf = malloc(_rng_size);
+            _rng_bufs[_tid] = local_rng_buf;
+            zeldovich_ps_get_rng_copy(ps_handle, global_y, local_rng_buf);
+            int64_t vstart = compute_virtual_position(z, 0, N, Nhalf) / 2;
+            if (vstart > 0)
+                zeldovich_ps_advance_rng_buffer(local_rng_buf, vstart);
+            _rng_ready = 1;
+
+            int _old;
+            #pragma omp atomic capture
+            _old = _zloop_started++;
+            if (_old == 0) {
+                pt_rng_setup.Stop(0);
+                pt_zloop.Start(0);
             }
-            
-            double t_after_alloc = omp_get_wtime();
-            
-            zeldovich_ps_get_rng_copy(ps_handle, rng_index_cp, local_rng_buf);
-            double t_after_copy = omp_get_wtime();
-            
-            int64_t virtual_start = compute_virtual_position(z_start, 0, N, Nhalf) / 2;
-            if (virtual_start > 0)
-                zeldovich_ps_advance_rng_buffer(local_rng_buf, virtual_start);
-            double t_after_advance = omp_get_wtime();
-            
-            int64_t nskip = 0;
-            #pragma omp for schedule(static)
-            for (int z = 0; z < N; z++) {
+        }
 #else
-        void* local_rng_buf = NULL;
-        for (int z = 0; z < N; z++) {
+    pt_rng_setup.Start(0);
+    pt_rng_setup.Stop(0);
+    pt_zloop.Start(0);
+    void* local_rng_buf = NULL;
+    for (int z = 0; z < N; z++) {
 #endif
-            // RNG consistency: When crossing Nyquist boundary (z == Nhalf + 1),
-            // skip ALL missing z-rows (z = N to MAX_PPD-1, each containing MAX_PPD x-values)
-            // See zeldovich.cpp: skip at Nyquist boundary before processing negative kz region
-            // The missing frequencies are in the MIDDLE of the MAX_PPD array (high positive and negative k),
-            // due to FFT ordering: [0, 1, ..., N/2, -N/2+1, ..., -1]
-            // High frequencies (both positive and negative) are located in the middle,
-            // so we skip them all at once when we first enter the mirrored region
-            if (z == Nhalf + 1 && N < MAX_PPD) {
-                // Skip ALL missing z-rows: from z=N to z=MAX_PPD-1
-                // This accounts for the "gap" in frequency space (high frequencies in the middle of array)
-                int64_t skip_amount = (int64_t)(MAX_PPD - N) * (int64_t)MAX_PPD;
-                nskip += skip_amount; // skip missing z-rows
+        // RNG consistency: When crossing Nyquist boundary (z == Nhalf + 1),
+        // skip ALL missing z-rows (z = N to MAX_PPD-1, each containing MAX_PPD x-values)
+        // The missing frequencies are in the MIDDLE of the MAX_PPD array (high positive and negative k),
+        // due to FFT ordering: [0, 1, ..., N/2, -N/2+1, ..., -1]
+        if (z == Nhalf + 1 && N < MAX_PPD) {
+            int64_t skip_amount = (int64_t)(MAX_PPD - N) * (int64_t)MAX_PPD;
+            nskip += skip_amount;
+            
+            #if DEBUG_RNG_SKIP
+            int log_skip = (global_y <= MAX_DEBUG_COORD) || (global_y == Nhalf - 1);
+            if (log_skip) {
+                fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d z=%d: ACCUMULATE skip at Nyquist boundary: +%lld (missing z-rows), total nskip=%lld\n",
+                        N, global_y, z, (long long)skip_amount, (long long)nskip);
+                fflush(stderr);
+            }
+            #endif
+        }
+        
+        // ky, kz, abs_ky, abs_kz are constant over x for this (z, global_y); compute once per z-row
+        int ky = (global_y > Nhalf) ? global_y - N : global_y;
+        int kz = (z > Nhalf) ? z - N : z;
+        int abs_ky = (ky < 0) ? -ky : ky;
+        int abs_kz = (kz < 0) ? -kz : kz;
+        
+        for (int x = 0; x < N; x++) {
+            int x_mirror = (x == 0) ? 0 : N - x;
+            int z_mirror = (z == 0) ? 0 : N - z;
+            
+            // ========== STEP 1: Calculate k-vector components ==========
+            // RNG consistency: When crossing Nyquist boundary (x == Nhalf + 1),
+            if (x == Nhalf + 1 && N < MAX_PPD) {
+                int64_t skip_amount = (int64_t)(MAX_PPD - N);
+                nskip += skip_amount;
                 
                 #if DEBUG_RNG_SKIP
-                // Debug: Log skip accumulation for test coordinates
-                int log_skip = (global_y <= MAX_DEBUG_COORD) || (global_y == Nhalf - 1);
+                int log_skip = (z <= MAX_DEBUG_COORD && global_y <= MAX_DEBUG_COORD) ||
+                               (z == Nhalf - 1 && global_y == Nhalf - 1);
                 if (log_skip) {
-                    fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d z=%d: ACCUMULATE skip at Nyquist boundary: +%lld (missing z-rows), total nskip=%lld\n",
-                            N, global_y, z, (long long)skip_amount, (long long)nskip);
+                    fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d z=%d x=%d: ACCUMULATE skip at Nyquist boundary: +%lld (missing x-values), total nskip=%lld\n",
+                            N, global_y, z, x, (long long)skip_amount, (long long)nskip);
                     fflush(stderr);
                 }
                 #endif
             }
             
-            // ky, kz, abs_ky, abs_kz are constant over x for this (z, global_y); compute once per z-row
-            int ky = (global_y > Nhalf) ? global_y - N : global_y;
-            int kz = (z > Nhalf) ? z - N : z;
-            int abs_ky = (ky < 0) ? -ky : ky;
-            int abs_kz = (kz < 0) ? -kz : kz;
+            // kx depends on x; ky, kz, abs_ky, abs_kz already set above
+            int kx = (x > Nhalf) ? x - N : x;
+            int k2_int = kx*kx + ky*ky + kz*kz;
+            double k2 = (double)k2_int;
             
-            for (int x = 0; x < N; x++) {
-                int x_mirror = (x == 0) ? 0 : N - x;
-                int z_mirror = (z == 0) ? 0 : N - z;
-                
-                // ========== STEP 1: Calculate k-vector components ==========
-                // RNG consistency: When crossing Nyquist boundary (x == Nhalf + 1),
-                if (x == Nhalf + 1 && N < MAX_PPD) {
-                    // Skip ALL missing x-values: from x=N to x=MAX_PPD-1
-                    int64_t skip_amount = MAX_PPD - N;
-                    nskip += skip_amount; // skip missing x-values in this z-row
-                    
-                    #if DEBUG_RNG_SKIP
-                    // Debug: Log skip accumulation for test coordinates
-                    int log_skip = (z <= MAX_DEBUG_COORD && global_y <= MAX_DEBUG_COORD) ||
-                                   (z == Nhalf - 1 && global_y == Nhalf - 1);
-                    if (log_skip) {
-                        fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d z=%d x=%d: ACCUMULATE skip at Nyquist boundary: +%lld (missing x-values), total nskip=%lld\n",
-                                N, global_y, z, x, (long long)skip_amount, (long long)nskip);
-                        fflush(stderr);
+            // ========== STEP 2: Generate D using RNG or cgauss() ==========
+            // Nyquist frequency zeroing: Force Nyquist elements to zero for all three axes
+            // This matches zeldovich.cpp line 354: abs(kx)==kmax || abs(kz)==kmax || abs(ky)==kmax
+            int abs_kx = (kx < 0) ? -kx : kx;
+            int is_nyquist = (abs_kx == Nhalf || abs_ky == Nhalf || abs_kz == Nhalf);
+            
+            fftw_complex D;
+            if ((k2 == 0.0)
+                 || (is_nyquist)
+                 || (!CornerModes && (double)k2_int >= k2_cutoff)) {
+                D[0] = D[1] = 0.0;
+                nskip++;
+                #if DEBUG_RNG_SKIP
+                int log_skip = (x <= MAX_DEBUG_COORD && global_y <= MAX_DEBUG_COORD && z <= MAX_DEBUG_COORD) ||
+                               (x == Nhalf - 1 && global_y == Nhalf - 1 && z == Nhalf - 1);
+                if (log_skip) {
+                    if (k2 == 0.0) {
+                        fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d (x,z)=(%d,%d): D=0 (DC mode), ACCUMULATE nskip++ (total=%lld)\n",
+                                N, global_y, x, z, (long long)nskip);
+                    } else if (is_nyquist) {
+                        fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d (x,z)=(%d,%d): D=0 (Nyquist: kx=%d ky=%d kz=%d), ACCUMULATE nskip++ (total=%lld)\n",
+                                N, global_y, x, z, kx, ky, kz, (long long)nskip);
+                    } else {
+                        fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d (x,z)=(%d,%d): D=0 (k_cutoff: k2=%d >= %.1f), ACCUMULATE nskip++ (total=%lld)\n",
+                                N, global_y, x, z, k2_int, k2_cutoff, (long long)nskip);
                     }
-                    #endif
+                    fflush(stderr);
                 }
+                #endif
+            } 
+            else if (ps_handle != NULL && params_handle != NULL) {
+                double k2_phys = k2 * fundamental * fundamental;
+                double kmag = sqrt(k2_phys);
+                int64_t rng_index = global_y;
                 
-                // kx depends on x; ky, kz, abs_ky, abs_kz already set above
-                int kx = (x > Nhalf) ? x - N : x;
-                int k2_int = kx*kx + ky*ky + kz*kz;  // int for k_cutoff comparison
-                double k2 = (double)k2_int;  // float for p(k)
-                
-                // ========== STEP 2: Generate D using RNG or cgauss() ==========
-                // Nyquist frequency zeroing: Force Nyquist elements to zero for all three axes
-                // This matches zeldovich.cpp line 354: abs(kx)==kmax || abs(kz)==kmax || abs(ky)==kmax
-                // The Nyquist frequency (k = N/2) is self-conjugate and doesn't have a separate partner.
-                // Due to the Y-shift in the reflected shell, we need to zero these to align mirroring expectations.
-                int abs_kx = (kx < 0) ? -kx : kx;
-                int is_nyquist = (abs_kx == Nhalf || abs_ky == Nhalf || abs_kz == Nhalf);
-                
-                fftw_complex D;
-                // Zero D for: DC mode, Nyquist frequency, or k_cutoff filtering
-                if ((k2 == 0.0)
-                     || (is_nyquist)
-                    // Force all elements with wavenumber above k_cutoff (nominally k_Nyquist) to zero
-                     || (!CornerModes && (double)k2_int >= k2_cutoff)) {
-                    D[0] = D[1] = 0.0;
-                    // RNG consistency: When D=0, we skip the RNG call - accumulate nskip, dont advance immediately
-                    nskip++;  // Accumulate skip, will be applied before next cgauss() call
-                    #if DEBUG_RNG_SKIP
-                    int log_skip = (x <= MAX_DEBUG_COORD && global_y <= MAX_DEBUG_COORD && z <= MAX_DEBUG_COORD) ||
-                                   (x == Nhalf - 1 && global_y == Nhalf - 1 && z == Nhalf - 1);
-                    if (log_skip) {
-                        if (k2 == 0.0) {
-                            fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d (x,z)=(%d,%d): D=0 (DC mode), ACCUMULATE nskip++ (total=%lld)\n",
-                                    N, global_y, x, z, (long long)nskip);
-                        } else if (is_nyquist) {
-                            fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d (x,z)=(%d,%d): D=0 (Nyquist: kx=%d ky=%d kz=%d), ACCUMULATE nskip++ (total=%lld)\n",
-                                    N, global_y, x, z, kx, ky, kz, (long long)nskip);
-                        } else {
-                            fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d (x,z)=(%d,%d): D=0 (k_cutoff: k2=%d >= %.1f), ACCUMULATE nskip++ (total=%lld)\n",
-                                    N, global_y, x, z, k2_int, k2_cutoff, (long long)nskip);
-                        }
-                        fflush(stderr);
-                    }
-                    #endif
-                } 
-                else if (ps_handle != NULL && params_handle != NULL) {
-                    // Convert k indices to physical wavenumber
-                    double k2_phys = k2 * fundamental * fundamental;
-                    double kmag = sqrt(k2_phys);
-                    
-                    // zeldovich_ps_cgauss returns double precision, convert to real_t
-                    // v2rng array is sized to ppd/2, so valid indices are 0 to (N/2 - 1)
-                    // In conjugate pair branch, global_y is in range [1, N/2-1] or [N/2+1, N-1]
-                    int64_t rng_index = global_y;
-                    
-                    double D_real, D_imag;
-                    #if VERIFY_RNG_CALLS
-                    if (nskip > 0 && local_rng_buf == NULL) {
-                        #pragma omp atomic
-                        total_rng_skips += nskip;
-                    }
-                    #endif
-                    // Phase 4: use get_cgauss (shared RNG when local_rng_buf==NULL, buffer RNG when parallel)
-                    get_cgauss(ps_handle, params_handle, rng_index, kmag, &nskip, local_rng_buf, &D_real, &D_imag);
-
-                    #if VERIFY_RNG_CALLS
+                double D_real, D_imag;
+                #if VERIFY_RNG_CALLS
+                if (nskip > 0 && local_rng_buf == NULL) {
                     #pragma omp atomic
-                    total_rng_calls++;  // Each cgauss() call uses 2 random numbers
-                    #endif
-                    D[0] = (real_t)D_real;
-                    D[1] = (real_t)D_imag;
-                    // Note: For VERIFY_HERMITIAN_SYMMETRY==2, we set D=0 AFTER computing F and H
+                    total_rng_skips += nskip;
                 }
-                
-                // ========== STEP 3: Compute F, G, H from D ==========
-                fftw_complex F, G, H;
-                int use_plt = 0; 
-                eigenmode e;      
-                double f = 1.0; // for velocity arrays in all modes
+                #endif
+                get_cgauss(ps_handle, params_handle, rng_index, kmag, &nskip, local_rng_buf, &D_real, &D_imag);
 
-                if (D[0] == 0.0 && D[1] == 0.0) {
-                    f = 0.0;
+                #if VERIFY_RNG_CALLS
+                #pragma omp atomic
+                total_rng_calls++;
+                #endif
+                D[0] = (real_t)D_real;
+                D[1] = (real_t)D_imag;
+            }
+            
+            // ========== STEP 3: Compute F, G, H from D ==========
+            fftw_complex F, G, H;
+            int use_plt = 0; 
+            eigenmode e;      
+            double f = 1.0;
+
+            if (D[0] == 0.0 && D[1] == 0.0) {
+                f = 0.0;
+            }
+            
+            if (just_density) {
+                F[0] = F[1] = G[0] = G[1] = H[0] = H[1] = 0.0;
+            } else if (k2 == 0.0) {
+                F[0] = F[1] = G[0] = G[1] = H[0] = H[1] = 0.0;
+                f = 0.0;
+            } else {
+            double rescale = 1.0;
+            double factor;
+
+            #if defined(VERIFY_HERMITIAN_SYMMETRY) && VERIFY_HERMITIAN_SYMMETRY == 1
+            // Verification mode 1: Set F=0 and H=0 to test Hermitian symmetry
+            // With F=0 and H=0, conj slices should be true conjugates of primary slices (result = pure real)
+            factor = rescale / (k2 * fundamental);
+            
+            F[0] = 0.0;
+            F[1] = 0.0;
+            
+            G[0] = -ky * factor * D[1];
+            G[1] =  ky * factor * D[0];
+            
+            H[0] = 0.0;
+            H[1] = 0.0;
+            #elif defined(VERIFY_HERMITIAN_SYMMETRY) && VERIFY_HERMITIAN_SYMMETRY == 2
+            // Verification mode 2: Compute F and H from D, then set D=0 and G=0
+            // Result after 3D FFT: Array 0 and Array 1 are purely imag
+            factor = rescale / (k2 * fundamental);
+            
+            F[0] = -kx * factor * D[1];
+            F[1] =  kx * factor * D[0];
+            
+            G[0] = 0.0;
+            G[1] = 0.0;
+            
+            H[0] = -kz * factor * D[1];
+            H[1] =  kz * factor * D[0];
+            
+            D[0] = 0.0;
+            D[1] = 0.0;
+
+            #else
+            // Normal operation: Compute F, G, H from D
+            if (params_handle != NULL) {
+                int qPLT = zeldovich_params_get_qPLT(params_handle);
+                if (qPLT) {
+                    use_plt = compute_plt_eigenmode(kx, ky, kz, N, k2, &e, rank, x, z);
                 }
+            }
+            
+            // Compute PLT growth rate f and rescale (before computing F, G, H)
+            // f is the logarithmic derivative of the growth factor that scales velocities
+            if (use_plt && params_handle != NULL) {
+                double f_cluster = zeldovich_params_get_f_cluster(params_handle);
+                f = (sqrt(1. + 24. * e.val * f_cluster) - 1.) * 0.25;
                 
-                if (just_density) {
-                    // Density-only mode (qdensity == 2): Zero F, G, H
-                    F[0] = F[1] = G[0] = G[1] = H[0] = H[1] = 0.0;
-                } else {
-                double ik2 = 1.0 / k2; // later: define this at top of code and use it instead of dividing
-                double rescale = 1.0;
-                double factor;
-
-                #if defined(VERIFY_HERMITIAN_SYMMETRY) && VERIFY_HERMITIAN_SYMMETRY == 1
-                // Verification mode 1: Set F=0 and H=0 to test Hermitian symmetry
-                // With F=0 and H=0, conj slices should be true conjugates of primary slices (result = pure real)
-                factor = rescale / (k2 * fundamental);
+                if (qPLTrescale) {
+                    double plt_f = f;
+                    rescale = pow(a_NL / a0, target_f - plt_f);
+                }
+            }
+            
+            // factor = rescale / (k2 * fundamental), used for both PLT and non-PLT
+            factor = rescale / (k2 * fundamental);
+            
+            if (use_plt) {
+                #if DEBUG_EIGENVECTOR
+                int debug_eigen = (rank == 0 && x <= 2 && global_y <= 2 && z <= 2);
+                if (debug_eigen) {
+                    fprintf(stderr, "[EIGEN-DEBUG] N=%d Y=%d (x,z)=(%d,%d) k=(%d,%d,%d): e.vec=[%.6f, %.6f, %.6f] e.val=%.6f\n",
+                            N, global_y, x, z, kx, ky, kz, e.vec[0], e.vec[1], e.vec[2], e.val);
+                    fflush(stderr);
+                }
+                #endif
+                F[0] = -e.vec[0] * factor * D[1];
+                F[1] =  e.vec[0] * factor * D[0];
                 
-                F[0] = 0.0;
-                F[1] = 0.0;
+                G[0] = -e.vec[1] * factor * D[1];
+                G[1] =  e.vec[1] * factor * D[0];
                 
-                // Compute G using the same formula as normal mode
-                G[0] = -ky * factor * D[1];
-                G[1] =  ky * factor * D[0];
-                
-                H[0] = 0.0;
-                H[1] = 0.0;
-                #elif defined(VERIFY_HERMITIAN_SYMMETRY) && VERIFY_HERMITIAN_SYMMETRY == 2
-                // Verification mode 2: Compute F and H from D, then set D=0 and G=0
-                // Result after 3D FFT: Array 0 and Array 1 are purely imag
-                factor = rescale / (k2 * fundamental);
-                
-                // Now compute F and H using the same formula as normal mode
+                H[0] = -e.vec[2] * factor * D[1];
+                H[1] =  e.vec[2] * factor * D[0];
+            } else {
                 F[0] = -kx * factor * D[1];
                 F[1] =  kx * factor * D[0];
                 
-                G[0] = 0.0;  // Set G=0
-                G[1] = 0.0;
+                G[0] = -ky * factor * D[1];
+                G[1] =  ky * factor * D[0];
                 
                 H[0] = -kz * factor * D[1];
                 H[1] =  kz * factor * D[0];
-                
-                // Now set D=0 (after F and H are computed)
-                D[0] = 0.0;
-                D[1] = 0.0;
-
-                #else
-                // Normal operation: Compute F, G, H from D
-                // Check if PLT is enabled (fundamental already set at top of else block)
-                int qPLT = 0;
-                if (params_handle != NULL) {
-                    qPLT = zeldovich_params_get_qPLT(params_handle);
-                    if (qPLT) {
-                        // Get PLT eigenmode for this k-vector
-                        // Convert kx, ky, kz to array indices for plt_get_eigenmode
-                        int ikx = (kx < 0) ? N + kx : kx;
-                        int iky = (ky < 0) ? N + ky : ky;
-                        int ikz = (kz < 0) ? N + kz : kz;
-                        // Handle z index (only positive half-space stored)
-                        if (ikz > N / 2) ikz = N - ikz;
-                        
-                        if (plt_get_eigenmode(ikx, iky, ikz, (int64_t)N, &e) == 0) {
-                            use_plt = 1;
-                            double e_mag, k_dot_e, norm;
-
-                            // Apply the same normalization as zeldovich.cpp
-                            // 1. Set sign of z component (real FFT only gives +kz half-space)
-                            // 2. Ensure |e| = 1 (normalize after interpolation, like zeldovich)
-                            // 3. Apply norm = k2 / (k * e) to get the final eigenvector
-                            
-                            // Set the sign of the z component (because the real FFT only gives the +kz half-space)
-                            // see zeldovich.cpp line 255: ehat.vec[2] *= copysign(1, kz);
-                            if (kz < 0) {
-                                e.vec[2] = -e.vec[2];
-                            }
-                            
-                            // Normalize eigenvector (interpolation might not preserve |e| = 1)
-                            // see zeldovich.cpp lines 257-263
-                            e_mag = sqrt(e.vec[0] * e.vec[0] + e.vec[1] * e.vec[1] + e.vec[2] * e.vec[2]);
-                            if (e_mag > 0.0) {
-                                e.vec[0] /= e_mag;
-                                e.vec[1] /= e_mag;
-                                e.vec[2] /= e_mag;
-                            }
-                            
-                            // Apply normalization: norm = k2 / (k * e)
-                            // This upweights each mode by 1/(khat*ehat),see zeldovich.cpp line 266
-                            k_dot_e = kx * e.vec[0] + ky * e.vec[1] + kz * e.vec[2];
-                            norm = (k2 > 0.0 && k_dot_e != 0.0) ? k2 / k_dot_e : 0.0;
-                            if (!isfinite(norm)) norm = 0.0;
-                            
-                            // Scale eigenvector by norm (see zeldovich.cpp lines 268-270)
-                            e.vec[0] *= norm;
-                            e.vec[1] *= norm;
-                            e.vec[2] *= norm;
-                        } else {
-                            // If eigenmode lookup fails, fall back to normal computation
-                            if (rank == 0 && x == 0 && z == 0) {
-                                fprintf(stderr, "[WARNING] Failed to get PLT eigenmode for (kx=%d, ky=%d, kz=%d), using normal computation\n",
-                                        kx, ky, kz);
-                            }
-                        }
-                    }
-                }
-                
-                // ========== STEP 3.5: Compute PLT growth rate f and rescale (before computing F, G, H) ==========
-                // f is the logarithmic derivative of the growth factor that scales velocities
-                // When PLT is enabled: f = (sqrt(1. + 24 * e.val * f_cluster) - 1) / 4.
-                // When PLT is not enabled: f = 1.0 (default)
-                // Skip in density-only mode (qdensity == 2)
-                // NOTE: Use outer f variable (declared on 397), not a new inner f!
-                // Otherwise the PLT f value goes out of scope before velocity storage.
-                if (!just_density && use_plt && params_handle != NULL) {
-                    double f_cluster = zeldovich_params_get_f_cluster(params_handle);
-                    // f scales the velocities. The corrections are sourced from:
-                    // 1) PLT growth rate 2) Addition of a smooth, non-clustering component
-                    // to the background (<= NOT A PLT EFFECT)
-                    // If PLT true, combine the effects here. Else: apply f_cluster during output.
-                    f = (sqrt(1. + 24. * e.val * f_cluster) - 1.) * 0.25;
-                    
-                    // Compute rescaling if qPLTrescale true
-                    // rescale = pow(a_NL/a0, target_f - plt_f)
-                    // where plt_f = f (PLT growth rate) and target_f is the continuum growth rate
-                    if (qPLTrescale) {
-                        double plt_f = f;  // PLT growth rate for this mode
-                        rescale = pow(a_NL / a0, target_f - plt_f);
-                    }
-                }
-                
-                // Compute factor (used identically in both PLT and non-PLT cases)
-                // In zeldovich.cpp: k2 includes fundamental^2, so ik2 = 1/(k2_index * fundamental^2)
-                // F = rescale * I * vec * fundamental * ik2 * D
-                //   = rescale * I * vec * fundamental / (k2_index * fundamental^2) * D
-                //   = rescale * I * vec / (k2_index * fundamental) * D
-                // where vec is either e.vec[i] (PLT) or k[i] (non-PLT)
-                // Note: our ik2 = 1/k2_index (no fundamental), so we use 1/(k2*fundamental)
-                factor = rescale / (k2 * fundamental);
-                
-                if (use_plt) {
-                    // PLT mode: Use eigenvector instead of k-vector
-                    #if DEBUG_EIGENVECTOR
-                    // Debug: Print eigenvector components for test coordinates
-                    int debug_eigen = (rank == 0 && x <= 2 && global_y <= 2 && z <= 2);
-                    if (debug_eigen) {
-                        fprintf(stderr, "[EIGEN-DEBUG] N=%d Y=%d (x,z)=(%d,%d) k=(%d,%d,%d): e.vec=[%.6f, %.6f, %.6f] e.val=%.6f\n",
-                                N, global_y, x, z, kx, ky, kz, e.vec[0], e.vec[1], e.vec[2], e.val);
-                        fflush(stderr);
-                    }
-                    #endif
-                    // F = rescale * i * e.vec[0] * fundamental * ik2 * D
-                    //   = rescale * i * e.vec[0] * fundamental * ik2 * (D_re + i*D_im)
-                    //   = rescale * (-e.vec[0] * fundamental * ik2 * D_im + i * e.vec[0] * fundamental * ik2 * D_re)
-                    F[0] = -e.vec[0] * factor * D[1];  // Real part
-                    F[1] =  e.vec[0] * factor * D[0];  // Imaginary part
-                    
-                    G[0] = -e.vec[1] * factor * D[1];
-                    G[1] =  e.vec[1] * factor * D[0];
-                    
-                    H[0] = -e.vec[2] * factor * D[1];
-                    H[1] =  e.vec[2] * factor * D[0];
-                } else {
-                    // Normal operation: Compute F, G, H from D using k-vector
-                    // In zeldovich.cpp: k2 includes fundamental^2, so F = I * kx * fundamental * ik2 * D
-                    // In our code: k2 doesn't include fundamental^2, so we need to multiply by fundamental
-                    // F = rescale * i * kx * fundamental * ik2 * D
-                    //   = rescale * i * kx * fundamental * ik2 * (D_re + i*D_im)
-                    //   = rescale * (-kx * fundamental * ik2 * D_im + i * kx * fundamental * ik2 * D_re)
-                    F[0] = -kx * factor * D[1];  // Real part
-                    F[1] =  kx * factor * D[0];  // Imaginary part
-                    
-                    G[0] = -ky * factor * D[1];
-                    G[1] =  ky * factor * D[0];
-                    
-                    H[0] = -kz * factor * D[1];
-                    H[1] =  kz * factor * D[0];
-                }
-                #endif  // VERIFY_HERMITIAN_SYMMETRY
-                }  // End of else block for !just_density
-                
-                // ========== STEP 4: Store in arrays ==========
-                if (just_density) {
-                    // Density-only mode: Only store D (density) in Array 0
-                    // Array 0: D (density only, no displacement)
-                    PRIM_SLICE(0, x, z)[0] = D[0];  // Real = D_re
-                    PRIM_SLICE(0, x, z)[1] = D[1];  // Imag = D_im
-
-                    // Test D+iF calculation
-                    // PRIM_SLICE(0, x, z)[0] = D[0] - F[1];  // Real = D_re - F_im
-                    // PRIM_SLICE(0, x, z)[1] = D[1] + F[0];  // Imag = D_im + F_re
-                } else {
-                    // Normal mode: Store D+iF, G+iH, and optionally velocities
-                    // Array 0: D + i*F (density + X-displacement)
-                    // D + i*F = (D[0] + i*D[1]) + i*(F[0] + i*F[1]) = (D[0] - F[1]) + i*(D[1] + F[0])
-                    PRIM_SLICE(0, x, z)[0] = D[0] - F[1];  // Real = D_re - F_im
-                    PRIM_SLICE(0, x, z)[1] = D[1] + F[0];  // Imag = D_im + F_re
-                    
-                    // Array 1: G + i*H (Y-displacement + Z-displacement)
-                    // G + i*H = (G[0] + i*G[1]) + i*(H[0] + i*H[1]) = (G[0] - H[1]) + i*(G[1] + H[0])
-                    PRIM_SLICE(1, x, z)[0] = G[0] - H[1];  // Real = G_re - H_im
-                    PRIM_SLICE(1, x, z)[1] = G[1] + H[0];  // Imag = G_im + H_re
-                    
-                    if (narray >= 4) { // qPLT == true
-                        // Array 2: 0 + i*F*f (X-velocity)
-                        // 0 + i*(F*f) = 0 + i*((F[0] + i*F[1])*f) = -F[1]*f + i*(F[0]*f)
-                        // f is computed above (PLT growth rate if PLT enabled, else 1.0)
-                        PRIM_SLICE(2, x, z)[0] = -F[1] * f;  // Real = -F_im * f
-                        PRIM_SLICE(2, x, z)[1] = F[0] * f;   // Imag = F_re * f
-                        
-                        // Array 3: G*f + i*H*f (Y-velocity + Z-velocity)
-                        // (G*f) + i*(H*f) = (G[0] - H[1])*f + i*((G[1] + H[0])*f)
-                        PRIM_SLICE(3, x, z)[0] = (G[0] - H[1]) * f;  // Real = (G_re - H_im) * f
-                        PRIM_SLICE(3, x, z)[1] = (G[1] + H[0]) * f;  // Imag = (G_im + H_re) * f
-                    }
-                }
-                
-                // ========== STEP 5: Store conjugates (Zeldovich scheme: conj(D) + i*conj(F)) ==========
-                if (just_density) {
-                    // Density-only mode: Only store D (density) in Array 0
-                    // For conjugate, store conj(D) = (D[0], -D[1])
-                    CONJ_SLICE(0, x_mirror, z_mirror)[0] = D[0];   // Real = D_re
-                    CONJ_SLICE(0, x_mirror, z_mirror)[1] = -D[1];  // Imag = -D_im (conjugate)
-                    
-                    // Test D+iF calculation
-                    // CONJ_SLICE(0, x_mirror, z_mirror)[0] = D[0] + F[1];  // Real = D_re + F_im
-                    // CONJ_SLICE(0, x_mirror, z_mirror)[1] = F[0] - D[1];  // Imag = F_re - D_im
-                } else {
-                    // Normal mode: Store conj(D)+i*conj(F), conj(G)+i*conj(H), and optionally velocities
-                    // For mode -k, store conj(D) + i*conj(F), NOT the conjugate of (D + i*F)!
-                    // conj(D) + i*conj(F) = (D[0] - i*D[1]) + i*(F[0] - i*F[1]) = (D[0] + F[1]) + i*(F[0] - D[1])
-                    CONJ_SLICE(0, x_mirror, z_mirror)[0] = D[0] + F[1];  // Real = D_re + F_im
-                    CONJ_SLICE(0, x_mirror, z_mirror)[1] = F[0] - D[1];  // Imag = F_re - D_im
-                    
-                    // conj(G) + i*conj(H) = (G[0] - i*G[1]) + i*(H[0] - i*H[1]) = (G[0] + H[1]) + i*(H[0] - G[1])
-                    CONJ_SLICE(1, x_mirror, z_mirror)[0] = G[0] + H[1];  // Real = G_re + H_im
-                    CONJ_SLICE(1, x_mirror, z_mirror)[1] = H[0] - G[1];  // Imag = H_re - G_im
-                    
-                    if (narray >= 4) {
-                        // Array 2: 0 + i*conj(F*f) = i*conj(F*f)
-                        // conj(F*f) = F_re*f - i*F_im*f
-                        // i*conj(F*f) = i*(F_re*f - i*F_im*f) = F_im*f + i*F_re*f
-                        // f is computed above (PLT growth rate if PLT enabled, else 1.0)
-                        CONJ_SLICE(2, x_mirror, z_mirror)[0] = F[1] * f;   // Real = F_im * f
-                        CONJ_SLICE(2, x_mirror, z_mirror)[1] = F[0] * f;   // Imag = F_re * f (FIXED: was -F[0])
-                        
-                        // Array 3: conj(G*f) + i*conj(H*f) = (G[0] + H[1])*f + i*((H[0] - G[1])*f)
-                        CONJ_SLICE(3, x_mirror, z_mirror)[0] = (G[0] + H[1]) * f;  // Real = (G_re + H_im) * f
-                        CONJ_SLICE(3, x_mirror, z_mirror)[1] = (H[0] - G[1]) * f;  // Imag = (H_re - G_im) * f
-                    }
-                }
-                
             }
+            #endif  // VERIFY_HERMITIAN_SYMMETRY
+            }  // End of else block for !just_density && k2 != 0
             
-        }
-#if PARALLELIZE_Z_LOOP
-            double t_after_loop = omp_get_wtime();
+            // ========== STEP 4 & 5: Store primary and conjugate slices ==========
+            store_prim_conj(primary_slices, conjugate_slices,
+                           N, x, z, x_mirror, z_mirror,
+                           D, F, G, H, f, narray, just_density);
             
-            #if DEBUG_PRINTS
-            // Print timing diagnostics
-            if (global_y == 1 || global_y == 2) {
-                int z_end = (z_start + chunk > N) ? N : z_start + chunk;
-                #pragma omp critical
-                {
-                    fprintf(stderr, "[OMP-TIMING] Rank=%d Y=%d Thread=%d/%d z=[%d,%d) vstart=%lld | "
-                            "alloc=%.3fms copy=%.3fms advance=%.3fms loop=%.3fms total=%.3fms\n",
-                            rank, global_y, tid, nthreads, z_start, z_end, (long long)virtual_start,
-                            (t_after_alloc - t_start) * 1000.0,
-                            (t_after_copy - t_after_alloc) * 1000.0,
-                            (t_after_advance - t_after_copy) * 1000.0,
-                            (t_after_loop - t_after_advance) * 1000.0,
-                            (t_after_loop - t_start) * 1000.0);
-                    fflush(stderr);
-                }
-            }
-            #endif
-            
-            if (need_free) free(local_rng_buf);
-        }
-#endif
-    } else {
-        // ========== SELF-CONJUGATE: Y=0 or Y=N/2 ==========
-        // Reset nskip for self-conjugate case
-        // For self-conjugate slices, we process full NxN plane (like zeldovich.cpp)
-        if (N < MAX_PPD) {
-            nskip = 0;  // Will be accumulated during loops
-        } else {
-            nskip = 0;
         }
         
-        // Zeldovich method: Fill half the plane, mirror the rest
-        // Process FULL plane first: z = 0 to N-1, x = 0 to N-1
+    }
 #if PARALLELIZE_Z_LOOP
-        #pragma omp parallel
-        {
-            int tid = omp_get_thread_num();
-            int nthreads = omp_get_num_threads();
-            int chunk = (N + nthreads - 1) / nthreads;
-            int z_start = (tid * chunk < N) ? tid * chunk : N;
-            
-            // Diagnostic timing
-            double t_start = omp_get_wtime();
-            
-            // Use persistent buffer if provided, otherwise allocate
-            void* local_rng_buf;
-            int need_free = 0;
-            if (thread_rng_buffers != NULL && tid < omp_get_max_threads()) {
-                local_rng_buf = thread_rng_buffers[tid];
-            } else {
-                size_t rng_size = zeldovich_ps_rng_buffer_size();
-                local_rng_buf = malloc(rng_size);
-                need_free = 1;
-            }
-            
-            double t_after_alloc = omp_get_wtime();
-            
-            zeldovich_ps_get_rng_copy(ps_handle, global_y, local_rng_buf);
-            double t_after_copy = omp_get_wtime();
-            
-            int64_t virtual_start = compute_virtual_position(z_start, 0, N, Nhalf) / 2;
-            if (virtual_start > 0)
-                zeldovich_ps_advance_rng_buffer(local_rng_buf, virtual_start);
-            double t_after_advance = omp_get_wtime();
-            
-            int64_t nskip = 0;
-            #pragma omp for schedule(static)
-            for (int z = 0; z < N; z++) {
+    pt_zloop.Stop(0);
+    for (int _t = 0; _t < _max_t; _t++)
+        if (_rng_bufs[_t]) free(_rng_bufs[_t]);
+    free(_rng_bufs);
+    }
 #else
-        // Non-omp-parallel: Process z range sequentially
-        for (int z = 0; z < N; z++) {
-            void* local_rng_buf = NULL;
+    pt_zloop.Stop(0);
 #endif
-            // RNG skipping: match zeldovich.cpp - skip at Nyquist boundary (z == Nhalf + 1)
-            // This applies to ALL Y slices including self-conjugate (Y=0 and Y=N/2)
-            if (z == Nhalf + 1 && N < MAX_PPD) {
-                // Skip ALL missing z-rows: from z=N to z=MAX_PPD-1
-                // Use explicit int64_t casts to avoid integer overflow
-                int64_t skip_amount = (int64_t)(MAX_PPD - N) * (int64_t)MAX_PPD;
-                nskip += skip_amount; // skip missing z-rows
-                
-                #if DEBUG_RNG_SKIP
-                int log_skip = (global_y <= MAX_DEBUG_COORD) || (global_y == Nhalf - 1);
-                if (log_skip) {
-                    fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d z=%d: ACCUMULATE skip at Nyquist boundary (self-conj, full plane): +%lld (missing z-rows), total nskip=%lld\n",
-                            N, global_y, z, (long long)skip_amount, (long long)nskip);
-                    fflush(stderr);
-                }
-                #endif
-            }
-            
-            int ky = (global_y > Nhalf) ? global_y - N : global_y;
-            int kz = (z > Nhalf) ? z - N : z;
-            int abs_ky = (ky < 0) ? -ky : ky;
-            int abs_kz = (kz < 0) ? -kz : kz;
-            
-            for (int x = 0; x < N; x++) {
-                // RNG skipping: match zeldovich.cpp - skip at Nyquist boundary (x == Nhalf + 1)
-                // This applies to ALL Y slices including self-conjugate (Y=0 and Y=N/2)
-                if (x == Nhalf + 1 && N < MAX_PPD) {
-                    // Skip ALL missing x-values: from x=N to x=MAX_PPD-1
-                    int64_t skip_amount = (int64_t)(MAX_PPD - N);
-                    nskip += skip_amount; // skip missing x-values in this z-row
-                    
-                    #if DEBUG_RNG_SKIP
-                    int log_skip = (z <= MAX_DEBUG_COORD && global_y <= MAX_DEBUG_COORD) ||
-                                   (z == Nhalf - 1 && global_y == Nhalf - 1);
-                    if (log_skip) {
-                        fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d z=%d x=%d: ACCUMULATE skip at Nyquist boundary (self-conj, full plane): +%lld (missing x-values), total nskip=%lld\n",
-                                N, global_y, z, x, (long long)skip_amount, (long long)nskip);
-                        fflush(stderr);
-                    }
-                    #endif
-                }
-                
-                int kx = (x > Nhalf) ? x - N : x;
-                int k2_int = kx*kx + ky*ky + kz*kz;  // Integer k^2 for k_cutoff comparison
-                double k2 = (double)k2_int;  // Floating-point k^2 for power spectrum
-                
-                // Nyquist frequency zeroing: Force Nyquist elements to zero for all three axes
-                // This matches zeldovich.cpp line 354: abs(kx)==kmax || abs(kz)==kmax || abs(ky)==kmax
-                // The Nyquist frequency (k = N/2) is self-conjugate and doesnt have a separate partner
-                // Due to the Y-shift in the reflected shell, we need to zero these to align mirroring expectations
-                int abs_kx = (kx < 0) ? -kx : kx;
-                int is_nyquist = (abs_kx == Nhalf || abs_ky == Nhalf || abs_kz == Nhalf);
-                
-                // Generate D using RNG or cgauss()
-                // For self-conjugate slices, we still need to check for power spectrum mode
-                fftw_complex D;
-                if ((k2 == 0.0) || (is_nyquist) || (!CornerModes && (double)k2_int >= k2_cutoff)) {
-                    // Zero D for: DC mode, Nyquist frequency, or k_cutoff filtering
-                    // This matches zeldovich.cpp line 360-364: zeroing conditions
-                    D[0] = D[1] = 0.0;
-                    // RNG consistency: When D=0, we skip the RNG call, so accumulate skip
-                    nskip++;  // Accumulate skip, will be applied before next cgauss() call
-                    #if DEBUG_RNG_SKIP
-                    int log_skip = (x <= MAX_DEBUG_COORD && global_y <= MAX_DEBUG_COORD && z <= MAX_DEBUG_COORD) ||
-                                   (x == Nhalf - 1 && global_y == Nhalf - 1 && z == Nhalf - 1);
-                    if (log_skip) {
-                        if (k2 == 0.0) {
-                            fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d (x,z)=(%d,%d): D=0 (DC mode, self-conj), ACCUMULATE nskip++ (total=%lld)\n",
-                                    N, global_y, x, z, (long long)nskip);
-                        } else if (is_nyquist) {
-                            fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d (x,z)=(%d,%d): D=0 (Nyquist: kx=%d ky=%d kz=%d, self-conj), ACCUMULATE nskip++ (total=%lld)\n",
-                                    N, global_y, x, z, kx, ky, kz, (long long)nskip);
-                        } else {
-                            fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d (x,z)=(%d,%d): D=0 (k_cutoff: k2=%d >= %.1f, self-conj), ACCUMULATE nskip++ (total=%lld)\n",
-                                    N, global_y, x, z, k2_int, k2_cutoff, (long long)nskip);
-                        }
-                        fflush(stderr);
-                    }
-                    #endif
-                } else if (ps_handle != NULL && params_handle != NULL) {
-                    // v15.2: Use zeldovich-PLT power spectrum-weighted Gaussian
-                    // Convert k indices to physical wavenumber: k_phys = k_index * fundamental
-                    double k2_phys = k2 * fundamental * fundamental;
-                    double kmag = sqrt(k2_phys);
-                    
-                    // zeldovich_ps_cgauss returns double precision, convert to real_t
-                    // zeldovich-PLT's v2rng array is sized to ppd/2, so valid indices are 0 to (N/2 - 1)
-                    // Since we've already handled global_y == N/2 above, global_y is now < N/2
-                    int64_t rng_index = global_y;
-                    
-                    double D_real, D_imag;
-                    #if VERIFY_RNG_CALLS
-                    if (nskip > 0 && local_rng_buf == NULL) {
-                        #pragma omp atomic
-                        total_rng_skips += nskip;
-                    }
-                    #endif
-                    // Phase 4: use get_cgauss (shared RNG when local_rng_buf==NULL, buffer RNG when parallel)
-                    get_cgauss(ps_handle, params_handle, rng_index, kmag, &nskip, local_rng_buf, &D_real, &D_imag);
-                    #if VERIFY_RNG_CALLS
-                    #pragma omp atomic
-                    total_rng_calls++;  // Each cgauss() call uses 2 random numbers
-                    #endif
-                    D[0] = (real_t)D_real;
-                    D[1] = (real_t)D_imag;
-                    // Note: For VERIFY_HERMITIAN_SYMMETRY==2, we set D=0 AFTER computing F and H
-                } 
-                // Compute F, G, H from D
-                // Skip F, G, H computation in density-only mode (qdensity == 2)
-                fftw_complex F, G, H;
-                
-                // Declare f_sc before if/else blocks (needed for velocity arrays in all modes)
-                double f_sc = 1.0;
-                
-                // Match zeldovich.cpp: set f=0 when D==0 (line 443)
-                if (D[0] == 0.0 && D[1] == 0.0) {
-                    f_sc = 0.0;
-                }
-                
-                if (just_density) {
-                    // Density-only mode: Set F, G, H to zero (not used)
-                    F[0] = F[1] = G[0] = G[1] = H[0] = H[1] = 0.0;
 
-                } else if (k2 == 0.0) {
-                    F[0] = F[1] = G[0] = G[1] = H[0] = H[1] = 0.0;
-                    f_sc = 0.0;  // Match zeldovich.cpp: set f=0 when k2==0 (D==0)
-                } else {
-                    double ik2 = 1.0 / k2;
-                    
-                    #if defined(VERIFY_HERMITIAN_SYMMETRY) && VERIFY_HERMITIAN_SYMMETRY == 1
-                    // Verification mode 1: Set F=0 and H=0 to test Hermitian symmetry
-                    // With F=0 and H=0, only D and G remain, and result should be purely real
-                    F[0] = 0.0;
-                    F[1] = 0.0;
-                    G[0] = -ky * ik2 * D[1];
-                    G[1] =  ky * ik2 * D[0];
-                    H[0] = 0.0;
-                    H[1] = 0.0;
-                    #elif defined(VERIFY_HERMITIAN_SYMMETRY) && VERIFY_HERMITIAN_SYMMETRY == 2
-                    // Verification mode 2: Compute F and H from D, then set D=0 and G=0
-                    // This makes Array 0 and Array 1 purely imaginary (real parts = 0)
-                    // After 3D FFT, the result should be purely imaginary (real parts = 0)
-                    // IMPORTANT: Must use the same factor computation as normal mode to ensure
-                    // F is computed identically. Otherwise the test is invalid.
-                    // Get fundamental wavenumber (needed for factor computation)
-                    double fundamental_sc = 1.0;
-                    if (params_handle != NULL) {
-                        fundamental_sc = zeldovich_params_get_fundamental(params_handle);
-                    }
-                    // For VERIFY_HERMITIAN_SYMMETRY=2, we don't use PLT rescaling, so rescale=1.0
-                    double rescale_sc = 1.0;
-                    // Compute factor the same way as normal mode
-                    double factor_sc = rescale_sc / (k2 * fundamental_sc);
-                    
-                    // Now compute F and H using the same formula as normal mode
-                    F[0] = -kx * factor_sc * D[1];
-                    F[1] =  kx * factor_sc * D[0];
-                    
-                    G[0] = 0.0;  // Set G=0
-                    G[1] = 0.0;
-                    
-                    H[0] = -kz * factor_sc * D[1];
-                    H[1] =  kz * factor_sc * D[0];
-                    
-                    // Now set D=0 (after F and H are computed)
-                    D[0] = 0.0;
-                    D[1] = 0.0;
-                    #else
-                    // Normal operation: Compute F, G, H from D
-                    // double ik2 = 1.0 / k2; --> UNCOMMENT LATER! AFTER D_0 TEST
-                    // Check if PLT is enabled
-                    int qPLT_sc = 0;
-                    // Default fundamental = 1.0 
-                    double fundamental_sc = 1.0;
-                    eigenmode e_sc;
-                    int use_plt_sc = 0;
-                    
-                    // ========== STEP 3.5: Compute PLT growth rate f and rescale (before computing F, G, H) ==========
-                    // f is the logarithmic derivative of the growth factor that scales velocities
-                    // When PLT is enabled: f = (sqrt(1. + 24 * e.val * f_cluster) - 1) / 4.
-                    // When PLT is not enabled: f = 1.0 (default)
-                    // Skip in density-only mode (qdensity == 2)
-                    // f_sc already declared above, update it here if PLT is enabled
-                    double rescale_sc = 1.0;
-                    
-                    // Get fundamental wavenumber (needed for both PLT and non-PLT cases)
-                    if (!just_density && params_handle != NULL) {
-                        fundamental_sc = zeldovich_params_get_fundamental(params_handle);
-                        qPLT_sc = zeldovich_params_get_qPLT(params_handle);
-                        if (qPLT_sc) {
-                            // Get PLT eigenmode for this k-vector
-                            // Convert kx, ky, kz to array indices for plt_get_eigenmode
-                            int ikx = (kx < 0) ? N + kx : kx;
-                            int iky = (ky < 0) ? N + ky : ky;
-                            int ikz = (kz < 0) ? N + kz : kz;
-                            // Handle z index (only positive half-space stored)
-                            if (ikz > N / 2) ikz = N - ikz;
-                            
-                            if (plt_get_eigenmode(ikx, iky, ikz, (int64_t)N, &e_sc) == 0) {
-                                use_plt_sc = 1;
-        
-                                // Eigenval normalization
-                                if (kz < 0) {
-                                    e_sc.vec[2] = -e_sc.vec[2];
-                                }
-                                
-                                // Normalize eigenvector (interpolation might not preserve |e_sc| = 1)
-                                double e_sc_mag = sqrt(e_sc.vec[0] * e_sc.vec[0] + e_sc.vec[1] * e_sc.vec[1] + e_sc.vec[2] * e_sc.vec[2]);
-                                if (e_sc_mag > 0.0) {
-                                    e_sc.vec[0] /= e_sc_mag;
-                                    e_sc.vec[1] /= e_sc_mag;
-                                    e_sc.vec[2] /= e_sc_mag;
-                                }
-                                
-                                // Apply normalization: norm = k2 / (k * e_sc)
-                                double k_dot_e_sc = kx * e_sc.vec[0] + ky * e_sc.vec[1] + kz * e_sc.vec[2];
-                                double norm_sc = (k2 > 0.0 && k_dot_e_sc != 0.0) ? k2 / k_dot_e_sc : 0.0;
-                                if (!isfinite(norm_sc)) norm_sc = 0.0;
-                                
-                                // Scale eigenvector by norm
-                                e_sc.vec[0] *= norm_sc;
-                                e_sc.vec[1] *= norm_sc;
-                                e_sc.vec[2] *= norm_sc;
-                                
-                                // Compute f and rescale before computing F, G, H
-                                double f_cluster = zeldovich_params_get_f_cluster(params_handle);
-                                // PLT growth rate: f = (sqrt(1. + 24 * e.val * f_cluster) - 1) / 4.
-                                f_sc = (sqrt(1. + 24. * e_sc.val * f_cluster) - 1.) * 0.25;
-                                
-                                // Compute rescaling if qPLTrescale is enabled
-                                if (qPLTrescale) {
-                                    double plt_f = f_sc;  // PLT growth rate for this mode
-                                    rescale_sc = pow(a_NL / a0, target_f - plt_f);
-                                }
-                            } else {
-                                // If eigenmode lookup fails, fall back to normal computation
-                                if (rank == 0 && x == 0 && z == 0) {
-                                    fprintf(stderr, "[WARNING] Failed to get PLT eigenmode for (kx=%d, ky=%d, kz=%d), using normal computation\n",
-                                            kx, ky, kz);
-                                }
-                            }
-                        }
-                    }
-                    
-                    // Compute factor (used identically in both PLT and non-PLT cases)
-                    // In zeldovich.cpp: k2 includes fundamental^2, so factor = rescale / (k2 * fundamental)
-                    // where vec is either e.vec[i] (PLT) or k[i] (non-PLT)
-                    double factor = rescale_sc / (k2 * fundamental_sc);
-                    
-                    if (use_plt_sc) {
-                        // PLT mode: Use eigenvector instead of k-vector
-                        // F = rescale * i * e.vec[0] * fundamental * ik2 * D
-                        F[0] = -e_sc.vec[0] * factor * D[1];
-                        F[1] =  e_sc.vec[0] * factor * D[0];
-                        
-                        G[0] = -e_sc.vec[1] * factor * D[1];
-                        G[1] =  e_sc.vec[1] * factor * D[0];
-                        
-                        H[0] = -e_sc.vec[2] * factor * D[1];
-                        H[1] =  e_sc.vec[2] * factor * D[0];
-                    } else {
-                        // Normal operation: Compute F, G, H from D using k-vector
-                        // In zeldovich.cpp: k2 includes fundamental^2, so F = I * kx * fundamental * ik2 * D
-                        // In our code: k2 doesn't include fundamental^2, so we need to multiply by fundamental
-                        F[0] = -kx * factor * D[1];
-                        F[1] =  kx * factor * D[0];
-                        G[0] = -ky * factor * D[1];
-                        G[1] =  ky * factor * D[0];
-                        H[0] = -kz * factor * D[1];
-                        H[1] =  kz * factor * D[0];
-                    }
-                    #endif
-                }
-                
-                // Compute mirror indices for self-conjugate slices (like zeldovich's zHer, xHer)
-                int x_mirror = (x == 0) ? 0 : N - x;
-                int z_mirror = (z == 0) ? 0 : N - z;
-                
-                // Store in arrays (Zeldovich packing scheme)
-                // For self-conjugate slices: store D+i*F in primary slice,
-                // and conj(D)+i*conj(F) in conjugate slice at mirrored positions
-                // (like zeldovich stores in slab and slabHer)
-                if (just_density) {
-                    // Density-only mode: Only store D (density) in Array 0
-                    PRIM_SLICE(0, x, z)[0] = D[0];  // Real = D_re
-                    PRIM_SLICE(0, x, z)[1] = D[1];  // Imag = D_im
-
-                    CONJ_SLICE(0, x_mirror, z_mirror)[0] = D[0];  // Real = D_re
-                    CONJ_SLICE(0, x_mirror, z_mirror)[1] = -D[1];  // Imag = -D_im (conjugate)
-
-                    // Test D+iF calculation
-                    // PRIM_SLICE(0, x, z)[0] = D[0] - F[1];  // Real = D_re - F_im
-                    // PRIM_SLICE(0, x, z)[1] = D[1] + F[0];  // Imag = D_im + F_re
-                    
-                    // Conjugate slice (at mirrored position): conj(D) + i*conj(F) = (D[0] + F[1]) + i*(F[0] - D[1])
-                    // CONJ_SLICE(0, x_mirror, z_mirror)[0] = D[0] + F[1];  // Real = D_re + F_im
-                    // CONJ_SLICE(0, x_mirror, z_mirror)[1] = F[0] - D[1];  // Imag = F_re - D_im
-                } else {
-                    // Normal mode: Store D+iF, G+iH, and optionally velocities
-                    // Primary slice: Array 0: D + i*F = (D[0] - F[1]) + i*(D[1] + F[0])
-                    PRIM_SLICE(0, x, z)[0] = D[0] - F[1];
-                    PRIM_SLICE(0, x, z)[1] = D[1] + F[0];
-                    
-                    // Array 1: G + i*H = (G[0] - H[1]) + i*(G[1] + H[0])
-                    PRIM_SLICE(1, x, z)[0] = G[0] - H[1];
-                    PRIM_SLICE(1, x, z)[1] = G[1] + H[0];
-                    
-                    // Conjugate slice (at mirrored position): conj(D)+i*conj(F), conj(G)+i*conj(H)
-                    // conj(D) + i*conj(F) = (D[0] + F[1]) + i*(F[0] - D[1])
-                    CONJ_SLICE(0, x_mirror, z_mirror)[0] = D[0] + F[1];  // Real = D_re + F_im
-                    CONJ_SLICE(0, x_mirror, z_mirror)[1] = F[0] - D[1];  // Imag = F_re - D_im
-                    
-                    // conj(G) + i*conj(H) = (G[0] + H[1]) + i*(H[0] - G[1])
-                    CONJ_SLICE(1, x_mirror, z_mirror)[0] = G[0] + H[1];  // Real = G_re + H_im
-                    CONJ_SLICE(1, x_mirror, z_mirror)[1] = H[0] - G[1];  // Imag = H_re - G_im
-                    
-                    if (narray >= 4) {
-                        // Primary slice: Array 2: 0 + i*F*f = -F[1]*f + i*(F[0]*f)
-                        // f_sc is computed above (PLT growth rate if PLT enabled, else 1.0)
-                        PRIM_SLICE(2, x, z)[0] = -F[1] * f_sc;
-                        PRIM_SLICE(2, x, z)[1] = F[0] * f_sc;
-                        // Array 3: G*f + i*H*f = (G[0] - H[1])*f + i*((G[1] + H[0])*f)
-                        PRIM_SLICE(3, x, z)[0] = (G[0] - H[1]) * f_sc;
-                        PRIM_SLICE(3, x, z)[1] = (G[1] + H[0]) * f_sc;
-                        
-                        // Conjugate slice (at mirrored position): i*conj(F*f), conj(G*f)+i*conj(H*f)
-                        // i*conj(F*f) = i*(F_re*f - i*F_im*f) = F_im*f + i*F_re*f
-                        CONJ_SLICE(2, x_mirror, z_mirror)[0] = F[1] * f_sc;   // Real = F_im * f
-                        CONJ_SLICE(2, x_mirror, z_mirror)[1] = F[0] * f_sc;   // Imag = F_re * f
-                        
-                        // conj(G*f) + i*conj(H*f) = (G[0] + H[1])*f + i*((H[0] - G[1])*f)
-                        CONJ_SLICE(3, x_mirror, z_mirror)[0] = (G[0] + H[1]) * f_sc;  // Real = (G_re + H_im) * f
-                        CONJ_SLICE(3, x_mirror, z_mirror)[1] = (H[0] - G[1]) * f_sc;  // Imag = (H_re - G_im) * f
-                    }
-                }
-                
-            }
-        }
-#if PARALLELIZE_Z_LOOP
-            double t_after_loop = omp_get_wtime();
-            
-            #if DEBUG_PRINTS
-            if (global_y == 0) {
-                int z_end = (z_start + chunk > N) ? N : z_start + chunk;
-                #pragma omp critical
-                {
-                    fprintf(stderr, "[OMP-TIMING] Rank=%d Y=%d (self-conj) Thread=%d/%d z=[%d,%d) vstart=%lld | "
-                            "alloc=%.3fms copy=%.3fms advance=%.3fms loop=%.3fms total=%.3fms\n",
-                            rank, global_y, tid, nthreads, z_start, z_end, (long long)virtual_start,
-                            (t_after_alloc - t_start) * 1000.0,
-                            (t_after_copy - t_after_alloc) * 1000.0,
-                            (t_after_advance - t_after_copy) * 1000.0,
-                            (t_after_loop - t_after_advance) * 1000.0,
-                            (t_after_loop - t_start) * 1000.0);
-                    fflush(stderr);
-                }
-            }
-            #endif
-            
-            if (need_free) free(local_rng_buf);
-        }
-#endif
-        
-        // Post-processing: Mirror first half to second half (match zeldovich.cpp lines 555-573)
-        // This is done AFTER processing the full plane, matching zeldovich.cpp behavior
-        // zeldovich.cpp: for (z = 0; z < ppdhalf; z++) where ppdhalf = N/2
-        // Apply to ALL self-conjugate slices (Y=0 and Y=N/2) since they use the same processing method
+    // ========== Self-conjugate post-processing ==========
+    // Mirror first half to second half (match zeldovich.cpp lines 555-573)
+    // Only applies to self-conjugate slices (Y=0 or Y=N/2)
+    pt_mirror.Start(0);
+    if (y_mirror == global_y) {
         if (global_y == 0 || global_y == Nhalf) {
             for (int z = 0; z < Nhalf; z++) {
                 int z_mirror = (z == 0) ? 0 : N - z;
                 // Match zeldovich.cpp: xmax = ppdhalf for z=0, ppd for z>0
-                // zeldovich.cpp: int xmax = (z == 0 ? ppdhalf : ppd);
                 int x_max = (z == 0 ? Nhalf : N);
                 for (int x = 0; x < x_max; x++) {
                     int x_mirror = (x == 0) ? 0 : N - x;
-                    // Mirror by taking complex conjugate (match zeldovich.cpp line 566-567)
-                    // zeldovich.cpp copies from slabHer (which contains conjugates) to slab
-                    // For self-conjugate slices, we need to conjugate when mirroring to preserve Hermitian symmetry
-                    // f(kx, 0, kz) = conj(f(-kx, 0, -kz)) for self-conjugate slice at Y=0 (normal operation and Mode 1)
-                    // For Mode 2 (purely imaginary result), we need anti-Hermitian: f(kx, 0, kz) = -conj(f(-kx, 0, -kz))
                     #if defined(VERIFY_HERMITIAN_SYMMETRY) && VERIFY_HERMITIAN_SYMMETRY == 2
                     // Mode 2: Anti-Hermitian symmetry for purely imaginary result
-                    // f(-k) = -conj(f(k)) means we negate the conjugate
                     if (x == 0 && z == 0) {
                         fprintf(stderr, "[MIRROR-DEBUG] Y=%d: Mode 2 branch executing (VERIFY_HERMITIAN_SYMMETRY=2)\n", global_y);
                         fflush(stderr);
                     }
                     for (int a = 0; a < narray; a++) {
-                        // Negated complex conjugate: -(a + i*b)* = -(a - i*b) = -a + i*b
-                        PRIM_SLICE(a, x_mirror, z_mirror)[0] = CONJ_SLICE(a, x_mirror, z_mirror)[0];  // -PRIM_SLICE(a, x, z)[0];  // Real part (negated)
-                        PRIM_SLICE(a, x_mirror, z_mirror)[1] = CONJ_SLICE(a, x_mirror, z_mirror)[1]; // PRIM_SLICE(a, x, z)[1];   // Imaginary part (same)
+                        PRIM_SLICE(a, x_mirror, z_mirror)[0] = CONJ_SLICE(a, x_mirror, z_mirror)[0];
+                        PRIM_SLICE(a, x_mirror, z_mirror)[1] = CONJ_SLICE(a, x_mirror, z_mirror)[1];
                     }
                     #else
                     // Normal operation and Mode 1: Hermitian symmetry for purely real result
-                    // Match zeldovich's scheme: copy conj(D)+i*conj(F) from conjugate_slices to primary_slices
-                    // This copies the conjugate values that were stored in conjugate_slices during main loop
-                    // (like zeldovich copies from slabHer to slab at lines 560-561)
+                    // Copy conj(D)+i*conj(F) from conjugate_slices to primary_slices
                     if (x == 0 && z == 0) {
                         #if defined(VERIFY_HERMITIAN_SYMMETRY) && VERIFY_HERMITIAN_SYMMETRY == 1
                         fprintf(stderr, "[MIRROR-DEBUG] Y=%d: Mode 1 branch executing (VERIFY_HERMITIAN_SYMMETRY=1)\n", global_y);
@@ -1073,16 +566,13 @@ void generate_hermitian_slice_pair_local(
                         fflush(stderr);
                     }
                     for (int a = 0; a < narray; a++) {
-                        // Copy from conjugate slice (which contains conj(D)+i*conj(F) at mirror positions)
-                        // to primary slice at mirror positions
-                        PRIM_SLICE(a, x_mirror, z_mirror)[0] = CONJ_SLICE(a, x_mirror, z_mirror)[0];  // Real part
-                        PRIM_SLICE(a, x_mirror, z_mirror)[1] = CONJ_SLICE(a, x_mirror, z_mirror)[1];  // Imaginary part
+                        PRIM_SLICE(a, x_mirror, z_mirror)[0] = CONJ_SLICE(a, x_mirror, z_mirror)[0];
+                        PRIM_SLICE(a, x_mirror, z_mirror)[1] = CONJ_SLICE(a, x_mirror, z_mirror)[1];
                     }
                     #endif
                 }
             }
             // Set origin to zero (match zeldovich.cpp line 572)
-            // This applies to both Y=0 and Y=N/2 self-conjugate slices
             for (int a = 0; a < narray; a++) {
                 PRIM_SLICE(a, 0, 0)[0] = 0.0;
                 PRIM_SLICE(a, 0, 0)[1] = 0.0;
@@ -1096,10 +586,9 @@ void generate_hermitian_slice_pair_local(
             PRIM_SLICE(a, Nhalf, Nhalf)[1] = 0.0;
         }
     }
+    pt_mirror.Stop(0);
     
     t_zloop_end = omp_get_wtime();
-    
-    pt_generation.Stop(0);
     
     // Verify Hermitian symmetry BEFORE 2D FFT
     // STAGE 7: Updated to check all arrays independently
@@ -1191,21 +680,31 @@ void generate_hermitian_slice_pair_local(
 }
 
 void print_hermitian_gen_timers(int rank) {
-    double gen_s = pt_generation.Elapsed();
-    double fft_s = pt_fft.Elapsed();
-    double total = gen_s + fft_s;
+    double rng_s    = pt_rng_setup.Elapsed();
+    double zloop_s  = pt_zloop.Elapsed();
+    double mirror_s = pt_mirror.Elapsed();
+    double fft_s    = pt_fft.Elapsed();
+    double gen_s    = rng_s + zloop_s + mirror_s;
+    double total    = gen_s + fft_s;
     if (rank == 0) {
         fprintf(stdout,
             "  [PTimerWall] Stage 1 sub-phase breakdown (accumulated over all Y-slices):\n"
-            "    Generation (z-loop + RNG):  %.6f s  (%.1f%%)\n"
-            "    FFT (plan_many_dft):        %.6f s  (%.1f%%)\n"
-            "    Sum:                        %.6f s\n",
-            gen_s, total > 0 ? 100.0 * gen_s / total : 0.0,
-            fft_s, total > 0 ? 100.0 * fft_s / total : 0.0,
+            "    RNG setup (alloc+copy+adv): %10.6f s  (%5.1f%%)\n"
+            "    Z-loop compute:             %10.6f s  (%5.1f%%)\n"
+            "    Mirror (self-conjugate):     %10.6f s  (%5.1f%%)\n"
+            "    Generation subtotal:         %10.6f s  (%5.1f%%)\n"
+            "    FFT (plan_many_dft):         %10.6f s  (%5.1f%%)\n"
+            "    Sum:                         %10.6f s\n",
+            rng_s,    total > 0 ? 100.0 * rng_s    / total : 0.0,
+            zloop_s,  total > 0 ? 100.0 * zloop_s  / total : 0.0,
+            mirror_s, total > 0 ? 100.0 * mirror_s / total : 0.0,
+            gen_s,    total > 0 ? 100.0 * gen_s    / total : 0.0,
+            fft_s,    total > 0 ? 100.0 * fft_s    / total : 0.0,
             total);
         fflush(stdout);
     }
-    pt_generation.Clear();
+    pt_rng_setup.Clear();
+    pt_zloop.Clear();
+    pt_mirror.Clear();
     pt_fft.Clear();
 }
-

@@ -194,6 +194,8 @@ int main(int argc, char **argv)
         return 1;
     }
 
+    MPI_Comm_set_errhandler(comm_2d, MPI_ERRORS_RETURN);
+
     int rank;
     MPI_Comm_rank(comm_2d, &rank);
 
@@ -490,6 +492,11 @@ int main(int argc, char **argv)
         }
         
         memset(recv_buffer, 0, recv_bytes);
+        if (rank == 0) {
+            fprintf(stdout, "[MPI-DIAG] recv_buffer: %zu elems, %.3f GB allocated (%.3f GB rounded)\n",
+                    (size_t)recv_total_elems, recv_bytes / 1.0e9, recv_alloc / 1.0e9);
+            fflush(stdout);
+        }
     }
     
     /*
@@ -734,6 +741,19 @@ int main(int argc, char **argv)
         }
         #endif
         
+        if (batch_idx == 0 && rank == 0) {
+            long long max_send = 0, max_recv = 0;
+            for (int i = 0; i < num_ranks; i++) {
+                if ((long long)sendcounts_batch[i] > max_send) max_send = (long long)sendcounts_batch[i];
+                if ((long long)recvcounts_batch[i] > max_recv) max_recv = (long long)recvcounts_batch[i];
+            }
+            fprintf(stdout, "[MPI-DIAG] Batch 0: max_send=%lld max_recv=%lld elems (%.3f GB / %.3f GB)\n",
+                    max_send, max_recv,
+                    max_send * sizeof(fftw_complex_t) / 1.0e9,
+                    max_recv * sizeof(fftw_complex_t) / 1.0e9);
+            fflush(stdout);
+        }
+
         t_comm.Start();
         {
             MPI_Count sendcounts_c[4096], recvcounts_c[4096];
@@ -745,11 +765,25 @@ int main(int argc, char **argv)
                 sdispls_c[i] = (MPI_Aint)sdispls_batch[i];
                 rdispls_c[i] = (MPI_Aint)rdispls_elem[i];
             }
-            MPI_Alltoallv_c(
+            int mpi_err = MPI_Alltoallv_c(
                 send_buffer_batch, sendcounts_c, sdispls_c, MPI_COMPLEX_TYPE,
                 recv_buffer, recvcounts_c, rdispls_c, MPI_COMPLEX_TYPE,
                 comm_2d
             );
+            if (mpi_err != MPI_SUCCESS) {
+                char errstr[MPI_MAX_ERROR_STRING];
+                int errlen;
+                MPI_Error_string(mpi_err, errstr, &errlen);
+                fprintf(stderr, "[Rank %d] MPI_Alltoallv_c FAILED (batch %d): %s\n",
+                        rank, batch_idx, errstr);
+                for (int i = 0; i < num_ranks; i++) {
+                    fprintf(stderr, "  send[%d]=%lld sdisp[%d]=%lld recv[%d]=%lld rdisp[%d]=%lld\n",
+                            i, (long long)sendcounts_c[i], i, (long long)sdispls_c[i],
+                            i, (long long)recvcounts_c[i], i, (long long)rdispls_c[i]);
+                }
+                fflush(stderr);
+                MPI_Abort(comm_2d, mpi_err);
+            }
         }
         t_comm.Stop();
         
