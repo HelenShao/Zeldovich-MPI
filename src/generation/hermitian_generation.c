@@ -594,6 +594,7 @@ void generate_hermitian_slice_pair_local(
             double t_after_loop = omp_get_wtime();
             
             #if DEBUG_PRINTS
+            // Print timing diagnostics
             if (global_y == 1 || global_y == 2) {
                 int z_end = (z_start + chunk > N) ? N : z_start + chunk;
                 #pragma omp critical
@@ -1124,6 +1125,8 @@ void generate_hermitian_slice_pair_local(
     t_fft_end = omp_get_wtime();
     
     #if DEBUG_PRINTS
+    // ========== DIAGNOSTIC: Print per-Y timing breakdown ==========
+    // Print for first few Y-slices and occasionally thereafter to avoid flooding
     if (global_y <= 3 || (global_y % 64 == 0)) {
         fprintf(stderr, "[SLICE-TIMING] Rank=%d Y=%d/%d | setup=%.3fms zloop=%.3fms verify=%.3fms fft=%.3fms total=%.3fms\n",
                 rank, global_y, y_mirror,
