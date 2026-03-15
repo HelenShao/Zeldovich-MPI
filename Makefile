@@ -38,14 +38,17 @@ else
 endif
 
 # OpenMP settings
-# Use -qopenmp for Intel compiler (mpicxx on Aurora), -fopenmp for GCC
-ifeq ($(findstring icpx,$(shell $(CXX) --version 2>&1 | head -1)),)
-    OPENMP_FLAGS = -fopenmp
-else
-    OPENMP_FLAGS = -qopenmp
+# Prefer -qopenmp if compiler accepts it (Intel), else -fopenmp (GCC).
+# More robust than parsing --version: mpicxx on Aurora may not print "icpx" in first line.
+# Override: make OPENMP_FLAGS=-qopenmp  (or -fopenmp)
+ifeq ($(OPENMP_FLAGS),)
+    OPENMP_FLAGS := $(shell echo "int main(){return 0;}" | $(CXX) -x c++ - -c -qopenmp -o /dev/null >/dev/null 2>&1 && echo -qopenmp || echo -fopenmp)
 endif
+# Ensure -fopenmp/-qopenmp matches FFTW build (mismatch => threads may not spawn)
 
 # FFTW3 settings
+# CAVEAT: FFTW must be built with OpenMP support. libfftw3*_omp existence is a sign;
+# ensure it was built with the same OpenMP runtime/flag as this project (e.g. Intel -qopenmp).
 # Use environment variables if available (from fftw module), otherwise fall back to hardcoded path
 ifneq ($(C_INCLUDE_PATH),)
     # Extract FFTW path from C_INCLUDE_PATH (module system sets this)
@@ -108,11 +111,11 @@ else
 endif
 
 ifeq ($(findstring -DUSE_DOUBLE_PRECISION,$(CFLAGS)),)
-    # Single precision (default)
-    FFTW_LIBS = $(FFTW_LIB_FLAG) -lfftw3f -lfftw3f_omp
+    # Single precision (default): _omp for threading, base lib required (provides execute_dft etc.)
+    FFTW_LIBS = $(FFTW_LIB_FLAG) -lfftw3f_omp -lfftw3f
 else
-    # Double precision
-    FFTW_LIBS = $(FFTW_LIB_FLAG) -lfftw3 -lfftw3_omp
+    # Double precision: _omp for threading, base lib required
+    FFTW_LIBS = $(FFTW_LIB_FLAG) -lfftw3_omp -lfftw3
 endif
 
 # zeldovich-PLT libraries (v15.2: Phase 7 - linking)
@@ -143,7 +146,7 @@ else
 endif
 
 # External dependencies
-STIMER_CC = src/STimer.cc
+# STimer: use zeldovich-PLT's (from libzeldovich via output.h); do not link src/STimer.cc to avoid redefinition
 
 # Source files
 SRC = src/main.cpp
@@ -174,13 +177,19 @@ REASSEMBLY_TARGET = write_particles_from_reassembled_mpi
 # BUILD RULES
 # ====================================================================================
 
-.PHONY: all clean reassembly
+.PHONY: all clean reassembly check-omp
 
 all: $(TARGET)
 
+check-omp:
+	@echo "CXX         = $(CXX)"
+	@echo "OPENMP_FLAGS = $(OPENMP_FLAGS)"
+	@echo "CXX version:"
+	@$(CXX) --version 2>&1 | head -3
+
 # Main executable (does not include reassembly tool due to main() conflict)
-$(TARGET): $(SRC) $(UTILS_SRC) $(MODULE_SRC) $(STIMER_CC) $(ZELDOVICH_WRAPPER_SRC) $(OUTPUT_SRC) src/config.h
-	$(CXX) $(ALL_CXXFLAGS) $(INCLUDES) -o $(TARGET) $(SRC) $(UTILS_SRC) $(MODULE_SRC) $(STIMER_CC) $(ZELDOVICH_WRAPPER_SRC) $(OUTPUT_SRC) $(LDFLAGS)
+$(TARGET): $(SRC) $(UTILS_SRC) $(MODULE_SRC) $(ZELDOVICH_WRAPPER_SRC) $(OUTPUT_SRC) src/config.h
+	$(CXX) $(ALL_CXXFLAGS) $(INCLUDES) -o $(TARGET) $(SRC) $(UTILS_SRC) $(MODULE_SRC) $(ZELDOVICH_WRAPPER_SRC) $(OUTPUT_SRC) $(LDFLAGS)
 
 # Reassembly tool (separate executable)
 reassembly: $(REASSEMBLY_TARGET)
@@ -207,6 +216,7 @@ help:
 	@echo "Targets:"
 	@echo "  make              - Build main executable (hermitian_3d_matrix)"
 	@echo "  make reassembly   - Build reassembly tool (write_particles_from_reassembled_mpi)"
+	@echo "  make check-omp    - Show CXX, OPENMP_FLAGS, and compiler version"
 	@echo "  make clean        - Remove build artifacts"
 	@echo "  make help         - Show this help message"
 	@echo ""

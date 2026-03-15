@@ -68,6 +68,13 @@ void setup_fftw_plans_full(int N, int narray, fftw_complex_t *plan_buffer,
             FFT_SIGN, // FFT direction
             FFTW_MEASURE);
     }
+
+    // Verify thread count that FFTW will use when executing this plan (must match plan_with_nthreads)
+    if (rank == 0) {
+        int planner_n = FFTW_PLANNER_NTHREADS();
+        printf("[FFTW-THREADING] Planner nthreads (used at execute): %d\n", planner_n);
+        fflush(stdout);
+    }
     
     // Create 1D FFT plan with FFTW_MEASURE
     if (posix_memalign((void**)&dummy_1d, ALIGN_BYTES, 

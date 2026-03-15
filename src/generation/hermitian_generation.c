@@ -277,12 +277,12 @@ void generate_hermitian_slice_pair_local(
     pt_rng_setup.Start(0);
     int _max_t = omp_get_max_threads();
     size_t _rng_size = zeldovich_ps_rng_buffer_size();
-    void** _rng_bufs = (void**)calloc(_max_t, sizeof(void*));
+    void** _rng_bufs = (void**)calloc(_max_t, sizeof(void*)); // calloc: unassigned slots = NULL so free(NULL) = safe, no bad for freeing unassigned slots
     void* local_rng_buf = NULL;
-    int _rng_ready = 0;
-    int _zloop_started = 0;
+    int _rng_ready = 0; // ensures we dont allocate+copy local_rng_buf for every z (only once per slice)
+    int _zloop_started = 0; // choose one thread to start zloop timer (measures walltime for whole parallel region, not per thread cpu time)
 
-    #pragma omp parallel for schedule(static) firstprivate(local_rng_buf, nskip, _rng_ready)
+    #pragma omp parallel for schedule(static) firstprivate(local_rng_buf, nskip, _rng_ready) // every thread: priv ptr to local_rng_buf, nskip, _rng_ready
     for (int z = 0; z < N; z++) {
         if (!_rng_ready) {
             int _tid = omp_get_thread_num();
@@ -294,15 +294,15 @@ void generate_hermitian_slice_pair_local(
                 zeldovich_ps_advance_rng_buffer(local_rng_buf, vstart);
             _rng_ready = 1;
 
-            int _old;
+            int prev_value;
             #pragma omp atomic capture
-            _old = _zloop_started++;
-            if (_old == 0) {
+            prev_value = _zloop_started++;
+            if (prev_value == 0) { // walltimer: only 1 thread stops RNG_setup timer & starts zloop timer 
                 pt_rng_setup.Stop(0);
                 pt_zloop.Start(0);
             }
         }
-#else
+#else // OMP-SERIAL VERSION
     pt_rng_setup.Start(0);
     pt_rng_setup.Stop(0);
     pt_zloop.Start(0);
@@ -312,7 +312,7 @@ void generate_hermitian_slice_pair_local(
         // RNG consistency: When crossing Nyquist boundary (z == Nhalf + 1),
         // skip ALL missing z-rows (z = N to MAX_PPD-1, each containing MAX_PPD x-values)
         // The missing frequencies are in the MIDDLE of the MAX_PPD array (high positive and negative k),
-        // due to FFT ordering: [0, 1, ..., N/2, -N/2+1, ..., -1]
+        // [0, 1, ..., N/2, -N/2+1, ..., -1]
         if (z == Nhalf + 1 && N < MAX_PPD) {
             int64_t skip_amount = (int64_t)(MAX_PPD - N) * (int64_t)MAX_PPD;
             nskip += skip_amount;
@@ -604,7 +604,7 @@ void generate_hermitian_slice_pair_local(
     
     // Removed loop over narray!
     // Apply 2D FFT: batched plan_many_dft (howmany=narray) on primary and conjugate
-    pt_fft.Start(0);
+    pt_fft.Start(0); // includes mem bandwidth time
     FFTW_EXECUTE_DFT(plan_2d, primary_slices, primary_slices);
     if (y_mirror != global_y) {
         FFTW_EXECUTE_DFT(plan_2d, conjugate_slices, conjugate_slices);

@@ -427,7 +427,7 @@ int main(int argc, char **argv)
 
     // Grid bounds: CPD-aligned when params/cpd present
     if (!is_idle_rank) {
-        if (params != NULL && cpd > 0) {
+        if (params != NULL) {
             my_extended_bounds = get_extended_grid_bounds_CPD_aligned(rank, N, num_ranks, grid_x, grid_z, cpd);
         } else {
             my_extended_bounds = get_extended_grid_bounds(rank, N, num_ranks, grid_x, grid_z);
@@ -564,21 +564,22 @@ int main(int argc, char **argv)
     free(src_y_counter);
 
     // ===== Allocate persistent thread-local RNG buffers =====
+    // (Commented out: hermitian_generation now allocates per-call inside parallel for)
     void** thread_rng_buffers = NULL;
-#if PARALLELIZE_Z_LOOP
-    if (!is_idle_rank) {
-        int max_threads = omp_get_max_threads();
-        thread_rng_buffers = (void**)malloc(sizeof(void*) * max_threads);
-        size_t rng_size = zeldovich_ps_rng_buffer_size();
-        for (int t = 0; t < max_threads; t++) {
-            thread_rng_buffers[t] = malloc(rng_size);
-        }
-        if (rank == 0) {
-            printf("[PERFORMANCE] Allocated %d persistent RNG buffers of %zu bytes each\n",
-                   max_threads, rng_size);
-        }
-    }
-#endif
+// #if PARALLELIZE_Z_LOOP
+//     if (!is_idle_rank) {
+//         int max_threads = omp_get_max_threads();
+//         thread_rng_buffers = (void**)malloc(sizeof(void*) * max_threads);
+//         size_t rng_size = zeldovich_ps_rng_buffer_size();
+//         for (int t = 0; t < max_threads; t++) {
+//             thread_rng_buffers[t] = malloc(rng_size);
+//         }
+//         if (rank == 0) {
+//             printf("[PERFORMANCE] Allocated %d persistent RNG buffers of %zu bytes each\n",
+//                    max_threads, rng_size);
+//         }
+//     }
+// #endif
     // ========================================================================
     // STAGE 5: MAIN MULTI-BATCH LOOP
     // ========================================================================
@@ -633,6 +634,7 @@ int main(int argc, char **argv)
         calculate_batch_send_recv_counts(
             rank, num_ranks, N, narray, batch_idx,
             my_batch_slice_count, my_pencils,
+            grid_x, grid_z, cpd,
             &sendcounts_batch, &sdispls_batch,
             &recvcounts_batch,
             &total_send_batch, &total_recv_batch
@@ -667,7 +669,8 @@ int main(int argc, char **argv)
             pack_slices_to_send_buffer(
                 rank, num_ranks, N, narray,
                 local_y_slices, my_batch_slice_count, NULL,
-                send_buffer_batch, sendcounts_batch, sdispls_batch
+                send_buffer_batch, sendcounts_batch, sdispls_batch,
+                grid_x, grid_z, cpd
             );
         }
         
@@ -1419,16 +1422,16 @@ int main(int argc, char **argv)
     }
     
     // Free persistent thread-local RNG buffers
-#if PARALLELIZE_Z_LOOP
-    if (thread_rng_buffers != NULL) {
-        int max_threads = omp_get_max_threads();
-        for (int t = 0; t < max_threads; t++) {
-            free(thread_rng_buffers[t]);
-        }
-        free(thread_rng_buffers);
-        thread_rng_buffers = NULL;
-    }
-#endif
+// #if PARALLELIZE_Z_LOOP
+//     if (thread_rng_buffers != NULL) {
+//         int max_threads = omp_get_max_threads();
+//         for (int t = 0; t < max_threads; t++) {
+//             free(thread_rng_buffers[t]);
+//         }
+//         free(thread_rng_buffers);
+//         thread_rng_buffers = NULL;
+//     }
+// #endif
     
     // Free PLT eigenmodes if they were loaded
     plt_free_eigenmodes();
