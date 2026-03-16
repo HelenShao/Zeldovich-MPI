@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <limits.h>
+#include <algorithm>
 #include <mutex>
 #include <string.h>
 #include <filesystem>
@@ -16,7 +17,7 @@
 // Include zeldovich-PLT headers to get Complx, Parameters, OutputType, and particle types
 #include <zeldovich.h>
 #include <parameters.h>
-#include "output_types.h" 
+#include <output.h>  // For OutputType enum and particle struct definitions
 #include <complex> 
 #include <STimer.h>  // zeldovich-PLT's STimer (angle brackets so reassembly build gets zeldovich's, not src/STimer.h)
 #include "output_new.h" 
@@ -941,19 +942,26 @@ void AppendSlabZSegment(
     double vnorm = param.qPLT ? 1.0 : (sqrt(1.0 + 24.0 * param.f_cluster) - 1.0) * 0.25;
     bool write_dens = (param.qdensity && fp_dens != NULL);
 
+    // Slab s covers global x in [firstx, lastx). This rank only has data for x in [k_start_global, k_start_global + k_extent).
+    // Only write the intersection; otherwise x_local = x_global - k_start_global goes out of bounds -> garbage displacements.
     int firstx = (slab_s * N + cpd - 1) / cpd;
     int lastx  = ((slab_s + 1) * N + cpd - 1) / cpd;
-    int ox_count = lastx - firstx;
-    int64_t seg_particles = (int64_t)N * ox_count;
+    int seg_start = std::max(firstx, k_start_global);
+    int seg_end   = std::min(lastx, k_start_global + k_extent);
+    if (seg_start >= seg_end) {
+        return;  // This rank has no x-columns in this slab for this z
+    }
+    int ox_count = seg_end - seg_start;
+    int64_t seg_particles = (int64_t)N * (int64_t)ox_count;
 
     RVZelParticle *buf = new RVZelParticle[seg_particles];
     float *dens_buf = write_dens ? new float[seg_particles] : NULL;
 
     #pragma omp parallel for schedule(static)
     for (int y = 0; y < N; y++) {
-        for (int x_global = firstx; x_global < lastx; x_global++) {
+        for (int x_global = seg_start; x_global < seg_end; x_global++) {
             int x_local = x_global - k_start_global;
-            int idx = y * ox_count + (x_global - firstx);
+            int idx = y * ox_count + (x_global - seg_start);
 
             Complx s1_val = slab1[x_local * N + y];
             Complx s2_val = slab2[x_local * N + y];
