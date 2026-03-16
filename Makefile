@@ -1,23 +1,7 @@
-# ====================================================================================
-# HERMITIAN 3D MATRIX MPI - MAKEFILE
-# ====================================================================================
-# This Makefile builds the Hermitian 3D matrix MPI code in its current
-# refactoring state (currently Phase 5: Core modules extracted).
-#
-# Usage:
-#   make                    # Build with default settings
-#   make clean              # Clean build artifacts
-#   make CFLAGS="..."       # Build with custom flags
-#
-# Example custom builds:
-#   make CFLAGS="-DUSE_DOUBLE_PRECISION"           # Double precision (or set in src/config.h)
-#   make CFLAGS="-DPRODUCTION_MODE"                # Production mode
-#   make CFLAGS="-DUSE_X_PADDING=0"                # No padding
-#
 # NOTE: USE_DOUBLE_PRECISION can be set in src/config.h, but CFLAGS takes precedence.
 #       The Makefile checks CFLAGS to select the correct FFTW libraries (single vs double).
-#       If you set USE_DOUBLE_PRECISION in config.h, you should also add it to CFLAGS
-#       to ensure the correct libraries are linked.
+#       If set USE_DOUBLE_PRECISION in config.h, should also add it to CFLAGS
+#       to ensure the correct libraries are linked
 # ====================================================================================
 
 # Compiler and flags
@@ -145,9 +129,6 @@ else
     LDFLAGS = $(BASE_LDFLAGS) -fsanitize=address
 endif
 
-# External dependencies
-# STimer: use zeldovich-PLT's (from libzeldovich via output.h); do not link src/STimer.cc to avoid redefinition
-
 # Source files
 SRC = src/main.cpp
 UTILS_SRC = src/utils/printing.c \
@@ -172,12 +153,13 @@ REASSEMBLY_SRC = src/write_particles_from_reassembled_mpi.cpp
 # Output binaries
 TARGET = hermitian_3d_matrix
 REASSEMBLY_TARGET = write_particles_from_reassembled_mpi
+TOY_TARGET = toy_zloop_omp_scaling
 
 # ====================================================================================
 # BUILD RULES
 # ====================================================================================
 
-.PHONY: all clean reassembly check-omp
+.PHONY: all clean reassembly check-omp toy-zloop help
 
 all: $(TARGET)
 
@@ -199,33 +181,29 @@ $(REASSEMBLY_TARGET): $(REASSEMBLY_SRC) $(UTILS_SRC) $(ZELDOVICH_WRAPPER_SRC) $(
 	$(CXX) $(ALL_CXXFLAGS) $(INCLUDES) -o $(REASSEMBLY_TARGET) $(REASSEMBLY_SRC) $(UTILS_SRC) $(ZELDOVICH_WRAPPER_SRC) $(OUTPUT_SRC) $(LDFLAGS)
 	@echo ""
 	@echo "Build successful!"
-	@echo "Binary: $(TARGET)"
+	@echo "Binary: $(REASSEMBLY_TARGET)"
 	@echo "Configuration: see src/config.h"
 	@echo ""
 
+# Toy: z-loop OMP scaling test (same buffer layout + RNG-per-thread + PTimer; optional PLT/eig_vecs)
+toy-zloop: $(TOY_TARGET)
+$(TOY_TARGET): toy/toy_zloop_omp_scaling.cpp $(ZELDOVICH_WRAPPER_SRC) src/utils/plt_eigenmodes.c src/config.h
+	$(CXX) $(ALL_CXXFLAGS) $(INCLUDES) -o $(TOY_TARGET) toy/toy_zloop_omp_scaling.cpp $(ZELDOVICH_WRAPPER_SRC) src/utils/plt_eigenmodes.c $(LDFLAGS)
+	@echo "Toy built: ./$(TOY_TARGET) <N> <narray> <param_file> [num_y_repeats]"
+
 clean:
-	rm -f $(TARGET) $(REASSEMBLY_TARGET) *.o
+	rm -f $(TARGET) $(REASSEMBLY_TARGET) $(TOY_TARGET) *.o
 
 # ====================================================================================
 # HELP
 # ====================================================================================
 
 help:
-	@echo "Hermitian 3D Matrix MPI - Build System"
 	@echo ""
-	@echo "Targets:"
 	@echo "  make              - Build main executable (hermitian_3d_matrix)"
 	@echo "  make reassembly   - Build reassembly tool (write_particles_from_reassembled_mpi)"
+	@echo "  make toy-zloop    - Build toy z-loop OMP scaling test"
 	@echo "  make check-omp    - Show CXX, OPENMP_FLAGS, and compiler version"
 	@echo "  make clean        - Remove build artifacts"
 	@echo "  make help         - Show this help message"
 	@echo ""
-	@echo "Configuration:"
-	@echo "  Edit src/config.h or use CFLAGS to override"
-	@echo ""
-	@echo "Examples:"
-	@echo "  make CFLAGS=\"-DUSE_DOUBLE_PRECISION\""
-	@echo "  make CFLAGS=\"-DPRODUCTION_MODE\""
-	@echo "  make CFLAGS=\"-DUSE_X_PADDING=0 -DDEBUG_PRINTS=0\""
-	@echo ""
-
