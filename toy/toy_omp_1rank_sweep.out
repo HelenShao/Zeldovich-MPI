@@ -1,0 +1,195 @@
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Loading modules...
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Building toy_zloop_omp_scaling...
+make: Nothing to be done for 'toy-zloop'.
+==========================================
+Toy OMP sweep with 1 MPI rank(s) on 1 node (mpiexec -n 1)
+  N=1024 narray=2 num_y_repeats=10
+  Thread list: 1 2 4 8 16
+==========================================
+
+========== OMP_NUM_THREADS=1 (1 rank) ==========
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+Toy z-loop OMP scaling: N=1024 narray=4 num_y_repeats=10 OMP_threads=1 use_plt=1 MPI_ranks=1
+  Buffer: 67108864 bytes (same layout as production local_y_slices)
+[Rank 0] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000033s Z-loop=0.804461s Sum=0.804494s
+
+========== OMP_NUM_THREADS=2 (1 rank) ==========
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+Toy z-loop OMP scaling: N=1024 narray=4 num_y_repeats=10 OMP_threads=2 use_plt=1 MPI_ranks=1
+  Buffer: 67108864 bytes (same layout as production local_y_slices)
+[Rank 0] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000118s Z-loop=0.813792s Sum=0.813910s
+
+========== OMP_NUM_THREADS=4 (1 rank) ==========
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+Toy z-loop OMP scaling: N=1024 narray=4 num_y_repeats=10 OMP_threads=4 use_plt=1 MPI_ranks=1
+  Buffer: 67108864 bytes (same layout as production local_y_slices)
+[Rank 0] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000204s Z-loop=1.002895s Sum=1.003099s
+
+========== OMP_NUM_THREADS=8 (1 rank) ==========
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+Toy z-loop OMP scaling: N=1024 narray=4 num_y_repeats=10 OMP_threads=8 use_plt=1 MPI_ranks=1
+  Buffer: 67108864 bytes (same layout as production local_y_slices)
+[Rank 0] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000340s Z-loop=1.069554s Sum=1.069895s
+
+========== OMP_NUM_THREADS=16 (1 rank) ==========
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+Toy z-loop OMP scaling: N=1024 narray=4 num_y_repeats=10 OMP_threads=16 use_plt=1 MPI_ranks=1
+  Buffer: 67108864 bytes (same layout as production local_y_slices)
+[Rank 0] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000673s Z-loop=1.257730s Sum=1.258404s
+
+--- sweep done ---

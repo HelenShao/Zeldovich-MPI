@@ -1,0 +1,435 @@
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Loading modules...
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Building toy_zloop_omp_scaling...
+make: Nothing to be done for 'toy-zloop'.
+==========================================
+Toy OMP sweep with 9 MPI ranks (1 per node)
+  N=1024 narray=2 num_y_repeats=10
+  Thread list: 1 2 4 8 16
+==========================================
+
+========== OMP_NUM_THREADS=1 (9 ranks) ==========
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+Toy z-loop OMP scaling: N=1024 narray=4 num_y_repeats=10 OMP_threads=1 use_plt=1 MPI_ranks=9
+  Buffer: 67108864 bytes (same layout as production local_y_slices)
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+[Rank 1] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000037s Z-loop=0.797773s Sum=0.797811s
+[Rank 5] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000032s Z-loop=0.794198s Sum=0.794230s
+[Rank 4] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000035s Z-loop=0.797102s Sum=0.797137s
+[Rank 8] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000032s Z-loop=0.798315s Sum=0.798346s
+[Rank 6] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000040s Z-loop=0.803263s Sum=0.803303s
+[Rank 0] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000038s Z-loop=0.807526s Sum=0.807564s
+[Rank 3] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000039s Z-loop=0.806033s Sum=0.806071s
+[Rank 7] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000037s Z-loop=0.805232s Sum=0.805269s
+[Rank 2] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000033s Z-loop=0.807454s Sum=0.807486s
+
+========== OMP_NUM_THREADS=2 (9 ranks) ==========
+Generating ICs for ppd = 1024
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+Toy z-loop OMP scaling: N=1024 narray=4 num_y_repeats=10 OMP_threads=2 use_plt=1 MPI_ranks=9
+  Buffer: 67108864 bytes (same layout as production local_y_slices)
+[Rank 2] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000123s Z-loop=0.808665s Sum=0.808788s
+[Rank 7] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000129s Z-loop=0.812821s Sum=0.812950s
+[Rank 3] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000121s Z-loop=0.814027s Sum=0.814148s
+[Rank 0] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000131s Z-loop=0.815907s Sum=0.816037s
+[Rank 1] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000132s Z-loop=0.816209s Sum=0.816341s
+[Rank 4] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000131s Z-loop=0.817812s Sum=0.817943s
+[Rank 6] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000138s Z-loop=0.817257s Sum=0.817396s
+[Rank 8] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000123s Z-loop=0.816306s Sum=0.816429s
+[Rank 5] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000578s Z-loop=0.822725s Sum=0.823303s
+
+========== OMP_NUM_THREADS=4 (9 ranks) ==========
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+Toy z-loop OMP scaling: N=1024 narray=4 num_y_repeats=10 OMP_threads=4 use_plt=1 MPI_ranks=9
+  Buffer: 67108864 bytes (same layout as production local_y_slices)
+[Rank 4] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000222s Z-loop=0.939263s Sum=0.939484s
+[Rank 8] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000215s Z-loop=1.015042s Sum=1.015257s
+[Rank 7] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000210s Z-loop=1.039097s Sum=1.039308s
+[Rank 6] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000218s Z-loop=1.023721s Sum=1.023939s
+[Rank 5] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000209s Z-loop=0.991356s Sum=0.991566s
+[Rank 3] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000217s Z-loop=0.994369s Sum=0.994586s
+[Rank 1] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000230s Z-loop=1.051576s Sum=1.051806s
+[Rank 0] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000224s Z-loop=1.032937s Sum=1.033161s
+[Rank 2] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000213s Z-loop=1.263294s Sum=1.263507s
+
+========== OMP_NUM_THREADS=8 (9 ranks) ==========
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Generating ICs for ppd = 1024
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+Toy z-loop OMP scaling: N=1024 narray=4 num_y_repeats=10 OMP_threads=8 use_plt=1 MPI_ranks=9
+  Buffer: 67108864 bytes (same layout as production local_y_slices)
+[Rank 7] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000377s Z-loop=1.021803s Sum=1.022180s
+[Rank 4] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000381s Z-loop=1.033099s Sum=1.033479s
+[Rank 0] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000365s Z-loop=1.057080s Sum=1.057445s
+[Rank 2] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000379s Z-loop=1.106601s Sum=1.106980s
+[Rank 5] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000354s Z-loop=1.068864s Sum=1.069218s
+[Rank 1] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000370s Z-loop=1.080324s Sum=1.080694s
+[Rank 6] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000396s Z-loop=1.116860s Sum=1.117256s
+[Rank 8] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000362s Z-loop=1.006698s Sum=1.007059s
+[Rank 3] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000368s Z-loop=1.099189s Sum=1.099557s
+
+========== OMP_NUM_THREADS=16 (9 ranks) ==========
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+Toy z-loop OMP scaling: N=1024 narray=4 num_y_repeats=10 OMP_threads=16 use_plt=1 MPI_ranks=9
+  Buffer: 67108864 bytes (same layout as production local_y_slices)
+[Rank 4] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000642s Z-loop=1.204688s Sum=1.205329s
+[Rank 1] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000699s Z-loop=1.295548s Sum=1.296247s
+[Rank 7] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000710s Z-loop=1.391853s Sum=1.392562s
+[Rank 6] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000709s Z-loop=1.422956s Sum=1.423665s
+[Rank 3] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000663s Z-loop=1.398662s Sum=1.399324s
+[Rank 2] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000681s Z-loop=1.412036s Sum=1.412717s
+[Rank 5] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000663s Z-loop=1.358512s Sum=1.359175s
+[Rank 8] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000707s Z-loop=1.349412s Sum=1.350119s
+[Rank 0] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000660s Z-loop=1.520623s Sum=1.521283s
+
+--- sweep done ---

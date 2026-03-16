@@ -176,6 +176,8 @@ void generate_hermitian_slice_pair_local(
     ParametersHandle params_handle,  // zeldovich-PLT Parameters handle
     void** thread_rng_buffers)        // Pre-allocated RNG buffers [nthreads] (NULL = use malloc)
 {
+    (void)thread_rng_buffers; // currently unused, kept for API
+
     // ========== DIAGNOSTIC TIMING: Function-level ==========
     double t_func_start = omp_get_wtime();
     double t_setup_end, t_zloop_end, t_verify_end, t_fft_end;

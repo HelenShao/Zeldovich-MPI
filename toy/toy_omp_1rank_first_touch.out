@@ -1,0 +1,202 @@
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Loading modules...
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Building toy_zloop_omp_scaling...
+mpicxx -Wall -Wextra -Wno-cast-function-type -std=c++17 -O3 -qopenmp  -I../zeldovich-PLT/include -I../zeldovich-PLT/subprojects/ParseHeader/include -I../zeldovich-PLT/build/subprojects/ParseHeader -I../zeldovich-PLT/subprojects/fmt-11.2.0/include -Isrc -Isrc/utils -Isrc/fft -Isrc/generation -Isrc/communication -Isrc/streaming -Isrc/output -Ideps -I../.. -I../../../..  -I/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/fftw-3.3.10-6vaqs46/include -o toy_zloop_omp_scaling toy/toy_zloop_omp_scaling.cpp src/utils/zeldovich_wrapper.cpp src/utils/plt_eigenmodes.c  -L/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/fftw-3.3.10-6vaqs46/lib -lfftw3f_omp -lfftw3f -L../zeldovich-PLT/build -L../zeldovich-PLT/build/subprojects/ParseHeader -L../zeldovich-PLT/build/subprojects/fmt-11.2.0 -lzeldovich -lparseheader -lfmt  -lm -lstdc++ -Wl,-rpath,/home/helenshao/InitialConditions/zeldovich-PLT/build:/home/helenshao/InitialConditions/zeldovich-PLT/build/subprojects/ParseHeader:/home/helenshao/InitialConditions/zeldovich-PLT/build/subprojects/fmt-11.2.0
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+Toy built: ./toy_zloop_omp_scaling <N> <narray> <param_file> [num_y_repeats]
+==========================================
+Toy OMP sweep with 1 MPI rank(s), TOY_FIRST_TOUCH=1
+  N=1024 narray=2 num_y_repeats=10
+  Thread list: 1 2 4 8 16
+==========================================
+
+========== OMP_NUM_THREADS=1 (1 rank, first-touch) ==========
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+Toy z-loop OMP scaling: N=1024 narray=4 num_y_repeats=10 OMP_threads=1 zloop_threads=1 use_plt=1 MPI_ranks=1
+  Buffer: 67108864 bytes (same layout as production local_y_slices)
+  TOY_FIRST_TOUCH=1
+[Rank 0] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000022s Z-loop=0.803098s Sum=0.803121s
+
+========== OMP_NUM_THREADS=2 (1 rank, first-touch) ==========
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+Toy z-loop OMP scaling: N=1024 narray=4 num_y_repeats=10 OMP_threads=2 zloop_threads=2 use_plt=1 MPI_ranks=1
+  Buffer: 67108864 bytes (same layout as production local_y_slices)
+  TOY_FIRST_TOUCH=1
+[Rank 0] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000023s Z-loop=0.819353s Sum=0.819376s
+
+========== OMP_NUM_THREADS=4 (1 rank, first-touch) ==========
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+Toy z-loop OMP scaling: N=1024 narray=4 num_y_repeats=10 OMP_threads=4 zloop_threads=4 use_plt=1 MPI_ranks=1
+  Buffer: 67108864 bytes (same layout as production local_y_slices)
+  TOY_FIRST_TOUCH=1
+[Rank 0] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000024s Z-loop=0.993355s Sum=0.993379s
+
+========== OMP_NUM_THREADS=8 (1 rank, first-touch) ==========
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+Toy z-loop OMP scaling: N=1024 narray=4 num_y_repeats=10 OMP_threads=8 zloop_threads=8 use_plt=1 MPI_ranks=1
+  Buffer: 67108864 bytes (same layout as production local_y_slices)
+  TOY_FIRST_TOUCH=1
+[Rank 0] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000024s Z-loop=1.098941s Sum=1.098965s
+
+========== OMP_NUM_THREADS=16 (1 rank, first-touch) ==========
+Generating ICs for ppd = 1024
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+[PLT] Loaded eigenmodes from "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128" (ppd=128, 4259840 elements)
+Toy z-loop OMP scaling: N=1024 narray=4 num_y_repeats=10 OMP_threads=16 zloop_threads=16 use_plt=1 MPI_ranks=1
+  Buffer: 67108864 bytes (same layout as production local_y_slices)
+  TOY_FIRST_TOUCH=1
+[Rank 0] [PTimerWall] 10 Y-slice repeats: RNG_setup=0.000024s Z-loop=1.322112s Sum=1.322136s
+
+--- sweep done ---

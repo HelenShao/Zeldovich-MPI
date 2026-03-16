@@ -46,6 +46,8 @@ void z_streaming_unpack(
 {
     (void)rank;                // Unused in normal builds (used in debug checks)
     (void)global_max_batches;  // Unused but kept for API consistency
+    (void)src_total_slices;    // Unused in normal builds (used only in VERIFY_STREAMING_OFFSETS)
+    (void)y_src_local_idx;     // Unused in normal builds (used only in VERIFY_STREAMING_OFFSETS)
     
     int x_count = my_bounds.x_end - my_bounds.x_start;
     int z_count = my_bounds.z_end - my_bounds.z_start;

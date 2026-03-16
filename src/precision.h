@@ -61,9 +61,9 @@
     #define MPI_COMPLEX_TYPE MPI_C_FLOAT_COMPLEX
     #define MPI_REAL_TYPE MPI_FLOAT
     
-    #define fabs_t fabsf
-    #define fmax_t fmaxf
-    #define sqrt_t sqrtf
+    #define fabs_t fabs
+    #define fmax_t fmax
+    #define sqrt_t sqrt
     
     // Constants
     #define PRECISION_NAME "Single (float)"

@@ -211,8 +211,8 @@ void pack_slices_to_send_buffer(
     for (int dest = 0; dest < num_ranks; dest++) {
         int64_t dest_offset = sdispls[dest];
         GridBounds bounds = bounds_arr[dest];
-        int z_count = z_count_arr[dest];
-        int64_t region_size = (int64_t)(bounds.x_end - bounds.x_start) * (int64_t)(bounds.z_end - bounds.z_start);
+        int z_count = bounds.z_end - bounds.z_start;
+        int64_t region_size = (int64_t)(bounds.x_end - bounds.x_start) * (int64_t)z_count;
         
         #pragma omp for collapse(4) nowait
         for (int array_idx = 0; array_idx < narray; array_idx++) {
@@ -235,8 +235,8 @@ void pack_slices_to_send_buffer(
                                    rank, (long)buffer_idx, (long long)total_send_size, dest);
                             fprintf(stderr, "  array_idx=%d, slice_idx=%d, x=%d, z=%d, local_x=%d, local_z=%d\n",
                                    array_idx, slice_idx, x, z, local_x, local_z);
-                            fprintf(stderr, "  pack_idx=%ld, offset=%d, region_size=%d, sendcounts[dest]=%d\n",
-                                   (long)pack_idx, dest_offset, region_size, sendcounts[dest]);
+        fprintf(stderr, "  pack_idx=%ld, offset=%ld, region_size=%ld, sendcounts[dest]=%ld\n",
+               (long)pack_idx, (long)dest_offset, (long)region_size, (long)sendcounts[dest]);
                             MPI_Abort(comm_2d, 1);
                         }
                         if (pack_idx < 0 || pack_idx >= sendcounts[dest]) {
@@ -262,7 +262,7 @@ void pack_slices_to_send_buffer(
         printf("[PACK] Rank %d: Packed %lld total elements to send_buffer\n", rank, (long long)offset);
         printf("       Sending to ranks: ");
         for (int dest = 0; dest < (num_ranks < 4 ? num_ranks : 4); dest++) {
-            printf("%d elements to rank %d%s", sendcounts[dest], dest, 
+        printf("%ld elements to rank %d%s", (long)sendcounts[dest], dest, 
                    (dest < num_ranks - 1) ? ", " : "");
         }
         if (num_ranks > 4) printf("...");

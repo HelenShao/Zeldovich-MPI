@@ -875,10 +875,8 @@ int main(int argc, char **argv)
     if (!is_idle_rank) {
 #if USE_X_PADDING
         int x_count = my_extended_bounds.padded.x_end - my_extended_bounds.padded.x_start;
-        int z_count = my_extended_bounds.padded.z_end - my_extended_bounds.padded.z_start;
 #else
         int x_count = my_extended_bounds.core.x_end - my_extended_bounds.core.x_start;
-        int z_count = my_extended_bounds.core.z_end - my_extended_bounds.core.z_start;
 #endif
         // Allocate for [Array][X][Y] format: narray * x_count * N (Y stride-1 for FFT)
         elements_per_z_slab = (int64_t)narray * x_count * N;
@@ -1059,8 +1057,7 @@ int main(int argc, char **argv)
             //      Data is in [Array][k_rng][j] format (memory), transpose to [Array][j][k_rng] for output
             // =======================================================================================
 
-            // Use i,j,k notation for output writing 
-            int i = z; 
+            // Use i,j,k notation for output writing (i == z)
             
             // Debug: Check output mode
             if (rank == 0 && z == 0) {
