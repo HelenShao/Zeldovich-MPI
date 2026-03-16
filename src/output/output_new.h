@@ -14,7 +14,7 @@
 // Include zeldovich-PLT headers to get Complx and Parameters definitions
 #include <zeldovich.h>
 #include <parameters.h>
-#include <output.h>
+#include "output_types.h"
 
 // WriteParticlesSlab_range - C++ function overloads (same name, different signatures)
 // The compiler selects the appropriate version based on the arguments provided.

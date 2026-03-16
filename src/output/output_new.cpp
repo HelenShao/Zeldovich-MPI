@@ -16,7 +16,7 @@
 // Include zeldovich-PLT headers to get Complx, Parameters, OutputType, and particle types
 #include <zeldovich.h>
 #include <parameters.h>
-#include <output.h>  // For OutputType enum and particle struct definitions
+#include "output_types.h" 
 #include <complex> 
 #include <STimer.h>  // zeldovich-PLT's STimer (angle brackets so reassembly build gets zeldovich's, not src/STimer.h)
 #include "output_new.h" 

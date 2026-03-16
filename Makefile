@@ -52,7 +52,7 @@ CFLAGS ?=
 # Base compilation flags
 # v15.2: Updated to C++17 for zeldovich-PLT compatibility (ParseHeader requires C++17)
 # Suppress -Wcast-function-type warnings from OpenMPI C++ bindings (known issue in OpenMPI 4.x)
-BASE_CXXFLAGS = -Wall -Wextra -Wno-cast-function-type -std=c++17 -O3 $(OPENMP_FLAGS)
+BASE_CXXFLAGS = -Wall -Wextra -Wno-cast-function-type -std=c++17 -O3 $(OPENMP_FLAGS) -DFMT_HEADER_ONLY
 
 # Address Sanitizer support (use with: make CFLAGS="-fsanitize=address -g -fno-omit-frame-pointer")
 # Note: Address Sanitizer slows down execution significantly but detects heap corruption
@@ -68,10 +68,11 @@ ALL_CXXFLAGS = $(BASE_CXXFLAGS) $(CFLAGS)
 # Meson puts generated files in build/subprojects/ParseHeader/ (not subprojects/ParseHeader/build/)
 # fmt is downloaded as a subproject by meson in subprojects/fmt-11.2.0/
 # Include paths: zeldovich-PLT first to avoid conflicts with local headers
-INCLUDES = -I../zeldovich-PLT/include \
-           -I../zeldovich-PLT/subprojects/ParseHeader/include \
-           -I../zeldovich-PLT/build/subprojects/ParseHeader \
-           -I../zeldovich-PLT/subprojects/fmt-11.2.0/include \
+INCLUDES = -Ideps/ParseHeader/include \
+           -Ideps/ParseHeader/generated \
+           -Ideps/zeldovich_core/include \
+           -Ideps/zeldovich_core/pcg \
+           -Ideps/fmt/include \
            -Isrc -Isrc/utils -Isrc/fft -Isrc/generation -Isrc/communication -Isrc/streaming -Isrc/output \
            -Ideps -I../.. -I../../../.. \
            $(MPI_INCLUDES) $(FFTW_INCLUDES)
@@ -102,27 +103,10 @@ else
     FFTW_LIBS = $(FFTW_LIB_FLAG) -lfftw3_omp -lfftw3
 endif
 
-# zeldovich-PLT libraries (v15.2: Phase 7 - linking)
-# Note: zeldovich-PLT may have been built with GSL support
-# If linking fails with GSL errors, rebuild zeldovich-PLT on this system
-ZELDOVICH_LIB_DIRS = -L../zeldovich-PLT/build \
-                     -L../zeldovich-PLT/build/subprojects/ParseHeader \
-                     -L../zeldovich-PLT/build/subprojects/fmt-11.2.0
-# Try to find GSL libraries (zeldovich-PLT may depend on them)
-GSL_LIB_DIR = $(shell find /usr/lib* /opt/aurora -name "libgsl.so*" 2>/dev/null | head -1 | xargs dirname 2>/dev/null)
-ifneq ($(GSL_LIB_DIR),)
-    GSL_LIBS = -L$(GSL_LIB_DIR) -lgsl -lgslcblas
-else
-    # GSL not found - may need to rebuild zeldovich-PLT without GSL or install GSL
-    GSL_LIBS =
-endif
-ZELDOVICH_LIBS = -lzeldovich -lparseheader -lfmt $(GSL_LIBS)
-
 # Libraries
 # v15.2: Added zeldovich-PLT libraries and RPATH for runtime library loading
 # Address Sanitizer: Add -fsanitize=address to LDFLAGS if present in CFLAGS
-BASE_LDFLAGS = $(MPI_LIBS) $(FFTW_LIBS) $(ZELDOVICH_LIB_DIRS) $(ZELDOVICH_LIBS) -lm -lstdc++ \
-               -Wl,-rpath,$(shell cd ../zeldovich-PLT/build && pwd):$(shell cd ../zeldovich-PLT/build/subprojects/ParseHeader && pwd):$(shell cd ../zeldovich-PLT/build/subprojects/fmt-11.2.0 && pwd)
+BASE_LDFLAGS = $(MPI_LIBS) $(FFTW_LIBS) -lm -lstdc++
 ifeq ($(findstring -fsanitize=address,$(CFLAGS)),)
     LDFLAGS = $(BASE_LDFLAGS)
 else
@@ -138,6 +122,19 @@ UTILS_SRC = src/utils/printing.c \
             src/utils/rng.c \
             src/utils/power_spectrum.c \
             src/utils/plt_eigenmodes.c
+
+PARSEHEADER_SRC = \
+    deps/ParseHeader/src/HeaderStream.cc \
+    deps/ParseHeader/src/ParseHeader.cc \
+    deps/ParseHeader/src/phDriver.cc \
+    deps/ParseHeader/src/stringutil.cc \
+    deps/ParseHeader/generated/phParser.tab.cc \
+    deps/ParseHeader/generated/phScanner.cc
+
+ZELDOVICH_CORE_SRC = \
+    deps/zeldovich_core/src/power_spectrum.cpp \
+    deps/zeldovich_core/src/parameters.cpp \
+    deps/zeldovich_core/src/STimer.cc
 
 # C++ wrapper for zeldovich-PLT (Option B: C wrappers)
 # v15.2: Enabled for direct zeldovich-PLT integration
@@ -170,15 +167,18 @@ check-omp:
 	@$(CXX) --version 2>&1 | head -3
 
 # Main executable (does not include reassembly tool due to main() conflict)
-$(TARGET): $(SRC) $(UTILS_SRC) $(MODULE_SRC) $(ZELDOVICH_WRAPPER_SRC) $(OUTPUT_SRC) src/config.h
-	$(CXX) $(ALL_CXXFLAGS) $(INCLUDES) -o $(TARGET) $(SRC) $(UTILS_SRC) $(MODULE_SRC) $(ZELDOVICH_WRAPPER_SRC) $(OUTPUT_SRC) $(LDFLAGS)
+$(TARGET): $(SRC) $(UTILS_SRC) $(MODULE_SRC) $(ZELDOVICH_WRAPPER_SRC) $(OUTPUT_SRC) \
+           $(PARSEHEADER_SRC) $(ZELDOVICH_CORE_SRC) src/config.h
+	$(CXX) $(ALL_CXXFLAGS) $(INCLUDES) -o $(TARGET) \
+        $(SRC) $(UTILS_SRC) $(MODULE_SRC) $(ZELDOVICH_WRAPPER_SRC) $(OUTPUT_SRC) \
+        $(PARSEHEADER_SRC) $(ZELDOVICH_CORE_SRC) $(LDFLAGS)
 
 # Reassembly tool (separate executable)
 reassembly: $(REASSEMBLY_TARGET)
 
 # Reassembly uses zeldovich-PLT's STimer (via <output.h> and -lzeldovich); do not link our STimer.cc to avoid redefinition
-$(REASSEMBLY_TARGET): $(REASSEMBLY_SRC) $(UTILS_SRC) $(ZELDOVICH_WRAPPER_SRC) $(OUTPUT_SRC) src/config.h
-	$(CXX) $(ALL_CXXFLAGS) $(INCLUDES) -o $(REASSEMBLY_TARGET) $(REASSEMBLY_SRC) $(UTILS_SRC) $(ZELDOVICH_WRAPPER_SRC) $(OUTPUT_SRC) $(LDFLAGS)
+$(REASSEMBLY_TARGET): $(REASSEMBLY_SRC) $(UTILS_SRC) $(ZELDOVICH_WRAPPER_SRC) $(OUTPUT_SRC) $(PARSEHEADER_SRC) $(ZELDOVICH_CORE_SRC) src/config.h
+	$(CXX) $(ALL_CXXFLAGS) $(INCLUDES) -o $(REASSEMBLY_TARGET) $(REASSEMBLY_SRC) $(UTILS_SRC) $(ZELDOVICH_WRAPPER_SRC) $(OUTPUT_SRC) $(PARSEHEADER_SRC) $(ZELDOVICH_CORE_SRC) $(LDFLAGS) 
 	@echo ""
 	@echo "Build successful!"
 	@echo "Binary: $(REASSEMBLY_TARGET)"
@@ -187,8 +187,8 @@ $(REASSEMBLY_TARGET): $(REASSEMBLY_SRC) $(UTILS_SRC) $(ZELDOVICH_WRAPPER_SRC) $(
 
 # Toy: z-loop OMP scaling test (same buffer layout + RNG-per-thread + PTimer; optional PLT/eig_vecs)
 toy-zloop: $(TOY_TARGET)
-$(TOY_TARGET): toy/toy_zloop_omp_scaling.cpp $(ZELDOVICH_WRAPPER_SRC) src/utils/plt_eigenmodes.c src/config.h
-	$(CXX) $(ALL_CXXFLAGS) $(INCLUDES) -o $(TOY_TARGET) toy/toy_zloop_omp_scaling.cpp $(ZELDOVICH_WRAPPER_SRC) src/utils/plt_eigenmodes.c $(LDFLAGS)
+$(TOY_TARGET): toy/toy_zloop_omp_scaling.cpp $(ZELDOVICH_WRAPPER_SRC) src/utils/plt_eigenmodes.c $(PARSEHEADER_SRC) $(ZELDOVICH_CORE_SRC) src/config.h
+	$(CXX) $(ALL_CXXFLAGS) $(INCLUDES) -o $(TOY_TARGET) toy/toy_zloop_omp_scaling.cpp $(ZELDOVICH_WRAPPER_SRC) src/utils/plt_eigenmodes.c $(PARSEHEADER_SRC) $(ZELDOVICH_CORE_SRC) $(LDFLAGS)
 	@echo "Toy built: ./$(TOY_TARGET) <N> <narray> <param_file> [num_y_repeats]"
 
 clean:

@@ -60,9 +60,9 @@
 #include <execinfo.h>  
 #include <unistd.h>    // For getpid
 
-// Include PCG RNG
-// STimer comes from output_new.h -> output.h -> block_array.h -> zeldovich-PLT STimer.h
+// Include PCG RNG and STimer (vendored from zeldovich-PLT)
 #include "pcg-rng/pcg_random.hpp"
+#include <STimer.h>
 
 // --- CONFIGURATION AND TYPES (config.h, precision.h, types.h) ---
 #include "config.h"
