@@ -1057,7 +1057,8 @@ int main(int argc, char **argv)
             //      Data is in [Array][k_rng][j] format (memory), transpose to [Array][j][k_rng] for output
             // =======================================================================================
 
-            // Use i,j,k notation for output writing (i == z)
+            // Use i,j,k notation for output writing
+            int i = z;
             
             // Debug: Check output mode
             if (rank == 0 && z == 0) {
