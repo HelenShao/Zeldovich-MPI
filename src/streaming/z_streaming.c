@@ -217,7 +217,7 @@ void z_streaming_unpack(
     
     // ========== 1D FFT: Apply along Y-direction for each (Array, X) ==========
     // In [Array][X][Y] format, Y is stride-1 for fixed (array_idx, x_idx)
-    #pragma omp parallel for collapse(2)
+    #pragma omp parallel for collapse(2) schedule(static)
     for (int array_idx = 0; array_idx < narray; array_idx++) {
         for (int x_idx = 0; x_idx < x_count; x_idx++) {
             fftw_complex_t *y_data = &ZSLAB(array_idx, x_idx, 0, N, narray, x_count);

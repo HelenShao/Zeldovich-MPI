@@ -103,3 +103,17 @@ case "${1:-}" in
     analyze) shift; cmd_analyze "$@" ;;
     *)       echo "Usage: $0 {setup|analyze} [options]" >&2; exit 1 ;;
 esac
+
+# From the script directory
+# cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/MPI-9
+
+# # Create experiment directory
+# ./omp_sweep.sh setup --dir my_sweep
+
+# # Submit jobs (use the printed qsub commands)
+# qsub my_sweep/runs/omp-1/N1024_CPD_225_MPI_9.pbs
+# qsub my_sweep/runs/omp-2/N1024_CPD225_MPI9_OMP2.pbs
+# # ... repeat for omp-4, omp-8, omp-16, omp-32
+
+# # After all jobs complete, analyze
+# ./omp_sweep.sh analyze --dir my_sweep

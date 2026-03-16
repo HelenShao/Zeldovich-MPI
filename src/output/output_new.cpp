@@ -14,12 +14,12 @@
 #include <fmt/base.h>
 #include <fmt/format.h>
 
-// Include zeldovich-PLT headers to get Complx, Parameters, OutputType, and particle types
+// Include zeldovich-PLT headers to get Complx and Parameters definitions
 #include <zeldovich.h>
 #include <parameters.h>
-#include <output.h>  // For OutputType enum and particle struct definitions
+#include "output_types.h"  // Local copy of OutputType enum and particle structs (no block_array dependency)
 #include <complex> 
-#include <STimer.h>  // zeldovich-PLT's STimer (angle brackets so reassembly build gets zeldovich's, not src/STimer.h)
+#include <STimer.h>  // Vendored zeldovich-PLT STimer
 #include "output_new.h" 
 #include "utils/decomposition.h"
 
