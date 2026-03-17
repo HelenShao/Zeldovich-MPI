@@ -932,7 +932,6 @@ void AppendSlabZSegment(
     int narray,
     Parameters &param
 ) {
-    // fftw_complex_t is real_t[2] (float[2] or double[2]); do NOT use Complx (sizeof mismatch in single precision)
     int64_t array_stride = (int64_t)k_extent * N;
     fftw_complex_t *slab1 = &slab_data[0 * array_stride];
     fftw_complex_t *slab2 = &slab_data[1 * array_stride];
