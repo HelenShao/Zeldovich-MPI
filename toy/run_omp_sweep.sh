@@ -11,6 +11,14 @@
 #
 # mpi_ranks: if 2 or more, run with mpiexec -n <mpi_ranks> to mimic production multi-node.
 #            if 0 or 1 or omitted, run exe directly (single process).
+#
+# Pure OMP control (no MPI_Init / no mpiexec), using the toy:
+#   cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/toy
+#   make toy-zloop
+#   export TOY_DISABLE_MPI=1
+#   ./run_omp_sweep.sh ./toy_zloop_omp_scaling 1024 2 \
+#       /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/MPI-9/mode3/1D/param_N1024_CPD_225.par \
+#       10 "1 2 4 8 16"
 # Output: one block per thread count; Z-loop time in "[Rank r] [PTimerWall]" lines.
 
 set -e
