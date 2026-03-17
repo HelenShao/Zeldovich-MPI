@@ -925,8 +925,8 @@ void AppendSlabZSegment(
     int slab_s,
     int cpd,
     int z,
-    int k_start_global,
-    int k_extent,
+    int k_start_global, // starting x in rank's extent, depending on CPD & grid_x
+    int k_extent, // number of x values for this rank
     Complx *slab_data,
     int N,
     int narray,
@@ -965,6 +965,7 @@ void AppendSlabZSegment(
 
             Complx s1_val = slab1[x_local * N + y];
             Complx s2_val = slab2[x_local * N + y];
+            // slab3/slab4 are NULL when narray <= 2 or <= 3; use zero to avoid null dereference
             Complx s3_val = slab3 ? slab3[x_local * N + y] : Complx(0.0, 0.0);
             Complx s4_val = slab4 ? slab4[x_local * N + y] : Complx(0.0, 0.0);
 
@@ -983,10 +984,11 @@ void AppendSlabZSegment(
                 vel2 = std::imag(s1_val) * vnorm;
             }
 
+            // One rank per slab file; its x-range equals the slab, so x_local is slab-local k (0 .. slab_width-1).
             RVZelParticle &out = buf[idx];
             out.i = (unsigned short)z;
             out.j = (unsigned short)y;
-            out.k = (unsigned short)x_global;
+            out.k = (unsigned short)x_local;
             out.displ[0] = (float)pos0;
             out.displ[1] = (float)pos1;
             out.displ[2] = (float)pos2;
