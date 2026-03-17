@@ -6,9 +6,10 @@
 #include "../precision.h"  
 #include "../PTimer.h"
 #include <stdio.h>
-#include <stdlib.h>  
-#include <stdint.h> 
-#include <math.h>    
+#include <stdlib.h>
+#include <string.h>
+#include <stdint.h>
+#include <math.h>
 #include <omp.h>
 
 // Fine-grained PTimerWall accumulators for Stage 1 sub-phases.
@@ -515,7 +516,67 @@ void generate_hermitian_slice_pair_local(
             }
             #endif  // VERIFY_HERMITIAN_SYMMETRY
             }  // End of else block for !just_density && k2 != 0
-            
+
+            #ifdef DEBUG_RNG_CONSISTENCY
+            // Per-rank log file to avoid MPI interleaving (incomplete records)
+            // Match zeldovich-PLT debug output to compare D, F, G, H
+            {
+            int ppdhalf = N / 2;
+            int boundary_coord = ppdhalf - 1;
+            int test_boundary = (boundary_coord >= 0 &&
+                                 x == boundary_coord && global_y == boundary_coord && z == boundary_coord);
+            int effective_boundary = (boundary_coord <= MAX_DEBUG_BOUNDARY_COORD) ? boundary_coord : MAX_DEBUG_BOUNDARY_COORD;
+            int max_test_coord = (MAX_DEBUG_COORD > effective_boundary) ? MAX_DEBUG_COORD : effective_boundary;
+            int in_test_range = (x <= max_test_coord && global_y <= max_test_coord && z <= max_test_coord);
+            int should_print = 0;
+            if (test_boundary) {
+                should_print = 1;
+            } else if (N <= DEBUG_FULL_PRINT_MAX_N) {
+                should_print = in_test_range;
+            } else {
+                if (x <= MAX_DEBUG_COORD && global_y <= MAX_DEBUG_COORD && z <= MAX_DEBUG_COORD) {
+                    should_print = 1;
+                } else if (in_test_range) {
+                    should_print = (x % DEBUG_SAMPLE_STRIDE == 0 &&
+                                   global_y % DEBUG_SAMPLE_STRIDE == 0 &&
+                                   z % DEBUG_SAMPLE_STRIDE == 0);
+                }
+            }
+            if (should_print) {
+                /* 
+                fprintf(stderr, "[RNG-DEBUG] N=%ld Y=%d (x,z)=(%d,%d): k=(%d,%d,%d) k2=%.6f | "
+                        "D=(%.10e,%.10e) F=(%.10e,%.10e) G=(%.10e,%.10e) H=(%.10e,%.10e)\n",
+                        (long)N, global_y, x, z, kx, ky, kz, k2,
+                        D[0], D[1], F[0], F[1], G[0], G[1], H[0], H[1]);
+                fflush(stderr);
+                */
+                static FILE *rng_debug_fp = NULL;
+                #if PARALLELIZE_Z_LOOP
+                #pragma omp critical(rng_debug_write)
+                #endif
+                {
+                    if (rng_debug_fp == NULL) {
+                        const char *base = getenv("HERMITIAN_RNG_DEBUG_DIR");
+                        char path[512];
+                        if (base && base[0]) {
+                            snprintf(path, sizeof(path), "%s/hermitian_rng_debug_rank%03d.log", base, rank);
+                        } else {
+                            snprintf(path, sizeof(path), "hermitian_rng_debug_rank%03d.log", rank);
+                        }
+                        rng_debug_fp = fopen(path, "a");
+                    }
+                    if (rng_debug_fp != NULL) {
+                        fprintf(rng_debug_fp, "[RNG-DEBUG] N=%ld Y=%d (x,z)=(%d,%d): k=(%d,%d,%d) k2=%.6f | "
+                                "D=(%.10e,%.10e) F=(%.10e,%.10e) G=(%.10e,%.10e) H=(%.10e,%.10e)\n",
+                                (long)N, global_y, x, z, kx, ky, kz, k2,
+                                D[0], D[1], F[0], F[1], G[0], G[1], H[0], H[1]);
+                        fflush(rng_debug_fp);
+                    }
+                }
+            }
+            }
+            #endif
+
             // ========== STEP 4 & 5: Store primary and conjugate slices ==========
             store_prim_conj(primary_slices, conjugate_slices,
                            N, x, z, x_mirror, z_mirror,
