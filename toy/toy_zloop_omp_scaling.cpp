@@ -69,15 +69,23 @@ static inline int toy_plt_eigenmode(int kx, int ky, int kz, int N, double k2, ei
 }
 
 int main(int argc, char** argv) {
-    MPI_Init(&argc, &argv);
     int rank = 0, size = 1;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    int use_mpi = 1;
+    const char* disable_mpi_env = getenv("TOY_DISABLE_MPI");
+    if (disable_mpi_env && atoi(disable_mpi_env) != 0) {
+        use_mpi = 0;
+    }
+
+    if (use_mpi) {
+        MPI_Init(&argc, &argv);
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+        MPI_Comm_size(MPI_COMM_WORLD, &size);
+    }
 
     if (argc < 4) {
         if (rank == 0)
             fprintf(stderr, "Usage: %s <N> <narray> <param_file> [num_y_repeats]\n", argv[0]);
-        MPI_Finalize();
+        if (use_mpi) MPI_Finalize();
         return 1;
     }
     int N = atoi(argv[1]);
@@ -88,14 +96,14 @@ int main(int argc, char** argv) {
     if (N <= 0 || narray <= 0 || num_y_repeats <= 0) {
         if (rank == 0)
             fprintf(stderr, "N, narray, num_y_repeats must be positive.\n");
-        MPI_Finalize();
+        if (use_mpi) MPI_Finalize();
         return 1;
     }
 
     ParametersHandle params = zeldovich_params_create(param_file);
     if (!params) {
         if (rank == 0) fprintf(stderr, "Failed to load params from %s\n", param_file);
-        MPI_Finalize();
+        if (use_mpi) MPI_Finalize();
         return 1;
     }
 
@@ -110,7 +118,7 @@ int main(int argc, char** argv) {
     if (!ps) {
         if (rank == 0) fprintf(stderr, "Failed to create PowerSpectrum\n");
         zeldovich_params_destroy(params);
-        MPI_Finalize();
+        if (use_mpi) MPI_Finalize();
         return 1;
     }
     double powerlaw_index = zeldovich_params_get_Pk_powerlaw_index(params);
@@ -118,7 +126,7 @@ int main(int argc, char** argv) {
         if (rank == 0) fprintf(stderr, "ZD_Pk_powerlaw_index not in param file\n");
         zeldovich_ps_destroy(ps);
         zeldovich_params_destroy(params);
-        MPI_Finalize();
+        if (use_mpi) MPI_Finalize();
         return 1;
     }
     if (zeldovich_ps_init_powerlaw(ps, powerlaw_index, params) != 0) {
@@ -342,6 +350,6 @@ int main(int argc, char** argv) {
     if (use_plt) plt_free_eigenmodes();
     zeldovich_ps_destroy(ps);
     zeldovich_params_destroy(params);
-    MPI_Finalize();
+    if (use_mpi) MPI_Finalize();
     return 0;
 }
