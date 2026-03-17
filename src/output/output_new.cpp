@@ -927,15 +927,17 @@ void AppendSlabZSegment(
     int z,
     int k_start_global, // starting x in rank's extent, depending on CPD & grid_x
     int k_extent, // number of x values for this rank
-    Complx *slab_data,
+    fftw_complex_t *slab_data,
     int N,
     int narray,
     Parameters &param
 ) {
-    Complx *slab1 = &slab_data[0 * k_extent * N];
-    Complx *slab2 = &slab_data[1 * k_extent * N];
-    Complx *slab3 = (narray > 2) ? &slab_data[2 * k_extent * N] : NULL;
-    Complx *slab4 = (narray > 3) ? &slab_data[3 * k_extent * N] : NULL;
+    // fftw_complex_t is real_t[2] (float[2] or double[2]); do NOT use Complx (sizeof mismatch in single precision)
+    int64_t array_stride = (int64_t)k_extent * N;
+    fftw_complex_t *slab1 = &slab_data[0 * array_stride];
+    fftw_complex_t *slab2 = &slab_data[1 * array_stride];
+    fftw_complex_t *slab3 = (narray > 2) ? &slab_data[2 * array_stride] : NULL;
+    fftw_complex_t *slab4 = (narray > 3) ? &slab_data[3 * array_stride] : NULL;
 
     double norm = 1.0;
     double densitynorm = 1.0;
@@ -963,25 +965,30 @@ void AppendSlabZSegment(
             int x_local = x_global - k_start_global;
             int idx = y * ox_count + (x_global - seg_start);
 
-            Complx s1_val = slab1[x_local * N + y];
-            Complx s2_val = slab2[x_local * N + y];
-            // slab3/slab4 are NULL when narray <= 2 or <= 3; use zero to avoid null dereference
-            Complx s3_val = slab3 ? slab3[x_local * N + y] : Complx(0.0, 0.0);
-            Complx s4_val = slab4 ? slab4[x_local * N + y] : Complx(0.0, 0.0);
+            // Index into [X][Y] sub-array: element at (x_local, y)
+            int64_t elem = (int64_t)x_local * N + y;
 
-            double pos0 = std::imag(s2_val) * norm; // axis0 (z-displacement)
-            double pos1 = std::real(s2_val) * norm; // axis1 (y-displacement)
-            double pos2 = std::imag(s1_val) * norm; // axis2 (x-displacement)
+            double s1_re = (double)slab1[elem][0];
+            double s1_im = (double)slab1[elem][1];
+            double s2_re = (double)slab2[elem][0];
+            double s2_im = (double)slab2[elem][1];
+
+            double pos0 = s2_im * norm; // z-displacement
+            double pos1 = s2_re * norm; // y-displacement
+            double pos2 = s1_im * norm; // x-displacement
 
             double vel0, vel1, vel2;
             if (param.qPLT) {
-                vel0 = std::imag(s4_val) * vnorm;
-                vel1 = std::real(s4_val) * vnorm;
-                vel2 = std::imag(s3_val) * vnorm;
+                double s3_im = slab3 ? (double)slab3[elem][1] : 0.0;
+                double s4_re = slab4 ? (double)slab4[elem][0] : 0.0;
+                double s4_im = slab4 ? (double)slab4[elem][1] : 0.0;
+                vel0 = s4_im * vnorm;
+                vel1 = s4_re * vnorm;
+                vel2 = s3_im * vnorm;
             } else {
-                vel0 = std::imag(s2_val) * vnorm;
-                vel1 = std::real(s2_val) * vnorm;
-                vel2 = std::imag(s1_val) * vnorm;
+                vel0 = s2_im * vnorm;
+                vel1 = s2_re * vnorm;
+                vel2 = s1_im * vnorm;
             }
 
             // One rank per slab file; its x-range equals the slab, so x_local is slab-local k (0 .. slab_width-1).
@@ -997,7 +1004,7 @@ void AppendSlabZSegment(
             out.vel[2] = (float)vel2;
 
             if (dens_buf)
-                dens_buf[idx] = (float)(std::real(s1_val) * densitynorm);
+                dens_buf[idx] = (float)(s1_re * densitynorm);
         }
     }
 

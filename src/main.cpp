@@ -1238,7 +1238,7 @@ int main(int argc, char **argv)
                             z,
                             my_extended_bounds.core.x_start,
                             x_count,
-                            (Complx*)local_z_slab,
+                            local_z_slab,
                             N,
                             narray,
                             *static_cast<Parameters*>(params)

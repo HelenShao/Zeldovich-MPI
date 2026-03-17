@@ -93,7 +93,7 @@ void AppendSlabZSegment(
     int z,                    // Global z index for this segment
     int k_start_global,
     int k_extent,
-    Complx *slab_data,
+    fftw_complex_t *slab_data,
     int N,
     int narray,
     Parameters &param
