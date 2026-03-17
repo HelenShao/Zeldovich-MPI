@@ -7,6 +7,7 @@
 // and WriteParticlesSlab_new (Path 2: full-range reassembly)
 
 #include <stdio.h>
+#include "../precision.h"
 // Undefine MAX_PPD macro from config.h to avoid conflict with zeldovich-PLT's const definition
 #ifdef MAX_PPD
 #undef MAX_PPD
