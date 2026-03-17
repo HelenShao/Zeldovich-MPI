@@ -53,8 +53,8 @@ make clean
 # Debug symbols for stack traces (-g flag)
 # Note: -rdynamic omitted as it requires Makefile changes and gdb works without it
 # Uses -DPARALLELIZE_Z_LOOP=1 after stage1-omp updates! (thread-local RNG)
-make CFLAGS="-DPRODUCTION_MODE -DPARTICLE_OUTPUT_MODE=1 -DPARALLELIZE_Z_LOOP=1 -g" -B
-make reassembly CFLAGS="-DPRODUCTION_MODE -DPARTICLE_OUTPUT_MODE=1 -g"
+make CFLAGS="-DPRODUCTION_MODE -DPARTICLE_OUTPUT_MODE=1 -DPARALLELIZE_Z_LOOP=1 -DSKIP_FILE_WRITE=0 -g" -B
+make reassembly CFLAGS="-DPRODUCTION_MODE -DPARTICLE_OUTPUT_MODE=1 -DSKIP_FILE_WRITE=0 -g"
 
 # Verify executables were created
 if [ ! -f "./hermitian_3d_matrix" ]; then

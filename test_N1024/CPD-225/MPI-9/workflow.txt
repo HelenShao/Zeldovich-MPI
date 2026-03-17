@@ -175,7 +175,7 @@ $ python3 compare_particle_ics.py particle_ics/ic_1 /home/helenshao/InitialCondi
 12. Compare all particle IC files (simpler comparison without visualization):
 $ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225
 # Compare all IC files in both directories:
-$ python3 compare_ic_files.py particle_ics /home/helenshao/InitialConditions/zeldovich-PLT/output_N1024_CPD_225 > ic_comparison.txt 2>&1
+$ python3 compare_ic_files.py particle_ics /home/helenshao/InitialConditions/zeldovich-PLT/output_N1024_CPD_225 > ic_comparison.txt 2>&1 **
 #
 # OR use default paths (script auto-detects current directory):
 $ python3 compare_ic_files.py
