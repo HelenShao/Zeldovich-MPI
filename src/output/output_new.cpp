@@ -918,6 +918,7 @@ void TeardownOutput() {
 // ====================================================================================
 //
 // One file per x-slab. File layout: [z0 segment][z1 segment]... (sequential).
+// Indices stored: i=z (global), j=y (global), k=x_global (global) — same as grid_x==1.
 
 void AppendSlabZSegment(
     FILE *fp,
@@ -990,11 +991,11 @@ void AppendSlabZSegment(
                 vel2 = s1_im * vnorm;
             }
 
-            // One rank per slab file; its x-range equals the slab, so x_local is slab-local k (0 .. slab_width-1).
+            // All indices global (i=z, j=y, k=x_global), range 0..N-1.
             RVZelParticle &out = buf[idx];
             out.i = (unsigned short)z;
             out.j = (unsigned short)y;
-            out.k = (unsigned short)x_local;
+            out.k = (unsigned short)x_global;
             out.displ[0] = (float)pos0;
             out.displ[1] = (float)pos1;
             out.displ[2] = (float)pos2;
@@ -1053,9 +1054,9 @@ void AppendZSlabFull(
 
     #pragma omp parallel for schedule(static)
     for (int y = 0; y < N; y++) {
-        for (int x = 0; x < N; x++) {
-            int x_local = x - k_start_global;
-            int64_t idx = (int64_t)y * N + x;
+        for (int x_global = 0; x_global < N; x_global++) {
+            int x_local = x_global - k_start_global;
+            int64_t idx = (int64_t)y * N + x_global;
 
             int64_t elem = (int64_t)x_local * N + y;
 
@@ -1085,7 +1086,7 @@ void AppendZSlabFull(
             RVZelParticle &out = buf[idx];
             out.i = (unsigned short)z;
             out.j = (unsigned short)y;
-            out.k = (unsigned short)x;
+            out.k = (unsigned short)x_global;
             out.displ[0] = (float)pos0;
             out.displ[1] = (float)pos1;
             out.displ[2] = (float)pos2;

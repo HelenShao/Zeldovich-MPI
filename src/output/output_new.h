@@ -84,6 +84,7 @@ void TeardownOutput();
 //
 // CPD-aligned; layout must match Abacus RVZel_2D reader.
 // Each file contains [z0 segment][z1 segment]... for one x-slab (sequential, no offset).
+// Indices: i, j, k are all global (same convention as grid_x==1 / zeldovich).
 
 // Write one x-slab segment for one z to that slab's file.
 void AppendSlabZSegment(
