@@ -891,7 +891,8 @@ int main(int argc, char **argv)
         local_z_slab = NULL;
     }
     
-    // Create directory for this rank (before Z-loop)
+    // Create directory for this rank (before Z-loop) -- only needed for Mode 1/2 (.bin files)
+#if (PARTICLE_OUTPUT_MODE != 3)
     char dirname[64];
     snprintf(dirname, sizeof(dirname), "rank_%d", rank);
     int mkdir_result = mkdir(dirname, 0755);
@@ -899,7 +900,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "Rank %d: ERROR creating directory %s (errno=%d)\n", rank, dirname, errno);
         MPI_Abort(comm_2d, 1);
     }
-    
+#endif
     // Process one Z-slab at a time (Zeldovich-compatible)
     int files_written = 0;
     size_t total_bytes_written = 0;
