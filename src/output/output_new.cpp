@@ -1014,3 +1014,94 @@ void AppendSlabZSegment(
     delete[] buf;
     if (dens_buf) delete[] dens_buf;
 }
+
+// ====================================================================================
+// MODE 3 (grid_x==1): AppendZSlabFull — write one full N×N z-plane
+// ====================================================================================
+//
+// Matches zeldovich WriteParticlesSlab output format:
+//   - One file per z-group (file_index = z * CPD / N)
+//   - Each call appends one z-plane of N×N particles
+//   - Loop order: y-outer, x-inner
+//   - Indices: i=z (global), j=y (global), k=x (global)
+
+void AppendZSlabFull(
+    FILE *fp,
+    FILE *fp_dens,
+    int z,
+    int k_start_global,
+    int k_extent,
+    fftw_complex_t *slab_data,
+    int N,
+    int narray,
+    Parameters &param
+) {
+    int64_t array_stride = (int64_t)k_extent * N;
+    fftw_complex_t *slab1 = &slab_data[0 * array_stride];
+    fftw_complex_t *slab2 = &slab_data[1 * array_stride];
+    fftw_complex_t *slab3 = (narray > 2) ? &slab_data[2 * array_stride] : NULL;
+    fftw_complex_t *slab4 = (narray > 3) ? &slab_data[3 * array_stride] : NULL;
+
+    double norm = 1.0;
+    double densitynorm = 1.0;
+    double vnorm = param.qPLT ? 1.0 : (sqrt(1.0 + 24.0 * param.f_cluster) - 1.0) * 0.25;
+    bool write_dens = (param.qdensity && fp_dens != NULL);
+
+    int64_t plane_particles = (int64_t)N * (int64_t)N;
+    RVZelParticle *buf = new RVZelParticle[plane_particles];
+    float *dens_buf = write_dens ? new float[plane_particles] : NULL;
+
+    #pragma omp parallel for schedule(static)
+    for (int y = 0; y < N; y++) {
+        for (int x = 0; x < N; x++) {
+            int x_local = x - k_start_global;
+            int64_t idx = (int64_t)y * N + x;
+
+            int64_t elem = (int64_t)x_local * N + y;
+
+            double s1_re = (double)slab1[elem][0];
+            double s1_im = (double)slab1[elem][1];
+            double s2_re = (double)slab2[elem][0];
+            double s2_im = (double)slab2[elem][1];
+
+            double pos0 = s2_im * norm;
+            double pos1 = s2_re * norm;
+            double pos2 = s1_im * norm;
+
+            double vel0, vel1, vel2;
+            if (param.qPLT) {
+                double s3_im = slab3 ? (double)slab3[elem][1] : 0.0;
+                double s4_re = slab4 ? (double)slab4[elem][0] : 0.0;
+                double s4_im = slab4 ? (double)slab4[elem][1] : 0.0;
+                vel0 = s4_im * vnorm;
+                vel1 = s4_re * vnorm;
+                vel2 = s3_im * vnorm;
+            } else {
+                vel0 = s2_im * vnorm;
+                vel1 = s2_re * vnorm;
+                vel2 = s1_im * vnorm;
+            }
+
+            RVZelParticle &out = buf[idx];
+            out.i = (unsigned short)z;
+            out.j = (unsigned short)y;
+            out.k = (unsigned short)x;
+            out.displ[0] = (float)pos0;
+            out.displ[1] = (float)pos1;
+            out.displ[2] = (float)pos2;
+            out.vel[0] = (float)vel0;
+            out.vel[1] = (float)vel1;
+            out.vel[2] = (float)vel2;
+
+            if (dens_buf)
+                dens_buf[idx] = (float)(s1_re * densitynorm);
+        }
+    }
+
+    fwrite(buf, sizeof(RVZelParticle), plane_particles, fp);
+    if (dens_buf)
+        fwrite(dens_buf, sizeof(float), plane_particles, fp_dens);
+
+    delete[] buf;
+    if (dens_buf) delete[] dens_buf;
+}
