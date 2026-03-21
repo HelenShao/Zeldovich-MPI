@@ -20,7 +20,8 @@
 #include "output_types.h"  // Local copy of OutputType enum and particle structs (no block_array dependency)
 #include <complex> 
 #include <STimer.h>  // Vendored zeldovich-PLT STimer
-#include "output_new.h" 
+#include "output_new.h"
+#include "config.h"
 #include "utils/decomposition.h"
 
 namespace fs = std::filesystem;
@@ -867,6 +868,8 @@ double InitOutputBuffers(Parameters &param) {
         output_tmp = NULL;
     }
 
+    // Mode 3 writes density to per-file ic_*_dens; skip global density1920-style file
+#if (PARTICLE_OUTPUT_MODE != 3)
     if (param.qdensity) {
         fs::path path = param.output_dir / fmt::format(fmt::runtime(param.density_filename.string()), param.ppd);
 
@@ -874,6 +877,7 @@ double InitOutputBuffers(Parameters &param) {
         assert(densfp != NULL);
         densoutput_tmp = new float[param.ppd * param.ppd];
     }
+#endif
 
     return sizeof_outputtype * param.ppd * param.ppd / 1024. / 1024. / 1024.;
 }

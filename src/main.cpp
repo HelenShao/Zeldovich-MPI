@@ -924,6 +924,16 @@ int main(int argc, char **argv)
             fprintf(stderr, "Rank %d: ERROR creating directory %s (errno=%d)\n", rank, ic_dir, errno);
             MPI_Abort(comm_2d, 1);
         }
+        // dens/ subdir for _dens files (parallel to ic/)
+        if (p->qdensity) {
+            char dens_dir[PATH_MAX];
+            snprintf(dens_dir, sizeof(dens_dir), "%s/dens", p->output_dir.c_str());
+            int mkdir_dens = mkdir(dens_dir, 0755);
+            if (mkdir_dens != 0 && errno != EEXIST) {
+                fprintf(stderr, "Rank %d: ERROR creating directory %s (errno=%d)\n", rank, dens_dir, errno);
+                MPI_Abort(comm_2d, 1);
+            }
+        }
 
         if (grid_x == 1) {
             // ---------------------------------------------------------------
@@ -950,7 +960,7 @@ int main(int argc, char **argv)
                 }
                 if (p->qdensity && zgrp_fp[f - zgrp_start] != NULL) {
                     char fd_path[PATH_MAX];
-                    snprintf(fd_path, sizeof(fd_path), "%s/ic/ic_%04d_dens",
+                    snprintf(fd_path, sizeof(fd_path), "%s/dens/dens_%04d",
                              p->output_dir.c_str(), f);
                     zgrp_dens_fp[f - zgrp_start] = fopen(fd_path, "wb");
                     if (!zgrp_dens_fp[f - zgrp_start]) {
@@ -982,6 +992,15 @@ int main(int argc, char **argv)
                     fprintf(stderr, "Rank %d: ERROR creating directory %s (errno=%d)\n", rank, z_dir, errno);
                     MPI_Abort(comm_2d, 1);
                 }
+                if (p->qdensity) {
+                    char dens_z_dir[PATH_MAX];
+                    snprintf(dens_z_dir, sizeof(dens_z_dir), "%s/dens/z%03d", p->output_dir.c_str(), rank_z);
+                    int mkdir_dens_z = mkdir(dens_z_dir, 0755);
+                    if (mkdir_dens_z != 0 && errno != EEXIST) {
+                        fprintf(stderr, "Rank %d: ERROR creating directory %s (errno=%d)\n", rank, dens_z_dir, errno);
+                        MPI_Abort(comm_2d, 1);
+                    }
+                }
             }
 
             slab_fp.resize(slab_x_end - slab_x_start, NULL);
@@ -1004,10 +1023,10 @@ int main(int argc, char **argv)
                 if (p->qdensity && slab_fp[s - slab_x_start] != NULL) {
                     char fd_path[PATH_MAX];
                     if (grid_z > 1) {
-                        snprintf(fd_path, sizeof(fd_path), "%s/ic/z%03d/ic_%04d_z%03d_dens",
-                                 p->output_dir.c_str(), rank_z, s, rank_z);
+                        snprintf(fd_path, sizeof(fd_path), "%s/dens/z%03d/dens_%04d",
+                                 p->output_dir.c_str(), rank_z, s);
                     } else {
-                        snprintf(fd_path, sizeof(fd_path), "%s/ic/ic_%04d_dens",
+                        snprintf(fd_path, sizeof(fd_path), "%s/dens/dens_%04d",
                                  p->output_dir.c_str(), s);
                     }
                     slab_dens_fp[s - slab_x_start] = fopen(fd_path, "wb");
