@@ -99,7 +99,12 @@ MPI_Comm comm_2d;
 // --- MAIN ---
 int main(int argc, char **argv)
 {
-    MPI_Init(&argc, &argv);
+    int provided;
+    int ret = MPI_Init_thread(NULL, NULL, MPI_THREAD_SINGLE, &provided);
+    if (ret != MPI_SUCCESS) {
+        fprintf(stderr, "MPI_Init_thread failed with error code %d\n", ret);
+        return 1;
+    }
 
     int num_ranks;
     MPI_Comm_size(MPI_COMM_WORLD, &num_ranks);

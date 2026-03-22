@@ -868,7 +868,7 @@ double InitOutputBuffers(Parameters &param) {
         output_tmp = NULL;
     }
 
-    // Mode 3 writes density to per-file ic_*_dens; skip global density1920-style file
+    // Mode 3 writes density to per-file ic_*_dens; skip global density1920 file
 #if (PARTICLE_OUTPUT_MODE != 3)
     if (param.qdensity) {
         fs::path path = param.output_dir / fmt::format(fmt::runtime(param.density_filename.string()), param.ppd);
