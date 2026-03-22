@@ -46,6 +46,8 @@ void z_streaming_unpack(
 {
     (void)rank;                // Unused in normal builds (used in debug checks)
     (void)global_max_batches;  // Unused but kept for API consistency
+    (void)src_total_slices;    // Unused in normal builds (used only in VERIFY_STREAMING_OFFSETS)
+    (void)y_src_local_idx;     // Unused in normal builds (used only in VERIFY_STREAMING_OFFSETS)
     
     int x_count = my_bounds.x_end - my_bounds.x_start;
     int z_count = my_bounds.z_end - my_bounds.z_start;
@@ -215,7 +217,7 @@ void z_streaming_unpack(
     
     // ========== 1D FFT: Apply along Y-direction for each (Array, X) ==========
     // In [Array][X][Y] format, Y is stride-1 for fixed (array_idx, x_idx)
-    #pragma omp parallel for collapse(2)
+    #pragma omp parallel for collapse(2) schedule(static)
     for (int array_idx = 0; array_idx < narray; array_idx++) {
         for (int x_idx = 0; x_idx < x_count; x_idx++) {
             fftw_complex_t *y_data = &ZSLAB(array_idx, x_idx, 0, N, narray, x_count);

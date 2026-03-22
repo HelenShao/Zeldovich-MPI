@@ -1,23 +1,7 @@
-# ====================================================================================
-# HERMITIAN 3D MATRIX MPI - MAKEFILE
-# ====================================================================================
-# This Makefile builds the Hermitian 3D matrix MPI code in its current
-# refactoring state (currently Phase 5: Core modules extracted).
-#
-# Usage:
-#   make                    # Build with default settings
-#   make clean              # Clean build artifacts
-#   make CFLAGS="..."       # Build with custom flags
-#
-# Example custom builds:
-#   make CFLAGS="-DUSE_DOUBLE_PRECISION"           # Double precision (or set in src/config.h)
-#   make CFLAGS="-DPRODUCTION_MODE"                # Production mode
-#   make CFLAGS="-DUSE_X_PADDING=0"                # No padding
-#
 # NOTE: USE_DOUBLE_PRECISION can be set in src/config.h, but CFLAGS takes precedence.
 #       The Makefile checks CFLAGS to select the correct FFTW libraries (single vs double).
-#       If you set USE_DOUBLE_PRECISION in config.h, you should also add it to CFLAGS
-#       to ensure the correct libraries are linked.
+#       If set USE_DOUBLE_PRECISION in config.h, should also add it to CFLAGS
+#       to ensure the correct libraries are linked
 # ====================================================================================
 
 # Compiler and flags
@@ -38,14 +22,17 @@ else
 endif
 
 # OpenMP settings
-# Use -qopenmp for Intel compiler (mpicxx on Aurora), -fopenmp for GCC
-ifeq ($(findstring icpx,$(shell $(CXX) --version 2>&1 | head -1)),)
-    OPENMP_FLAGS = -fopenmp
-else
-    OPENMP_FLAGS = -qopenmp
+# Prefer -qopenmp if compiler accepts it (Intel), else -fopenmp (GCC).
+# More robust than parsing --version: mpicxx on Aurora may not print "icpx" in first line.
+# Override: make OPENMP_FLAGS=-qopenmp  (or -fopenmp)
+ifeq ($(OPENMP_FLAGS),)
+    OPENMP_FLAGS := $(shell echo "int main(){return 0;}" | $(CXX) -x c++ - -c -qopenmp -o /dev/null >/dev/null 2>&1 && echo -qopenmp || echo -fopenmp)
 endif
+# Ensure -fopenmp/-qopenmp matches FFTW build (mismatch => threads may not spawn)
 
 # FFTW3 settings
+# CAVEAT: FFTW must be built with OpenMP support. libfftw3*_omp existence is a sign;
+# ensure it was built with the same OpenMP runtime/flag as this project (e.g. Intel -qopenmp).
 # Use environment variables if available (from fftw module), otherwise fall back to hardcoded path
 ifneq ($(C_INCLUDE_PATH),)
     # Extract FFTW path from C_INCLUDE_PATH (module system sets this)
@@ -65,7 +52,7 @@ CFLAGS ?=
 # Base compilation flags
 # v15.2: Updated to C++17 for zeldovich-PLT compatibility (ParseHeader requires C++17)
 # Suppress -Wcast-function-type warnings from OpenMPI C++ bindings (known issue in OpenMPI 4.x)
-BASE_CXXFLAGS = -Wall -Wextra -Wno-cast-function-type -std=c++17 -O3 $(OPENMP_FLAGS)
+BASE_CXXFLAGS = -Wall -Wextra -Wno-cast-function-type -std=c++17 -O3 $(OPENMP_FLAGS) -DFMT_HEADER_ONLY
 
 # Address Sanitizer support (use with: make CFLAGS="-fsanitize=address -g -fno-omit-frame-pointer")
 # Note: Address Sanitizer slows down execution significantly but detects heap corruption
@@ -81,10 +68,11 @@ ALL_CXXFLAGS = $(BASE_CXXFLAGS) $(CFLAGS)
 # Meson puts generated files in build/subprojects/ParseHeader/ (not subprojects/ParseHeader/build/)
 # fmt is downloaded as a subproject by meson in subprojects/fmt-11.2.0/
 # Include paths: zeldovich-PLT first to avoid conflicts with local headers
-INCLUDES = -I../zeldovich-PLT/include \
-           -I../zeldovich-PLT/subprojects/ParseHeader/include \
-           -I../zeldovich-PLT/build/subprojects/ParseHeader \
-           -I../zeldovich-PLT/subprojects/fmt-11.2.0/include \
+INCLUDES = -Ideps/ParseHeader/include \
+           -Ideps/ParseHeader/generated \
+           -Ideps/zeldovich_core/include \
+           -Ideps/zeldovich_core/pcg \
+           -Ideps/fmt/include \
            -Isrc -Isrc/utils -Isrc/fft -Isrc/generation -Isrc/communication -Isrc/streaming -Isrc/output \
            -Ideps -I../.. -I../../../.. \
            $(MPI_INCLUDES) $(FFTW_INCLUDES)
@@ -108,42 +96,22 @@ else
 endif
 
 ifeq ($(findstring -DUSE_DOUBLE_PRECISION,$(CFLAGS)),)
-    # Single precision (default)
-    FFTW_LIBS = $(FFTW_LIB_FLAG) -lfftw3f -lfftw3f_omp
+    # Single precision (default): _omp for threading, base lib required (provides execute_dft etc.)
+    FFTW_LIBS = $(FFTW_LIB_FLAG) -lfftw3f_omp -lfftw3f
 else
-    # Double precision
-    FFTW_LIBS = $(FFTW_LIB_FLAG) -lfftw3 -lfftw3_omp
+    # Double precision: _omp for threading, base lib required
+    FFTW_LIBS = $(FFTW_LIB_FLAG) -lfftw3_omp -lfftw3
 endif
-
-# zeldovich-PLT libraries (v15.2: Phase 7 - linking)
-# Note: zeldovich-PLT may have been built with GSL support
-# If linking fails with GSL errors, rebuild zeldovich-PLT on this system
-ZELDOVICH_LIB_DIRS = -L../zeldovich-PLT/build \
-                     -L../zeldovich-PLT/build/subprojects/ParseHeader \
-                     -L../zeldovich-PLT/build/subprojects/fmt-11.2.0
-# Try to find GSL libraries (zeldovich-PLT may depend on them)
-GSL_LIB_DIR = $(shell find /usr/lib* /opt/aurora -name "libgsl.so*" 2>/dev/null | head -1 | xargs dirname 2>/dev/null)
-ifneq ($(GSL_LIB_DIR),)
-    GSL_LIBS = -L$(GSL_LIB_DIR) -lgsl -lgslcblas
-else
-    # GSL not found - may need to rebuild zeldovich-PLT without GSL or install GSL
-    GSL_LIBS =
-endif
-ZELDOVICH_LIBS = -lzeldovich -lparseheader -lfmt $(GSL_LIBS)
 
 # Libraries
 # v15.2: Added zeldovich-PLT libraries and RPATH for runtime library loading
 # Address Sanitizer: Add -fsanitize=address to LDFLAGS if present in CFLAGS
-BASE_LDFLAGS = $(MPI_LIBS) $(FFTW_LIBS) $(ZELDOVICH_LIB_DIRS) $(ZELDOVICH_LIBS) -lm -lstdc++ \
-               -Wl,-rpath,$(shell cd ../zeldovich-PLT/build && pwd):$(shell cd ../zeldovich-PLT/build/subprojects/ParseHeader && pwd):$(shell cd ../zeldovich-PLT/build/subprojects/fmt-11.2.0 && pwd)
+BASE_LDFLAGS = $(MPI_LIBS) $(FFTW_LIBS) -lm -lstdc++
 ifeq ($(findstring -fsanitize=address,$(CFLAGS)),)
     LDFLAGS = $(BASE_LDFLAGS)
 else
     LDFLAGS = $(BASE_LDFLAGS) -fsanitize=address
 endif
-
-# External dependencies
-STIMER_CC = src/STimer.cc
 
 # Source files
 SRC = src/main.cpp
@@ -155,11 +123,25 @@ UTILS_SRC = src/utils/printing.c \
             src/utils/power_spectrum.c \
             src/utils/plt_eigenmodes.c
 
+PARSEHEADER_SRC = \
+    deps/ParseHeader/src/HeaderStream.cc \
+    deps/ParseHeader/src/ParseHeader.cc \
+    deps/ParseHeader/src/phDriver.cc \
+    deps/ParseHeader/src/stringutil.cc \
+    deps/ParseHeader/generated/phParser.tab.cc \
+    deps/ParseHeader/generated/phScanner.cc
+
+ZELDOVICH_CORE_SRC = \
+    deps/zeldovich_core/src/power_spectrum.cpp \
+    deps/zeldovich_core/src/parameters.cpp \
+    deps/zeldovich_core/src/STimer.cc
+
 # C++ wrapper for zeldovich-PLT (Option B: C wrappers)
 # v15.2: Enabled for direct zeldovich-PLT integration
 # TODO: Replace with library linking when Option A is implemented
 ZELDOVICH_WRAPPER_SRC = src/utils/zeldovich_wrapper.cpp
 MODULE_SRC = src/fft/fft_setup.c \
+             src/fft/fft_wisdom.c \
              src/generation/hermitian_generation.c \
              src/communication/mpi_exchange.c \
              src/streaming/z_streaming.c
@@ -169,53 +151,60 @@ REASSEMBLY_SRC = src/write_particles_from_reassembled_mpi.cpp
 # Output binaries
 TARGET = hermitian_3d_matrix
 REASSEMBLY_TARGET = write_particles_from_reassembled_mpi
+TOY_TARGET = toy_zloop_omp_scaling
 
 # ====================================================================================
 # BUILD RULES
 # ====================================================================================
 
-.PHONY: all clean reassembly
+.PHONY: all clean reassembly check-omp toy-zloop help
 
 all: $(TARGET)
 
+check-omp:
+	@echo "CXX         = $(CXX)"
+	@echo "OPENMP_FLAGS = $(OPENMP_FLAGS)"
+	@echo "CXX version:"
+	@$(CXX) --version 2>&1 | head -3
+
 # Main executable (does not include reassembly tool due to main() conflict)
-$(TARGET): $(SRC) $(UTILS_SRC) $(MODULE_SRC) $(STIMER_CC) $(ZELDOVICH_WRAPPER_SRC) $(OUTPUT_SRC) src/config.h
-	$(CXX) $(ALL_CXXFLAGS) $(INCLUDES) -o $(TARGET) $(SRC) $(UTILS_SRC) $(MODULE_SRC) $(STIMER_CC) $(ZELDOVICH_WRAPPER_SRC) $(OUTPUT_SRC) $(LDFLAGS)
+$(TARGET): $(SRC) $(UTILS_SRC) $(MODULE_SRC) $(ZELDOVICH_WRAPPER_SRC) $(OUTPUT_SRC) \
+           $(PARSEHEADER_SRC) $(ZELDOVICH_CORE_SRC) src/config.h
+	$(CXX) $(ALL_CXXFLAGS) $(INCLUDES) -o $(TARGET) \
+        $(SRC) $(UTILS_SRC) $(MODULE_SRC) $(ZELDOVICH_WRAPPER_SRC) $(OUTPUT_SRC) \
+        $(PARSEHEADER_SRC) $(ZELDOVICH_CORE_SRC) $(LDFLAGS)
 
 # Reassembly tool (separate executable)
 reassembly: $(REASSEMBLY_TARGET)
 
 # Reassembly uses zeldovich-PLT's STimer (via <output.h> and -lzeldovich); do not link our STimer.cc to avoid redefinition
-$(REASSEMBLY_TARGET): $(REASSEMBLY_SRC) $(UTILS_SRC) $(ZELDOVICH_WRAPPER_SRC) $(OUTPUT_SRC) src/config.h
-	$(CXX) $(ALL_CXXFLAGS) $(INCLUDES) -o $(REASSEMBLY_TARGET) $(REASSEMBLY_SRC) $(UTILS_SRC) $(ZELDOVICH_WRAPPER_SRC) $(OUTPUT_SRC) $(LDFLAGS)
+$(REASSEMBLY_TARGET): $(REASSEMBLY_SRC) $(UTILS_SRC) $(ZELDOVICH_WRAPPER_SRC) $(OUTPUT_SRC) $(PARSEHEADER_SRC) $(ZELDOVICH_CORE_SRC) src/config.h
+	$(CXX) $(ALL_CXXFLAGS) $(INCLUDES) -o $(REASSEMBLY_TARGET) $(REASSEMBLY_SRC) $(UTILS_SRC) $(ZELDOVICH_WRAPPER_SRC) $(OUTPUT_SRC) $(PARSEHEADER_SRC) $(ZELDOVICH_CORE_SRC) $(LDFLAGS) 
 	@echo ""
 	@echo "Build successful!"
-	@echo "Binary: $(TARGET)"
+	@echo "Binary: $(REASSEMBLY_TARGET)"
 	@echo "Configuration: see src/config.h"
 	@echo ""
 
+# Toy: z-loop OMP scaling test (same buffer layout + RNG-per-thread + PTimer; optional PLT/eig_vecs)
+toy-zloop: $(TOY_TARGET)
+$(TOY_TARGET): toy/toy_zloop_omp_scaling.cpp $(ZELDOVICH_WRAPPER_SRC) src/utils/plt_eigenmodes.c $(PARSEHEADER_SRC) $(ZELDOVICH_CORE_SRC) src/config.h
+	$(CXX) $(ALL_CXXFLAGS) $(INCLUDES) -o $(TOY_TARGET) toy/toy_zloop_omp_scaling.cpp $(ZELDOVICH_WRAPPER_SRC) src/utils/plt_eigenmodes.c $(PARSEHEADER_SRC) $(ZELDOVICH_CORE_SRC) $(LDFLAGS)
+	@echo "Toy built: ./$(TOY_TARGET) <N> <narray> <param_file> [num_y_repeats]"
+
 clean:
-	rm -f $(TARGET) $(REASSEMBLY_TARGET) *.o
+	rm -f $(TARGET) $(REASSEMBLY_TARGET) $(TOY_TARGET) *.o
 
 # ====================================================================================
 # HELP
 # ====================================================================================
 
 help:
-	@echo "Hermitian 3D Matrix MPI - Build System"
 	@echo ""
-	@echo "Targets:"
 	@echo "  make              - Build main executable (hermitian_3d_matrix)"
 	@echo "  make reassembly   - Build reassembly tool (write_particles_from_reassembled_mpi)"
+	@echo "  make toy-zloop    - Build toy z-loop OMP scaling test"
+	@echo "  make check-omp    - Show CXX, OPENMP_FLAGS, and compiler version"
 	@echo "  make clean        - Remove build artifacts"
 	@echo "  make help         - Show this help message"
 	@echo ""
-	@echo "Configuration:"
-	@echo "  Edit src/config.h or use CFLAGS to override"
-	@echo ""
-	@echo "Examples:"
-	@echo "  make CFLAGS=\"-DUSE_DOUBLE_PRECISION\""
-	@echo "  make CFLAGS=\"-DPRODUCTION_MODE\""
-	@echo "  make CFLAGS=\"-DUSE_X_PADDING=0 -DDEBUG_PRINTS=0\""
-	@echo ""
-

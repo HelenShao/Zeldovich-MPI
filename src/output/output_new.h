@@ -7,6 +7,7 @@
 // and WriteParticlesSlab_new (Path 2: full-range reassembly)
 
 #include <stdio.h>
+#include "../precision.h"
 // Undefine MAX_PPD macro from config.h to avoid conflict with zeldovich-PLT's const definition
 #ifdef MAX_PPD
 #undef MAX_PPD
@@ -14,7 +15,7 @@
 // Include zeldovich-PLT headers to get Complx and Parameters definitions
 #include <zeldovich.h>
 #include <parameters.h>
-#include <output.h>
+#include "output_types.h"
 
 // WriteParticlesSlab_range - C++ function overloads (same name, different signatures)
 // The compiler selects the appropriate version based on the arguments provided.
@@ -83,6 +84,7 @@ void TeardownOutput();
 //
 // CPD-aligned; layout must match Abacus RVZel_2D reader.
 // Each file contains [z0 segment][z1 segment]... for one x-slab (sequential, no offset).
+// Indices: i, j, k are all global (same convention as grid_x==1 / zeldovich).
 
 // Write one x-slab segment for one z to that slab's file.
 void AppendSlabZSegment(
@@ -93,7 +95,27 @@ void AppendSlabZSegment(
     int z,                    // Global z index for this segment
     int k_start_global,
     int k_extent,
-    Complx *slab_data,
+    fftw_complex_t *slab_data,
+    int N,
+    int narray,
+    Parameters &param
+);
+
+// ====================================================================================
+// MODE 3 (grid_x==1): One file per z-group, matching zeldovich output format
+// ====================================================================================
+//
+// When grid_x==1 each rank owns all N x-values.  Each call writes one full
+// N×N z-plane to the z-group file.  Indices are all global (i=z, j=y, k=x).
+// Particle ordering: y-outer, x-inner (matching zeldovich WriteParticlesSlab).
+
+void AppendZSlabFull(
+    FILE *fp,                 // z-group file (caller owns, opened for append)
+    FILE *fp_dens,            // density file, or NULL
+    int z,                    // global z index
+    int k_start_global,       // == 0 when grid_x==1
+    int k_extent,             // == N when grid_x==1
+    fftw_complex_t *slab_data,
     int N,
     int narray,
     Parameters &param

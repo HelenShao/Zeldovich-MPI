@@ -1,0 +1,54 @@
+#!/bin/bash
+#PBS -N toy_omp_mpi_sweep
+#PBS -A AbacusAurora
+#PBS -l select=9:ncpus=16:mpiprocs=1:ompthreads=16
+#PBS -l walltime=00:30:00
+#PBS -q debug-scaling
+#PBS -l filesystems=home
+#PBS -M helenshao0904@gmail.com
+#PBS -m abe
+#PBS -j oe
+#PBS -o /home/helenshao/InitialConditions/hermitian_3d_matrix_production/toy/toy_omp_mpi_sweep.out
+
+# Toy z-loop OMP sweep with 9 MPI ranks on 9 separate nodes (1 rank per node).
+# Mimics production layout to test if MPI+OMP causes poor z-loop scaling.
+
+set -e
+cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production
+
+echo "Loading modules..."
+module load frameworks
+module load fftw/3.3.10
+
+echo "Building toy_zloop_omp_scaling..."
+make toy-zloop
+if [ ! -f "./toy_zloop_omp_scaling" ]; then
+    echo "ERROR: toy_zloop_omp_scaling not found"
+    exit 1
+fi
+
+NNODES=9
+PARAM_FILE="/home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/MPI-9/mode3/1D/param_N1024_CPD_225.par"
+N=1024
+NARRAY=2
+REPEATS=10
+THREADS="1 2 4 8 16"
+
+export OMP_PLACES=cores
+export OMP_PROC_BIND=close
+
+echo "=========================================="
+echo "Toy OMP sweep with $NNODES MPI ranks (1 per node)"
+echo "  N=$N narray=$NARRAY num_y_repeats=$REPEATS"
+echo "  Thread list: $THREADS"
+echo "=========================================="
+
+for t in $THREADS; do
+  echo ""
+  echo "========== OMP_NUM_THREADS=$t (${NNODES} ranks) =========="
+  export OMP_NUM_THREADS=$t
+  mpiexec -n $NNODES ./toy_zloop_omp_scaling "$N" "$NARRAY" "$PARAM_FILE" "$REPEATS"
+done
+
+echo ""
+echo "--- sweep done ---"

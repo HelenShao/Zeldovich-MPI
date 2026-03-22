@@ -1,0 +1,591 @@
+Loading frameworks module...
+Loading FFTW module...
+==========================================
+STEP 1: Compiling with DEBUG_RNG_CONSISTENCY (MPI: 16 ranks, 8 threads, PLT enabled, rescaling enabled)
+==========================================
+rm -f hermitian_3d_matrix write_particles_from_reassembled_mpi *.o
+mpicxx -Wall -Wextra -Wno-cast-function-type -std=c++17 -O3 -fopenmp -DPARTICLE_OUTPUT_MODE=1 -DVERIFY_HERMITIAN_SYMMETRY=0 -DSKIP_FILE_WRITE=0 -g -I../zeldovich-PLT/include -I../zeldovich-PLT/subprojects/ParseHeader/include -I../zeldovich-PLT/build/subprojects/ParseHeader -I../zeldovich-PLT/subprojects/fmt-11.2.0/include -Isrc -Isrc/utils -Isrc/fft -Isrc/generation -Isrc/communication -Isrc/streaming -Isrc/output -Ideps -I../.. -I../../../..  -I/opt/aurora/25.190.0/spack/unified/0.10.1/install/linux-sles15-x86_64/oneapi-2025.2.0/fftw-3.3.10-bs6lijg/include -o hermitian_3d_matrix src/main.cpp src/utils/printing.c src/utils/verification.c src/utils/decomposition.c src/utils/batch_helpers.c src/utils/rng.c src/utils/power_spectrum.c src/utils/plt_eigenmodes.c src/fft/fft_setup.c src/generation/hermitian_generation.c src/communication/mpi_exchange.c src/streaming/z_streaming.c src/STimer.cc src/utils/zeldovich_wrapper.cpp src/output/output_new.cpp  -L/opt/aurora/25.190.0/spack/unified/0.10.1/install/linux-sles15-x86_64/oneapi-2025.2.0/fftw-3.3.10-bs6lijg/lib -lfftw3f -lfftw3f_omp -L../zeldovich-PLT/build -L../zeldovich-PLT/build/subprojects/ParseHeader -L../zeldovich-PLT/build/subprojects/fmt-11.2.0 -lzeldovich -lparseheader -lfmt  -lm -lstdc++ -Wl,-rpath,/home/helenshao/InitialConditions/zeldovich-PLT/build:/home/helenshao/InitialConditions/zeldovich-PLT/build/subprojects/ParseHeader:/home/helenshao/InitialConditions/zeldovich-PLT/build/subprojects/fmt-11.2.0
+icpx: warning: use of '-qopenmp' recommended over '-fopenmp' [-Wrecommended-option]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+src/main.cpp:273:9: warning: variable 'num_my_slices' set but not used [-Wunused-but-set-variable]
+  273 |     int num_my_slices = 0;  // Will be set per-batch (1 or 2)
+      |         ^
+1 warning generated.
+src/utils/printing.c:40:21: warning: absolute value function 'fabsf' given an argument of type 'double' but has parameter of type 'float' which may cause truncation of value [-Wabsolute-value]
+   40 |                 if (fabs_t(im) < 1e-10) {
+      |                     ^
+src/precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/utils/printing.c:40:21: note: use function 'std::abs' instead
+   40 |                 if (fabs_t(im) < 1e-10) {
+      |                     ^~~~~~
+      |                     std::abs
+src/precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/utils/printing.c:86:25: warning: absolute value function 'fabsf' given an argument of type 'double' but has parameter of type 'float' which may cause truncation of value [-Wabsolute-value]
+   86 |                     if (fabs_t(im) > 1e-10) non_zero_imag_count++;
+      |                         ^
+src/precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/utils/printing.c:86:25: note: use function 'std::abs' instead
+   86 |                     if (fabs_t(im) > 1e-10) non_zero_imag_count++;
+      |                         ^~~~~~
+      |                         std::abs
+src/precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/utils/printing.c:104:25: warning: absolute value function 'fabsf' given an argument of type 'double' but has parameter of type 'float' which may cause truncation of value [-Wabsolute-value]
+  104 |                     if (fabs_t(im) < 1e-10) {
+      |                         ^
+src/precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/utils/printing.c:104:25: note: use function 'std::abs' instead
+  104 |                     if (fabs_t(im) < 1e-10) {
+      |                         ^~~~~~
+      |                         std::abs
+src/precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/utils/printing.c:122:25: warning: absolute value function 'fabsf' given an argument of type 'double' but has parameter of type 'float' which may cause truncation of value [-Wabsolute-value]
+  122 |                     if (fabs_t(im) < 1e-10) {
+      |                         ^
+src/precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/utils/printing.c:122:25: note: use function 'std::abs' instead
+  122 |                     if (fabs_t(im) < 1e-10) {
+      |                         ^~~~~~
+      |                         std::abs
+src/precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+4 warnings generated.
+src/utils/decomposition.c:146:46: warning: unused parameter 'num_ranks' [-Wunused-parameter]
+  146 | int validate_abacus_compatibility(int N, int num_ranks, int grid_x, int grid_z)
+      |                                              ^
+1 warning generated.
+src/utils/rng.c:50:39: warning: unused parameter 'M' [-Wunused-parameter]
+   50 | void initialize_global_pcg(int L, int M, int N, uint64_t seed) {
+      |                                       ^
+src/utils/rng.c:50:46: warning: unused parameter 'N' [-Wunused-parameter]
+   50 | void initialize_global_pcg(int L, int M, int N, uint64_t seed) {
+      |                                              ^
+2 warnings generated.
+src/generation/hermitian_generation.c:437:24: warning: unused variable 'ik2' [-Wunused-variable]
+  437 |                 double ik2 = 1.0 / k2; // later: define this at top of code and use it instead of dividing
+      |                        ^~~
+src/generation/hermitian_generation.c:771:42: warning: absolute value function 'fabsf' given an argument of type 'double' but has parameter of type 'float' which may cause truncation of value [-Wabsolute-value]
+  771 |                         double diff_re = fabs_t(stored_re - expected_re);
+      |                                          ^
+src/generation/../precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/generation/hermitian_generation.c:771:42: note: use function 'std::abs' instead
+  771 |                         double diff_re = fabs_t(stored_re - expected_re);
+      |                                          ^~~~~~
+      |                                          std::abs
+src/generation/../precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/generation/hermitian_generation.c:772:42: warning: absolute value function 'fabsf' given an argument of type 'double' but has parameter of type 'float' which may cause truncation of value [-Wabsolute-value]
+  772 |                         double diff_im = fabs_t(stored_im - expected_im);
+      |                                          ^
+src/generation/../precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/generation/hermitian_generation.c:772:42: note: use function 'std::abs' instead
+  772 |                         double diff_im = fabs_t(stored_im - expected_im);
+      |                                          ^~~~~~
+      |                                          std::abs
+src/generation/../precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/generation/hermitian_generation.c:1119:28: warning: unused variable 'ik2' [-Wunused-variable]
+ 1119 |                     double ik2 = 1.0 / k2;
+      |                            ^~~
+src/generation/hermitian_generation.c:1773:42: warning: absolute value function 'fabsf' given an argument of type 'double' but has parameter of type 'float' which may cause truncation of value [-Wabsolute-value]
+ 1773 |                         double diff_re = fabs_t(prim_re - conj_re);
+      |                                          ^
+src/generation/../precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/generation/hermitian_generation.c:1773:42: note: use function 'std::abs' instead
+ 1773 |                         double diff_re = fabs_t(prim_re - conj_re);
+      |                                          ^~~~~~
+      |                                          std::abs
+src/generation/../precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/generation/hermitian_generation.c:1774:42: warning: absolute value function 'fabsf' given an argument of type 'double' but has parameter of type 'float' which may cause truncation of value [-Wabsolute-value]
+ 1774 |                         double diff_im = fabs_t(prim_im - conj_im);
+      |                                          ^
+src/generation/../precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/generation/hermitian_generation.c:1774:42: note: use function 'std::abs' instead
+ 1774 |                         double diff_im = fabs_t(prim_im - conj_im);
+      |                                          ^~~~~~
+      |                                          std::abs
+src/generation/../precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/generation/hermitian_generation.c:1804:46: warning: absolute value function 'fabsf' given an argument of type 'double' but has parameter of type 'float' which may cause truncation of value [-Wabsolute-value]
+ 1804 |                             double diff_re = fabs_t(prim_re - conj_re);
+      |                                              ^
+src/generation/../precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/generation/hermitian_generation.c:1804:46: note: use function 'std::abs' instead
+ 1804 |                             double diff_re = fabs_t(prim_re - conj_re);
+      |                                              ^~~~~~
+      |                                              std::abs
+src/generation/../precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/generation/hermitian_generation.c:1805:46: warning: absolute value function 'fabsf' given an argument of type 'double' but has parameter of type 'float' which may cause truncation of value [-Wabsolute-value]
+ 1805 |                             double diff_im = fabs_t(prim_im - conj_im);
+      |                                              ^
+src/generation/../precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/generation/hermitian_generation.c:1805:46: note: use function 'std::abs' instead
+ 1805 |                             double diff_im = fabs_t(prim_im - conj_im);
+      |                                              ^~~~~~
+      |                                              std::abs
+src/generation/../precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+8 warnings generated.
+src/streaming/z_streaming.c:147:13: warning: variable 'found_inf_before' set but not used [-Wunused-but-set-variable]
+  147 |         int found_inf_before = 0;
+      |             ^
+src/streaming/z_streaming.c:36:10: warning: unused parameter 'src_total_slices' [-Wunused-parameter]
+   36 |     int *src_total_slices,                 // Total slices per source (unused, kept for API)
+      |          ^
+src/streaming/z_streaming.c:38:10: warning: unused parameter 'y_src_local_idx' [-Wunused-parameter]
+   38 |     int *y_src_local_idx,                  // Y -> local_idx mapping (unused, kept for API)
+      |          ^
+3 warnings generated.
+mpicxx -Wall -Wextra -Wno-cast-function-type -std=c++17 -O3 -fopenmp -DPARTICLE_OUTPUT_MODE=1 -DVERIFY_HERMITIAN_SYMMETRY=0 -DSKIP_FILE_WRITE=0 -g -I../zeldovich-PLT/include -I../zeldovich-PLT/subprojects/ParseHeader/include -I../zeldovich-PLT/build/subprojects/ParseHeader -I../zeldovich-PLT/subprojects/fmt-11.2.0/include -Isrc -Isrc/utils -Isrc/fft -Isrc/generation -Isrc/communication -Isrc/streaming -Isrc/output -Ideps -I../.. -I../../../..  -I/opt/aurora/25.190.0/spack/unified/0.10.1/install/linux-sles15-x86_64/oneapi-2025.2.0/fftw-3.3.10-bs6lijg/include -o write_particles_from_reassembled_mpi src/write_particles_from_reassembled_mpi.cpp src/utils/printing.c src/utils/verification.c src/utils/decomposition.c src/utils/batch_helpers.c src/utils/rng.c src/utils/power_spectrum.c src/utils/plt_eigenmodes.c src/STimer.cc src/utils/zeldovich_wrapper.cpp src/output/output_new.cpp  -L/opt/aurora/25.190.0/spack/unified/0.10.1/install/linux-sles15-x86_64/oneapi-2025.2.0/fftw-3.3.10-bs6lijg/lib -lfftw3f -lfftw3f_omp -L../zeldovich-PLT/build -L../zeldovich-PLT/build/subprojects/ParseHeader -L../zeldovich-PLT/build/subprojects/fmt-11.2.0 -lzeldovich -lparseheader -lfmt  -lm -lstdc++ -Wl,-rpath,/home/helenshao/InitialConditions/zeldovich-PLT/build:/home/helenshao/InitialConditions/zeldovich-PLT/build/subprojects/ParseHeader:/home/helenshao/InitialConditions/zeldovich-PLT/build/subprojects/fmt-11.2.0
+icpx: warning: use of '-qopenmp' recommended over '-fopenmp' [-Wrecommended-option]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+src/write_particles_from_reassembled_mpi.cpp:60:22: warning: unused variable 'EXPECTED_BYTES_PER_COMPLEX' [-Wunused-const-variable]
+   60 |     constexpr size_t EXPECTED_BYTES_PER_COMPLEX = 8;
+      |                      ^~~~~~~~~~~~~~~~~~~~~~~~~~
+1 warning generated.
+src/utils/printing.c:40:21: warning: absolute value function 'fabsf' given an argument of type 'double' but has parameter of type 'float' which may cause truncation of value [-Wabsolute-value]
+   40 |                 if (fabs_t(im) < 1e-10) {
+      |                     ^
+src/precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/utils/printing.c:40:21: note: use function 'std::abs' instead
+   40 |                 if (fabs_t(im) < 1e-10) {
+      |                     ^~~~~~
+      |                     std::abs
+src/precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/utils/printing.c:86:25: warning: absolute value function 'fabsf' given an argument of type 'double' but has parameter of type 'float' which may cause truncation of value [-Wabsolute-value]
+   86 |                     if (fabs_t(im) > 1e-10) non_zero_imag_count++;
+      |                         ^
+src/precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/utils/printing.c:86:25: note: use function 'std::abs' instead
+   86 |                     if (fabs_t(im) > 1e-10) non_zero_imag_count++;
+      |                         ^~~~~~
+      |                         std::abs
+src/precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/utils/printing.c:104:25: warning: absolute value function 'fabsf' given an argument of type 'double' but has parameter of type 'float' which may cause truncation of value [-Wabsolute-value]
+  104 |                     if (fabs_t(im) < 1e-10) {
+      |                         ^
+src/precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/utils/printing.c:104:25: note: use function 'std::abs' instead
+  104 |                     if (fabs_t(im) < 1e-10) {
+      |                         ^~~~~~
+      |                         std::abs
+src/precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/utils/printing.c:122:25: warning: absolute value function 'fabsf' given an argument of type 'double' but has parameter of type 'float' which may cause truncation of value [-Wabsolute-value]
+  122 |                     if (fabs_t(im) < 1e-10) {
+      |                         ^
+src/precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/utils/printing.c:122:25: note: use function 'std::abs' instead
+  122 |                     if (fabs_t(im) < 1e-10) {
+      |                         ^~~~~~
+      |                         std::abs
+src/precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+4 warnings generated.
+src/utils/decomposition.c:146:46: warning: unused parameter 'num_ranks' [-Wunused-parameter]
+  146 | int validate_abacus_compatibility(int N, int num_ranks, int grid_x, int grid_z)
+      |                                              ^
+1 warning generated.
+src/utils/rng.c:50:39: warning: unused parameter 'M' [-Wunused-parameter]
+   50 | void initialize_global_pcg(int L, int M, int N, uint64_t seed) {
+      |                                       ^
+src/utils/rng.c:50:46: warning: unused parameter 'N' [-Wunused-parameter]
+   50 | void initialize_global_pcg(int L, int M, int N, uint64_t seed) {
+      |                                              ^
+2 warnings generated.
+
+Build successful!
+Binary: hermitian_3d_matrix
+Configuration: see src/config.h
+
+Compilation successful
+
+==========================================
+STEP 2: Generating .bin files (N=256, ranks=16, threads=8)
+         Capturing RNG debug output to compare with zeldovich-PLT
+         Using ZD_qdensity=1 (density + displacement, narray=2)
+         PLT rescaling ENABLED
+==========================================
+Running: /home/helenshao/InitialConditions/hermitian_3d_matrix_production/hermitian_3d_matrix 256 /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N256/MPI-omp/param_N256_MPI_omp.par
+RNG debug output will be in: test_N256/MPI-omp/rng_logs/hermitian_rng_debug.log
+Program output will be in: test_N256/MPI-omp/N256_MPI_omp_bin_generation.log
+
+Generated 1024 .bin files in test_N256/MPI-omp/bin_files
+Extracting RNG-DEBUG lines from log...
+Found 3519 RNG-DEBUG lines
+Extracting REAL-FFT-DEBUG lines from log...
+Found 0 REAL-FFT-DEBUG lines
+
+==========================================
+STEP 3: Reassembling and writing particle ICs
+==========================================
+Running write_particles_from_reassembled_mpi...
+Generating ICs for ppd = 256
+Loaded parameters from: /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N256/MPI-omp/param_N256_MPI_omp.par
+  ppd: 256
+  boxsize: 100.000000
+  separation: 0.390625
+  Determined narray=4 from parameter file (qdensity=1)
+================================================================================
+WRITE PARTICLES FROM REASSEMBLED MPI Z-SLABS
+================================================================================
+Output directory: test_N256/MPI-omp/bin_files
+Grid size N: 256
+Number of MPI ranks: 16
+Number of arrays: 4
+i-slab range: [0, 256)
+Parameter file: /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N256/MPI-omp/param_N256_MPI_omp.par
+================================================================================
+
+Initializing output...
+  Output directory: ./output
+  Buffer size: 0.002 GiB
+
+Processing i-slabs...
+Grid decomposition: 4 x 4 = 16 ranks
+  i=0: OK
+  i=1: OK
+  i=2: OK
+  i=3: OK
+  i=4: OK
+  i=5: OK
+  i=6: OK
+  i=7: OK
+  i=8: OK
+  i=9: OK
+  i=10: OK
+  i=11: OK
+  i=12: OK
+  i=13: OK
+  i=14: OK
+  i=15: OK
+  i=16: OK
+  i=17: OK
+  i=18: OK
+  i=19: OK
+  i=20: OK
+  i=21: OK
+  i=22: OK
+  i=23: OK
+  i=24: OK
+  i=25: OK
+  i=26: OK
+  i=27: OK
+  i=28: OK
+  i=29: OK
+  i=30: OK
+  i=31: OK
+  i=32: OK
+  i=33: OK
+  i=34: OK
+  i=35: OK
+  i=36: OK
+  i=37: OK
+  i=38: OK
+  i=39: OK
+  i=40: OK
+  i=41: OK
+  i=42: OK
+  i=43: OK
+  i=44: OK
+  i=45: OK
+  i=46: OK
+  i=47: OK
+  i=48: OK
+  i=49: OK
+  i=50: OK
+  i=51: OK
+  i=52: OK
+  i=53: OK
+  i=54: OK
+  i=55: OK
+  i=56: OK
+  i=57: OK
+  i=58: OK
+  i=59: OK
+  i=60: OK
+  i=61: OK
+  i=62: OK
+  i=63: OK
+  i=64: OK
+  i=65: OK
+  i=66: OK
+  i=67: OK
+  i=68: OK
+  i=69: OK
+  i=70: OK
+  i=71: OK
+  i=72: OK
+  i=73: OK
+  i=74: OK
+  i=75: OK
+  i=76: OK
+  i=77: OK
+  i=78: OK
+  i=79: OK
+  i=80: OK
+  i=81: OK
+  i=82: OK
+  i=83: OK
+  i=84: OK
+  i=85: OK
+  i=86: OK
+  i=87: OK
+  i=88: OK
+  i=89: OK
+  i=90: OK
+  i=91: OK
+  i=92: OK
+  i=93: OK
+  i=94: OK
+  i=95: OK
+  i=96: OK
+  i=97: OK
+  i=98: OK
+  i=99: OK
+  i=100: OK
+  i=101: OK
+  i=102: OK
+  i=103: OK
+  i=104: OK
+  i=105: OK
+  i=106: OK
+  i=107: OK
+  i=108: OK
+  i=109: OK
+  i=110: OK
+  i=111: OK
+  i=112: OK
+  i=113: OK
+  i=114: OK
+  i=115: OK
+  i=116: OK
+  i=117: OK
+  i=118: OK
+  i=119: OK
+  i=120: OK
+  i=121: OK
+  i=122: OK
+  i=123: OK
+  i=124: OK
+  i=125: OK
+  i=126: OK
+  i=127: OK
+  i=128: OK
+  i=129: OK
+  i=130: OK
+  i=131: OK
+  i=132: OK
+  i=133: OK
+  i=134: OK
+  i=135: OK
+  i=136: OK
+  i=137: OK
+  i=138: OK
+  i=139: OK
+  i=140: OK
+  i=141: OK
+  i=142: OK
+  i=143: OK
+  i=144: OK
+  i=145: OK
+  i=146: OK
+  i=147: OK
+  i=148: OK
+  i=149: OK
+  i=150: OK
+  i=151: OK
+  i=152: OK
+  i=153: OK
+  i=154: OK
+  i=155: OK
+  i=156: OK
+  i=157: OK
+  i=158: OK
+  i=159: OK
+  i=160: OK
+  i=161: OK
+  i=162: OK
+  i=163: OK
+  i=164: OK
+  i=165: OK
+  i=166: OK
+  i=167: OK
+  i=168: OK
+  i=169: OK
+  i=170: OK
+  i=171: OK
+  i=172: OK
+  i=173: OK
+  i=174: OK
+  i=175: OK
+  i=176: OK
+  i=177: OK
+  i=178: OK
+  i=179: OK
+  i=180: OK
+  i=181: OK
+  i=182: OK
+  i=183: OK
+  i=184: OK
+  i=185: OK
+  i=186: OK
+  i=187: OK
+  i=188: OK
+  i=189: OK
+  i=190: OK
+  i=191: OK
+  i=192: OK
+  i=193: OK
+  i=194: OK
+  i=195: OK
+  i=196: OK
+  i=197: OK
+  i=198: OK
+  i=199: OK
+  i=200: OK
+  i=201: OK
+  i=202: OK
+  i=203: OK
+  i=204: OK
+  i=205: OK
+  i=206: OK
+  i=207: OK
+  i=208: OK
+  i=209: OK
+  i=210: OK
+  i=211: OK
+  i=212: OK
+  i=213: OK
+  i=214: OK
+  i=215: OK
+  i=216: OK
+  i=217: OK
+  i=218: OK
+  i=219: OK
+  i=220: OK
+  i=221: OK
+  i=222: OK
+  i=223: OK
+  i=224: OK
+  i=225: OK
+  i=226: OK
+  i=227: OK
+  i=228: OK
+  i=229: OK
+  i=230: OK
+  i=231: OK
+  i=232: OK
+  i=233: OK
+  i=234: OK
+  i=235: OK
+  i=236: OK
+  i=237: OK
+  i=238: OK
+  i=239: OK
+  i=240: OK
+  i=241: OK
+  i=242: OK
+  i=243: OK
+  i=244: OK
+  i=245: OK
+  i=246: OK
+  i=247: OK
+  i=248: OK
+  i=249: OK
+  i=250: OK
+  i=251: OK
+  i=252: OK
+  i=253: OK
+  i=254: OK
+  i=255: OK
+
+================================================================================
+COMPLETE: Processed 256 i-slabs
+Output files written to: ./output
+  Files: ic_* (complete particle data, matches serial Zeldovich)
+  WriteParticlesSlab took 1.64 sec to write 604 MB ==> 367 MB/sec
+Density file: density{:d}
+================================================================================
+Generated 2 particle IC files
+
+==========================================
+MPI Test Summary (16 ranks, 8 threads, PLT enabled, rescaling ENABLED)
+Using ZD_qdensity=1 (density + displacement, narray=2)
+==========================================
+  .bin files: 1024
+  Particle IC files: 2
+  RNG debug lines: 3519
+  REAL-FFT-DEBUG lines: 0
+  Logs: test_N256/MPI-omp/
+  RNG debug output: test_N256/MPI-omp/rng_logs/hermitian_rng_debug_filtered.txt
+  REAL-FFT-DEBUG output: test_N256/MPI-omp/rng_logs/hermitian_real_fft_debug.txt
+
+Next steps:
+  1. Run zeldovich-PLT with same parameters: ./run_zeldovich_PLT.sh
+  2. Compare RNG outputs: see workflow.txt
+  3. Compare REAL-FFT-DEBUG outputs: see workflow.txt

@@ -51,7 +51,8 @@ void pack_slices_to_send_buffer(
     int rank, int num_ranks, int N, int narray,
     fftw_complex_t *local_y_slices,  // Flat buffer with all arrays
     int num_my_slices, int *y_global_map,
-    fftw_complex_t *send_buffer, int64_t *sendcounts, int64_t *sdispls);
+    fftw_complex_t *send_buffer, int64_t *sendcounts, int64_t *sdispls,
+    int grid_x, int grid_z, int cpd);
 
 // Unpack received data into local pencils
 // Each pencil is a Y-column for one (X,Z) point in my owned region

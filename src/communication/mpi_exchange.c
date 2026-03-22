@@ -169,7 +169,8 @@ void pack_slices_to_send_buffer(
     int rank, int num_ranks, int N, int narray,
     fftw_complex_t *local_y_slices,
     int num_my_slices, int *y_global_map,
-    fftw_complex_t *send_buffer, int64_t *sendcounts, int64_t *sdispls)
+    fftw_complex_t *send_buffer, int64_t *sendcounts, int64_t *sdispls,
+    int grid_x, int grid_z, int cpd)
 {
     (void)rank;  // Unused, kept for consistency
     (void)y_global_map;  // Unused currently, kept for future use
@@ -188,7 +189,12 @@ void pack_slices_to_send_buffer(
     for (int dest = 0; dest < num_ranks; dest++) {
         sdispls[dest] = offset;
         
-        GridBounds bounds = get_padded_bounds_simple(dest, N, num_ranks);
+        ExtendedGridBounds ext = get_extended_grid_bounds_CPD_aligned(dest, N, num_ranks, grid_x, grid_z, cpd);
+#if USE_X_PADDING
+        GridBounds bounds = ext.padded;
+#else
+        GridBounds bounds = ext.core;
+#endif
         bounds_arr[dest] = bounds;
         int64_t region_size = (int64_t)(bounds.x_end - bounds.x_start) * (int64_t)(bounds.z_end - bounds.z_start);
         
@@ -205,8 +211,8 @@ void pack_slices_to_send_buffer(
     for (int dest = 0; dest < num_ranks; dest++) {
         int64_t dest_offset = sdispls[dest];
         GridBounds bounds = bounds_arr[dest];
-        int z_count = z_count_arr[dest];
-        int64_t region_size = (int64_t)(bounds.x_end - bounds.x_start) * (int64_t)(bounds.z_end - bounds.z_start);
+        int z_count = bounds.z_end - bounds.z_start;
+        int64_t region_size = (int64_t)(bounds.x_end - bounds.x_start) * (int64_t)z_count;
         
         #pragma omp for collapse(4) nowait
         for (int array_idx = 0; array_idx < narray; array_idx++) {
@@ -229,8 +235,8 @@ void pack_slices_to_send_buffer(
                                    rank, (long)buffer_idx, (long long)total_send_size, dest);
                             fprintf(stderr, "  array_idx=%d, slice_idx=%d, x=%d, z=%d, local_x=%d, local_z=%d\n",
                                    array_idx, slice_idx, x, z, local_x, local_z);
-                            fprintf(stderr, "  pack_idx=%ld, offset=%d, region_size=%d, sendcounts[dest]=%d\n",
-                                   (long)pack_idx, dest_offset, region_size, sendcounts[dest]);
+        fprintf(stderr, "  pack_idx=%ld, offset=%ld, region_size=%ld, sendcounts[dest]=%ld\n",
+               (long)pack_idx, (long)dest_offset, (long)region_size, (long)sendcounts[dest]);
                             MPI_Abort(comm_2d, 1);
                         }
                         if (pack_idx < 0 || pack_idx >= sendcounts[dest]) {
@@ -256,7 +262,7 @@ void pack_slices_to_send_buffer(
         printf("[PACK] Rank %d: Packed %lld total elements to send_buffer\n", rank, (long long)offset);
         printf("       Sending to ranks: ");
         for (int dest = 0; dest < (num_ranks < 4 ? num_ranks : 4); dest++) {
-            printf("%d elements to rank %d%s", sendcounts[dest], dest, 
+        printf("%ld elements to rank %d%s", (long)sendcounts[dest], dest, 
                    (dest < num_ranks - 1) ? ", " : "");
         }
         if (num_ranks > 4) printf("...");
@@ -277,7 +283,8 @@ void unpack_recv_buffer_to_pencils(
 {
     (void)recvcounts;  // Unused, kept for future extensibility?
     
-    // V13: Use PADDED bounds for unpacking (includes overlap regions)
+    // Note: unpack_recv_buffer_to_pencils is legacy and not called from the current
+    // multi-batch pipeline. If re-enabled, grid_x/grid_z/cpd must be passed and used here.
     GridBounds my_bounds = get_padded_bounds_simple(rank, N, num_ranks);
     int my_pencils = (my_bounds.x_end - my_bounds.x_start) * (my_bounds.z_end - my_bounds.z_start);
     int z_count = my_bounds.z_end - my_bounds.z_start; // number of z points in my owned chunk

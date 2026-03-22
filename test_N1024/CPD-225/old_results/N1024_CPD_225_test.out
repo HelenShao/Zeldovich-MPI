@@ -1,0 +1,1203 @@
+Loading frameworks module...
+Loading FFTW module...
+==========================================
+STEP 1: Compiling with DEBUG_RNG_CONSISTENCY (MPI: 32 nodes, 1 rank per node, 1 thread, PLT enabled, rescaling enabled)
+==========================================
+rm -f hermitian_3d_matrix write_particles_from_reassembled_mpi *.o
+mpicxx -Wall -Wextra -Wno-cast-function-type -std=c++17 -O3 -fopenmp -DPARTICLE_OUTPUT_MODE=1 -DVERIFY_HERMITIAN_SYMMETRY=0 -DSKIP_FILE_WRITE=0 -g -I../zeldovich-PLT/include -I../zeldovich-PLT/subprojects/ParseHeader/include -I../zeldovich-PLT/build/subprojects/ParseHeader -I../zeldovich-PLT/subprojects/fmt-11.2.0/include -Isrc -Isrc/utils -Isrc/fft -Isrc/generation -Isrc/communication -Isrc/streaming -Isrc/output -Ideps -I../.. -I../../../..  -I/opt/aurora/25.190.0/spack/unified/0.10.1/install/linux-sles15-x86_64/oneapi-2025.2.0/fftw-3.3.10-bs6lijg/include -o hermitian_3d_matrix src/main.cpp src/utils/printing.c src/utils/verification.c src/utils/decomposition.c src/utils/batch_helpers.c src/utils/rng.c src/utils/power_spectrum.c src/utils/plt_eigenmodes.c src/fft/fft_setup.c src/generation/hermitian_generation.c src/communication/mpi_exchange.c src/streaming/z_streaming.c src/STimer.cc src/utils/zeldovich_wrapper.cpp src/output/output_new.cpp  -L/opt/aurora/25.190.0/spack/unified/0.10.1/install/linux-sles15-x86_64/oneapi-2025.2.0/fftw-3.3.10-bs6lijg/lib -lfftw3f -lfftw3f_omp -L../zeldovich-PLT/build -L../zeldovich-PLT/build/subprojects/ParseHeader -L../zeldovich-PLT/build/subprojects/fmt-11.2.0 -lzeldovich -lparseheader -lfmt  -lm -lstdc++ -Wl,-rpath,/home/helenshao/InitialConditions/zeldovich-PLT/build:/home/helenshao/InitialConditions/zeldovich-PLT/build/subprojects/ParseHeader:/home/helenshao/InitialConditions/zeldovich-PLT/build/subprojects/fmt-11.2.0
+icpx: warning: use of '-qopenmp' recommended over '-fopenmp' [-Wrecommended-option]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+src/main.cpp:213:9: warning: variable 'num_my_slices' set but not used [-Wunused-but-set-variable]
+  213 |     int num_my_slices = 0;
+      |         ^
+1 warning generated.
+src/utils/printing.c:40:21: warning: absolute value function 'fabsf' given an argument of type 'double' but has parameter of type 'float' which may cause truncation of value [-Wabsolute-value]
+   40 |                 if (fabs_t(im) < 1e-10) {
+      |                     ^
+src/precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/utils/printing.c:40:21: note: use function 'std::abs' instead
+   40 |                 if (fabs_t(im) < 1e-10) {
+      |                     ^~~~~~
+      |                     std::abs
+src/precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+1 warning generated.
+src/utils/decomposition.c:146:46: warning: unused parameter 'num_ranks' [-Wunused-parameter]
+  146 | int validate_abacus_compatibility(int N, int num_ranks, int grid_x, int grid_z)
+      |                                              ^
+1 warning generated.
+src/utils/rng.c:50:39: warning: unused parameter 'M' [-Wunused-parameter]
+   50 | void initialize_global_pcg(int L, int M, int N, uint64_t seed) {
+      |                                       ^
+src/utils/rng.c:50:46: warning: unused parameter 'N' [-Wunused-parameter]
+   50 | void initialize_global_pcg(int L, int M, int N, uint64_t seed) {
+      |                                              ^
+2 warnings generated.
+src/generation/hermitian_generation.c:437:24: warning: unused variable 'ik2' [-Wunused-variable]
+  437 |                 double ik2 = 1.0 / k2; // later: define this at top of code and use it instead of dividing
+      |                        ^~~
+src/generation/hermitian_generation.c:1119:28: warning: unused variable 'ik2' [-Wunused-variable]
+ 1119 |                     double ik2 = 1.0 / k2;
+      |                            ^~~
+2 warnings generated.
+src/streaming/z_streaming.c:147:13: warning: variable 'found_inf_before' set but not used [-Wunused-but-set-variable]
+  147 |         int found_inf_before = 0;
+      |             ^
+src/streaming/z_streaming.c:36:10: warning: unused parameter 'src_total_slices' [-Wunused-parameter]
+   36 |     int *src_total_slices,                 // Total slices per source (unused, kept for API)
+      |          ^
+src/streaming/z_streaming.c:38:10: warning: unused parameter 'y_src_local_idx' [-Wunused-parameter]
+   38 |     int *y_src_local_idx,                  // Y -> local_idx mapping (unused, kept for API)
+      |          ^
+3 warnings generated.
+mpicxx -Wall -Wextra -Wno-cast-function-type -std=c++17 -O3 -fopenmp -DPARTICLE_OUTPUT_MODE=1 -DVERIFY_HERMITIAN_SYMMETRY=0 -DSKIP_FILE_WRITE=0 -g -I../zeldovich-PLT/include -I../zeldovich-PLT/subprojects/ParseHeader/include -I../zeldovich-PLT/build/subprojects/ParseHeader -I../zeldovich-PLT/subprojects/fmt-11.2.0/include -Isrc -Isrc/utils -Isrc/fft -Isrc/generation -Isrc/communication -Isrc/streaming -Isrc/output -Ideps -I../.. -I../../../..  -I/opt/aurora/25.190.0/spack/unified/0.10.1/install/linux-sles15-x86_64/oneapi-2025.2.0/fftw-3.3.10-bs6lijg/include -o write_particles_from_reassembled_mpi src/write_particles_from_reassembled_mpi.cpp src/utils/printing.c src/utils/verification.c src/utils/decomposition.c src/utils/batch_helpers.c src/utils/rng.c src/utils/power_spectrum.c src/utils/plt_eigenmodes.c src/STimer.cc src/utils/zeldovich_wrapper.cpp src/output/output_new.cpp  -L/opt/aurora/25.190.0/spack/unified/0.10.1/install/linux-sles15-x86_64/oneapi-2025.2.0/fftw-3.3.10-bs6lijg/lib -lfftw3f -lfftw3f_omp -L../zeldovich-PLT/build -L../zeldovich-PLT/build/subprojects/ParseHeader -L../zeldovich-PLT/build/subprojects/fmt-11.2.0 -lzeldovich -lparseheader -lfmt  -lm -lstdc++ -Wl,-rpath,/home/helenshao/InitialConditions/zeldovich-PLT/build:/home/helenshao/InitialConditions/zeldovich-PLT/build/subprojects/ParseHeader:/home/helenshao/InitialConditions/zeldovich-PLT/build/subprojects/fmt-11.2.0
+icpx: warning: use of '-qopenmp' recommended over '-fopenmp' [-Wrecommended-option]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+src/write_particles_from_reassembled_mpi.cpp:60:22: warning: unused variable 'EXPECTED_BYTES_PER_COMPLEX' [-Wunused-const-variable]
+   60 |     constexpr size_t EXPECTED_BYTES_PER_COMPLEX = 8;
+      |                      ^~~~~~~~~~~~~~~~~~~~~~~~~~
+1 warning generated.
+src/utils/printing.c:40:21: warning: absolute value function 'fabsf' given an argument of type 'double' but has parameter of type 'float' which may cause truncation of value [-Wabsolute-value]
+   40 |                 if (fabs_t(im) < 1e-10) {
+      |                     ^
+src/precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+src/utils/printing.c:40:21: note: use function 'std::abs' instead
+   40 |                 if (fabs_t(im) < 1e-10) {
+      |                     ^~~~~~
+      |                     std::abs
+src/precision.h:65:20: note: expanded from macro 'fabs_t'
+   65 |     #define fabs_t fabsf
+      |                    ^
+1 warning generated.
+src/utils/decomposition.c:146:46: warning: unused parameter 'num_ranks' [-Wunused-parameter]
+  146 | int validate_abacus_compatibility(int N, int num_ranks, int grid_x, int grid_z)
+      |                                              ^
+1 warning generated.
+src/utils/rng.c:50:39: warning: unused parameter 'M' [-Wunused-parameter]
+   50 | void initialize_global_pcg(int L, int M, int N, uint64_t seed) {
+      |                                       ^
+src/utils/rng.c:50:46: warning: unused parameter 'N' [-Wunused-parameter]
+   50 | void initialize_global_pcg(int L, int M, int N, uint64_t seed) {
+      |                                              ^
+2 warnings generated.
+
+Build successful!
+Binary: hermitian_3d_matrix
+Configuration: see src/config.h
+
+Compilation successful
+
+==========================================
+STEP 2: Generating .bin files (N=1024, ranks=32, threads=1)
+         Capturing RNG debug output to compare with zeldovich-PLT
+         Using ZD_qdensity=1 (density + displacement, narray=2)
+         PLT rescaling ENABLED
+==========================================
+Running: /home/helenshao/InitialConditions/hermitian_3d_matrix_production/hermitian_3d_matrix 1024 /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/param_N1024_CPD_225.par
+RNG debug output will be in: test_N1024/CPD-225/rng_logs/hermitian_rng_debug.log
+Program output will be in: test_N1024/CPD-225/N1024_CPD_225_bin_generation.log
+
+Generated 4096 .bin files in test_N1024/CPD-225/bin_files
+Extracting RNG-DEBUG lines from log...
+Found 0 RNG-DEBUG lines
+Extracting REAL-FFT-DEBUG lines from log...
+Found 0 REAL-FFT-DEBUG lines
+
+==========================================
+STEP 3: Reassembling and writing particle ICs
+==========================================
+Running write_particles_from_reassembled_mpi...
+Generating ICs for ppd = 1024
+Loaded parameters from: /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/param_N1024_CPD_225.par
+  ppd: 1024
+  boxsize: 100.000000
+  separation: 0.097656
+  Determined narray=4 from parameter file (qdensity=1)
+================================================================================
+WRITE PARTICLES FROM REASSEMBLED MPI Z-SLABS
+================================================================================
+Output directory: test_N1024/CPD-225/bin_files
+Grid size N: 1024
+Number of MPI ranks: 32
+Number of arrays: 4
+i-slab range: [0, 1024)
+Parameter file: /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/param_N1024_CPD_225.par
+================================================================================
+
+Initializing output...
+  Output directory: ./output
+  Buffer size: 0.031 GiB
+
+Processing i-slabs...
+Grid decomposition: 4 x 8 = 32 ranks
+  i=0: OK
+  i=1: OK
+  i=2: OK
+  i=3: OK
+  i=4: OK
+  i=5: OK
+  i=6: OK
+  i=7: OK
+  i=8: OK
+  i=9: OK
+  i=10: OK
+  i=11: OK
+  i=12: OK
+  i=13: OK
+  i=14: OK
+  i=15: OK
+  i=16: OK
+  i=17: OK
+  i=18: OK
+  i=19: OK
+  i=20: OK
+  i=21: OK
+  i=22: OK
+  i=23: OK
+  i=24: OK
+  i=25: OK
+  i=26: OK
+  i=27: OK
+  i=28: OK
+  i=29: OK
+  i=30: OK
+  i=31: OK
+  i=32: OK
+  i=33: OK
+  i=34: OK
+  i=35: OK
+  i=36: OK
+  i=37: OK
+  i=38: OK
+  i=39: OK
+  i=40: OK
+  i=41: OK
+  i=42: OK
+  i=43: OK
+  i=44: OK
+  i=45: OK
+  i=46: OK
+  i=47: OK
+  i=48: OK
+  i=49: OK
+  i=50: OK
+  i=51: OK
+  i=52: OK
+  i=53: OK
+  i=54: OK
+  i=55: OK
+  i=56: OK
+  i=57: OK
+  i=58: OK
+  i=59: OK
+  i=60: OK
+  i=61: OK
+  i=62: OK
+  i=63: OK
+  i=64: OK
+  i=65: OK
+  i=66: OK
+  i=67: OK
+  i=68: OK
+  i=69: OK
+  i=70: OK
+  i=71: OK
+  i=72: OK
+  i=73: OK
+  i=74: OK
+  i=75: OK
+  i=76: OK
+  i=77: OK
+  i=78: OK
+  i=79: OK
+  i=80: OK
+  i=81: OK
+  i=82: OK
+  i=83: OK
+  i=84: OK
+  i=85: OK
+  i=86: OK
+  i=87: OK
+  i=88: OK
+  i=89: OK
+  i=90: OK
+  i=91: OK
+  i=92: OK
+  i=93: OK
+  i=94: OK
+  i=95: OK
+  i=96: OK
+  i=97: OK
+  i=98: OK
+  i=99: OK
+  i=100: OK
+  i=101: OK
+  i=102: OK
+  i=103: OK
+  i=104: OK
+  i=105: OK
+  i=106: OK
+  i=107: OK
+  i=108: OK
+  i=109: OK
+  i=110: OK
+  i=111: OK
+  i=112: OK
+  i=113: OK
+  i=114: OK
+  i=115: OK
+  i=116: OK
+  i=117: OK
+  i=118: OK
+  i=119: OK
+  i=120: OK
+  i=121: OK
+  i=122: OK
+  i=123: OK
+  i=124: OK
+  i=125: OK
+  i=126: OK
+  i=127: OK
+  i=128: OK
+  i=129: OK
+  i=130: OK
+  i=131: OK
+  i=132: OK
+  i=133: OK
+  i=134: OK
+  i=135: OK
+  i=136: OK
+  i=137: OK
+  i=138: OK
+  i=139: OK
+  i=140: OK
+  i=141: OK
+  i=142: OK
+  i=143: OK
+  i=144: OK
+  i=145: OK
+  i=146: OK
+  i=147: OK
+  i=148: OK
+  i=149: OK
+  i=150: OK
+  i=151: OK
+  i=152: OK
+  i=153: OK
+  i=154: OK
+  i=155: OK
+  i=156: OK
+  i=157: OK
+  i=158: OK
+  i=159: OK
+  i=160: OK
+  i=161: OK
+  i=162: OK
+  i=163: OK
+  i=164: OK
+  i=165: OK
+  i=166: OK
+  i=167: OK
+  i=168: OK
+  i=169: OK
+  i=170: OK
+  i=171: OK
+  i=172: OK
+  i=173: OK
+  i=174: OK
+  i=175: OK
+  i=176: OK
+  i=177: OK
+  i=178: OK
+  i=179: OK
+  i=180: OK
+  i=181: OK
+  i=182: OK
+  i=183: OK
+  i=184: OK
+  i=185: OK
+  i=186: OK
+  i=187: OK
+  i=188: OK
+  i=189: OK
+  i=190: OK
+  i=191: OK
+  i=192: OK
+  i=193: OK
+  i=194: OK
+  i=195: OK
+  i=196: OK
+  i=197: OK
+  i=198: OK
+  i=199: OK
+  i=200: OK
+  i=201: OK
+  i=202: OK
+  i=203: OK
+  i=204: OK
+  i=205: OK
+  i=206: OK
+  i=207: OK
+  i=208: OK
+  i=209: OK
+  i=210: OK
+  i=211: OK
+  i=212: OK
+  i=213: OK
+  i=214: OK
+  i=215: OK
+  i=216: OK
+  i=217: OK
+  i=218: OK
+  i=219: OK
+  i=220: OK
+  i=221: OK
+  i=222: OK
+  i=223: OK
+  i=224: OK
+  i=225: OK
+  i=226: OK
+  i=227: OK
+  i=228: OK
+  i=229: OK
+  i=230: OK
+  i=231: OK
+  i=232: OK
+  i=233: OK
+  i=234: OK
+  i=235: OK
+  i=236: OK
+  i=237: OK
+  i=238: OK
+  i=239: OK
+  i=240: OK
+  i=241: OK
+  i=242: OK
+  i=243: OK
+  i=244: OK
+  i=245: OK
+  i=246: OK
+  i=247: OK
+  i=248: OK
+  i=249: OK
+  i=250: OK
+  i=251: OK
+  i=252: OK
+  i=253: OK
+  i=254: OK
+  i=255: OK
+  i=256: OK
+  i=257: OK
+  i=258: OK
+  i=259: OK
+  i=260: OK
+  i=261: OK
+  i=262: OK
+  i=263: OK
+  i=264: OK
+  i=265: OK
+  i=266: OK
+  i=267: OK
+  i=268: OK
+  i=269: OK
+  i=270: OK
+  i=271: OK
+  i=272: OK
+  i=273: OK
+  i=274: OK
+  i=275: OK
+  i=276: OK
+  i=277: OK
+  i=278: OK
+  i=279: OK
+  i=280: OK
+  i=281: OK
+  i=282: OK
+  i=283: OK
+  i=284: OK
+  i=285: OK
+  i=286: OK
+  i=287: OK
+  i=288: OK
+  i=289: OK
+  i=290: OK
+  i=291: OK
+  i=292: OK
+  i=293: OK
+  i=294: OK
+  i=295: OK
+  i=296: OK
+  i=297: OK
+  i=298: OK
+  i=299: OK
+  i=300: OK
+  i=301: OK
+  i=302: OK
+  i=303: OK
+  i=304: OK
+  i=305: OK
+  i=306: OK
+  i=307: OK
+  i=308: OK
+  i=309: OK
+  i=310: OK
+  i=311: OK
+  i=312: OK
+  i=313: OK
+  i=314: OK
+  i=315: OK
+  i=316: OK
+  i=317: OK
+  i=318: OK
+  i=319: OK
+  i=320: OK
+  i=321: OK
+  i=322: OK
+  i=323: OK
+  i=324: OK
+  i=325: OK
+  i=326: OK
+  i=327: OK
+  i=328: OK
+  i=329: OK
+  i=330: OK
+  i=331: OK
+  i=332: OK
+  i=333: OK
+  i=334: OK
+  i=335: OK
+  i=336: OK
+  i=337: OK
+  i=338: OK
+  i=339: OK
+  i=340: OK
+  i=341: OK
+  i=342: OK
+  i=343: OK
+  i=344: OK
+  i=345: OK
+  i=346: OK
+  i=347: OK
+  i=348: OK
+  i=349: OK
+  i=350: OK
+  i=351: OK
+  i=352: OK
+  i=353: OK
+  i=354: OK
+  i=355: OK
+  i=356: OK
+  i=357: OK
+  i=358: OK
+  i=359: OK
+  i=360: OK
+  i=361: OK
+  i=362: OK
+  i=363: OK
+  i=364: OK
+  i=365: OK
+  i=366: OK
+  i=367: OK
+  i=368: OK
+  i=369: OK
+  i=370: OK
+  i=371: OK
+  i=372: OK
+  i=373: OK
+  i=374: OK
+  i=375: OK
+  i=376: OK
+  i=377: OK
+  i=378: OK
+  i=379: OK
+  i=380: OK
+  i=381: OK
+  i=382: OK
+  i=383: OK
+  i=384: OK
+  i=385: OK
+  i=386: OK
+  i=387: OK
+  i=388: OK
+  i=389: OK
+  i=390: OK
+  i=391: OK
+  i=392: OK
+  i=393: OK
+  i=394: OK
+  i=395: OK
+  i=396: OK
+  i=397: OK
+  i=398: OK
+  i=399: OK
+  i=400: OK
+  i=401: OK
+  i=402: OK
+  i=403: OK
+  i=404: OK
+  i=405: OK
+  i=406: OK
+  i=407: OK
+  i=408: OK
+  i=409: OK
+  i=410: OK
+  i=411: OK
+  i=412: OK
+  i=413: OK
+  i=414: OK
+  i=415: OK
+  i=416: OK
+  i=417: OK
+  i=418: OK
+  i=419: OK
+  i=420: OK
+  i=421: OK
+  i=422: OK
+  i=423: OK
+  i=424: OK
+  i=425: OK
+  i=426: OK
+  i=427: OK
+  i=428: OK
+  i=429: OK
+  i=430: OK
+  i=431: OK
+  i=432: OK
+  i=433: OK
+  i=434: OK
+  i=435: OK
+  i=436: OK
+  i=437: OK
+  i=438: OK
+  i=439: OK
+  i=440: OK
+  i=441: OK
+  i=442: OK
+  i=443: OK
+  i=444: OK
+  i=445: OK
+  i=446: OK
+  i=447: OK
+  i=448: OK
+  i=449: OK
+  i=450: OK
+  i=451: OK
+  i=452: OK
+  i=453: OK
+  i=454: OK
+  i=455: OK
+  i=456: OK
+  i=457: OK
+  i=458: OK
+  i=459: OK
+  i=460: OK
+  i=461: OK
+  i=462: OK
+  i=463: OK
+  i=464: OK
+  i=465: OK
+  i=466: OK
+  i=467: OK
+  i=468: OK
+  i=469: OK
+  i=470: OK
+  i=471: OK
+  i=472: OK
+  i=473: OK
+  i=474: OK
+  i=475: OK
+  i=476: OK
+  i=477: OK
+  i=478: OK
+  i=479: OK
+  i=480: OK
+  i=481: OK
+  i=482: OK
+  i=483: OK
+  i=484: OK
+  i=485: OK
+  i=486: OK
+  i=487: OK
+  i=488: OK
+  i=489: OK
+  i=490: OK
+  i=491: OK
+  i=492: OK
+  i=493: OK
+  i=494: OK
+  i=495: OK
+  i=496: OK
+  i=497: OK
+  i=498: OK
+  i=499: OK
+  i=500: OK
+  i=501: OK
+  i=502: OK
+  i=503: OK
+  i=504: OK
+  i=505: OK
+  i=506: OK
+  i=507: OK
+  i=508: OK
+  i=509: OK
+  i=510: OK
+  i=511: OK
+  i=512: OK
+  i=513: OK
+  i=514: OK
+  i=515: OK
+  i=516: OK
+  i=517: OK
+  i=518: OK
+  i=519: OK
+  i=520: OK
+  i=521: OK
+  i=522: OK
+  i=523: OK
+  i=524: OK
+  i=525: OK
+  i=526: OK
+  i=527: OK
+  i=528: OK
+  i=529: OK
+  i=530: OK
+  i=531: OK
+  i=532: OK
+  i=533: OK
+  i=534: OK
+  i=535: OK
+  i=536: OK
+  i=537: OK
+  i=538: OK
+  i=539: OK
+  i=540: OK
+  i=541: OK
+  i=542: OK
+  i=543: OK
+  i=544: OK
+  i=545: OK
+  i=546: OK
+  i=547: OK
+  i=548: OK
+  i=549: OK
+  i=550: OK
+  i=551: OK
+  i=552: OK
+  i=553: OK
+  i=554: OK
+  i=555: OK
+  i=556: OK
+  i=557: OK
+  i=558: OK
+  i=559: OK
+  i=560: OK
+  i=561: OK
+  i=562: OK
+  i=563: OK
+  i=564: OK
+  i=565: OK
+  i=566: OK
+  i=567: OK
+  i=568: OK
+  i=569: OK
+  i=570: OK
+  i=571: OK
+  i=572: OK
+  i=573: OK
+  i=574: OK
+  i=575: OK
+  i=576: OK
+  i=577: OK
+  i=578: OK
+  i=579: OK
+  i=580: OK
+  i=581: OK
+  i=582: OK
+  i=583: OK
+  i=584: OK
+  i=585: OK
+  i=586: OK
+  i=587: OK
+  i=588: OK
+  i=589: OK
+  i=590: OK
+  i=591: OK
+  i=592: OK
+  i=593: OK
+  i=594: OK
+  i=595: OK
+  i=596: OK
+  i=597: OK
+  i=598: OK
+  i=599: OK
+  i=600: OK
+  i=601: OK
+  i=602: OK
+  i=603: OK
+  i=604: OK
+  i=605: OK
+  i=606: OK
+  i=607: OK
+  i=608: OK
+  i=609: OK
+  i=610: OK
+  i=611: OK
+  i=612: OK
+  i=613: OK
+  i=614: OK
+  i=615: OK
+  i=616: OK
+  i=617: OK
+  i=618: OK
+  i=619: OK
+  i=620: OK
+  i=621: OK
+  i=622: OK
+  i=623: OK
+  i=624: OK
+  i=625: OK
+  i=626: OK
+  i=627: OK
+  i=628: OK
+  i=629: OK
+  i=630: OK
+  i=631: OK
+  i=632: OK
+  i=633: OK
+  i=634: OK
+  i=635: OK
+  i=636: OK
+  i=637: OK
+  i=638: OK
+  i=639: OK
+  i=640: OK
+  i=641: OK
+  i=642: OK
+  i=643: OK
+  i=644: OK
+  i=645: OK
+  i=646: OK
+  i=647: OK
+  i=648: OK
+  i=649: OK
+  i=650: OK
+  i=651: OK
+  i=652: OK
+  i=653: OK
+  i=654: OK
+  i=655: OK
+  i=656: OK
+  i=657: OK
+  i=658: OK
+  i=659: OK
+  i=660: OK
+  i=661: OK
+  i=662: OK
+  i=663: OK
+  i=664: OK
+  i=665: OK
+  i=666: OK
+  i=667: OK
+  i=668: OK
+  i=669: OK
+  i=670: OK
+  i=671: OK
+  i=672: OK
+  i=673: OK
+  i=674: OK
+  i=675: OK
+  i=676: OK
+  i=677: OK
+  i=678: OK
+  i=679: OK
+  i=680: OK
+  i=681: OK
+  i=682: OK
+  i=683: OK
+  i=684: OK
+  i=685: OK
+  i=686: OK
+  i=687: OK
+  i=688: OK
+  i=689: OK
+  i=690: OK
+  i=691: OK
+  i=692: OK
+  i=693: OK
+  i=694: OK
+  i=695: OK
+  i=696: OK
+  i=697: OK
+  i=698: OK
+  i=699: OK
+  i=700: OK
+  i=701: OK
+  i=702: OK
+  i=703: OK
+  i=704: OK
+  i=705: OK
+  i=706: OK
+  i=707: OK
+  i=708: OK
+  i=709: OK
+  i=710: OK
+  i=711: OK
+  i=712: OK
+  i=713: OK
+  i=714: OK
+  i=715: OK
+  i=716: OK
+  i=717: OK
+  i=718: OK
+  i=719: OK
+  i=720: OK
+  i=721: OK
+  i=722: OK
+  i=723: OK
+  i=724: OK
+  i=725: OK
+  i=726: OK
+  i=727: OK
+  i=728: OK
+  i=729: OK
+  i=730: OK
+  i=731: OK
+  i=732: OK
+  i=733: OK
+  i=734: OK
+  i=735: OK
+  i=736: OK
+  i=737: OK
+  i=738: OK
+  i=739: OK
+  i=740: OK
+  i=741: OK
+  i=742: OK
+  i=743: OK
+  i=744: OK
+  i=745: OK
+  i=746: OK
+  i=747: OK
+  i=748: OK
+  i=749: OK
+  i=750: OK
+  i=751: OK
+  i=752: OK
+  i=753: OK
+  i=754: OK
+  i=755: OK
+  i=756: OK
+  i=757: OK
+  i=758: OK
+  i=759: OK
+  i=760: OK
+  i=761: OK
+  i=762: OK
+  i=763: OK
+  i=764: OK
+  i=765: OK
+  i=766: OK
+  i=767: OK
+  i=768: OK
+  i=769: OK
+  i=770: OK
+  i=771: OK
+  i=772: OK
+  i=773: OK
+  i=774: OK
+  i=775: OK
+  i=776: OK
+  i=777: OK
+  i=778: OK
+  i=779: OK
+  i=780: OK
+  i=781: OK
+  i=782: OK
+  i=783: OK
+  i=784: OK
+  i=785: OK
+  i=786: OK
+  i=787: OK
+  i=788: OK
+  i=789: OK
+  i=790: OK
+  i=791: OK
+  i=792: OK
+  i=793: OK
+  i=794: OK
+  i=795: OK
+  i=796: OK
+  i=797: OK
+  i=798: OK
+  i=799: OK
+  i=800: OK
+  i=801: OK
+  i=802: OK
+  i=803: OK
+  i=804: OK
+  i=805: OK
+  i=806: OK
+  i=807: OK
+  i=808: OK
+  i=809: OK
+  i=810: OK
+  i=811: OK
+  i=812: OK
+  i=813: OK
+  i=814: OK
+  i=815: OK
+  i=816: OK
+  i=817: OK
+  i=818: OK
+  i=819: OK
+  i=820: OK
+  i=821: OK
+  i=822: OK
+  i=823: OK
+  i=824: OK
+  i=825: OK
+  i=826: OK
+  i=827: OK
+  i=828: OK
+  i=829: OK
+  i=830: OK
+  i=831: OK
+  i=832: OK
+  i=833: OK
+  i=834: OK
+  i=835: OK
+  i=836: OK
+  i=837: OK
+  i=838: OK
+  i=839: OK
+  i=840: OK
+  i=841: OK
+  i=842: OK
+  i=843: OK
+  i=844: OK
+  i=845: OK
+  i=846: OK
+  i=847: OK
+  i=848: OK
+  i=849: OK
+  i=850: OK
+  i=851: OK
+  i=852: OK
+  i=853: OK
+  i=854: OK
+  i=855: OK
+  i=856: OK
+  i=857: OK
+  i=858: OK
+  i=859: OK
+  i=860: OK
+  i=861: OK
+  i=862: OK
+  i=863: OK
+  i=864: OK
+  i=865: OK
+  i=866: OK
+  i=867: OK
+  i=868: OK
+  i=869: OK
+  i=870: OK
+  i=871: OK
+  i=872: OK
+  i=873: OK
+  i=874: OK
+  i=875: OK
+  i=876: OK
+  i=877: OK
+  i=878: OK
+  i=879: OK
+  i=880: OK
+  i=881: OK
+  i=882: OK
+  i=883: OK
+  i=884: OK
+  i=885: OK
+  i=886: OK
+  i=887: OK
+  i=888: OK
+  i=889: OK
+  i=890: OK
+  i=891: OK
+  i=892: OK
+  i=893: OK
+  i=894: OK
+  i=895: OK
+  i=896: OK
+  i=897: OK
+  i=898: OK
+  i=899: OK
+  i=900: OK
+  i=901: OK
+  i=902: OK
+  i=903: OK
+  i=904: OK
+  i=905: OK
+  i=906: OK
+  i=907: OK
+  i=908: OK
+  i=909: OK
+  i=910: OK
+  i=911: OK
+  i=912: OK
+  i=913: OK
+  i=914: OK
+  i=915: OK
+  i=916: OK
+  i=917: OK
+  i=918: OK
+  i=919: OK
+  i=920: OK
+  i=921: OK
+  i=922: OK
+  i=923: OK
+  i=924: OK
+  i=925: OK
+  i=926: OK
+  i=927: OK
+  i=928: OK
+  i=929: OK
+  i=930: OK
+  i=931: OK
+  i=932: OK
+  i=933: OK
+  i=934: OK
+  i=935: OK
+  i=936: OK
+  i=937: OK
+  i=938: OK
+  i=939: OK
+  i=940: OK
+  i=941: OK
+  i=942: OK
+  i=943: OK
+  i=944: OK
+  i=945: OK
+  i=946: OK
+  i=947: OK
+  i=948: OK
+  i=949: OK
+  i=950: OK
+  i=951: OK
+  i=952: OK
+  i=953: OK
+  i=954: OK
+  i=955: OKWriteParticlesSlab took 85.5 sec to write 3.87e+04 MB ==> 452 MB/sec
+
+  i=956: OK
+  i=957: OK
+  i=958: OK
+  i=959: OK
+  i=960: OK
+  i=961: OK
+  i=962: OK
+  i=963: OK
+  i=964: OK
+  i=965: OK
+  i=966: OK
+  i=967: OK
+  i=968: OK
+  i=969: OK
+  i=970: OK
+  i=971: OK
+  i=972: OK
+  i=973: OK
+  i=974: OK
+  i=975: OK
+  i=976: OK
+  i=977: OK
+  i=978: OK
+  i=979: OK
+  i=980: OK
+  i=981: OK
+  i=982: OK
+  i=983: OK
+  i=984: OK
+  i=985: OK
+  i=986: OK
+  i=987: OK
+  i=988: OK
+  i=989: OK
+  i=990: OK
+  i=991: OK
+  i=992: OK
+  i=993: OK
+  i=994: OK
+  i=995: OK
+  i=996: OK
+  i=997: OK
+  i=998: OK
+  i=999: OK
+  i=1000: OK
+  i=1001: OK
+  i=1002: OK
+  i=1003: OK
+  i=1004: OK
+  i=1005: OK
+  i=1006: OK
+  i=1007: OK
+  i=1008: OK
+  i=1009: OK
+  i=1010: OK
+  i=1011: OK
+  i=1012: OK
+  i=1013: OK
+  i=1014: OK
+  i=1015: OK
+  i=1016: OK
+  i=1017: OK
+  i=1018: OK
+  i=1019: OK
+  i=1020: OK
+  i=1021: OK
+  i=1022: OK
+  i=1023: OK
+
+================================================================================
+COMPLETE: Processed 1024 i-slabs
+Output files written to: ./output
+  Files: ic_* (complete particle data, matches serial Zeldovich)
+  Density file: density{:d}
+================================================================================
+Generated 225 particle IC files
+
+==========================================
+MPI Test Summary (32 nodes, 1 rank per node, 1 thread, PLT enabled, rescaling ENABLED)
+Using ZD_qdensity=1 (density + displacement, narray=2)
+==========================================
+  .bin files: 4096
+  Particle IC files: 225
+  RNG debug lines: 0
+  REAL-FFT-DEBUG lines: 0
+  Logs: test_N1024/CPD-225/
+  RNG debug output: test_N1024/CPD-225/rng_logs/hermitian_rng_debug_filtered.txt
+  REAL-FFT-DEBUG output: test_N1024/CPD-225/rng_logs/hermitian_real_fft_debug.txt
+
+Next steps:
+  1. Run zeldovich-PLT with same parameters: ./run_zeldovich_PLT.sh
+  2. Compare RNG outputs: see workflow.txt
+  3. Compare REAL-FFT-DEBUG outputs: see workflow.txt

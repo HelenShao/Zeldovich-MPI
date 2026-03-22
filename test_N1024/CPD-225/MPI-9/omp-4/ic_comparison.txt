@@ -1,0 +1,64 @@
+Reading particles from both locations...
+Directory 1 (hermitian): particle_ics
+Directory 2 (zeldovich): /home/helenshao/InitialConditions/zeldovich-PLT/output_N1024_CPD_225
+
+Directory 1 (particle_ics):
+  ic_0: 5242880 particles
+  ic_1: 5242880 particles
+  ic_10: 5242880 particles
+  ic_100: 4194304 particles
+  ic_101: 5242880 particles
+  ic_102: 4194304 particles
+  ic_103: 5242880 particles
+  ic_104: 4194304 particles
+  ic_105: 5242880 particles
+  ic_106: 4194304 particles
+  ic_107: 5242880 particles
+  ic_108: 5242880 particles
+  ic_109: 4194304 particles
+  ic_11: 4194304 particles
+  ic_110: 5242880 particles
+  ic_111: 4194304 particles
+  ic_112: 5242880 particles
+  ic_113: 4194304 particles
+  ic_114: 5242880 particles
+  ic_115: 4194304 particles
+  ic_116: 5242880 particles
+  ic_117: 5242880 particles
+  ic_118: 4194304 particles
+  ic_119: 5242880 particles
+  ic_12: 5242880 particles
+  ic_120: 4194304 particles
+  ic_121: 5242880 particles
+  ic_122: 4194304 particles
+  ic_123: 5242880 particles
+  ic_124: 4194304 particles
+  ic_125: 5242880 particles
+  ic_126: 4194304 particles
+  ic_127: 5242880 particles
+  ic_128: 5242880 particles
+  ic_129: 4194304 particles
+  ic_13: 4194304 particles
+  ic_130: 5242880 particles
+  ic_131: 4194304 particles
+  ic_132: 5242880 particles
+  ic_133: 4194304 particles
+  ic_134: 5242880 particles
+  ic_135: 4194304 particles
+  ic_136: 5242880 particles
+  ic_137: 5242880 particles
+  ic_138: 4194304 particles
+  ic_139: 5242880 particles
+  ic_14: 5242880 particles
+  ic_140: 4194304 particles
+  ic_141: 5242880 particles
+  ic_142: 4194304 particles
+  ic_143: 5242880 particles
+Traceback (most recent call last):
+  File "/home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/MPI-9/omp-4/compare_ic_files.py", line 217, in <module>
+    main()
+  File "/home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/MPI-9/omp-4/compare_ic_files.py", line 188, in main
+    particles, count = read_all_particles(filepath)
+  File "/home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/MPI-9/omp-4/compare_ic_files.py", line 41, in read_all_particles
+    particles[key] = {
+KeyboardInterrupt

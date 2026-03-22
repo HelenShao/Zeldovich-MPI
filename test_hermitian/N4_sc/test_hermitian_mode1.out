@@ -1,0 +1,1114 @@
+Loading frameworks module...
+Loading FFTW module...
+Checking MPI compiler...
+/opt/aurora/25.190.0/spack/unified/0.10.1/install/linux-sles15-x86_64/oneapi-2025.2.0/mpich-develop-git.6037a7a-cym6jg6/bin/mpicc
+Intel(R) oneAPI DPC++/C++ Compiler 2025.2.0 (2025.2.0.20250605)
+Target: x86_64-unknown-linux-gnu
+Thread model: posix
+InstalledDir: /opt/aurora/25.190.0/oneapi/compiler/2025.2/bin/compiler
+Configuration file: /opt/aurora/25.190.0/oneapi/compiler/2025.2/bin/compiler/../icx.cfg
+Checking C++ compiler...
+/opt/aurora/25.190.0/spack/unified/0.10.1/install/linux-sles15-x86_64/oneapi-2025.2.0/mpich-develop-git.6037a7a-cym6jg6/bin/mpicxx
+Intel(R) oneAPI DPC++/C++ Compiler 2025.2.0 (2025.2.0.20250605)
+Target: x86_64-unknown-linux-gnu
+Thread model: posix
+InstalledDir: /opt/aurora/25.190.0/oneapi/compiler/2025.2/bin/compiler
+Configuration file: /opt/aurora/25.190.0/oneapi/compiler/2025.2/bin/compiler/../icpx.cfg
+Compiling hermitian_3d_matrix with double precision...
+VERIFY_HERMITIAN_SYMMETRY: MODE 1 (F=0, H=0 for purely real test + verification checks)
+Verification: ENABLED (PRINT_DETAILED_SLICES, VERIFY_HERMITIAN_SYMMETRY)
+Using SPLINE_RESOLUTION=512 for higher interpolation accuracy
+PRINT_Z_SLABS=1: Will print selected Z-slabs (Z=0, 1, N/2, N-1) for verification
+NOTE: Testing Hermitian symmetry preservation with N=4 (double-check after recent changes)
+rm -f hermitian_3d_matrix write_particles_from_reassembled_mpi *.o
+mpicxx -Wall -Wextra -Wno-cast-function-type -std=c++17 -O3 -fopenmp -DUSE_DOUBLE_PRECISION -DVERIFY_HERMITIAN_SYMMETRY=1 -DPRINT_DETAILED_SLICES=1 -DPRINT_Z_SLABS=1 -DSKIP_VERIFICATION=0 -DSKIP_FILE_WRITE=1 -DSPLINE_RESOLUTION=512 -I../zeldovich-PLT/include -I../zeldovich-PLT/subprojects/ParseHeader/include -I../zeldovich-PLT/build/subprojects/ParseHeader -I../zeldovich-PLT/subprojects/fmt-11.2.0/include -Isrc -Isrc/utils -Isrc/fft -Isrc/generation -Isrc/communication -Isrc/streaming -Isrc/output -Ideps -I../.. -I../../../..  -I/opt/aurora/25.190.0/spack/unified/0.10.1/install/linux-sles15-x86_64/oneapi-2025.2.0/fftw-3.3.10-bs6lijg/include -o hermitian_3d_matrix src/main.cpp src/utils/printing.c src/utils/verification.c src/utils/decomposition.c src/utils/batch_helpers.c src/utils/rng.c src/utils/power_spectrum.c src/utils/plt_eigenmodes.c src/fft/fft_setup.c src/generation/hermitian_generation.c src/communication/mpi_exchange.c src/streaming/z_streaming.c src/STimer.cc src/utils/zeldovich_wrapper.cpp src/output/output_new.cpp  -L/opt/aurora/25.190.0/spack/unified/0.10.1/install/linux-sles15-x86_64/oneapi-2025.2.0/fftw-3.3.10-bs6lijg/lib -lfftw3 -lfftw3_omp -L../zeldovich-PLT/build -L../zeldovich-PLT/build/subprojects/ParseHeader -L../zeldovich-PLT/build/subprojects/fmt-11.2.0 -lzeldovich -lparseheader -lfmt  -lm -lstdc++ -Wl,-rpath,/home/helenshao/InitialConditions/zeldovich-PLT/build:/home/helenshao/InitialConditions/zeldovich-PLT/build/subprojects/ParseHeader:/home/helenshao/InitialConditions/zeldovich-PLT/build/subprojects/fmt-11.2.0
+icpx: warning: use of '-qopenmp' recommended over '-fopenmp' [-Wrecommended-option]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+src/main.cpp:273:9: warning: variable 'num_my_slices' set but not used [-Wunused-but-set-variable]
+  273 |     int num_my_slices = 0;  // Will be set per-batch (1 or 2)
+      |         ^
+1 warning generated.
+src/utils/decomposition.c:146:46: warning: unused parameter 'num_ranks' [-Wunused-parameter]
+  146 | int validate_abacus_compatibility(int N, int num_ranks, int grid_x, int grid_z)
+      |                                              ^
+1 warning generated.
+src/utils/rng.c:50:39: warning: unused parameter 'M' [-Wunused-parameter]
+   50 | void initialize_global_pcg(int L, int M, int N, uint64_t seed) {
+      |                                       ^
+src/utils/rng.c:50:46: warning: unused parameter 'N' [-Wunused-parameter]
+   50 | void initialize_global_pcg(int L, int M, int N, uint64_t seed) {
+      |                                              ^
+2 warnings generated.
+src/generation/hermitian_generation.c:432:24: warning: unused variable 'ik2' [-Wunused-variable]
+  432 |                 double ik2 = 1.0 / k2; // later: define this at top of code and use it instead of dividing
+      |                        ^~~
+src/generation/hermitian_generation.c:393:21: warning: unused variable 'use_plt' [-Wunused-variable]
+  393 |                 int use_plt = 0;  // Declare outside to use in f computation
+      |                     ^~~~~~~
+src/generation/hermitian_generation.c:394:27: warning: unused variable 'e' [-Wunused-variable]
+  394 |                 eigenmode e;      // Declare outside to use in f computation
+      |                           ^
+src/generation/hermitian_generation.c:62:12: warning: variable 'target_f' set but not used [-Wunused-but-set-variable]
+   62 |     double target_f = 1.0;
+      |            ^
+src/generation/hermitian_generation.c:63:12: warning: variable 'a_NL' set but not used [-Wunused-but-set-variable]
+   63 |     double a_NL = 1.0;
+      |            ^
+src/generation/hermitian_generation.c:64:12: warning: variable 'a0' set but not used [-Wunused-but-set-variable]
+   64 |     double a0 = 1.0;
+      |            ^
+6 warnings generated.
+src/streaming/z_streaming.c:147:13: warning: variable 'found_inf_before' set but not used [-Wunused-but-set-variable]
+  147 |         int found_inf_before = 0;
+      |             ^
+src/streaming/z_streaming.c:36:10: warning: unused parameter 'src_total_slices' [-Wunused-parameter]
+   36 |     int *src_total_slices,                 // Total slices per source (unused, kept for API)
+      |          ^
+src/streaming/z_streaming.c:38:10: warning: unused parameter 'y_src_local_idx' [-Wunused-parameter]
+   38 |     int *y_src_local_idx,                  // Y -> local_idx mapping (unused, kept for API)
+      |          ^
+3 warnings generated.
+Compilation successful - executable found
+==========================================
+Test: Hermitian Symmetry Test Mode 1 (F=0, H=0) with PLT DISABLED
+N=4 TEST - Double Check After Recent Changes
+Double Precision Build
+VERIFY_HERMITIAN_SYMMETRY: MODE 1 (sets F=0, H=0 + enables verification)
+Verification: ENABLED
+Spline Resolution: 512 (high accuracy)
+PLT: DISABLED (ZD_qPLT=0)
+N=4, ranks=1, threads per rank=1
+Parameter file: test_N4/ic_match/param_N4_ic.par
+Expected: With F=0 and H=0, only D and G remain
+Expected: After 3D FFT, final matrix should be purely real (imaginary parts ≈ 0)
+Purpose: Verify that recent code changes preserve Hermitian symmetry
+==========================================
+
+Generating ICs for ppd = 4
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+[Y0-DEBUG] Y=0 detected as self-conjugate, using zeldovich_method (USE_ZELDOVICH_METHOD=1)
+[SKIP-DEBUG] N=4 Y=0 (x,z)=(0,0): D=0 (DC mode, self-conj), ACCUMULATE nskip++ (total=1)
+[RNG-DEBUG] N=4 Y=0 (x,z)=(0,0): k=(0,0,0) k2=0.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[RNG-DEBUG] N=4 Y=0 (x,z)=(1,0): k=(1,0,0) k2=1.000000 | D=(-1.1474379405e-01,7.9733163453e-02) F=(0.0000000000e+00,0.0000000000e+00) G=(0.0000000000e+00,-0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=0 (x,z)=(2,0): D=0 (Nyquist: kx=2 ky=0 kz=0, self-conj), ACCUMULATE nskip++ (total=1)
+[RNG-DEBUG] N=4 Y=0 (x,z)=(2,0): k=(2,0,0) k2=4.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=0 z=0 x=3: ACCUMULATE skip at Nyquist boundary (self-conj, full plane): +65532 (missing x-values), total nskip=65533
+[RNG-DEBUG] N=4 Y=0 (x,z)=(3,0): k=(-1,0,0) k2=1.000000 | D=(-3.3869057396e-02,-4.5513516177e-02) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,-0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[RNG-DEBUG] N=4 Y=0 (x,z)=(0,1): k=(0,0,1) k2=1.000000 | D=(-6.8841943804e-02,2.5901576221e-01) F=(0.0000000000e+00,0.0000000000e+00) G=(0.0000000000e+00,-0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[RNG-DEBUG] N=4 Y=0 (x,z)=(1,1): k=(1,0,1) k2=2.000000 | D=(1.2848158432e-01,5.6907314356e-02) F=(0.0000000000e+00,0.0000000000e+00) G=(0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=0 (x,z)=(2,1): D=0 (Nyquist: kx=2 ky=0 kz=1, self-conj), ACCUMULATE nskip++ (total=1)
+[RNG-DEBUG] N=4 Y=0 (x,z)=(2,1): k=(2,0,1) k2=5.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=0 z=1 x=3: ACCUMULATE skip at Nyquist boundary (self-conj, full plane): +65532 (missing x-values), total nskip=65533
+[RNG-DEBUG] N=4 Y=0 (x,z)=(3,1): k=(-1,0,1) k2=2.000000 | D=(4.6793364419e-02,-5.1469264866e-03) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=0 (x,z)=(0,2): D=0 (Nyquist: kx=0 ky=0 kz=2, self-conj), ACCUMULATE nskip++ (total=1)
+[RNG-DEBUG] N=4 Y=0 (x,z)=(0,2): k=(0,0,2) k2=4.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=0 (x,z)=(1,2): D=0 (Nyquist: kx=1 ky=0 kz=2, self-conj), ACCUMULATE nskip++ (total=2)
+[RNG-DEBUG] N=4 Y=0 (x,z)=(1,2): k=(1,0,2) k2=5.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=0 (x,z)=(2,2): D=0 (Nyquist: kx=2 ky=0 kz=2, self-conj), ACCUMULATE nskip++ (total=3)
+[RNG-DEBUG] N=4 Y=0 (x,z)=(2,2): k=(2,0,2) k2=8.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=0 z=2 x=3: ACCUMULATE skip at Nyquist boundary (self-conj, full plane): +65532 (missing x-values), total nskip=65535
+[SKIP-DEBUG] N=4 Y=0 (x,z)=(3,2): D=0 (Nyquist: kx=-1 ky=0 kz=2, self-conj), ACCUMULATE nskip++ (total=65536)
+[RNG-DEBUG] N=4 Y=0 (x,z)=(3,2): k=(-1,0,2) k2=5.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=0 z=3: ACCUMULATE skip at Nyquist boundary (self-conj, full plane): +4294705152 (missing z-rows), total nskip=4294770688
+[RNG-DEBUG] N=4 Y=0 (x,z)=(0,3): k=(0,0,-1) k2=1.000000 | D=(-1.8731651329e-01,-3.0337255213e-02) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,-0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[RNG-DEBUG] N=4 Y=0 (x,z)=(1,3): k=(1,0,-1) k2=2.000000 | D=(4.0091481437e-02,-4.7032739300e-02) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=0 (x,z)=(2,3): D=0 (Nyquist: kx=2 ky=0 kz=-1, self-conj), ACCUMULATE nskip++ (total=1)
+[RNG-DEBUG] N=4 Y=0 (x,z)=(2,3): k=(2,0,-1) k2=5.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=0 z=3 x=3: ACCUMULATE skip at Nyquist boundary (self-conj, full plane): +65532 (missing x-values), total nskip=65533
+[RNG-DEBUG] N=4 Y=0 (x,z)=(3,3): k=(-1,0,-1) k2=2.000000 | D=(-2.1124710633e-02,-4.8192017558e-02) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,-0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[MIRROR-DEBUG] Y=0: Mode 1 branch executing (VERIFY_HERMITIAN_SYMMETRY=1)
+[SKIP-DEBUG] N=4 Y=0: IMMEDIATELY AFTER #endif (line 1527) - nskip=0 (0x0)
+[SKIP-DEBUG] N=4 Y=0: RIGHT BEFORE LOOP ENDS (inside #endif) - nskip=0 (0x0)
+[SKIP-DEBUG] N=4 Y=0: AFTER LOOP ENDS - nskip=0 (0x0)
+[Rank 0] After primary FFT (array 0, Y=0): buffer OK (checksum=-16)
+[Rank 0] After primary FFT (array 1, Y=0): buffer OK (checksum=0)
+[DIAG] Rank 0: About to call calculate_batch_send_recv_counts (batch_idx=0)
+[DIAG] Rank 0: calculate_batch_send_recv_counts returned: total_send=32, total_recv=32
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(0,0): CALLING cgauss (nskip=0, kmag=6.283185e-02)
+[RNG-DEBUG] N=4 Y=1 (x,z)=(0,0): k=(0,1,0) k2=1.000000 | D=(1.0629930283e-01,-1.6249648085e-01) F=(0.0000000000e+00,0.0000000000e+00) G=(2.5862118162e+00,1.6918059492e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[STORAGE-DEBUG] N=4 Y=1 (x,z)=(0,0): D=(1.0629930283e-01,-1.6249648085e-01) F=(0.0000000000e+00,0.0000000000e+00) stored D+i*F=(1.0629930283e-01,-1.6249648085e-01)
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(1,0): CALLING cgauss (nskip=0, kmag=8.885766e-02)
+[RNG-DEBUG] N=4 Y=1 (x,z)=(1,0): k=(1,1,0) k2=2.000000 | D=(-1.2735893385e-01,-1.7329318213e-02) F=(0.0000000000e+00,0.0000000000e+00) G=(1.3790233270e-01,-1.0134901934e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[STORAGE-DEBUG] N=4 Y=1 (x,z)=(1,0): D=(-1.2735893385e-01,-1.7329318213e-02) F=(0.0000000000e+00,0.0000000000e+00) stored D+i*F=(-1.2735893385e-01,-1.7329318213e-02)
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(2,0): D=0 (Nyquist: kx=2 ky=1 kz=0), ACCUMULATE nskip++ (total=1)
+[RNG-DEBUG] N=4 Y=1 (x,z)=(2,0): k=(2,1,0) k2=5.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[STORAGE-DEBUG] N=4 Y=1 (x,z)=(2,0): D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) stored D+i*F=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=1 z=0 x=3: ACCUMULATE skip at Nyquist boundary: +65532 (missing x-values), total nskip=65533
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(3,0): APPLYING skip=65533 BEFORE cgauss
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(3,0): RNG advanced, nskip reset to 0
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(3,0): CALLING cgauss (nskip=0, kmag=8.885766e-02)
+[RNG-DEBUG] N=4 Y=1 (x,z)=(3,0): k=(-1,1,0) k2=2.000000 | D=(4.8802292600e-02,-1.9033797821e-02) F=(0.0000000000e+00,0.0000000000e+00) G=(1.5146615045e-01,3.8835630507e-01) H=(0.0000000000e+00,0.0000000000e+00)
+[STORAGE-DEBUG] N=4 Y=1 (x,z)=(3,0): D=(4.8802292600e-02,-1.9033797821e-02) F=(0.0000000000e+00,0.0000000000e+00) stored D+i*F=(4.8802292600e-02,-1.9033797821e-02)
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(0,1): CALLING cgauss (nskip=0, kmag=8.885766e-02)
+[RNG-DEBUG] N=4 Y=1 (x,z)=(0,1): k=(0,1,1) k2=2.000000 | D=(-4.0417056897e-02,-9.2854828022e-02) F=(0.0000000000e+00,0.0000000000e+00) G=(7.3891524348e-01,-3.2162871952e-01) H=(0.0000000000e+00,0.0000000000e+00)
+[STORAGE-DEBUG] N=4 Y=1 (x,z)=(0,1): D=(-4.0417056897e-02,-9.2854828022e-02) F=(0.0000000000e+00,0.0000000000e+00) stored D+i*F=(-4.0417056897e-02,-9.2854828022e-02)
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(1,1): CALLING cgauss (nskip=0, kmag=1.088280e-01)
+[RNG-DEBUG] N=4 Y=1 (x,z)=(1,1): k=(1,1,1) k2=3.000000 | D=(-1.0563446882e-01,6.8901100726e-02) F=(0.0000000000e+00,0.0000000000e+00) G=(-3.6553169217e-01,-5.6040826247e-01) H=(0.0000000000e+00,0.0000000000e+00)
+[STORAGE-DEBUG] N=4 Y=1 (x,z)=(1,1): D=(-1.0563446882e-01,6.8901100726e-02) F=(0.0000000000e+00,0.0000000000e+00) stored D+i*F=(-1.0563446882e-01,6.8901100726e-02)
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(2,1): D=0 (Nyquist: kx=2 ky=1 kz=1), ACCUMULATE nskip++ (total=1)
+[RNG-DEBUG] N=4 Y=1 (x,z)=(2,1): k=(2,1,1) k2=6.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[STORAGE-DEBUG] N=4 Y=1 (x,z)=(2,1): D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) stored D+i*F=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=1 z=1 x=3: ACCUMULATE skip at Nyquist boundary: +65532 (missing x-values), total nskip=65533
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(3,1): APPLYING skip=65533 BEFORE cgauss
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(3,1): RNG advanced, nskip reset to 0
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(3,1): CALLING cgauss (nskip=0, kmag=1.088280e-01)
+[RNG-DEBUG] N=4 Y=1 (x,z)=(3,1): k=(-1,1,1) k2=3.000000 | D=(-2.9847102293e-02,-4.0645821803e-02) F=(0.0000000000e+00,0.0000000000e+00) G=(2.1563278186e-01,-1.5834379556e-01) H=(0.0000000000e+00,0.0000000000e+00)
+[STORAGE-DEBUG] N=4 Y=1 (x,z)=(3,1): D=(-2.9847102293e-02,-4.0645821803e-02) F=(0.0000000000e+00,0.0000000000e+00) stored D+i*F=(-2.9847102293e-02,-4.0645821803e-02)
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(0,2): D=0 (Nyquist: kx=0 ky=1 kz=2), ACCUMULATE nskip++ (total=1)
+[RNG-DEBUG] N=4 Y=1 (x,z)=(0,2): k=(0,1,2) k2=5.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[STORAGE-DEBUG] N=4 Y=1 (x,z)=(0,2): D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) stored D+i*F=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBU[INFO] num_ranks=1 < total_pairs=3: Each rank will process 3-3 pairs
+====================================================================================
+VERSION 15: POWER SPECTRUM INTEGRATION
+====================================================================================
+Precision: Double (16 bytes per complex number)
+Matrix size: N = 4³, Total elements: 64
+MPI ranks: 1 (total_pairs: 3 for N=4)
+Multi-batch processing: Each rank processes multiple Y-slice pairs
+Grid decomposition: Core grid only (no padding, X_PADDING=0)
+            No periodic boundary wrapping - standard decomposition
+V12 feature: Z-slab streaming (Zeldovich-compatible output)
+            Output format: [Z][Array][Y][X] matches Zeldovich AZYX
+            Each file contains all (X,Y) for one Z-slab
+V11 feature: Direct receive into persistent source-grouped buffer
+Communication method: MPI_Ialltoallv (Phase A)
+====================================================================================
+
+[INIT] Rank 0: Assigned 3 pairs:
+  Pair 0: Y=0 (self-conjugate)
+  Pair 1: Y=1 and Y=3 (conjugate)
+  Pair 2: Y=2 (self-conjugate)
+
+[DISTRIBUTION] Multi-batch slice distribution:
+  Total Y-slice pairs: 3
+  Active ranks: 1
+  Pairs per rank: 3 base + 0 ranks with +1
+  Rank 0 processes: 3 pairs (Y indices 0-2)
+  Estimated total Y-slices: ~4
+
+[INIT] Loading zeldovich-PLT parameters from: test_N4/ic_match/param_N4_ic.par
+[INIT] Setting up particle output system...
+[INIT] PowerSpectrum initialized:
+       Power law index: -2.00
+       Box size: 100.00
+       Fundamental wavenumber: 6.283185e-02
+       Seed: 4
+       Power spectrum mode: ENABLED
+[SETUP] narray = 2 (arrays per Y-slice) [PLT disabled]
+[SETUP] Creating FFT plans with dummy memory...
+[SETUP] FFT plans created successfully (2D and 1D)
+
+[V14-DEBUG] Grid decomposition verification (PERIODIC BOUNDARIES):
+  Rank 0:
+    Core:   X=[0,4), Z=[0,4), Pencils=16
+    Padded: X=[0,4), Z=[0,4), Pencils=16
+  Note: Negative X-start or X-end > N indicates periodic wrap-around
+[Stage 2] Complete.
+
+[MULTI-BATCH] Starting batch processing...
+              Ranks will process 3 pairs each (approx)
+[GRID] Rank 0 (NO PADDING - CORE GRID ONLY):
+  Core region:   X=[0,4), Z=[0,4), pencils=16
+[BATCHES] Total batches to process: 3
+
+[V11-SETUP] Computing per-source Y-slice totals...
+[V11-SETUP] Rank 0: Source totals: src0=4 
+[V11-SETUP] Persistent recv_buffer size: 2048 bytes (0.00 GB)
+            Total elements: 128 = sum of (src_total_slices[src] * my_pencils * narray)
+[V11-MEMORY] Allocated recv_buffer: 0.00 GB (source-grouped layout)
+[V11-SETUP] Rank 0: Write cursors initialized to 0
+[V11-SETUP] Phase 1 pre-computation complete.
+
+[V11-SETUP] Building Y-value ownership mapping...
+[V11-SETUP] Rank 0: Y-mapping complete. Sample: Y=0-->src0[0], Y=2-->src0[3]
+[V11-SETUP] Phase 2 Y-mapping complete.
+
+[MEMORY] Allocated local_y_slices (reusable): 1024 bytes (0.00 GB)
+
+[MULTI-BATCH] Processing 3 batches...
+[BATCH 0] Rank 0: Processing 1 Y-slices (Y=0)
+[DEBUG Y=0] Before 2D FFT (Fourier space) - PRIMARY slice - Max real/imag per array: A0: re=1.285e-01 im=2.590e-01 A1: re=0.000e+00 im=0.000e+00 (NOTE: Non-zero imag expected in Fourier space)
+[DEBUG Y=0] After 2D FFT (Real space) - PRIMARY slice - Max real/imag per array: A0: re=8.510e-01 im=0.000e+00 (ratio=0.000e+00) A1: re=0.000e+00 im=0.000e+00 (ratio=0.000e+00) (NOTE: Imag should be ~0 in real space!)
+[PACK] Rank 0: Packed 32 total elements to send_buffer
+       Sending to ranks: 32 elements to rank 0
+[V11-BATCH 0] Cursors advanced. Sample: src0=32, src1=0
+[BATCH 1] Rank 0: Processing 2 Y-slices (Y=1, Y=3)
+[DEBUG Y=1] Before 2D FFT (Fourier space) - PRIMARY slice - Max real/imag per array: A0: re=1.274e-01 im=1.625e-01 A1: re=2.586e+00 im=1.692e+00 (NOTE: Non-zero imag expected in Fourier space)
+[DEBUG Y=1] Before 2D FFT (Fourier space) - CONJUGATE slice - Max real/imag per array: A0: re=1.274e-01 im=1.625e-01 A1: re=2.586e+00 im=1.692e+00 (NOTE: Should be conjugate of primary!)
+[DEBUG Y=1] Sample conjugate check (first 3 points): A0[0,0]: prim=(1.063e-01,-1.625e-01) conj[0,0]=(1.063e-G] N=4 Y=1 (x,z)=(1,2): D=0 (Nyquist: kx=1 ky=1 kz=2), ACCUMULATE nskip++ (total=2)
+[RNG-DEBUG] N=4 Y=1 (x,z)=(1,2): k=(1,1,2) k2=6.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[STORAGE-DEBUG] N=4 Y=1 (x,z)=(1,2): D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) stored D+i*F=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(2,2): D=0 (Nyquist: kx=2 ky=1 kz=2), ACCUMULATE nskip++ (total=3)
+[RNG-DEBUG] N=4 Y=1 (x,z)=(2,2): k=(2,1,2) k2=9.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[STORAGE-DEBUG] N=4 Y=1 (x,z)=(2,2): D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) stored D+i*F=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=1 z=2 x=3: ACCUMULATE skip at Nyquist boundary: +65532 (missing x-values), total nskip=65535
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(3,2): D=0 (Nyquist: kx=-1 ky=1 kz=2), ACCUMULATE nskip++ (total=65536)
+[RNG-DEBUG] N=4 Y=1 (x,z)=(3,2): k=(-1,1,2) k2=6.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[STORAGE-DEBUG] N=4 Y=1 (x,z)=(3,2): D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) stored D+i*F=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=1 z=3: ACCUMULATE skip at Nyquist boundary: +4294705152 (missing z-rows), total nskip=4294770688
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(0,3): APPLYING skip=4294770688 BEFORE cgauss
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(0,3): RNG advanced, nskip reset to 0
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(0,3): CALLING cgauss (nskip=0, kmag=8.885766e-02)
+[RNG-DEBUG] N=4 Y=1 (x,z)=(0,3): k=(0,1,-1) k2=2.000000 | D=(3.3494990122e-02,-1.1002823074e-01) F=(0.0000000000e+00,0.0000000000e+00) G=(8.7557684006e-01,2.6654466233e-01) H=(0.0000000000e+00,0.0000000000e+00)
+[STORAGE-DEBUG] N=4 Y=1 (x,z)=(0,3): D=(3.3494990122e-02,-1.1002823074e-01) F=(0.0000000000e+00,0.0000000000e+00) stored D+i*F=(3.3494990122e-02,-1.1002823074e-01)
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(1,3): CALLING cgauss (nskip=0, kmag=1.088280e-01)
+[RNG-DEBUG] N=4 Y=1 (x,z)=(1,3): k=(1,1,-1) k2=3.000000 | D=(1.6050719517e-02,-6.3609735562e-02) F=(0.0000000000e+00,0.0000000000e+00) G=(3.3746012812e-01,8.5151711712e-02) H=(0.0000000000e+00,0.0000000000e+00)
+[STORAGE-DEBUG] N=4 Y=1 (x,z)=(1,3): D=(1.6050719517e-02,-6.3609735562e-02) F=(0.0000000000e+00,0.0000000000e+00) stored D+i*F=(1.6050719517e-02,-6.3609735562e-02)
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(2,3): D=0 (Nyquist: kx=2 ky=1 kz=-1), ACCUMULATE nskip++ (total=1)
+[RNG-DEBUG] N=4 Y=1 (x,z)=(2,3): k=(2,1,-1) k2=6.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[STORAGE-DEBUG] N=4 Y=1 (x,z)=(2,3): D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) stored D+i*F=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=1 z=3 x=3: ACCUMULATE skip at Nyquist boundary: +65532 (missing x-values), total nskip=65533
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(3,3): APPLYING skip=65533 BEFORE cgauss
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(3,3): RNG advanced, nskip reset to 0
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(3,3): CALLING cgauss (nskip=0, kmag=1.088280e-01)
+[RNG-DEBUG] N=4 Y=1 (x,z)=(3,3): k=(-1,1,-1) k2=3.000000 | D=(3.1447570805e-02,-4.1789535948e-02) F=(0.0000000000e+00,0.0000000000e+00) G=(2.2170037385e-01,1.6683454473e-01) H=(0.0000000000e+00,0.0000000000e+00)
+[STORAGE-DEBUG] N=4 Y=1 (x,z)=(3,3): D=(3.1447570805e-02,-4.1789535948e-02) F=(0.0000000000e+00,0.0000000000e+00) stored D+i*F=(3.1447570805e-02,-4.1789535948e-02)
+[SKIP-DEBUG] N=4 Y=1: AFTER LOOP ENDS - nskip=0 (0x0)
+[Rank 0] After primary FFT (array 0, Y=1): buffer OK (checksum=126)
+[Rank 0] After conjugate FFT (array 0, Y=1): buffer OK (checksum=126)
+[Rank 0] After primary FFT (array 1, Y=1): buffer OK (checksum=27)
+[Rank 0] After conjugate FFT (array 1, Y=1): buffer OK (checksum=27)
+[DIAG] Rank 0: About to call calculate_batch_send_recv_counts (batch_idx=1)
+[DIAG] Rank 0: calculate_batch_send_recv_counts returned: total_send=64, total_recv=64
+[SKIP-DEBUG] N=4 Y=2 (x,z)=(0,0): D=0 (Nyquist: kx=0 ky=2 kz=0, self-conj), ACCUMULATE nskip++ (total=1)
+[RNG-DEBUG] N=4 Y=2 (x,z)=(0,0): k=(0,2,0) k2=4.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=2 (x,z)=(1,0): D=0 (Nyquist: kx=1 ky=2 kz=0, self-conj), ACCUMULATE nskip++ (total=2)
+[RNG-DEBUG] N=4 Y=2 (x,z)=(1,0): k=(1,2,0) k2=5.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=2 (x,z)=(2,0): D=0 (Nyquist: kx=2 ky=2 kz=0, self-conj), ACCUMULATE nskip++ (total=3)
+[RNG-DEBUG] N=4 Y=2 (x,z)=(2,0): k=(2,2,0) k2=8.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=2 z=0 x=3: ACCUMULATE skip at Nyquist boundary (self-conj, full plane): +65532 (missing x-values), total nskip=65535
+[SKIP-DEBUG] N=4 Y=2 (x,z)=(3,0): D=0 (Nyquist: kx=-1 ky=2 kz=0, self-conj), ACCUMULATE nskip++ (total=65536)
+[RNG-DEBUG] N=4 Y=2 (x,z)=(3,0): k=(-1,2,0) k2=5.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=2 (x,z)=(0,1): D=0 (Nyquist: kx=0 ky=2 kz=1, self-conj), ACCUMULATE nskip++ (total=65537)
+[RNG-DEBUG] N=4 Y=2 (x,z)=(0,1): k=(0,2,1) k2=5.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=2 (x,z)=(1,1): D=0 (Nyquist: kx=1 ky=2 kz=1, self-conj), ACCUMULATE nskip++ (total=65538)
+[RNG-DEBUG] N=4 Y=2 (x,z)=(1,1): k=(1,2,1) k2=6.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=2 (x,z)=(2,1): D=0 (Nyquist: kx=2 ky=2 kz=1, self-conj), ACCUMULATE nskip++ (total=65539)
+[RNG-DEBUG] N=4 Y=2 (x,z)=(2,1): k=(2,2,1) k2=9.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=2 z=1 x=3: ACCUMULATE skip at Nyquist boundary (self-conj, full plane): +65532 (missing x-values), total nskip=131071
+[SKIP-DEBUG] N=4 Y=2 (x,z)=(3,1): D=0 (Nyquist: kx=-1 ky=2 kz=1, self-conj), ACCUMULATE nskip++ (total=131072)
+[RNG-DEBUG] N=4 Y=2 (x,z)=(3,1): k=(-1,2,1) k2=6.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=2 (x,z)=(0,2): D=0 (Nyquist: kx=0 ky=2 kz=2, self-conj), ACCUMULATE nskip++ (total=131073)
+[RNG-DEBUG] N=4 Y=2 (x,z)=(0,2): k=(0,2,2) k2=8.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=2 (x,z)=(1,2): D=0 (Nyquist: kx=1 ky=2 kz=2, self-conj), ACCUMULATE nskip++ (total=131074)
+[RNG-DEBUG] N=4 Y=2 (x,z)=(1,2): k=(1,2,2) k2=9.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=2 (x,z)=(2,2): D=0 (Nyquist: kx=2 ky=2 kz=2, self-conj), ACCUMULATE nskip++ (total=131075)
+[RNG-DEBUG] N=4 Y=2 (x,z)=(2,2): k=(2,2,2) k2=12.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=2 z=2 x=3: ACCUMULATE skip at Nyquist boundary (self-conj, full plane): +65532 (missing x-values), total nskip=196607
+[SKIP-DEBUG] N=4 Y=2 (x,z)=(3,2): D=0 (Nyquist: kx=-1 ky=2 kz=2, self-conj), ACCUMULATE nskip++ (total=196608)
+[RNG-DEBUG] N=4 Y=2 (x,z)=(3,2): k=(-1,2,2) k2=9.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=2 z=3: ACCUMULATE skip at Nyquist boundary (self-conj, full plane): +4294705152 (missing z-rows), total nskip=4294901760
+[SKIP-DEBUG] N=4 Y=2 (x,z)=(0,3): D=0 (Nyquist: kx=0 ky=2 kz=-1, self-conj), ACCUMULATE nskip++ (total=4294901761)
+[RNG-DEBUG] N=4 Y=2 (x,z)=(0,3): k=(0,2,-1) k2=5.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=2 (x,z)=(1,3): D=0 (Nyquist: kx=1 ky=2 kz=-1, self-conj), ACCUMULATE nskip++ (total=4294901762)
+[RNG-DEBUG] N=4 Y=2 (x,z)=(1,3): k=(1,2,-1) k2=6.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=2 (x,z)=(2,3): D=0 (Nyquist: kx=2 ky=2 kz=-1, self-conj), ACCUMULATE nskip++ (total=4294901763)
+[RNG-DEBUG] N=4 Y=2 (x,z)=(2,3): k=(2,2,-1) k2=9.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=2 z=3 x=3: ACCUMULATE skip at Nyquist boundary (self-conj, full plane): +65532 (missing x-values), total nskip=4294967295
+[SKIP-DEBUG] N=4 Y=2 (x,z)=(3,3): D=0 (Nyquist: kx=-1 ky=2 kz=-1, self-conj), ACCUMULATE nskip++ (total=4294967296)
+[RNG-DEBUG] N=4 Y=2 (x,z)=(3,3): k=(-1,2,-1) k2=6.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[MIRROR-DEBUG] Y=2: Mode 1 branch executing (VERIFY_HERMITIAN_SYMMETRY=1)
+[SKIP-DEBUG] N=4 Y=2: IMMEDIATELY AFTER #endif (line 1527) - nskip=4294967296 (0x100000000)
+[SKIP-DEBUG] N=4 Y=2: RIGHT BEFORE LOOP ENDS (inside #endif) - nskip=4294967296 (0x100000000)
+[SKIP-DEBUG] N=4 Y=2: AFTER LOOP ENDS - nskip=4294967296 (0x100000000)
+[Rank 0] After primary FFT (array 0, Y=2): buffer OK (checksum=0)
+[Rank 0] After primary FFT (array 1, Y=2): buffer OK (checksum=0)
+[SKIP-DEBUG] N=4 Y=2: BEFORE advance_rng - nskip=4294967296 (0x100000000)
+[SKIP-DEBUG] N=4 Y=2: END OF FUNCTION - Applied remaining nskip=4294967296 (0x100000000)
+[DIAG] Rank 0: About to call calculate_batch_send_recv_counts (batch_idx=2)
+[DIAG] Rank 0: calculate_batch_send_recv_counts returned: total_send=32, total_recv=32
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=0 (x,y)=(0,0): real(Array0)=-1.5094695021e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=0 (x,y)=(0,1): real(Array0)=9.4115171822e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=0 (x,y)=(0,2): real(Array0)=1.1770379374e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=0 (x,y)=(0,3): real(Array0)=-9.7439487469e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=0 (x,y)=(1,0): real(Array0)=-4.0136662914e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=0 (x,y)=(1,1): real(Array0)=8.4419127154e-01 imag(Array0)=0.0000000000e+00
+01,1.625e-01) A0[0,1]: prim=(-4.042e-02,-9.285e-02) conj[0,3]=(-4.042e-02,9.285e-02) A0[1,0]: prim=(-1.274e-01,-1.733e-02) conj[3,0]=(-1.274e-01,1.733e-02) A0[1,1]: prim=(-1.056e-01,6.890e-02) conj[3,3]=(-1.056e-01,-6.890e-02) A1[0,0]: prim=(2.586e+00,1.692e+00) conj[0,0]=(2.586e+00,-1.692e+00) A1[0,1]: prim=(7.389e-01,-3.216e-01) conj[0,3]=(7.389e-01,3.216e-01) A1[1,0]: prim=(1.379e-01,-1.013e+00) conj[3,0]=(1.379e-01,1.013e+00) A1[1,1]: prim=(-3.655e-01,-5.604e-01) conj[3,3]=(-3.655e-01,5.604e-01) 
+
+[RANK 0 - BEFORE FFT] Checking Y=1 and Y=3 conjugate relationship (all arrays):
+
+[RANK 0] Checking Hermitian pair Y=1 and Y=3, Array=0 (before 2D FFT):
+  Array 0: Hermitian symmetry PERFECT (max error < 1e-10)
+
+[RANK 0] Checking Hermitian pair Y=1 and Y=3, Array=1 (before 2D FFT):
+  Array 1: Hermitian symmetry PERFECT (max error < 1e-10)
+[DEBUG Y=1] Before 2D FFT - Buffer addresses: prim=0x5599000 conj=0x5599200 (diff=32)
+[DEBUG Y=1] Before 2D FFT - Sample values: prim[0,0]=(1.063e-01,-1.625e-01) conj[0,0]=(1.063e-01,1.625e-01)
+[DEBUG Y=1] Right before conjugate FFT - conj[0,0]=(1.063e-01,1.625e-01) prim[0,0]=(-6.716e-02,-4.789e-01)
+[DEBUG Y=1] Right after conjugate FFT - conj[0,0]=(-6.716e-02,4.789e-01) prim[0,0]=(-6.716e-02,-4.789e-01)
+[DEBUG Y=1] After 2D FFT (Real space) - PRIMARY slice - Max real/imag per array: A0: re=3.013e-01 im=6.327e-01 (ratio=2.100e+00) A1: re=6.086e+00 im=2.889e+00 (ratio=4.747e-01) (NOTE: Imag should be ~0 in real space!)
+[DEBUG Y=1] After 2D FFT (Real space) - CONJUGATE slice - Max real/imag per array: A0: re=3.013e-01 im=6.327e-01 (ratio=2.100e+00) A1: re=6.086e+00 im=2.889e+00 (ratio=4.747e-01) (NOTE: Imag should be ~0 in real space!)
+[DEBUG Y=1] Array comparison: 0 identical, 32 different (total=32)
+[DEBUG Y=1] Sample differences (first 3 non-identical): A0[0,0]: prim=(-6.716e-02,-4.789e-01) conj=(-6.716e-02,4.789e-01) diff=(0.000e+00,9.578e-01) A0[0,1]: prim=(-1.231e-01,-4.558e-01) conj=(-1.231e-01,4.558e-01) diff=(0.000e+00,9.115e-01) A0[0,2]: prim=(1.226e-01,8.117e-02) conj=(1.226e-01,-8.117e-02) diff=(0.000e+00,1.623e-01) 
+[PACK] Rank 0: Packed 64 total elements to send_buffer
+       Sending to ranks: 64 elements to rank 0
+[V11-BATCH 1] Cursors advanced. Sample: src0=96, src1=0
+[DEBUG Y=2] Before 2D FFT (Fourier space) - PRIMARY slice - Max real/imag per array: A0: re=0.000e+00 im=0.000e+00 A1: re=0.000e+00 im=0.000e+00 (NOTE: Non-zero imag expected in Fourier space)
+[DEBUG Y=2] After 2D FFT (Real space) - PRIMARY slice - Max real/imag per array: A0: re=0.000e+00 im=0.000e+00 (ratio=0.000e+00) A1: re=0.000e+00 im=0.000e+00 (ratio=0.000e+00) (NOTE: Imag should be ~0 in real space!)
+[PACK] Rank 0: Packed 32 total elements to send_buffer
+       Sending to ranks: 32 elements to rank 0
+[MULTI-BATCH] All batches complete.
+              Generation time: 0.002531 s
+              Communication time: 0.000064 s
+[V11-VERIFY] Rank 0: All cursors match expected totals
+
+[V12-Stage 3] Z-slab streaming from recv_buffer...
+
+[Stage 3] Z-slab streaming: Unpack --> FFT --> Write (Zeldovich format)...
+[MEMORY] Allocated local_z_slab (one Z-slab, core grid): 512 bytes (0.00 GB)
+         Processing 4 Z-slabs sequentially (Z=[0,4))
+         Each Z-slab: 2 arrays x 4 X-values (CORE) x 4 Y-values
+         Memory layout: [Array][X][Y] (Y stride-1 for FFT, transpose for output)
+[DEBUG Z=0] Before 1D FFT (after unpack) - Max imag per array: A0=6.327e-01 A1=2.729e+00 
+[DEBUG Z=0] After 1D FFT - Max imag per array: A0=0.000e+00 A1=0.000e+00 
+[Rank 0, Z=0] First Z-slab max values (all Y): A0: re=1.686709e+00 im=0.000000e+00 A1: re=1.217260e+01 im=0.000000e+00
+
+[RANK 0] Z-slab Z=0 (X=[0,4), after 3D FFT):
+  Array 0:
+    Y=0: X0= -0.151 X1=  0.273 X2=  9.799 X3=  7.004 
+    Y=1: X0=  0.941 X1=  0.245 X2= -1.090 X3= -5.457 
+    Y=2: X0=  0.118 X1= -0.791 X2= -9.799 X3= -7.004 
+    Y=3: X0= -0.974 X1= -0.762 X2=  1.090 X3=  5.457 
+  Array 1:
+    Y=0: X0= -0.401 X1=  0.524 X2= 12.173 X3=  4.630 
+    Y=1: X0=  0.844 X1=  0.342 X2= -2.316 X3= -4.231 
+    Y=2: X0= -0.441 X1= -0.232 X2=-12.173 X3= -4.630 
+    Y=3: X0= -1.687 X[REAL-FFT-DEBUG] N=4 just_density=0 Z=0 (x,y)=(1,2): real(Array0)=-4.4115076326e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=0 (x,y)=(1,3): real(Array0)=-1.6867086639e+00 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=0 (x,y)=(2,0): real(Array0)=2.7308811920e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=0 (x,y)=(2,1): real(Array0)=2.4499866499e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=0 (x,y)=(2,2): real(Array0)=-7.9058051317e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=0 (x,y)=(2,3): real(Array0)=-7.6249105896e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=0 (x,y)=(3,0): real(Array0)=5.2350779813e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=0 (x,y)=(3,1): real(Array0)=3.4195911167e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=0 (x,y)=(3,2): real(Array0)=-2.3172595617e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=0 (x,y)=(3,3): real(Array0)=-5.0177269707e-02 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=1 (x,y)=(0,0): real(Array0)=-1.0972104714e+00 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=1 (x,y)=(0,1): real(Array0)=6.0463122434e-02 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=1 (x,y)=(0,2): real(Array0)=-6.0486930512e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=1 (x,y)=(0,3): real(Array0)=-1.7625428989e+00 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=1 (x,y)=(1,0): real(Array0)=-5.4525041962e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=1 (x,y)=(1,1): real(Array0)=2.4699946180e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=1 (x,y)=(1,2): real(Array0)=-1.1364981626e+00 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=1 (x,y)=(1,3): real(Array0)=-1.9287480440e+00 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=1 (x,y)=(2,0): real(Array0)=4.1765102301e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=1 (x,y)=(2,1): real(Array0)=-1.5089205978e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=1 (x,y)=(2,2): real(Array0)=-7.8769734416e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=1 (x,y)=(2,3): real(Array0)=-2.1915426137e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=1 (x,y)=(3,0): real(Array0)=-1.3430902874e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=1 (x,y)=(3,1): real(Array0)=-3.3742839915e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=1 (x,y)=(3,2): real(Array0)=-2.5606848667e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=1 (x,y)=(3,3): real(Array0)=-5.2949116264e-02 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=2 (x,y)=(0,0): real(Array0)=-1.9705757966e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=2 (x,y)=(0,1): real(Array0)=-6.0468850688e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=2 (x,y)=(0,2): real(Array0)=-6.8764961627e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=2 (x,y)=(0,3): real(Array0)=-2.8001868905e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=2 (x,y)=(1,0): real(Array0)=5.0081326821e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=2 (x,y)=(1,1): real(Array0)=1.9150690383e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=2 (x,y)=(1,2): real(Array0)=-2.9616118343e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=2 (x,y)=(1,3): real(Array0)=1.3145180945e-02 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=2 (x,y)=(2,0): real(Array0)=9.2531083330e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=2 (x,y)=(2,1): real(Array0)=7.1850997047e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=2 (x,y)=(2,2): real(Array0)=5.1013191307e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=2 (x,y)=(2,3): real(Array0)=7.1693277590e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=2 (x,y)=(3,0): real(Array0)=2.2743998542e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=2 (x,y)=(3,1): real(Array0)=-7.7685440245e-02 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=2 (x,y)=(3,2): real(Array0)=1.1864348024e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=2 (x,y)=(3,3): real(Array0)=4.2376890590e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(0,0): real(Array0)=7.4920594151e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(0,1): real(Array0)=2.7600008891e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(0,2): real(Array0)=3.4923482595e-02 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(0,3): real(Array0)=5.0812933520e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(1,0): real(Array0)=6.4469705869e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(1,1): real(Array0)=7.8869871357e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(1,2): real(Array0)=3.9918621592e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(1,3): real(Array0)=2.5518456104e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(2,0): real(Array0)=7.8074792948e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(2,1): real(Array0)=1.1144006952e+00 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(2,2): real(Array0)=5.0724874406e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(2,3): real(Array0)=1.7359597830e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(3,0): real(Array0)=8.8525681230e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(3,1): real(Array0)=6.0170207058e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(3,2): real(Array0)=1.4298601074e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(3,3): real(Array0)=4.2654075246e-01 imag(Array0)=0.0000000000e+00
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x551c6f0 (tracked: 1/1024)
+1= -0.050 X2=  2.316 X3=  4.231 
+
+
+[RANK 0] Z-slab Z=1 (X=[0,4), after 3D FFT):
+  Array 0:
+    Y=0: X0= -1.097 X1=  0.418 X2=  8.869 X3=  3.829 
+    Y=1: X0=  0.060 X1= -0.151 X2= -0.442 X3= -5.779 
+    Y=2: X0= -0.605 X1= -0.788 X2= -8.869 X3= -3.829 
+    Y=3: X0= -1.763 X1= -0.219 X2=  0.442 X3=  5.779 
+  Array 1:
+    Y=0: X0= -0.545 X1= -0.134 X2= 10.546 X3=  2.151 
+    Y=1: X0=  0.247 X1= -0.337 X2= -3.724 X3= -2.497 
+    Y=2: X0= -1.136 X1= -0.256 X2=-10.546 X3= -2.151 
+    Y=3: X0= -1.929 X1= -0.053 X2=  3.724 X3=  2.497 
+
+
+[RANK 0] Z-slab Z=2 (X=[0,4), after 3D FFT):
+  Array 0:
+    Y=0: X0= -0.197 X1=  0.925 X2=  1.704 X3=  2.183 
+    Y=1: X0= -0.605 X1=  0.719 X2= -3.177 X3= -3.811 
+    Y=2: X0= -0.688 X1=  0.510 X2= -1.704 X3= -2.183 
+    Y=3: X0= -0.280 X1=  0.717 X2=  3.177 X3=  3.811 
+  Array 1:
+    Y=0: X0=  0.501 X1=  0.227 X2=  3.780 X3=  0.107 
+    Y=1: X0=  0.192 X1= -0.078 X2= -4.397 X3= -2.590 
+    Y=2: X0= -0.296 X1=  0.119 X2= -3.780 X3= -0.107 
+    Y=3: X0=  0.013 X1=  0.424 X2=  4.397 X3=  2.590 
+
+
+[RANK 0] Z-slab Z=3 (X=[0,4), after 3D FFT):
+  Array 0:
+    Y=0: X0=  0.749 X1=  0.781 X2=  2.633 X3=  5.359 
+    Y=1: X0=  0.276 X1=  1.114 X2= -3.825 X3= -3.489 
+    Y=2: X0=  0.035 X1=  0.507 X2= -2.633 X3= -5.359 
+    Y=3: X0=  0.508 X1=  0.174 X2=  3.825 X3=  3.489 
+  Array 1:
+    Y=0: X0=  0.645 X1=  0.885 X2=  5.406 X3=  2.586 
+    Y=1: X0=  0.789 X1=  0.602 X2= -2.989 X3= -4.325 
+    Y=2: X0=  0.399 X1=  0.143 X2= -5.406 X3= -2.586 
+    Y=3: X0=  0.255 X1=  0.427 X2=  2.989 X3=  4.325 
+
+
+========== VERIFICATION: REAL-SPACE AFTER 3D FFT ==========
+Array 0: Max real=1.928748e+00, Max imag=0.000000e+00, Ratio=0.000000e+00 [REAL]
+Array 1: Max real=1.217260e+01, Max imag=0.000000e+00, Ratio=0.000000e+00 [REAL]
+RESULT: All 2 arrays are PURELY REAL after forward 3D FFT!
+============================================================
+
+[Stage 3] Streaming complete. Time: 0.000800 s
+          (Includes unpacking, FFT, and I/O for all Z-slabs)
+          Total files written: 4 (across all ranks)
+          Total data written: 0.000 GB
+          Files per rank: ~4 (z_count per rank, for 1 ranks)
+          Each file contains one Z-slab: x_count X x 2 arrays x 4 Y-values
+          Typical file size: ~0.00 MB (varies by rank's X-extent)
+          File naming: rank_<rank>/z<z>_slab_N4.bin
+          File format: Binary [Array][Y][X] (Zeldovich AZYX order, fftw_complex = 16 bytes)
+          3D FFT COMPLETE (2D XZ + 1D Y)
+
+
+====================================================================================
+TIMING SUMMARY (v11 - Persistent Recv Buffer + Streaming)
+====================================================================================
+Stage 1 (Y-slice generation + 2D FFT): 0.002531 s
+Stage 2 (Metadata exchange):            0.000000 s
+Stage 3 (Communication: Alltoallv):    0.000064 s
+Stage 3 (Streaming: Unpack+FFT+Write):  0.000800 s
+------------------------------------------------------------------------------------
+Total 3D FFT time (Gen + Comm + FFT):   0.002595 s
+Total time (including all stages):      0.002595 s
+
+Note: In v11, persistent recv_buffer eliminates per-batch allocation
+      Unpacking, 1D FFT, and I/O are combined in streaming stage
+====================================================================================
+
+====================================================================================
+ALL STAGES COMPLETE!
+====================================================================================
+
+==========================================
+Checking Hermitian Symmetry Verification Results...
+==========================================
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(0,0): real(Array0)=7.4920594151e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(0,1): real(Array0)=2.7600008891e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(0,2): real(Array0)=3.4923482595e-02 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(0,3): real(Array0)=5.0812933520e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(1,0): real(Array0)=6.4469705869e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(1,1): real(Array0)=7.8869871357e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(1,2): real(Array0)=3.9918621592e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(1,3): real(Array0)=2.5518456104e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(2,0): real(Array0)=7.8074792948e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(2,1): real(Array0)=1.1144006952e+00 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(2,2): real(Array0)=5.0724874406e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(2,3): real(Array0)=1.7359597830e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(3,0): real(Array0)=8.8525681230e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(3,1): real(Array0)=6.0170207058e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(3,2): real(Array0)=1.4298601074e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(3,3): real(Array0)=4.2654075246e-01 imag(Array0)=0.0000000000e+00
+========== VERIFICATION: REAL-SPACE AFTER 3D FFT ==========
+Array 0: Max real=1.928748e+00, Max imag=0.000000e+00, Ratio=0.000000e+00 [REAL]
+Array 1: Max real=1.217260e+01, Max imag=0.000000e+00, Ratio=0.000000e+00 [REAL]
+RESULT: All 2 arrays are PURELY REAL after forward 3D FFT!
+
+Checking for verification errors...
+SUCCESS: No Hermitian symmetry verification errors found!
+
+Checking final real-space verification...
+RESULT: All 2 arrays are PURELY REAL after forward 3D FFT!
+
+Job completed!
+Output files saved to: test_hermitian/N4_sc/
+Loading frameworks module...
+Loading FFTW module...
+Checking MPI compiler...
+/opt/aurora/25.190.0/spack/unified/0.10.1/install/linux-sles15-x86_64/oneapi-2025.2.0/mpich-develop-git.6037a7a-cym6jg6/bin/mpicc
+Intel(R) oneAPI DPC++/C++ Compiler 2025.2.0 (2025.2.0.20250605)
+Target: x86_64-unknown-linux-gnu
+Thread model: posix
+InstalledDir: /opt/aurora/25.190.0/oneapi/compiler/2025.2/bin/compiler
+Configuration file: /opt/aurora/25.190.0/oneapi/compiler/2025.2/bin/compiler/../icx.cfg
+Checking C++ compiler...
+/opt/aurora/25.190.0/spack/unified/0.10.1/install/linux-sles15-x86_64/oneapi-2025.2.0/mpich-develop-git.6037a7a-cym6jg6/bin/mpicxx
+Intel(R) oneAPI DPC++/C++ Compiler 2025.2.0 (2025.2.0.20250605)
+Target: x86_64-unknown-linux-gnu
+Thread model: posix
+InstalledDir: /opt/aurora/25.190.0/oneapi/compiler/2025.2/bin/compiler
+Configuration file: /opt/aurora/25.190.0/oneapi/compiler/2025.2/bin/compiler/../icpx.cfg
+Compiling hermitian_3d_matrix with double precision...
+VERIFY_HERMITIAN_SYMMETRY: MODE 1 (F=0, H=0 for purely real test + verification checks)
+Verification: ENABLED (PRINT_DETAILED_SLICES, VERIFY_HERMITIAN_SYMMETRY)
+Using SPLINE_RESOLUTION=512 for higher interpolation accuracy
+PRINT_Z_SLABS=1: Will print selected Z-slabs (Z=0, 1, N/2, N-1) for verification
+NOTE: Testing Hermitian symmetry preservation with N=4 (double-check after recent changes)
+rm -f hermitian_3d_matrix write_particles_from_reassembled_mpi *.o
+mpicxx -Wall -Wextra -Wno-cast-function-type -std=c++17 -O3 -fopenmp -DUSE_DOUBLE_PRECISION -DVERIFY_HERMITIAN_SYMMETRY=1 -DPRINT_DETAILED_SLICES=1 -DPRINT_Z_SLABS=1 -DSKIP_VERIFICATION=0 -DSKIP_FILE_WRITE=1 -DSPLINE_RESOLUTION=512 -I../zeldovich-PLT/include -I../zeldovich-PLT/subprojects/ParseHeader/include -I../zeldovich-PLT/build/subprojects/ParseHeader -I../zeldovich-PLT/subprojects/fmt-11.2.0/include -Isrc -Isrc/utils -Isrc/fft -Isrc/generation -Isrc/communication -Isrc/streaming -Isrc/output -Ideps -I../.. -I../../../..  -I/opt/aurora/25.190.0/spack/unified/0.10.1/install/linux-sles15-x86_64/oneapi-2025.2.0/fftw-3.3.10-bs6lijg/include -o hermitian_3d_matrix src/main.cpp src/utils/printing.c src/utils/verification.c src/utils/decomposition.c src/utils/batch_helpers.c src/utils/rng.c src/utils/power_spectrum.c src/utils/plt_eigenmodes.c src/fft/fft_setup.c src/generation/hermitian_generation.c src/communication/mpi_exchange.c src/streaming/z_streaming.c src/STimer.cc src/utils/zeldovich_wrapper.cpp src/output/output_new.cpp  -L/opt/aurora/25.190.0/spack/unified/0.10.1/install/linux-sles15-x86_64/oneapi-2025.2.0/fftw-3.3.10-bs6lijg/lib -lfftw3 -lfftw3_omp -L../zeldovich-PLT/build -L../zeldovich-PLT/build/subprojects/ParseHeader -L../zeldovich-PLT/build/subprojects/fmt-11.2.0 -lzeldovich -lparseheader -lfmt  -lm -lstdc++ -Wl,-rpath,/home/helenshao/InitialConditions/zeldovich-PLT/build:/home/helenshao/InitialConditions/zeldovich-PLT/build/subprojects/ParseHeader:/home/helenshao/InitialConditions/zeldovich-PLT/build/subprojects/fmt-11.2.0
+icpx: warning: use of '-qopenmp' recommended over '-fopenmp' [-Wrecommended-option]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+src/main.cpp:273:9: warning: variable 'num_my_slices' set but not used [-Wunused-but-set-variable]
+  273 |     int num_my_slices = 0;  // Will be set per-batch (1 or 2)
+      |         ^
+1 warning generated.
+src/utils/decomposition.c:146:46: warning: unused parameter 'num_ranks' [-Wunused-parameter]
+  146 | int validate_abacus_compatibility(int N, int num_ranks, int grid_x, int grid_z)
+      |                                              ^
+1 warning generated.
+src/utils/rng.c:50:39: warning: unused parameter 'M' [-Wunused-parameter]
+   50 | void initialize_global_pcg(int L, int M, int N, uint64_t seed) {
+      |                                       ^
+src/utils/rng.c:50:46: warning: unused parameter 'N' [-Wunused-parameter]
+   50 | void initialize_global_pcg(int L, int M, int N, uint64_t seed) {
+      |                                              ^
+2 warnings generated.
+src/generation/hermitian_generation.c:432:24: warning: unused variable 'ik2' [-Wunused-variable]
+  432 |                 double ik2 = 1.0 / k2; // later: define this at top of code and use it instead of dividing
+      |                        ^~~
+src/generation/hermitian_generation.c:393:21: warning: unused variable 'use_plt' [-Wunused-variable]
+  393 |                 int use_plt = 0;  // Declare outside to use in f computation
+      |                     ^~~~~~~
+src/generation/hermitian_generation.c:394:27: warning: unused variable 'e' [-Wunused-variable]
+  394 |                 eigenmode e;      // Declare outside to use in f computation
+      |                           ^
+src/generation/hermitian_generation.c:62:12: warning: variable 'target_f' set but not used [-Wunused-but-set-variable]
+   62 |     double target_f = 1.0;
+      |            ^
+src/generation/hermitian_generation.c:63:12: warning: variable 'a_NL' set but not used [-Wunused-but-set-variable]
+   63 |     double a_NL = 1.0;
+      |            ^
+src/generation/hermitian_generation.c:64:12: warning: variable 'a0' set but not used [-Wunused-but-set-variable]
+   64 |     double a0 = 1.0;
+      |            ^
+6 warnings generated.
+src/streaming/z_streaming.c:147:13: warning: variable 'found_inf_before' set but not used [-Wunused-but-set-variable]
+  147 |         int found_inf_before = 0;
+      |             ^
+src/streaming/z_streaming.c:36:10: warning: unused parameter 'src_total_slices' [-Wunused-parameter]
+   36 |     int *src_total_slices,                 // Total slices per source (unused, kept for API)
+      |          ^
+src/streaming/z_streaming.c:38:10: warning: unused parameter 'y_src_local_idx' [-Wunused-parameter]
+   38 |     int *y_src_local_idx,                  // Y -> local_idx mapping (unused, kept for API)
+      |          ^
+3 warnings generated.
+Compilation successful - executable found
+==========================================
+Test: Hermitian Symmetry Test Mode 1 (F=0, H=0) with PLT DISABLED
+N=4 TEST - Double Check After Recent Changes
+Double Precision Build
+VERIFY_HERMITIAN_SYMMETRY: MODE 1 (sets F=0, H=0 + enables verification)
+Verification: ENABLED
+Spline Resolution: 512 (high accuracy)
+PLT: DISABLED (ZD_qPLT=0)
+N=4, ranks=1, threads per rank=1
+Parameter file: test_N4/ic_match/param_N4_ic.par
+Expected: With F=0 and H=0, only D and G remain
+Expected: After 3D FFT, final matrix should be purely real (imaginary parts ≈ 0)
+Purpose: Verify that recent code changes preserve Hermitian symmetry
+==========================================
+
+Generating ICs for ppd = 4
+Initializing power spectrum with power law index -2
+Input sigma(8.000000) = 0.109255
+Final sigma(8.000000) = 1
+[Y0-DEBUG] Y=0 detected as self-conjugate, using zeldovich_method (USE_ZELDOVICH_METHOD=1)
+[SKIP-DEBUG] N=4 Y=0 (x,z)=(0,0): D=0 (DC mode, self-conj), ACCUMULATE nskip++ (total=1)
+[RNG-DEBUG] N=4 Y=0 (x,z)=(0,0): k=(0,0,0) k2=0.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[RNG-DEBUG] N=4 Y=0 (x,z)=(1,0): k=(1,0,0) k2=1.000000 | D=(-1.1474379405e-01,7.9733163453e-02) F=(0.0000000000e+00,0.0000000000e+00) G=(0.0000000000e+00,-0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=0 (x,z)=(2,0): D=0 (Nyquist: kx=2 ky=0 kz=0, self-conj), ACCUMULATE nskip++ (total=1)
+[RNG-DEBUG] N=4 Y=0 (x,z)=(2,0): k=(2,0,0) k2=4.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=0 z=0 x=3: ACCUMULATE skip at Nyquist boundary (self-conj, full plane): +65532 (missing x-values), total nskip=65533
+[RNG-DEBUG] N=4 Y=0 (x,z)=(3,0): k=(-1,0,0) k2=1.000000 | D=(-3.3869057396e-02,-4.5513516177e-02) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,-0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[RNG-DEBUG] N=4 Y=0 (x,z)=(0,1): k=(0,0,1) k2=1.000000 | D=(-6.8841943804e-02,2.5901576221e-01) F=(0.0000000000e+00,0.0000000000e+00) G=(0.0000000000e+00,-0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[RNG-DEBUG] N=4 Y=0 (x,z)=(1,1): k=(1,0,1) k2=2.000000 | D=(1.2848158432e-01,5.6907314356e-02) F=(0.0000000000e+00,0.0000000000e+00) G=(0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=0 (x,z)=(2,1): D=0 (Nyquist: kx=2 ky=0 kz=1, self-conj), ACCUMULATE nskip++ (total=1)
+[RNG-DEBUG] N=4 Y=0 (x,z)=(2,1): k=(2,0,1) k2=5.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=0 z=1 x=3: ACCUMULATE skip at Nyquist boundary (self-conj, full plane): +65532 (missing x-values), total nskip=65533
+[RNG-DEBUG] N=4 Y=0 (x,z)=(3,1): k=(-1,0,1) k2=2.000000 | D=(4.6793364419e-02,-5.1469264866e-03) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=0 (x,z)=(0,2): D=0 (Nyquist: kx=0 ky=0 kz=2, self-conj), ACCUMULATE nskip++ (total=1)
+[RNG-DEBUG] N=4 Y=0 (x,z)=(0,2): k=(0,0,2) k2=4.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=0 (x,z)=(1,2): D=0 (Nyquist: kx=1 ky=0 kz=2, self-conj), ACCUMULATE nskip++ (total=2)
+[RNG-DEBUG] N=4 Y=0 (x,z)=(1,2): k=(1,0,2) k2=5.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=0 (x,z)=(2,2): D=0 (Nyquist: kx=2 ky=0 kz=2, self-conj), ACCUMULATE nskip++ (total=3)
+[RNG-DEBUG] N=4 Y=0 (x,z)=(2,2): k=(2,0,2) k2=8.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=0 z=2 x=3: ACCUMULATE skip at Nyquist boundary (self-conj, full plane): +65532 (missing x-values), total nskip=65535
+[SKIP-DEBUG] N=4 Y=0 (x,z)=(3,2): D=0 (Nyquist: kx=-1 ky=0 kz=2, self-conj), ACCUMULATE nskip++ (total=65536)
+[RNG-DEBUG] N=4 Y=0 (x,z)=(3,2): k=(-1,0,2) k2=5.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=0 z=3: ACCUMULATE skip at Nyquist boundary (self-conj, full plane): +4294705152 (missing z-rows), total nskip=4294770688
+[RNG-DEBUG] N=4 Y=0 (x,z)=(0,3): k=(0,0,-1) k2=1.000000 | D=(-1.8731651329e-01,-3.0337255213e-02) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,-0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[RNG-DEBUG] N=4 Y=0 (x,z)=(1,3): k=(1,0,-1) k2=2.000000 | D=(4.0091481437e-02,-4.7032739300e-02) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=0 (x,z)=(2,3): D=0 (Nyquist: kx=2 ky=0 kz=-1, self-conj), ACCUMULATE nskip++ (total=1)
+[RNG-DEBUG] N=4 Y=0 (x,z)=(2,3): k=(2,0,-1) k2=5.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=0 z=3 x=3: ACCUMULATE skip at Nyquist boundary (self-conj, full plane): +65532 (missing x-values), total nskip=65533
+[RNG-DEBUG] N=4 Y=0 (x,z)=(3,3): k=(-1,0,-1) k2=2.000000 | D=(-2.1124710633e-02,-4.8192017558e-02) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,-0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[MIRROR-DEBUG] Y=0: Mode 1 branch executing (VERIFY_HERMITIAN_SYMMETRY=1)
+[SKIP-DEBUG] N=4 Y=0: IMMEDIATELY AFTER #endif (line 1527) - nskip=0 (0x0)
+[SKIP-DEBUG] N=4 Y=0: RIGHT BEFORE LOOP ENDS (inside #endif) - nskip=0 (0x0)
+[SKIP-DEBUG] N=4 Y=0: AFTER LOOP ENDS - nskip=0 (0x0)
+[Rank 0] After primary FFT (array 0, Y=0): buffer OK (checksum=-16)
+[Rank 0] After primary FFT (array 1, Y=0): buffer OK (checksum=0)
+[DIAG] Rank 0: About to call calculate_batch_send_recv_counts (batch_idx=0)
+[DIAG] Rank 0: calculate_batch_send_recv_counts returned: total_send=32, total_recv=32
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(0,0): CALLING cgauss (nskip=0, kmag=6.283185e-02)
+[RNG-DEBUG] N=4 Y=1 (x,z)=(0,0): k=(0,1,0) k2=1.000000 | D=(1.0629930283e-01,-1.6249648085e-01) F=(0.0000000000e+00,0.0000000000e+00) G=(2.5862118162e+00,1.6918059492e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[STORAGE-DEBUG] N=4 Y=1 (x,z)=(0,0): D=(1.0629930283e-01,-1.6249648085e-01) F=(0.0000000000e+00,0.0000000000e+00) stored D+i*F=(1.0629930283e-01,-1.6249648085e-01)
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(1,0): CALLING cgauss (nskip=0, kmag=8.885766e-02)
+[RNG-DEBUG] N=4 Y=1 (x,z)=(1,0): k=(1,1,0) k2=2.000000 | D=(-1.2735893385e-01,-1.7329318213e-02) F=(0.0000000000e+00,0.0000000000e+00) G=(1.3790233270e-01,-1.0134901934e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[STORAGE-DEBUG] N=4 Y=1 (x,z)=(1,0): D=(-1.2735893385e-01,-1.7329318213e-02) F=(0.0000000000e+00,0.0000000000e+00) stored D+i*F=(-1.2735893385e-01,-1.7329318213e-02)
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(2,0): D=0 (Nyquist: kx=2 ky=1 kz=0), ACCUMULATE nskip++ (total=1)
+[RNG-DEBUG] N=4 Y=1 (x,z)=(2,0): k=(2,1,0) k2=5.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[STORAGE-DEBUG] N=4 Y=1 (x,z)=(2,0): D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) stored D+i*F=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=1 z=0 x=3: ACCUMULATE skip at Nyquist boundary: +65532 (missing x-values), total nskip=65533
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(3,0): APPLYING skip=65533 BEFORE cgauss
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(3,0): RNG advanced, nskip reset to 0
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(3,0): CALLING cgauss (nskip=0, kmag=8.885766e-02)
+[RNG-DEBUG] N=4 Y=1 (x,z)=(3,0): k=(-1,1,0) k2=2.000000 | D=(4.8802292600e-02,-1.9033797821e-02) F=(0.0000000000e+00,0.0000000000e+00) G=(1.5146615045e-01,3.8835630507e-01) H=(0.0000000000e+00,0.0000000000e+00)
+[STORAGE-DEBUG] N=4 Y=1 (x,z)=(3,0): D=(4.8802292600e-02,-1.9033797821e-02) F=(0.0000000000e+00,0.0000000000e+00) stored D+i*F=(4.8802292600e-02,-1.9033797821e-02)
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(0,1): CALLING cgauss (nskip=0, kmag=8.885766e-02)
+[RNG-DEBUG] N=4 Y=1 (x,z)=(0,1): k=(0,1,1) k2=2.000000 | D=(-4.0417056897e-02,-9.2854828022e-02) F=(0.0000000000e+00,0.0000000000e+00) G=(7.3891524348e-01,-3.2162871952e-01) H=(0.0000000000e+00,0.0000000000e+00)
+[STORAGE-DEBUG] N=4 Y=1 (x,z)=(0,1): D=(-4.0417056897e-02,-9.2854828022e-02) F=(0.0000000000e+00,0.0000000000e+00) stored D+i*F=(-4.0417056897e-02,-9.2854828022e-02)
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(1,1): CALLING cgauss (nskip=0, kmag=1.088280e-01)
+[RNG-DEBUG] N=4 Y=1 (x,z)=(1,1): k=(1,1,1) k2=3.000000 | D=(-1.0563446882e-01,6.8901100726e-02) F=(0.0000000000e+00,0.0000000000e+00) G=(-3.6553169217e-01,-5.6040826247e-01) H=(0.0000000000e+00,0.0000000000e+00)
+[STORAGE-DEBUG] N=4 Y=1 (x,z)=(1,1): D=(-1.0563446882e-01,6.8901100726e-02) F=(0.0000000000e+00,0.0000000000e+00) stored D+i*F=(-1.0563446882e-01,6.8901100726e-02)
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(2,1): D=0 (Nyquist: kx=2 ky=1 kz=1), ACCUMULATE nskip++ (total=1)
+[RNG-DEBUG] N=4 Y=1 (x,z)=(2,1): k=(2,1,1) k2=6.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[STORAGE-DEBUG] N=4 Y=1 (x,z)=(2,1): D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) stored D+i*F=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=1 z=1 x=3: ACCUMULATE skip at Nyquist boundary: +65532 (missing x-values), total nskip=65533
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(3,1): APPLYING skip=65533 BEFORE cgauss
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(3,1): RNG advanced, nskip reset to 0
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(3,1): CALLING cgauss (nskip=0, kmag=1.088280e-01)
+[RNG-DEBUG] N=4 Y=1 (x,z)=(3,1): k=(-1,1,1) k2=3.000000 | D=(-2.9847102293e-02,-4.0645821803e-02) F=(0.0000000000e+00,0.0000000000e+00) G=(2.1563278186e-01,-1.5834379556e-01) H=(0.0000000000e+00,0.0000000000e+00)
+[STORAGE-DEBUG] N=4 Y=1 (x,z)=(3,1): D=(-2.9847102293e-02,-4.0645821803e-02) F=(0.0000000000e+00,0.0000000000e+00) stored D+i*F=(-2.9847102293e-02,-4.0645821803e-02)
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(0,2): D=0 (Nyquist: kx=0 ky=1 kz=2), ACCUMULATE nskip++ (total=1)
+[RNG-DEBUG] N=4 Y=1 (x,z)=(0,2): k=(0,1,2) k2=5.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[STORAGE-DEBUG] N=4 Y=1 (x,z)=(0,2): D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00[INFO] num_ranks=1 < total_pairs=3: Each rank will process 3-3 pairs
+====================================================================================
+VERSION 15: POWER SPECTRUM INTEGRATION
+====================================================================================
+Precision: Double (16 bytes per complex number)
+Matrix size: N = 4³, Total elements: 64
+MPI ranks: 1 (total_pairs: 3 for N=4)
+Multi-batch processing: Each rank processes multiple Y-slice pairs
+Grid decomposition: Core grid only (no padding, X_PADDING=0)
+            No periodic boundary wrapping - standard decomposition
+V12 feature: Z-slab streaming (Zeldovich-compatible output)
+            Output format: [Z][Array][Y][X] matches Zeldovich AZYX
+            Each file contains all (X,Y) for one Z-slab
+V11 feature: Direct receive into persistent source-grouped buffer
+Communication method: MPI_Ialltoallv (Phase A)
+====================================================================================
+
+[INIT] Rank 0: Assigned 3 pairs:
+  Pair 0: Y=0 (self-conjugate)
+  Pair 1: Y=1 and Y=3 (conjugate)
+  Pair 2: Y=2 (self-conjugate)
+
+[DISTRIBUTION] Multi-batch slice distribution:
+  Total Y-slice pairs: 3
+  Active ranks: 1
+  Pairs per rank: 3 base + 0 ranks with +1
+  Rank 0 processes: 3 pairs (Y indices 0-2)
+  Estimated total Y-slices: ~4
+
+[INIT] Loading zeldovich-PLT parameters from: test_N4/ic_match/param_N4_ic.par
+[INIT] Setting up particle output system...
+[INIT] PowerSpectrum initialized:
+       Power law index: -2.00
+       Box size: 100.00
+       Fundamental wavenumber: 6.283185e-02
+       Seed: 4
+       Power spectrum mode: ENABLED
+[SETUP] narray = 2 (arrays per Y-slice) [PLT disabled]
+[SETUP] Creating FFT plans with dummy memory...
+[SETUP] FFT plans created successfully (2D and 1D)
+
+[V14-DEBUG] Grid decomposition verification (PERIODIC BOUNDARIES):
+  Rank 0:
+    Core:   X=[0,4), Z=[0,4), Pencils=16
+    Padded: X=[0,4), Z=[0,4), Pencils=16
+  Note: Negative X-start or X-end > N indicates periodic wrap-around
+[Stage 2] Complete.
+
+[MULTI-BATCH] Starting batch processing...
+              Ranks will process 3 pairs each (approx)
+[GRID] Rank 0 (NO PADDING - CORE GRID ONLY):
+  Core region:   X=[0,4), Z=[0,4), pencils=16
+[BATCHES] Total batches to process: 3
+
+[V11-SETUP] Computing per-source Y-slice totals...
+[V11-SETUP] Rank 0: Source totals: src0=4 
+[V11-SETUP] Persistent recv_buffer size: 2048 bytes (0.00 GB)
+            Total elements: 128 = sum of (src_total_slices[src] * my_pencils * narray)
+[V11-MEMORY] Allocated recv_buffer: 0.00 GB (source-grouped layout)
+[V11-SETUP] Rank 0: Write cursors initialized to 0
+[V11-SETUP] Phase 1 pre-computation complete.
+
+[V11-SETUP] Building Y-value ownership mapping...
+[V11-SETUP] Rank 0: Y-mapping complete. Sample: Y=0-->src0[0], Y=2-->src0[3]
+[V11-SETUP] Phase 2 Y-mapping complete.
+
+[MEMORY] Allocated local_y_slices (reusable): 1024 bytes (0.00 GB)
+
+[MULTI-BATCH] Processing 3 batches...
+[BATCH 0] Rank 0: Processing 1 Y-slices (Y=0)
+[DEBUG Y=0] Before 2D FFT (Fourier space) - PRIMARY slice - Max real/imag per array: A0: re=1.285e-01 im=2.590e-01 A1: re=0.000e+00 im=0.000e+00 (NOTE: Non-zero imag expected in Fourier space)
+[DEBUG Y=0] After 2D FFT (Real space) - PRIMARY slice - Max real/imag per array: A0: re=8.510e-01 im=0.000e+00 (ratio=0.000e+00) A1: re=0.000e+00 im=0.000e+00 (ratio=0.000e+00) (NOTE: Imag should be ~0 in real space!)
+[PACK] Rank 0: Packed 32 total elements to send_buffer
+       Sending to ranks: 32 elements to rank 0
+[V11-BATCH 0] Cursors advanced. Sample: src0=32, src1=0
+[BATCH 1] Rank 0: Processing 2 Y-slices (Y=1, Y=3)
+[DEBUG Y=1] Before 2D FFT (Fourier space) - PRIMARY slice - Max real/imag per array: A0: re=1.274e-01 im=1.625e-01 A1: re=2.586e+00 im=1.692e+00 (NOTE: Non-zero imag expected in Fourier space)
+[DEBUG Y=1] Before 2D FFT (Fourier space) - CONJUGATE slice - Max real/imag per array: A0: re=1.274e-01 im=1.625e-01 A1: re=2.586e+00 im=1.692e+00 (NOTE: Should be conjugate of primary!)
+[DEBUG Y=1] Sample conjugate check (first 3 points): A0[0,0]: prim=(1.063e-01,-1.625e-01) conj[0,0]=(1.063e-,0.0000000000e+00) stored D+i*F=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(1,2): D=0 (Nyquist: kx=1 ky=1 kz=2), ACCUMULATE nskip++ (total=2)
+[RNG-DEBUG] N=4 Y=1 (x,z)=(1,2): k=(1,1,2) k2=6.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[STORAGE-DEBUG] N=4 Y=1 (x,z)=(1,2): D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) stored D+i*F=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(2,2): D=0 (Nyquist: kx=2 ky=1 kz=2), ACCUMULATE nskip++ (total=3)
+[RNG-DEBUG] N=4 Y=1 (x,z)=(2,2): k=(2,1,2) k2=9.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[STORAGE-DEBUG] N=4 Y=1 (x,z)=(2,2): D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) stored D+i*F=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=1 z=2 x=3: ACCUMULATE skip at Nyquist boundary: +65532 (missing x-values), total nskip=65535
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(3,2): D=0 (Nyquist: kx=-1 ky=1 kz=2), ACCUMULATE nskip++ (total=65536)
+[RNG-DEBUG] N=4 Y=1 (x,z)=(3,2): k=(-1,1,2) k2=6.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[STORAGE-DEBUG] N=4 Y=1 (x,z)=(3,2): D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) stored D+i*F=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=1 z=3: ACCUMULATE skip at Nyquist boundary: +4294705152 (missing z-rows), total nskip=4294770688
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(0,3): APPLYING skip=4294770688 BEFORE cgauss
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(0,3): RNG advanced, nskip reset to 0
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(0,3): CALLING cgauss (nskip=0, kmag=8.885766e-02)
+[RNG-DEBUG] N=4 Y=1 (x,z)=(0,3): k=(0,1,-1) k2=2.000000 | D=(3.3494990122e-02,-1.1002823074e-01) F=(0.0000000000e+00,0.0000000000e+00) G=(8.7557684006e-01,2.6654466233e-01) H=(0.0000000000e+00,0.0000000000e+00)
+[STORAGE-DEBUG] N=4 Y=1 (x,z)=(0,3): D=(3.3494990122e-02,-1.1002823074e-01) F=(0.0000000000e+00,0.0000000000e+00) stored D+i*F=(3.3494990122e-02,-1.1002823074e-01)
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(1,3): CALLING cgauss (nskip=0, kmag=1.088280e-01)
+[RNG-DEBUG] N=4 Y=1 (x,z)=(1,3): k=(1,1,-1) k2=3.000000 | D=(1.6050719517e-02,-6.3609735562e-02) F=(0.0000000000e+00,0.0000000000e+00) G=(3.3746012812e-01,8.5151711712e-02) H=(0.0000000000e+00,0.0000000000e+00)
+[STORAGE-DEBUG] N=4 Y=1 (x,z)=(1,3): D=(1.6050719517e-02,-6.3609735562e-02) F=(0.0000000000e+00,0.0000000000e+00) stored D+i*F=(1.6050719517e-02,-6.3609735562e-02)
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(2,3): D=0 (Nyquist: kx=2 ky=1 kz=-1), ACCUMULATE nskip++ (total=1)
+[RNG-DEBUG] N=4 Y=1 (x,z)=(2,3): k=(2,1,-1) k2=6.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[STORAGE-DEBUG] N=4 Y=1 (x,z)=(2,3): D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) stored D+i*F=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=1 z=3 x=3: ACCUMULATE skip at Nyquist boundary: +65532 (missing x-values), total nskip=65533
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(3,3): APPLYING skip=65533 BEFORE cgauss
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(3,3): RNG advanced, nskip reset to 0
+[SKIP-DEBUG] N=4 Y=1 (x,z)=(3,3): CALLING cgauss (nskip=0, kmag=1.088280e-01)
+[RNG-DEBUG] N=4 Y=1 (x,z)=(3,3): k=(-1,1,-1) k2=3.000000 | D=(3.1447570805e-02,-4.1789535948e-02) F=(0.0000000000e+00,0.0000000000e+00) G=(2.2170037385e-01,1.6683454473e-01) H=(0.0000000000e+00,0.0000000000e+00)
+[STORAGE-DEBUG] N=4 Y=1 (x,z)=(3,3): D=(3.1447570805e-02,-4.1789535948e-02) F=(0.0000000000e+00,0.0000000000e+00) stored D+i*F=(3.1447570805e-02,-4.1789535948e-02)
+[SKIP-DEBUG] N=4 Y=1: AFTER LOOP ENDS - nskip=0 (0x0)
+[Rank 0] After primary FFT (array 0, Y=1): buffer OK (checksum=126)
+[Rank 0] After conjugate FFT (array 0, Y=1): buffer OK (checksum=126)
+[Rank 0] After primary FFT (array 1, Y=1): buffer OK (checksum=27)
+[Rank 0] After conjugate FFT (array 1, Y=1): buffer OK (checksum=27)
+[DIAG] Rank 0: About to call calculate_batch_send_recv_counts (batch_idx=1)
+[DIAG] Rank 0: calculate_batch_send_recv_counts returned: total_send=64, total_recv=64
+[SKIP-DEBUG] N=4 Y=2 (x,z)=(0,0): D=0 (Nyquist: kx=0 ky=2 kz=0, self-conj), ACCUMULATE nskip++ (total=1)
+[RNG-DEBUG] N=4 Y=2 (x,z)=(0,0): k=(0,2,0) k2=4.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=2 (x,z)=(1,0): D=0 (Nyquist: kx=1 ky=2 kz=0, self-conj), ACCUMULATE nskip++ (total=2)
+[RNG-DEBUG] N=4 Y=2 (x,z)=(1,0): k=(1,2,0) k2=5.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=2 (x,z)=(2,0): D=0 (Nyquist: kx=2 ky=2 kz=0, self-conj), ACCUMULATE nskip++ (total=3)
+[RNG-DEBUG] N=4 Y=2 (x,z)=(2,0): k=(2,2,0) k2=8.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=2 z=0 x=3: ACCUMULATE skip at Nyquist boundary (self-conj, full plane): +65532 (missing x-values), total nskip=65535
+[SKIP-DEBUG] N=4 Y=2 (x,z)=(3,0): D=0 (Nyquist: kx=-1 ky=2 kz=0, self-conj), ACCUMULATE nskip++ (total=65536)
+[RNG-DEBUG] N=4 Y=2 (x,z)=(3,0): k=(-1,2,0) k2=5.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=2 (x,z)=(0,1): D=0 (Nyquist: kx=0 ky=2 kz=1, self-conj), ACCUMULATE nskip++ (total=65537)
+[RNG-DEBUG] N=4 Y=2 (x,z)=(0,1): k=(0,2,1) k2=5.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=2 (x,z)=(1,1): D=0 (Nyquist: kx=1 ky=2 kz=1, self-conj), ACCUMULATE nskip++ (total=65538)
+[RNG-DEBUG] N=4 Y=2 (x,z)=(1,1): k=(1,2,1) k2=6.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=2 (x,z)=(2,1): D=0 (Nyquist: kx=2 ky=2 kz=1, self-conj), ACCUMULATE nskip++ (total=65539)
+[RNG-DEBUG] N=4 Y=2 (x,z)=(2,1): k=(2,2,1) k2=9.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=2 z=1 x=3: ACCUMULATE skip at Nyquist boundary (self-conj, full plane): +65532 (missing x-values), total nskip=131071
+[SKIP-DEBUG] N=4 Y=2 (x,z)=(3,1): D=0 (Nyquist: kx=-1 ky=2 kz=1, self-conj), ACCUMULATE nskip++ (total=131072)
+[RNG-DEBUG] N=4 Y=2 (x,z)=(3,1): k=(-1,2,1) k2=6.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=2 (x,z)=(0,2): D=0 (Nyquist: kx=0 ky=2 kz=2, self-conj), ACCUMULATE nskip++ (total=131073)
+[RNG-DEBUG] N=4 Y=2 (x,z)=(0,2): k=(0,2,2) k2=8.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=2 (x,z)=(1,2): D=0 (Nyquist: kx=1 ky=2 kz=2, self-conj), ACCUMULATE nskip++ (total=131074)
+[RNG-DEBUG] N=4 Y=2 (x,z)=(1,2): k=(1,2,2) k2=9.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=2 (x,z)=(2,2): D=0 (Nyquist: kx=2 ky=2 kz=2, self-conj), ACCUMULATE nskip++ (total=131075)
+[RNG-DEBUG] N=4 Y=2 (x,z)=(2,2): k=(2,2,2) k2=12.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=2 z=2 x=3: ACCUMULATE skip at Nyquist boundary (self-conj, full plane): +65532 (missing x-values), total nskip=196607
+[SKIP-DEBUG] N=4 Y=2 (x,z)=(3,2): D=0 (Nyquist: kx=-1 ky=2 kz=2, self-conj), ACCUMULATE nskip++ (total=196608)
+[RNG-DEBUG] N=4 Y=2 (x,z)=(3,2): k=(-1,2,2) k2=9.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=2 z=3: ACCUMULATE skip at Nyquist boundary (self-conj, full plane): +4294705152 (missing z-rows), total nskip=4294901760
+[SKIP-DEBUG] N=4 Y=2 (x,z)=(0,3): D=0 (Nyquist: kx=0 ky=2 kz=-1, self-conj), ACCUMULATE nskip++ (total=4294901761)
+[RNG-DEBUG] N=4 Y=2 (x,z)=(0,3): k=(0,2,-1) k2=5.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=2 (x,z)=(1,3): D=0 (Nyquist: kx=1 ky=2 kz=-1, self-conj), ACCUMULATE nskip++ (total=4294901762)
+[RNG-DEBUG] N=4 Y=2 (x,z)=(1,3): k=(1,2,-1) k2=6.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=2 (x,z)=(2,3): D=0 (Nyquist: kx=2 ky=2 kz=-1, self-conj), ACCUMULATE nskip++ (total=4294901763)
+[RNG-DEBUG] N=4 Y=2 (x,z)=(2,3): k=(2,2,-1) k2=9.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[SKIP-DEBUG] N=4 Y=2 z=3 x=3: ACCUMULATE skip at Nyquist boundary (self-conj, full plane): +65532 (missing x-values), total nskip=4294967295
+[SKIP-DEBUG] N=4 Y=2 (x,z)=(3,3): D=0 (Nyquist: kx=-1 ky=2 kz=-1, self-conj), ACCUMULATE nskip++ (total=4294967296)
+[RNG-DEBUG] N=4 Y=2 (x,z)=(3,3): k=(-1,2,-1) k2=6.000000 | D=(0.0000000000e+00,0.0000000000e+00) F=(0.0000000000e+00,0.0000000000e+00) G=(-0.0000000000e+00,0.0000000000e+00) H=(0.0000000000e+00,0.0000000000e+00)
+[MIRROR-DEBUG] Y=2: Mode 1 branch executing (VERIFY_HERMITIAN_SYMMETRY=1)
+[SKIP-DEBUG] N=4 Y=2: IMMEDIATELY AFTER #endif (line 1527) - nskip=4294967296 (0x100000000)
+[SKIP-DEBUG] N=4 Y=2: RIGHT BEFORE LOOP ENDS (inside #endif) - nskip=4294967296 (0x100000000)
+[SKIP-DEBUG] N=4 Y=2: AFTER LOOP ENDS - nskip=4294967296 (0x100000000)
+[Rank 0] After primary FFT (array 0, Y=2): buffer OK (checksum=0)
+[Rank 0] After primary FFT (array 1, Y=2): buffer OK (checksum=0)
+[SKIP-DEBUG] N=4 Y=2: BEFORE advance_rng - nskip=4294967296 (0x100000000)
+[SKIP-DEBUG] N=4 Y=2: END OF FUNCTION - Applied remaining nskip=4294967296 (0x100000000)
+[DIAG] Rank 0: About to call calculate_batch_send_recv_counts (batch_idx=2)
+[DIAG] Rank 0: calculate_batch_send_recv_counts returned: total_send=32, total_recv=32
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=0 (x,y)=(0,0): real(Array0)=-1.5094695021e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=0 (x,y)=(0,1): real(Array0)=9.4115171822e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=0 (x,y)=(0,2): real(Array0)=1.1770379374e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=0 (x,y)=(0,3): real(Array0)=-9.7439487469e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=0 (x,y)=(1,0): real(Array0)=-4.0136662914e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=0 (x,y)=(1,1): real(Array0)=8.4419127154e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=0 (x,y)=(1,2): real(Array0)=-4.4115076326e-01 imag(Array0)=0.0000000000e+00
+01,1.625e-01) A0[0,1]: prim=(-4.042e-02,-9.285e-02) conj[0,3]=(-4.042e-02,9.285e-02) A0[1,0]: prim=(-1.274e-01,-1.733e-02) conj[3,0]=(-1.274e-01,1.733e-02) A0[1,1]: prim=(-1.056e-01,6.890e-02) conj[3,3]=(-1.056e-01,-6.890e-02) A1[0,0]: prim=(2.586e+00,1.692e+00) conj[0,0]=(2.586e+00,-1.692e+00) A1[0,1]: prim=(7.389e-01,-3.216e-01) conj[0,3]=(7.389e-01,3.216e-01) A1[1,0]: prim=(1.379e-01,-1.013e+00) conj[3,0]=(1.379e-01,1.013e+00) A1[1,1]: prim=(-3.655e-01,-5.604e-01) conj[3,3]=(-3.655e-01,5.604e-01) 
+
+[RANK 0 - BEFORE FFT] Checking Y=1 and Y=3 conjugate relationship (all arrays):
+
+[RANK 0] Checking Hermitian pair Y=1 and Y=3, Array=0 (before 2D FFT):
+  Array 0: Hermitian symmetry PERFECT (max error < 1e-10)
+
+[RANK 0] Checking Hermitian pair Y=1 and Y=3, Array=1 (before 2D FFT):
+  Array 1: Hermitian symmetry PERFECT (max error < 1e-10)
+[DEBUG Y=1] Before 2D FFT - Buffer addresses: prim=0x4efa000 conj=0x4efa200 (diff=32)
+[DEBUG Y=1] Before 2D FFT - Sample values: prim[0,0]=(1.063e-01,-1.625e-01) conj[0,0]=(1.063e-01,1.625e-01)
+[DEBUG Y=1] Right before conjugate FFT - conj[0,0]=(1.063e-01,1.625e-01) prim[0,0]=(-6.716e-02,-4.789e-01)
+[DEBUG Y=1] Right after conjugate FFT - conj[0,0]=(-6.716e-02,4.789e-01) prim[0,0]=(-6.716e-02,-4.789e-01)
+[DEBUG Y=1] After 2D FFT (Real space) - PRIMARY slice - Max real/imag per array: A0: re=3.013e-01 im=6.327e-01 (ratio=2.100e+00) A1: re=6.086e+00 im=2.889e+00 (ratio=4.747e-01) (NOTE: Imag should be ~0 in real space!)
+[DEBUG Y=1] After 2D FFT (Real space) - CONJUGATE slice - Max real/imag per array: A0: re=3.013e-01 im=6.327e-01 (ratio=2.100e+00) A1: re=6.086e+00 im=2.889e+00 (ratio=4.747e-01) (NOTE: Imag should be ~0 in real space!)
+[DEBUG Y=1] Array comparison: 0 identical, 32 different (total=32)
+[DEBUG Y=1] Sample differences (first 3 non-identical): A0[0,0]: prim=(-6.716e-02,-4.789e-01) conj=(-6.716e-02,4.789e-01) diff=(0.000e+00,9.578e-01) A0[0,1]: prim=(-1.231e-01,-4.558e-01) conj=(-1.231e-01,4.558e-01) diff=(0.000e+00,9.115e-01) A0[0,2]: prim=(1.226e-01,8.117e-02) conj=(1.226e-01,-8.117e-02) diff=(0.000e+00,1.623e-01) 
+[PACK] Rank 0: Packed 64 total elements to send_buffer
+       Sending to ranks: 64 elements to rank 0
+[V11-BATCH 1] Cursors advanced. Sample: src0=96, src1=0
+[DEBUG Y=2] Before 2D FFT (Fourier space) - PRIMARY slice - Max real/imag per array: A0: re=0.000e+00 im=0.000e+00 A1: re=0.000e+00 im=0.000e+00 (NOTE: Non-zero imag expected in Fourier space)
+[DEBUG Y=2] After 2D FFT (Real space) - PRIMARY slice - Max real/imag per array: A0: re=0.000e+00 im=0.000e+00 (ratio=0.000e+00) A1: re=0.000e+00 im=0.000e+00 (ratio=0.000e+00) (NOTE: Imag should be ~0 in real space!)
+[PACK] Rank 0: Packed 32 total elements to send_buffer
+       Sending to ranks: 32 elements to rank 0
+[MULTI-BATCH] All batches complete.
+              Generation time: 0.002527 s
+              Communication time: 0.000062 s
+[V11-VERIFY] Rank 0: All cursors match expected totals
+
+[V12-Stage 3] Z-slab streaming from recv_buffer...
+
+[Stage 3] Z-slab streaming: Unpack --> FFT --> Write (Zeldovich format)...
+[MEMORY] Allocated local_z_slab (one Z-slab, core grid): 512 bytes (0.00 GB)
+         Processing 4 Z-slabs sequentially (Z=[0,4))
+         Each Z-slab: 2 arrays x 4 X-values (CORE) x 4 Y-values
+         Memory layout: [Array][X][Y] (Y stride-1 for FFT, transpose for output)
+[DEBUG Z=0] Before 1D FFT (after unpack) - Max imag per array: A0=6.327e-01 A1=2.729e+00 
+[DEBUG Z=0] After 1D FFT - Max imag per array: A0=0.000e+00 A1=0.000e+00 
+[Rank 0, Z=0] First Z-slab max values (all Y): A0: re=1.686709e+00 im=0.000000e+00 A1: re=1.217260e+01 im=0.000000e+00
+
+[RANK 0] Z-slab Z=0 (X=[0,4), after 3D FFT):
+  Array 0:
+    Y=0: X0= -0.151 X1=  0.273 X2=  9.799 X3=  7.004 
+    Y=1: X0=  0.941 X1=  0.245 X2= -1.090 X3= -5.457 
+    Y=2: X0=  0.118 X1= -0.791 X2= -9.799 X3= -7.004 
+    Y=3: X0= -0.974 X1= -0.762 X2=  1.090 X3=  5.457 
+  Array 1:
+    Y=0: X0= -0.401 X1=  0.524 X2= 12.173 X3=  4.630 
+    Y=1: X0=  0.844 X1=  0.342 X2= -2.316 X3= -4.231 
+    Y=2: X0= -0.441 X1= -0.232 X2=-12.173 X3= -4.630 
+    Y=3: X0= -1.687 X[REAL-FFT-DEBUG] N=4 just_density=0 Z=0 (x,y)=(1,3): real(Array0)=-1.6867086639e+00 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=0 (x,y)=(2,0): real(Array0)=2.7308811920e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=0 (x,y)=(2,1): real(Array0)=2.4499866499e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=0 (x,y)=(2,2): real(Array0)=-7.9058051317e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=0 (x,y)=(2,3): real(Array0)=-7.6249105896e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=0 (x,y)=(3,0): real(Array0)=5.2350779813e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=0 (x,y)=(3,1): real(Array0)=3.4195911167e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=0 (x,y)=(3,2): real(Array0)=-2.3172595617e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=0 (x,y)=(3,3): real(Array0)=-5.0177269707e-02 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=1 (x,y)=(0,0): real(Array0)=-1.0972104714e+00 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=1 (x,y)=(0,1): real(Array0)=6.0463122434e-02 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=1 (x,y)=(0,2): real(Array0)=-6.0486930512e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=1 (x,y)=(0,3): real(Array0)=-1.7625428989e+00 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=1 (x,y)=(1,0): real(Array0)=-5.4525041962e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=1 (x,y)=(1,1): real(Array0)=2.4699946180e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=1 (x,y)=(1,2): real(Array0)=-1.1364981626e+00 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=1 (x,y)=(1,3): real(Array0)=-1.9287480440e+00 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=1 (x,y)=(2,0): real(Array0)=4.1765102301e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=1 (x,y)=(2,1): real(Array0)=-1.5089205978e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=1 (x,y)=(2,2): real(Array0)=-7.8769734416e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=1 (x,y)=(2,3): real(Array0)=-2.1915426137e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=1 (x,y)=(3,0): real(Array0)=-1.3430902874e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=1 (x,y)=(3,1): real(Array0)=-3.3742839915e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=1 (x,y)=(3,2): real(Array0)=-2.5606848667e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=1 (x,y)=(3,3): real(Array0)=-5.2949116264e-02 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=2 (x,y)=(0,0): real(Array0)=-1.9705757966e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=2 (x,y)=(0,1): real(Array0)=-6.0468850688e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=2 (x,y)=(0,2): real(Array0)=-6.8764961627e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=2 (x,y)=(0,3): real(Array0)=-2.8001868905e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=2 (x,y)=(1,0): real(Array0)=5.0081326821e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=2 (x,y)=(1,1): real(Array0)=1.9150690383e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=2 (x,y)=(1,2): real(Array0)=-2.9616118343e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=2 (x,y)=(1,3): real(Array0)=1.3145180945e-02 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=2 (x,y)=(2,0): real(Array0)=9.2531083330e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=2 (x,y)=(2,1): real(Array0)=7.1850997047e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=2 (x,y)=(2,2): real(Array0)=5.1013191307e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=2 (x,y)=(2,3): real(Array0)=7.1693277590e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=2 (x,y)=(3,0): real(Array0)=2.2743998542e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=2 (x,y)=(3,1): real(Array0)=-7.7685440245e-02 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=2 (x,y)=(3,2): real(Array0)=1.1864348024e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=2 (x,y)=(3,3): real(Array0)=4.2376890590e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(0,0): real(Array0)=7.4920594151e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(0,1): real(Array0)=2.7600008891e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(0,2): real(Array0)=3.4923482595e-02 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(0,3): real(Array0)=5.0812933520e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(1,0): real(Array0)=6.4469705869e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(1,1): real(Array0)=7.8869871357e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(1,2): real(Array0)=3.9918621592e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(1,3): real(Array0)=2.5518456104e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(2,0): real(Array0)=7.8074792948e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(2,1): real(Array0)=1.1144006952e+00 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(2,2): real(Array0)=5.0724874406e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(2,3): real(Array0)=1.7359597830e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(3,0): real(Array0)=8.8525681230e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(3,1): real(Array0)=6.0170207058e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(3,2): real(Array0)=1.4298601074e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(3,3): real(Array0)=4.2654075246e-01 imag(Array0)=0.0000000000e+00
+[DEBUG] zeldovich_ps_destroy: Destroying PowerSpectrum object 0x4e7d6f0 (tracked: 1/1024)
+1= -0.050 X2=  2.316 X3=  4.231 
+
+
+[RANK 0] Z-slab Z=1 (X=[0,4), after 3D FFT):
+  Array 0:
+    Y=0: X0= -1.097 X1=  0.418 X2=  8.869 X3=  3.829 
+    Y=1: X0=  0.060 X1= -0.151 X2= -0.442 X3= -5.779 
+    Y=2: X0= -0.605 X1= -0.788 X2= -8.869 X3= -3.829 
+    Y=3: X0= -1.763 X1= -0.219 X2=  0.442 X3=  5.779 
+  Array 1:
+    Y=0: X0= -0.545 X1= -0.134 X2= 10.546 X3=  2.151 
+    Y=1: X0=  0.247 X1= -0.337 X2= -3.724 X3= -2.497 
+    Y=2: X0= -1.136 X1= -0.256 X2=-10.546 X3= -2.151 
+    Y=3: X0= -1.929 X1= -0.053 X2=  3.724 X3=  2.497 
+
+
+[RANK 0] Z-slab Z=2 (X=[0,4), after 3D FFT):
+  Array 0:
+    Y=0: X0= -0.197 X1=  0.925 X2=  1.704 X3=  2.183 
+    Y=1: X0= -0.605 X1=  0.719 X2= -3.177 X3= -3.811 
+    Y=2: X0= -0.688 X1=  0.510 X2= -1.704 X3= -2.183 
+    Y=3: X0= -0.280 X1=  0.717 X2=  3.177 X3=  3.811 
+  Array 1:
+    Y=0: X0=  0.501 X1=  0.227 X2=  3.780 X3=  0.107 
+    Y=1: X0=  0.192 X1= -0.078 X2= -4.397 X3= -2.590 
+    Y=2: X0= -0.296 X1=  0.119 X2= -3.780 X3= -0.107 
+    Y=3: X0=  0.013 X1=  0.424 X2=  4.397 X3=  2.590 
+
+
+[RANK 0] Z-slab Z=3 (X=[0,4), after 3D FFT):
+  Array 0:
+    Y=0: X0=  0.749 X1=  0.781 X2=  2.633 X3=  5.359 
+    Y=1: X0=  0.276 X1=  1.114 X2= -3.825 X3= -3.489 
+    Y=2: X0=  0.035 X1=  0.507 X2= -2.633 X3= -5.359 
+    Y=3: X0=  0.508 X1=  0.174 X2=  3.825 X3=  3.489 
+  Array 1:
+    Y=0: X0=  0.645 X1=  0.885 X2=  5.406 X3=  2.586 
+    Y=1: X0=  0.789 X1=  0.602 X2= -2.989 X3= -4.325 
+    Y=2: X0=  0.399 X1=  0.143 X2= -5.406 X3= -2.586 
+    Y=3: X0=  0.255 X1=  0.427 X2=  2.989 X3=  4.325 
+
+
+========== VERIFICATION: REAL-SPACE AFTER 3D FFT ==========
+Array 0: Max real=1.928748e+00, Max imag=0.000000e+00, Ratio=0.000000e+00 [REAL]
+Array 1: Max real=1.217260e+01, Max imag=0.000000e+00, Ratio=0.000000e+00 [REAL]
+RESULT: All 2 arrays are PURELY REAL after forward 3D FFT!
+============================================================
+
+[Stage 3] Streaming complete. Time: 0.000895 s
+          (Includes unpacking, FFT, and I/O for all Z-slabs)
+          Total files written: 4 (across all ranks)
+          Total data written: 0.000 GB
+          Files per rank: ~4 (z_count per rank, for 1 ranks)
+          Each file contains one Z-slab: x_count X x 2 arrays x 4 Y-values
+          Typical file size: ~0.00 MB (varies by rank's X-extent)
+          File naming: rank_<rank>/z<z>_slab_N4.bin
+          File format: Binary [Array][Y][X] (Zeldovich AZYX order, fftw_complex = 16 bytes)
+          3D FFT COMPLETE (2D XZ + 1D Y)
+
+
+====================================================================================
+TIMING SUMMARY (v11 - Persistent Recv Buffer + Streaming)
+====================================================================================
+Stage 1 (Y-slice generation + 2D FFT): 0.002527 s
+Stage 2 (Metadata exchange):            0.000000 s
+Stage 3 (Communication: Alltoallv):    0.000062 s
+Stage 3 (Streaming: Unpack+FFT+Write):  0.000895 s
+------------------------------------------------------------------------------------
+Total 3D FFT time (Gen + Comm + FFT):   0.002589 s
+Total time (including all stages):      0.002589 s
+
+Note: In v11, persistent recv_buffer eliminates per-batch allocation
+      Unpacking, 1D FFT, and I/O are combined in streaming stage
+====================================================================================
+
+====================================================================================
+ALL STAGES COMPLETE!
+====================================================================================
+
+==========================================
+Checking Hermitian Symmetry Verification Results...
+==========================================
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(0,0): real(Array0)=7.4920594151e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(0,1): real(Array0)=2.7600008891e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(0,2): real(Array0)=3.4923482595e-02 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(0,3): real(Array0)=5.0812933520e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(1,0): real(Array0)=6.4469705869e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(1,1): real(Array0)=7.8869871357e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(1,2): real(Array0)=3.9918621592e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(1,3): real(Array0)=2.5518456104e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(2,0): real(Array0)=7.8074792948e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(2,1): real(Array0)=1.1144006952e+00 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(2,2): real(Array0)=5.0724874406e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(2,3): real(Array0)=1.7359597830e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(3,0): real(Array0)=8.8525681230e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(3,1): real(Array0)=6.0170207058e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(3,2): real(Array0)=1.4298601074e-01 imag(Array0)=0.0000000000e+00
+[REAL-FFT-DEBUG] N=4 just_density=0 Z=3 (x,y)=(3,3): real(Array0)=4.2654075246e-01 imag(Array0)=0.0000000000e+00
+========== VERIFICATION: REAL-SPACE AFTER 3D FFT ==========
+Array 0: Max real=1.928748e+00, Max imag=0.000000e+00, Ratio=0.000000e+00 [REAL]
+Array 1: Max real=1.217260e+01, Max imag=0.000000e+00, Ratio=0.000000e+00 [REAL]
+RESULT: All 2 arrays are PURELY REAL after forward 3D FFT!
+
+Checking for verification errors...
+SUCCESS: No Hermitian symmetry verification errors found!
+
+Checking final real-space verification...
+RESULT: All 2 arrays are PURELY REAL after forward 3D FFT!
+
+Job completed!
+Output files saved to: test_hermitian/N4_sc/new/

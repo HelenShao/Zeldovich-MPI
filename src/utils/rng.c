@@ -28,6 +28,8 @@ static int v2rng_global_size = 0;
 // Each generator produces an independent sequence for its Y-slice
 
 void initialize_global_pcg(int L, int M, int N, uint64_t seed) {
+    (void)M;
+    (void)N;
     if (!v2rng_global_initialized) {
         // All threads share same v2rng array
         // Thread accesses v2rng[i] where i = assigned slice index

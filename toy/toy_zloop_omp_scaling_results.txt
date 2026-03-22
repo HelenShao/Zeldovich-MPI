@@ -1,0 +1,157 @@
+# Toy z-loop OMP scaling results (reference)
+# Same workload: N=1024, narray=4 (PLT), num_y_repeats=10, use_plt=1
+# Buffer: 67108864 bytes (production local_y_slices layout)
+
+================================================================================
+1. SINGLE PROCESS (no MPI) — login or single node, same executable
+================================================================================
+  Command: ./toy_zloop_omp_scaling 1024 2 param.par 10  (narray becomes 4 with PLT)
+  Param:   test_N1024/CPD-225/MPI-9/mode3/1D/param_N1024_CPD_225.par
+
+  OMP_NUM_THREADS    RNG setup (s)    Z-loop compute (s)    Sum (s)    Speedup vs 1 thr
+  -----------------  ---------------  -------------------  ---------  ----------------
+  1                   0.000073         1.012131             1.012204   1.00
+  2                   0.000159         0.547590             0.547750   1.85
+  4                   0.000287         0.305208             0.305495   3.32
+  8                   0.000498         0.162468             0.162966   6.23
+  16                  0.001306         0.091175             0.092481  11.10
+
+  Conclusion: Single-process run scales well; Z-loop time decreases with more threads.
+
+================================================================================
+2. MPI + OMP (9 ranks, 1 rank per node) — PBS job on compute nodes
+================================================================================
+  Command: mpiexec -n 9 ./toy_zloop_omp_scaling 1024 2 param.par 10
+  PBS:     select=9:ncpus=16:mpiprocs=1:ompthreads=16 (9 nodes, 1 rank per node)
+  Param:   same as above
+
+  OMP_NUM_THREADS    Z-loop per rank (s) — min / max / ~mean     vs 1 thread
+  -----------------  -----------------------------------------   -----------
+  1                  0.794 – 0.808 (all ranks ~0.80)              1.00
+  2                  0.809 – 0.823 (all ranks ~0.81)              ~1.0 (no gain)
+  4                  0.939 – 1.263 (Rank 2 slow: 1.26)             slower
+  8                  1.007 – 1.117                                 slower
+  16                 1.205 – 1.521 (Rank 0 slow: 1.52)            much slower
+
+  Raw Z-loop by rank (s):
+  ----------- OMP=1  -----------   ----------- OMP=2  -----------   ----------- OMP=4  -----------
+  Rank 0: 0.807526   Rank 0: 0.815907   Rank 0: 1.032937
+  Rank 1: 0.797773   Rank 1: 0.816209   Rank 1: 1.051576
+  Rank 2: 0.807454   Rank 2: 0.808665   Rank 2: 1.263294
+  Rank 3: 0.806033   Rank 3: 0.814027   Rank 3: 0.994369
+  Rank 4: 0.797102   Rank 4: 0.817812   Rank 4: 0.939263
+  Rank 5: 0.794198   Rank 5: 0.822725   Rank 5: 0.991356
+  Rank 6: 0.803263   Rank 6: 0.817257   Rank 6: 1.023721
+  Rank 7: 0.805232   Rank 7: 0.812821   Rank 7: 1.039097
+  Rank 8: 0.798315   Rank 8: 0.816306   Rank 8: 1.015042
+
+  ----------- OMP=8  -----------   ----------- OMP=16 -----------
+  Rank 0: 1.057080   Rank 0: 1.520623
+  Rank 1: 1.080324   Rank 1: 1.295548
+  Rank 2: 1.106601   Rank 2: 1.412036
+  Rank 3: 1.099189   Rank 3: 1.398662
+  Rank 4: 1.033099   Rank 4: 1.204688
+  Rank 5: 1.068864   Rank 5: 1.358512
+  Rank 6: 1.116860   Rank 6: 1.422956
+  Rank 7: 1.021803   Rank 7: 1.391853
+  Rank 8: 1.006698   Rank 8: 1.349412
+
+  Conclusion: With 9 MPI ranks (1 per node), Z-loop time increases as OMP threads
+  increase — anti-scaling. Same code as single-process run. Points to MPI+OMP
+  environment (placement, binding, or multi-process behavior) as cause.
+
+================================================================================
+3. 1 MPI RANK (mpiexec -n 1) on 1 node — PBS job
+================================================================================
+  Command: mpiexec -n 1 ./toy_zloop_omp_scaling 1024 2 param.par 10
+  PBS:     select=1:ncpus=16:mpiprocs=1:ompthreads=16 (1 node, 1 rank)
+  Param:   same as above
+
+  OMP_NUM_THREADS    RNG setup (s)    Z-loop compute (s)    Sum (s)    vs 1 thread
+  -----------------  ---------------  -------------------  ---------  -----------
+  1                  0.000033         0.804461             0.804494   1.00
+  2                  0.000118         0.813792             0.813910   ~1.0 (no gain)
+  4                  0.000204         1.002895             1.003099   slower
+  8                  0.000340         1.069554             1.069895   slower
+  16                 0.000673         1.257730             1.258404   much slower
+
+  Conclusion: Even 1 rank under mpiexec anti-scales. Running without mpiexec
+  (single process, same binary and OMP sweep) does NOT cause scaling issues —
+  only the mpiexec launch does.
+
+================================================================================
+4. 1 MPI RANK + TOY_FIRST_TOUCH=1 on 1 node — PBS job
+================================================================================
+  Command: TOY_FIRST_TOUCH=1 mpiexec -n 1 ./toy_zloop_omp_scaling 1024 2 param.par 10
+  PBS:     toy/run_toy_omp_sweep_1rank_first_touch.pbs (same as section 3 + first-touch)
+
+  OMP_NUM_THREADS    RNG setup (s)    Z-loop compute (s)    Sum (s)    vs no first-touch
+  -----------------  ---------------  -------------------  ---------  ------------------
+  1                  0.000022         0.803098             0.803121   ~same
+  2                  0.000023         0.819353             0.819376   ~same
+  4                  0.000024         0.993355             0.993379   ~same
+  8                  0.000024         1.098941             1.098965   slightly worse
+  16                 0.000024         1.322112             1.322136   worse
+
+  Conclusion: First-touch did not improve scaling. Z-loop times are similar at 1–4
+  threads and slightly worse at 8–16 threads. On this node/runtime, NUMA
+  first-touch did not fix the mpiexec anti-scaling (node may be single-NUMA, or
+  the cause is not NUMA placement).
+
+================================================================================
+What could cause anti-scaling under mpiexec (besides thread binding)?
+================================================================================
+  - MPI runtime: progress thread or background threads (polling, async progress)
+    can compete for cores or memory bandwidth even with no explicit communication.
+  - Memory allocator: MPI may override or hook allocation (e.g. for registered
+    memory); different allocation behavior can change locality or bandwidth.
+  - Environment: mpiexec may set or unset env vars that affect OpenMP (e.g.
+    OMP_PLACES, OMP_PROC_BIND) or the OpenMP runtime version/behavior.
+  - Launcher placement: job launcher may assign a cpuset or NUMA policy to the
+    MPI process; OpenMP may then bind relative to that in a way that worsens
+    locality (e.g. threads spread across NUMA nodes) even if “binding” is set.
+  - NUMA / first-touch: under mpiexec, initial thread or allocation placement
+    can differ, leading to more cross-NUMA traffic as threads are added.
+  - Different OpenMP runtime: MPI build might link a different OpenMP (e.g. KMP
+    vs GOMP) or different FFTW/PLT libs that change threading behavior.
+
+================================================================================
+Changes to try with the toy (to fix or reduce anti-scaling under mpiexec)
+================================================================================
+  1. Cap z-loop threads (like production Z_LOOP_MAX_THREADS)
+     In PBS or before mpiexec:  export TOY_ZLOOP_MAX_THREADS=4
+     Then run with OMP_NUM_THREADS=16. Only 4 threads are used in the z-loop;
+     if the slowdown is from too many threads on the shared buffer, time may drop.
+     Try values 2, 4, 8 and compare Z-loop times.
+
+  2. Parallel first-touch (NUMA)
+     export TOY_FIRST_TOUCH=1
+     The toy first-touches the buffer in parallel (same static schedule as the
+     z-loop) so pages are faulted on the cores that will use them. Run with and
+     without and compare.
+
+  3. Launcher binding (run script only)
+     Try explicit process binding so the single rank is pinned and OMP threads
+     stay local, e.g.:
+       mpiexec -n 1 --bind-to core ./toy_zloop_omp_scaling ...
+     (Exact option depends on MPI: could be --bind-to core, -bind-to core, etc.)
+     Or set in PBS:  export I_MPI_PIN=1  (Intel) or equivalent for your MPI.
+
+  4. Explicit OMP placement (run script only)
+     Try constraining threads to a subset of cores to reduce cross-NUMA traffic:
+       export OMP_PLACES="{0,1,2,3,4,5,6,7}"
+       export OMP_PROC_BIND=close
+     Then run with OMP_NUM_THREADS=8 and compare to 16 threads on full node.
+
+  5. Run 1 rank without mpiexec (if you add a no-MPI build)
+     Build a toy that skips MPI_Init when not needed (or a separate no-MPI
+     binary). For 1-rank “production-like” test, run that binary without
+     mpiexec to see if scaling matches the current no-MPI single-process run.
+
+================================================================================
+Source of data
+================================================================================
+  No MPI:       toy/run_omp_sweep.sh (no 7th argument) — terminal output
+  MPI+OMP 9:    toy/toy_omp_mpi_sweep.out (from qsub toy/run_toy_omp_sweep_mpi.pbs)
+  1 rank mpiexec: toy/toy_omp_1rank_sweep.out (from qsub toy/run_toy_omp_sweep_1rank.pbs)
+  1 rank + first-touch: toy/toy_omp_1rank_first_touch.out (from qsub toy/run_toy_omp_sweep_1rank_first_touch.pbs)

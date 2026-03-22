@@ -21,7 +21,6 @@ rank_*/
 # All bin/particle output dirs at any depth (avoid pushing large or many .bin files)
 **/bin_files/
 **/particle_ics/
-**/output/
 
 # Test output directories and files
 tests/options_ab/output_option_*/

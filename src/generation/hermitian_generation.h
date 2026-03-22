@@ -31,7 +31,7 @@ extern "C" {
 //      - primary_slices: Output buffer for primary slice [narray][N][N]
 //      - conjugate_slices: Output buffer for conjugate slice [narray][N][N] (same as primary if self-conjugate)
 //      - narray: Number of arrays per slice
-//      - plan_2d: Precomputed 2D FFT plan
+//      - plan_2d: Batched plan_many_dft (howmany=narray, NxN each) for 2D FFT
 //      - rank: MPI rank (for debug output only)
 //      - ps_handle: zeldovich-PLT PowerSpectrum handle
 //      - params_handle: zeldovich-PLT Parameters handle
@@ -52,6 +52,10 @@ void generate_hermitian_slice_pair_local(
     PowerSpectrumHandle ps_handle,   // zeldovich-PLT PowerSpectrum handle
     ParametersHandle params_handle,  // zeldovich-PLT Parameters handle
     void** thread_rng_buffers);       // Pre-allocated RNG buffers [nthreads] (NULL = use malloc)
+
+// Print accumulated PTimerWall breakdown for Stage 1 sub-phases
+// (generation vs FFT), then reset timers. Call once after the batch loop.
+void print_hermitian_gen_timers(int rank);
 
 #ifdef __cplusplus
 }

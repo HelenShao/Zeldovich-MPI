@@ -31,18 +31,18 @@
 // Avoid MPI C++ binding conflicts
 #define MPICH_SKIP_MPICXX
 
-// Include zeldovich-PLT headers
-#include <output.h>
+// Vendored zeldovich-PLT headers
 #include <parameters.h>
 #include <omp.h>
+#include <STimer.h>
 
 // Include output_new.h for WriteParticlesSlab_new
 // Undefine MAX_PPD to avoid conflict
 #ifdef MAX_PPD
 #undef MAX_PPD
 #endif
-// Use zeldovich-PLT's STimer (via output.h -> block_array.h -> STimer.h) to avoid redefinition with src/STimer.h
-#include <output.h>
+#include "output/output_types.h"
+// We only need OutputType + particle structs; use the local slim header (no block_array dependency).
 #include "output/output_new.h"
 
 // Linking error: makefile builds this executable with UTILS library, which includes mpi_topology.h

@@ -1,0 +1,217 @@
+#!/bin/bash
+#PBS -N 1_1024
+#PBS -A AbacusAurora
+#PBS -l select=9:ncpus=1:mpiprocs=1:ompthreads=1
+#PBS -l walltime=00:30:00
+#PBS -q debug-scaling
+#PBS -l filesystems=home
+#PBS -M helenshao0904@gmail.com
+#PBS -m abe
+#PBS -j oe
+#PBS -o /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/MPI-9/narray-serial/runs/omp-1/N1024_CPD_225_MPI_9.out
+
+# Remove old outputs, .out and .log files
+cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/MPI-9/narray-serial/runs/omp-1
+if [ -d "bin_files" ]; then
+    rm -rf bin_files/rank_*
+fi
+if [ -d "particle_ics" ]; then
+    rm -rf particle_ics/ic_*
+    rm -rf particle_ics/dens*
+fi
+if [ -d "rng_logs" ]; then
+    rm -f rng_logs/*.log rng_logs/*.txt 2>/dev/null || true
+fi
+if [ -f "*.log" ]; then
+    rm *.log
+fi
+if [ -f "*.out" ]; then
+    rm *.out
+fi
+
+# Go to working directory
+cd $PBS_O_WORKDIR
+
+# Load modules
+echo "Loading frameworks module..."
+module load frameworks
+echo "Loading FFTW module..."
+module load fftw/3.3.10
+
+# Go to hermitian_3d_matrix_production directory
+cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production
+
+# ====================================================================================
+# Use TCP provider to avoid CXI cxil_map: write error (sub-region alignment issues)
+# MPICH CH4 uses FI_PROVIDER (MPIR_CVAR_OFI_USE_PROVIDER is deprecated)
+# ====================================================================================
+export FI_PROVIDER=tcp;ofi_rxm
+
+# CXI verbose logging (only used if MPICH_OFI_USE_PROVIDER is not set)
+# export FI_LOG_LEVEL=info
+# export FI_LOG_PROV=cxi
+# export FI_LOG_SUBSYS=mr
+# export MPIR_CVAR_DEBUG_SUMMARY=1
+
+# ====================================================================================
+# STEP 1: Compile with DEBUG_RNG_CONSISTENCY enabled (default) and PLT enabled
+# ====================================================================================
+echo "=========================================="
+echo "STEP 1: Compiling with DEBUG_RNG_CONSISTENCY (MPI: 9 nodes, 1 rank per node, 1 thread, PLT enabled, rescaling enabled)"
+echo "=========================================="
+make clean
+# Build with RNG debug output and Mode 1
+# DEBUG_RNG_CONSISTENCY is enabled by default in config.h
+# Debug symbols for stack traces (-g flag)
+# Note: -rdynamic omitted as it requires Makefile changes and gdb works without it
+# Uses -DPARALLELIZE_Z_LOOP=1 after stage1-omp updates! (thread-local RNG)
+make CFLAGS="-DPARTICLE_OUTPUT_MODE=1 -DPARALLELIZE_Z_LOOP=0 -g" -B
+make reassembly CFLAGS="-DPARTICLE_OUTPUT_MODE=1 -g"
+
+# Verify executables were created
+if [ ! -f "./hermitian_3d_matrix" ]; then
+    echo "ERROR: Compilation failed - hermitian_3d_matrix executable not found!"
+    exit 1
+fi
+if [ ! -f "./write_particles_from_reassembled_mpi" ]; then
+    echo "ERROR: Compilation failed - write_particles_from_reassembled_mpi executable not found!"
+    exit 1
+fi
+echo "Compilation successful"
+
+# Job parameters - MPI: 9 nodes, 1 rank per node, 1 thread per rank
+NNODES=9
+NRANKS_PER_NODE=1
+NTHREADS_PER_RANK=1
+NTOTRANKS=9
+
+# OpenMP settings
+export OMP_NUM_THREADS=$NTHREADS_PER_RANK
+export OMP_PLACES=cores
+export OMP_PROC_BIND=close
+
+# Test parameters (N=1024)
+N=1024
+PARAM_FILE="/home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1024/CPD-225/MPI-9/narray-serial/metadata/param_N1024_CPD_225.par"
+BIN_OUTPUT_DIR="test_N1024/CPD-225/MPI-9/narray-serial/runs/omp-1/bin_files"
+PARTICLE_OUTPUT_DIR="test_N1024/CPD-225/MPI-9/narray-serial/runs/omp-1/particle_ics"
+RNG_LOG_DIR="test_N1024/CPD-225/MPI-9/narray-serial/runs/omp-1/rng_logs"
+
+# Create output directories
+mkdir -p test_N1024/CPD-225/MPI-9/narray-serial/runs/omp-1
+mkdir -p "$BIN_OUTPUT_DIR"
+mkdir -p "$PARTICLE_OUTPUT_DIR"
+mkdir -p "$RNG_LOG_DIR"
+rm -rf "$BIN_OUTPUT_DIR"/rank_* 2>/dev/null || true
+
+# ====================================================================================
+# STEP 2: Run main.cpp to generate .bin files and capture RNG debug output
+# ====================================================================================
+echo ""
+echo "=========================================="
+echo "STEP 2: Generating .bin files (N=$N, ranks=$NTOTRANKS, threads=$NTHREADS_PER_RANK)"
+echo "         Capturing RNG debug output to compare with zeldovich-PLT"
+echo "         Using ZD_qdensity=1 (density + displacement, narray=2)"
+echo "         PLT rescaling ENABLED"
+echo "=========================================="
+
+EXECUTABLE_PATH="/home/helenshao/InitialConditions/hermitian_3d_matrix_production/hermitian_3d_matrix"
+
+if [ ! -f "$EXECUTABLE_PATH" ]; then
+    echo "ERROR: Executable not found: $EXECUTABLE_PATH"
+    exit 1
+fi
+
+echo "Running: $EXECUTABLE_PATH $N $PARAM_FILE"
+echo "RNG debug output will be in: test_N1024/CPD-225/MPI-9/narray-serial/runs/omp-1/rng_logs/hermitian_rng_debug.log"
+echo "Program output will be in: test_N1024/CPD-225/MPI-9/narray-serial/runs/omp-1/N1024_CPD_225_MPI_9_bin_generation.log"
+echo ""
+
+# Change to bin_files directory so .bin files are written to the correct location
+# The program writes files to rank_<rank>/ in the current working directory
+cd "$BIN_OUTPUT_DIR"
+
+# Enable core dumps for stack traces
+ulimit -c unlimited
+export OMP_NUM_THREADS=$NTHREADS_PER_RANK
+
+# Program output goes to stdout, RNG debug output (stderr) goes to log file
+# Note: Core dumps will be written to current directory if crash occurs
+mpiexec -n $NTOTRANKS \
+        "$EXECUTABLE_PATH" $N "$PARAM_FILE" \
+        > ../N1024_CPD_225_MPI_9_bin_generation.log 2> ../rng_logs/hermitian_rng_debug.log
+
+# Return to project root
+cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production
+
+BIN_COUNT=$(find "$BIN_OUTPUT_DIR" -name "*.bin" 2>/dev/null | wc -l)
+echo "Generated $BIN_COUNT .bin files in $BIN_OUTPUT_DIR"
+
+if [ "$BIN_COUNT" -eq 0 ]; then
+    echo "ERROR: No .bin files were generated!"
+    echo "Expected files in: $BIN_OUTPUT_DIR/rank_*/"
+    exit 1
+fi
+
+# Extract RNG debug lines
+echo "Extracting RNG-DEBUG lines from log..."
+grep "\[RNG-DEBUG\]" "$RNG_LOG_DIR/hermitian_rng_debug.log" > "$RNG_LOG_DIR/hermitian_rng_debug_filtered.txt" || true
+RNG_LINES=$(wc -l < "$RNG_LOG_DIR/hermitian_rng_debug_filtered.txt")
+echo "Found $RNG_LINES RNG-DEBUG lines"
+
+# Extract REAL-FFT-DEBUG lines
+echo "Extracting REAL-FFT-DEBUG lines from log..."
+grep "\[REAL-FFT-DEBUG\]" "$RNG_LOG_DIR/hermitian_rng_debug.log" > "$RNG_LOG_DIR/hermitian_real_fft_debug.txt" || true
+REAL_FFT_LINES=$(wc -l < "$RNG_LOG_DIR/hermitian_real_fft_debug.txt")
+echo "Found $REAL_FFT_LINES REAL-FFT-DEBUG lines"
+
+# ====================================================================================
+# STEP 3: Reassemble and write particle ICs
+# ====================================================================================
+echo ""
+echo "=========================================="
+echo "STEP 3: Reassembling and writing particle ICs"
+echo "=========================================="
+
+cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production
+
+I_START=0
+I_END=$N
+
+echo "Running write_particles_from_reassembled_mpi..."
+./write_particles_from_reassembled_mpi \
+    "$BIN_OUTPUT_DIR" \
+    $N \
+    $NTOTRANKS \
+    "$PARAM_FILE" \
+    $I_START \
+    $I_END \
+    2>&1 | tee test_N1024/CPD-225/MPI-9/narray-serial/runs/omp-1/N1024_CPD_225_MPI_9_reassembly.log
+
+# Move output files
+if [ -d "output" ]; then
+    mkdir -p "$PARTICLE_OUTPUT_DIR"
+    mv output/ic_* "$PARTICLE_OUTPUT_DIR/" 2>/dev/null || true
+    mv output/dens* "$PARTICLE_OUTPUT_DIR/" 2>/dev/null || true
+fi
+
+IC_COUNT=$(find "$PARTICLE_OUTPUT_DIR" -name "ic_*" 2>/dev/null | wc -l)
+echo "Generated $IC_COUNT particle IC files"
+
+echo ""
+echo "=========================================="
+echo "MPI Test Summary (9 nodes, 1 rank per node, 1 thread, PLT enabled, rescaling ENABLED)"
+echo "Using ZD_qdensity=1 (density + displacement, narray=2)"
+echo "=========================================="
+echo "  .bin files: $BIN_COUNT"
+echo "  Particle IC files: $IC_COUNT"
+echo "  RNG debug lines: $RNG_LINES"
+echo "  REAL-FFT-DEBUG lines: $REAL_FFT_LINES"
+echo "  Logs: test_N1024/CPD-225/MPI-9/narray-serial/runs/omp-1/"
+echo "  RNG debug output: test_N1024/CPD-225/MPI-9/narray-serial/runs/omp-1/rng_logs/hermitian_rng_debug_filtered.txt"
+echo "  REAL-FFT-DEBUG output: test_N1024/CPD-225/MPI-9/narray-serial/runs/omp-1/rng_logs/hermitian_real_fft_debug.txt"
+echo ""
+echo "Next steps:"
+echo "  1. Run zeldovich-PLT with same parameters: ./run_zeldovich_PLT.sh"
+echo "  2. Compare RNG outputs: see workflow.txt"
+echo "  3. Compare REAL-FFT-DEBUG outputs: see workflow.txt"
