@@ -141,6 +141,7 @@ ZELDOVICH_CORE_SRC = \
 # TODO: Replace with library linking when Option A is implemented
 ZELDOVICH_WRAPPER_SRC = src/utils/zeldovich_wrapper.cpp
 MODULE_SRC = src/fft/fft_setup.c \
+             src/fft/fft_wisdom.c \
              src/generation/hermitian_generation.c \
              src/communication/mpi_exchange.c \
              src/streaming/z_streaming.c
