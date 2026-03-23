@@ -3,7 +3,7 @@
 #PBS -A AbacusAurora
 #PBS -l select=9:ncpus=16:mpiprocs=1:ompthreads=16
 #PBS -l walltime=00:30:00
-#PBS -q debug-scaling
+#PBS -q capacity
 #PBS -l filesystems=home
 #PBS -M helenshao0904@gmail.com
 #PBS -m abe
@@ -19,6 +19,10 @@ cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production
 echo "Loading modules..."
 module load frameworks
 module load fftw/3.3.10
+
+# Check MPI implementation in frameworks
+mpirun --version
+mpiexec --version
 
 echo "Building toy_zloop_omp_scaling..."
 make toy-zloop
@@ -47,7 +51,11 @@ for t in $THREADS; do
   echo ""
   echo "========== OMP_NUM_THREADS=$t (${NNODES} ranks) =========="
   export OMP_NUM_THREADS=$t
-  mpiexec -n $NNODES ./toy_zloop_omp_scaling "$N" "$NARRAY" "$PARAM_FILE" "$REPEATS"
+  mpiexec -n $NNODES --ppn 1 --depth=$t --cpu-bind depth \
+  --env OMP_NUM_THREADS=$t \
+  --env OMP_PLACES=cores \
+  --env OMP_PROC_BIND=close \
+  ./toy_zloop_omp_scaling "$N" "$NARRAY" "$PARAM_FILE" "$REPEATS"
 done
 
 echo ""

@@ -77,7 +77,18 @@ int main(int argc, char** argv) {
     }
 
     if (use_mpi) {
-        MPI_Init(&argc, &argv);
+        int provided;
+        int required = MPI_THREAD_FUNNELED;
+        int ret = MPI_Init_thread(NULL, NULL, required, &provided);
+        if (ret != MPI_SUCCESS) {
+            fprintf(stderr, "MPI_Init_thread failed with error code %d\n", ret);
+            return 1;
+        }
+        if (provided < required) {
+            fprintf(stderr, "ERROR: MPI provides thread level %d, need %d (MPI_THREAD_FUNNELED).\n", provided, required);
+            MPI_Finalize();
+            return 1;
+        }
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
         MPI_Comm_size(MPI_COMM_WORLD, &size);
     }

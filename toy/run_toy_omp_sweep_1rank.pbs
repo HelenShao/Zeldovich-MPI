@@ -20,6 +20,10 @@ echo "Loading modules..."
 module load frameworks
 module load fftw/3.3.10
 
+# Check MPI implementation in frameworks
+mpirun --version
+mpiexec --version
+
 echo "Building toy_zloop_omp_scaling..."
 make toy-zloop
 if [ ! -f "./toy_zloop_omp_scaling" ]; then
@@ -47,7 +51,11 @@ for t in $THREADS; do
   echo ""
   echo "========== OMP_NUM_THREADS=$t (1 rank) =========="
   export OMP_NUM_THREADS=$t
-  mpiexec -n $NNODES ./toy_zloop_omp_scaling "$N" "$NARRAY" "$PARAM_FILE" "$REPEATS"
+  mpiexec -n 1 --ppn 1 --depth=$t --cpu-bind depth \
+  --env OMP_NUM_THREADS=$t \
+  --env OMP_PLACES=cores \
+  --env OMP_PROC_BIND=close \
+  ./toy_zloop_omp_scaling "$N" "$NARRAY" "$PARAM_FILE" "$REPEATS"
 done
 
 echo ""

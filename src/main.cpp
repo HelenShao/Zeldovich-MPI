@@ -100,9 +100,15 @@ MPI_Comm comm_2d;
 int main(int argc, char **argv)
 {
     int provided;
-    int ret = MPI_Init_thread(NULL, NULL, MPI_THREAD_SINGLE, &provided);
+    int required = MPI_THREAD_FUNNELED;
+    int ret = MPI_Init_thread(NULL, NULL, required, &provided);
     if (ret != MPI_SUCCESS) {
         fprintf(stderr, "MPI_Init_thread failed with error code %d\n", ret);
+        return 1;
+    }
+    if (provided < required) {
+        fprintf(stderr, "FATAL: MPI provides thread level %d, need %d (MPI_THREAD_FUNNELED). Hybrid MPI+OMP will scale badly.\n", provided, required);
+        MPI_Finalize();
         return 1;
     }
 

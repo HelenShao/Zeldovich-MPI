@@ -45,7 +45,7 @@ for t in $THREADS; do
   echo "========== OMP_NUM_THREADS=$t =========="
   export OMP_NUM_THREADS=$t
   if [ "$USE_MPI" -eq 1 ]; then
-    mpiexec -n "$MPI_RANKS" "$EXE" "$N" "$NARRAY" "$PARAM" "$REPEATS"
+    mpiexec --bind-to none -n "$MPI_RANKS" "$EXE" "$N" "$NARRAY" "$PARAM" "$REPEATS"
   else
     "$EXE" "$N" "$NARRAY" "$PARAM" "$REPEATS"
   fi

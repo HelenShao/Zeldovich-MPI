@@ -49,7 +49,11 @@ for t in $THREADS; do
   echo ""
   echo "========== OMP_NUM_THREADS=$t (1 rank, first-touch) =========="
   export OMP_NUM_THREADS=$t
-  mpiexec -n $NNODES ./toy_zloop_omp_scaling "$N" "$NARRAY" "$PARAM_FILE" "$REPEATS"
+  mpiexec -n $NNODES --ppn 1 --depth=$t --cpu-bind depth \
+  --env OMP_NUM_THREADS=$t \
+  --env OMP_PLACES=cores \
+  --env OMP_PROC_BIND=close \
+  ./toy_zloop_omp_scaling "$N" "$NARRAY" "$PARAM_FILE" "$REPEATS"
 done
 
 echo ""
