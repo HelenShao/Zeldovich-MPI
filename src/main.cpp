@@ -937,7 +937,7 @@ int main(int argc, char **argv)
     std::vector<FILE*> zgrp_fp;
     std::vector<FILE*> zgrp_dens_fp;
 
-    // MODE 4: file vectors for z-slab format with x-rank subdirectories
+    // MODE 4: file vectors for z-slab format (paths use z%%03d / ic_*_z%%03d; rank index is still rank_x)
     int slab_z_start = 0, slab_z_end = 0;
     std::vector<FILE*> zslab_fp;
     std::vector<FILE*> zslab_dens_fp;
@@ -1077,7 +1077,7 @@ int main(int argc, char **argv)
         }
     }
 
-    // MODE 4: z-slab files in x-rank subdirectories (dual of Mode 3 grid_x>1)
+    // MODE 4: z(k)-slab files under ic/z%03d/ (dual of Mode 3 grid_x>1); dirname z_ matches downstream readers
     if (PARTICLE_OUTPUT_MODE == 4 && params != NULL && !is_idle_rank) {
         Parameters *p = static_cast<Parameters*>(params);
 
@@ -1089,12 +1089,12 @@ int main(int argc, char **argv)
             MPI_Abort(comm_2d, 1);
         }
 
-        // ic/x%03d/ subdir per x-rank
-        char x_dir[PATH_MAX];
-        snprintf(x_dir, sizeof(x_dir), "%s/ic/x%03d", p->output_dir.c_str(), rank_x);
-        int mkdir_x = mkdir(x_dir, 0755);
-        if (mkdir_x != 0 && errno != EEXIST) {
-            fprintf(stderr, "Rank %d: ERROR creating directory %s (errno=%d)\n", rank, x_dir, errno);
+        // ic/z%03d/ per rank_x (Abacus "x" split); z_ prefix is on-disk convention only
+        char ic_z_subdir[PATH_MAX];
+        snprintf(ic_z_subdir, sizeof(ic_z_subdir), "%s/ic/z%03d", p->output_dir.c_str(), rank_x);
+        int mkdir_ic_z = mkdir(ic_z_subdir, 0755);
+        if (mkdir_ic_z != 0 && errno != EEXIST) {
+            fprintf(stderr, "Rank %d: ERROR creating directory %s (errno=%d)\n", rank, ic_z_subdir, errno);
             MPI_Abort(comm_2d, 1);
         }
 
@@ -1106,16 +1106,16 @@ int main(int argc, char **argv)
                 fprintf(stderr, "Rank %d: ERROR creating directory %s (errno=%d)\n", rank, dens_dir, errno);
                 MPI_Abort(comm_2d, 1);
             }
-            char dens_x_dir[PATH_MAX];
-            snprintf(dens_x_dir, sizeof(dens_x_dir), "%s/dens/x%03d", p->output_dir.c_str(), rank_x);
-            int mkdir_dens_x = mkdir(dens_x_dir, 0755);
-            if (mkdir_dens_x != 0 && errno != EEXIST) {
-                fprintf(stderr, "Rank %d: ERROR creating directory %s (errno=%d)\n", rank, dens_x_dir, errno);
+            char dens_z_subdir[PATH_MAX];
+            snprintf(dens_z_subdir, sizeof(dens_z_subdir), "%s/dens/z%03d", p->output_dir.c_str(), rank_x);
+            int mkdir_dens_z = mkdir(dens_z_subdir, 0755);
+            if (mkdir_dens_z != 0 && errno != EEXIST) {
+                fprintf(stderr, "Rank %d: ERROR creating directory %s (errno=%d)\n", rank, dens_z_subdir, errno);
                 MPI_Abort(comm_2d, 1);
             }
         }
 
-        // Z-slab ownership: partition cpd z-slabs among z-ranks
+        // Z(k)-slab ownership: partition cpd z-slabs among z(k)-ranks
         slab_z_start = (rank_z * cpd) / grid_z;
         slab_z_end   = ((rank_z + 1) * cpd) / grid_z;
 
@@ -1125,7 +1125,7 @@ int main(int argc, char **argv)
         // Zeldovich-MPI "z" = Abacus "x" T^T
         for (int s = slab_z_start; s < slab_z_end; s++) {
             char fp_path[PATH_MAX];
-            snprintf(fp_path, sizeof(fp_path), "%s/ic/x%03d/ic_%04d_x%03d",
+            snprintf(fp_path, sizeof(fp_path), "%s/ic/z%03d/ic_%04d_z%03d",
                      p->output_dir.c_str(), rank_x, s, rank_x);
             zslab_fp[s - slab_z_start] = fopen(fp_path, "wb");
             if (!zslab_fp[s - slab_z_start]) {
@@ -1134,7 +1134,7 @@ int main(int argc, char **argv)
             }
             if (p->qdensity && zslab_fp[s - slab_z_start] != NULL) {
                 char fd_path[PATH_MAX];
-                snprintf(fd_path, sizeof(fd_path), "%s/dens/x%03d/dens_%04d",
+                snprintf(fd_path, sizeof(fd_path), "%s/dens/z%03d/dens_%04d",
                          p->output_dir.c_str(), rank_x, s);
                 zslab_dens_fp[s - slab_z_start] = fopen(fd_path, "wb");
                 if (!zslab_dens_fp[s - slab_z_start]) {
@@ -1145,8 +1145,7 @@ int main(int argc, char **argv)
         }
 
         if (rank == 0) {
-            // x = k, which is Abacus "z". So we're writing k-rank subdirs or "z"-subdirs, with files containing 1 i-slab or "x" slabs. 
-            printf("[MODE 4] z-slab files in x-rank subdirs: cpd=%d, slabs_per_rank=%d, ic/x%%03d/ic_%%04d_x%%03d\n",
+            printf("[MODE 4] z-slab files: cpd=%d, slabs_per_rank=%d, ic/z%%03d/ic_%%04d_z%%03d (and dens/z%%03d/dens_%%04d if qdensity)\n",
                    cpd, slab_z_end - slab_z_start);
         }
     }

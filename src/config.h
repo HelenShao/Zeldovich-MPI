@@ -189,7 +189,7 @@
 //     - Z-slab s covers z in [ceil(s*N/cpd), ceil((s+1)*N/cpd))
 //     - Each z-rank owns z-slabs [slab_z_start, slab_z_end) with no collision
 //     - Particle record: RVZel 32 bytes, i=Z(global), j=Y(global), k=X(global)
-//     - Optional: density files under dens/x%03d/dens_%04d
+//     - Optional: density files under dens/z%03d/dens_%04d
 #ifndef PARTICLE_OUTPUT_MODE
 #define PARTICLE_OUTPUT_MODE 1  // Default: Write .bin files for later re-assembly
 #endif
@@ -225,7 +225,7 @@
 
 // Power spectrum spline interpolation resolution
 #ifndef SPLINE_RESOLUTION
-#define SPLINE_RESOLUTION 128
+#define SPLINE_RESOLUTION 10000
 #endif
 
 // Memory alignment for FFTW

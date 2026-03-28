@@ -122,10 +122,10 @@ void AppendZSlabFull(
 );
 
 // ====================================================================================
-// MODE 4: One file per z-slab, in x-rank subdirectories (dual of Mode 3 grid_x>1)
+// MODE 4: One file per z-slab, in per-rank_x subdirs (dual of Mode 3 grid_x>1)
 // ====================================================================================
 //
-// CPD-aligned slabs along Z (instead of X). Directory layout: ic/x%03d/ic_%04d_x%03d.
+// CPD-aligned slabs along Z (instead of X). On-disk layout: ic/z%03d/ic_%04d_z%03d (z_ matches readers).
 // Each call writes this rank's x-extent x all Y at one global z to the z-slab file.
 // Indices: i=z (global), j=y (global), k=x (global).
 // Particle ordering: y-outer, x-inner within each z-append.
