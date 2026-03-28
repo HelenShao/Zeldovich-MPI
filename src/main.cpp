@@ -8,7 +8,7 @@
  *    - Distribute pairs across ranks; build my_pair_list for this rank
  *
  * 3. PARAMETER AND SPECTRUM LOADING
- *    - Load zeldovich-PLT params; create power spectrum (spline, power law)
+ *    - Load zeldovich-PLT params; create power spectrum (ZD_Pk_filename -> file spline, else ZD_Pk_powerlaw_index -> power law)
  *    - Load PLT eigenmodes if qPLT; set narray (1/2/4 by qdensity/qPLT)
  *
  * 4. FFT SETUP
@@ -337,19 +337,31 @@ int main(int argc, char **argv)
             MPI_Abort(comm_2d, 1);
         }
         
-        double powerlaw_index = zeldovich_params_get_Pk_powerlaw_index(params);
-        if (powerlaw_index == 1000.0) {
-            if (rank == 0) {
-                fprintf(stderr, "ERROR: ZD_Pk_powerlaw_index not specified in parameter file\n");
+        const char* pk_file = zeldovich_params_get_Pk_filename(params);
+        if (pk_file != NULL && pk_file[0] != '\0') {
+            if (zeldovich_ps_init_file(ps, pk_file, params) != 0) {
+                if (rank == 0) {
+                    fprintf(stderr, "ERROR: Failed to initialize power spectrum from file: %s\n", pk_file);
+                }
+                MPI_Abort(comm_2d, 1);
             }
-            MPI_Abort(comm_2d, 1);
-        }
-        
-        if (zeldovich_ps_init_powerlaw(ps, powerlaw_index, params) != 0) {
             if (rank == 0) {
-                fprintf(stderr, "ERROR: Failed to initialize power spectrum (power law index: %.2f)\n", powerlaw_index);
+                printf("[INIT] Power spectrum loaded from file: %s\n", pk_file);
             }
-            MPI_Abort(comm_2d, 1);
+        } else {
+            double powerlaw_index = zeldovich_params_get_Pk_powerlaw_index(params);
+            if (powerlaw_index == 1000.0) { // ZD_Pk_powerlaw_index == 1000 means “not set”
+                if (rank == 0) {
+                    fprintf(stderr, "ERROR: Set ZD_Pk_filename or ZD_Pk_powerlaw_index (mutually exclusive)\n");
+                }
+                MPI_Abort(comm_2d, 1);
+            }
+            if (zeldovich_ps_init_powerlaw(ps, powerlaw_index, params) != 0) {
+                if (rank == 0) {
+                    fprintf(stderr, "ERROR: Failed to initialize power spectrum (power law index: %.2f)\n", powerlaw_index);
+                }
+                MPI_Abort(comm_2d, 1);
+            }
         }
         
         // Load PLT eigenmodes from file

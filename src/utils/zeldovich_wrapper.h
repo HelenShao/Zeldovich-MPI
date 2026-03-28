@@ -49,6 +49,10 @@ int zeldovich_params_get_seed(ParametersHandle params);
 // Get Pk_powerlaw_index
 double zeldovich_params_get_Pk_powerlaw_index(ParametersHandle params);
 
+// Get Pk_filename (tabular P(k) input). NULL if empty — use power law in that case.
+// Valid only while Parameters object exists.
+const char* zeldovich_params_get_Pk_filename(ParametersHandle params);
+
 // Get fundamental wavenumber (2pi/BoxSize)
 double zeldovich_params_get_fundamental(ParametersHandle params);
 

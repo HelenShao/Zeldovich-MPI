@@ -78,6 +78,13 @@ double zeldovich_params_get_Pk_powerlaw_index(ParametersHandle params) {
     return p->Pk_powerlaw_index;
 }
 
+const char* zeldovich_params_get_Pk_filename(ParametersHandle params) {
+    if (!params) return NULL;
+    Parameters* p = static_cast<Parameters*>(params);
+    if (p->Pk_filename.empty()) return NULL;
+    return p->Pk_filename.c_str();
+}
+
 double zeldovich_params_get_f_cluster(ParametersHandle params) {
     if (!params) return 0.0;
     Parameters* p = static_cast<Parameters*>(params);
