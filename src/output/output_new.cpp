@@ -237,6 +237,7 @@ static void WriteParticlesSlab_unified(
                             out.i = i;
                             out.j = j;
                             out.k = k_value;
+                            out.reserved = 0;
                             out.displ[0] = pos[0];
                             out.displ[1] = pos[1];
                             out.displ[2] = pos[2];
@@ -672,6 +673,7 @@ void WriteParticlesSlab_range_from_zslab(
                             out.i        = i;
                             out.j        = j;
                             out.k        = k_global;
+                            out.reserved = 0;
                             out.displ[0] = pos[0];
                             out.displ[1] = pos[1];
                             out.displ[2] = pos[2];
@@ -868,8 +870,8 @@ double InitOutputBuffers(Parameters &param) {
         output_tmp = NULL;
     }
 
-    // Mode 3 writes density to per-file ic_*_dens; skip global density1920 file
-#if (PARTICLE_OUTPUT_MODE != 3)
+    // Mode 3 & 4 writes density to per-file ic_*_dens; skip global density1920 file
+#if (PARTICLE_OUTPUT_MODE != 3 and PARTICLE_OUTPUT_MODE != 4)
     if (param.qdensity) {
         fs::path path = param.output_dir / fmt::format(fmt::runtime(param.density_filename.string()), param.ppd);
 
@@ -1000,6 +1002,7 @@ void AppendSlabZSegment(
             out.i = (unsigned short)z;
             out.j = (unsigned short)y;
             out.k = (unsigned short)x_global;
+            out.reserved = 0;
             out.displ[0] = (float)pos0;
             out.displ[1] = (float)pos1;
             out.displ[2] = (float)pos2;
@@ -1091,6 +1094,7 @@ void AppendZSlabFull(
             out.i = (unsigned short)z;
             out.j = (unsigned short)y;
             out.k = (unsigned short)x_global;
+            out.reserved = 0;
             out.displ[0] = (float)pos0;
             out.displ[1] = (float)pos1;
             out.displ[2] = (float)pos2;
@@ -1182,6 +1186,7 @@ void AppendZSlabSegment_M4(
             out.i = (unsigned short)z;
             out.j = (unsigned short)y;
             out.k = (unsigned short)x_global;
+            out.reserved = 0;
             out.displ[0] = (float)pos0;
             out.displ[1] = (float)pos1;
             out.displ[2] = (float)pos2;
