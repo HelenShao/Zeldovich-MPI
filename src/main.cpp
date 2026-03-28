@@ -38,6 +38,7 @@
  *                    PARTICLE_OUTPUT_MODE 1 -> .bin files
  *                    PARTICLE_OUTPUT_MODE 2 -> .bin then read-back -> WriteParticlesSlab_range
  *                    PARTICLE_OUTPUT_MODE 3 -> CPD-slab-ordered streaming append (one file per slab, optionally split by z-rank)
+ *                    PARTICLE_OUTPUT_MODE 4 -> z-slab streaming append (one file per z-slab, in x-rank subdirs)
  *
  * 9. CLEANUP
  *    - Free plans, recv_buffer, local buffers, params, ps, PLT eigenmodes
@@ -901,8 +902,8 @@ int main(int argc, char **argv)
         local_z_slab = NULL;
     }
     
-    // Create directory for this rank (before Z-loop) -- only needed for Mode 1/2 (.bin files)
-#if (PARTICLE_OUTPUT_MODE != 3)
+    // Create directory for this rank (before Z-loop) -- only needed for Mode 1 or 2 (.bin files)
+#if (PARTICLE_OUTPUT_MODE != 3 && PARTICLE_OUTPUT_MODE != 4)
     char dirname[64];
     snprintf(dirname, sizeof(dirname), "rank_%d", rank);
     int mkdir_result = mkdir(dirname, 0755);
@@ -923,6 +924,11 @@ int main(int argc, char **argv)
     int zgrp_start = 0, zgrp_end = 0;
     std::vector<FILE*> zgrp_fp;
     std::vector<FILE*> zgrp_dens_fp;
+
+    // MODE 4: file vectors for z-slab format with x-rank subdirectories
+    int slab_z_start = 0, slab_z_end = 0;
+    std::vector<FILE*> zslab_fp;
+    std::vector<FILE*> zslab_dens_fp;
     
     if (PARTICLE_OUTPUT_MODE == 3 && params != NULL && !is_idle_rank) {
         Parameters *p = static_cast<Parameters*>(params);
@@ -1056,6 +1062,80 @@ int main(int argc, char **argv)
                            cpd, slab_x_end - slab_x_start);
                 }
             }
+        }
+    }
+
+    // MODE 4: z-slab files in x-rank subdirectories (dual of Mode 3 grid_x>1)
+    if (PARTICLE_OUTPUT_MODE == 4 && params != NULL && !is_idle_rank) {
+        Parameters *p = static_cast<Parameters*>(params);
+
+        char ic_dir[PATH_MAX];
+        snprintf(ic_dir, sizeof(ic_dir), "%s/ic", p->output_dir.c_str());
+        int mkdir_ic = mkdir(ic_dir, 0755);
+        if (mkdir_ic != 0 && errno != EEXIST) {
+            fprintf(stderr, "Rank %d: ERROR creating directory %s (errno=%d)\n", rank, ic_dir, errno);
+            MPI_Abort(comm_2d, 1);
+        }
+
+        // ic/x%03d/ subdir per x-rank
+        char x_dir[PATH_MAX];
+        snprintf(x_dir, sizeof(x_dir), "%s/ic/x%03d", p->output_dir.c_str(), rank_x);
+        int mkdir_x = mkdir(x_dir, 0755);
+        if (mkdir_x != 0 && errno != EEXIST) {
+            fprintf(stderr, "Rank %d: ERROR creating directory %s (errno=%d)\n", rank, x_dir, errno);
+            MPI_Abort(comm_2d, 1);
+        }
+
+        if (p->qdensity) {
+            char dens_dir[PATH_MAX];
+            snprintf(dens_dir, sizeof(dens_dir), "%s/dens", p->output_dir.c_str());
+            int mkdir_dens = mkdir(dens_dir, 0755);
+            if (mkdir_dens != 0 && errno != EEXIST) {
+                fprintf(stderr, "Rank %d: ERROR creating directory %s (errno=%d)\n", rank, dens_dir, errno);
+                MPI_Abort(comm_2d, 1);
+            }
+            char dens_x_dir[PATH_MAX];
+            snprintf(dens_x_dir, sizeof(dens_x_dir), "%s/dens/x%03d", p->output_dir.c_str(), rank_x);
+            int mkdir_dens_x = mkdir(dens_x_dir, 0755);
+            if (mkdir_dens_x != 0 && errno != EEXIST) {
+                fprintf(stderr, "Rank %d: ERROR creating directory %s (errno=%d)\n", rank, dens_x_dir, errno);
+                MPI_Abort(comm_2d, 1);
+            }
+        }
+
+        // Z-slab ownership: partition cpd z-slabs among z-ranks
+        slab_z_start = (rank_z * cpd) / grid_z;
+        slab_z_end   = ((rank_z + 1) * cpd) / grid_z;
+
+        zslab_fp.resize(slab_z_end - slab_z_start, NULL);
+        zslab_dens_fp.resize(slab_z_end - slab_z_start, NULL);
+
+        // Zeldovich-MPI "z" = Abacus "x" T^T
+        for (int s = slab_z_start; s < slab_z_end; s++) {
+            char fp_path[PATH_MAX];
+            snprintf(fp_path, sizeof(fp_path), "%s/ic/x%03d/ic_%04d_x%03d",
+                     p->output_dir.c_str(), rank_x, s, rank_x);
+            zslab_fp[s - slab_z_start] = fopen(fp_path, "wb");
+            if (!zslab_fp[s - slab_z_start]) {
+                fprintf(stderr, "Rank %d: ERROR opening %s for writing (errno=%d)\n",
+                        rank, fp_path, errno);
+            }
+            if (p->qdensity && zslab_fp[s - slab_z_start] != NULL) {
+                char fd_path[PATH_MAX];
+                snprintf(fd_path, sizeof(fd_path), "%s/dens/x%03d/dens_%04d",
+                         p->output_dir.c_str(), rank_x, s);
+                zslab_dens_fp[s - slab_z_start] = fopen(fd_path, "wb");
+                if (!zslab_dens_fp[s - slab_z_start]) {
+                    fprintf(stderr, "Rank %d: ERROR opening %s for density (errno=%d)\n",
+                            rank, fd_path, errno);
+                }
+            }
+        }
+
+        if (rank == 0) {
+            // x = k, which is Abacus "z". So we're writing k-rank subdirs or "z"-subdirs, with files containing 1 i-slab or "x" slabs. 
+            printf("[MODE 4] z-slab files in x-rank subdirs: cpd=%d, slabs_per_rank=%d, ic/x%%03d/ic_%%04d_x%%03d\n",
+                   cpd, slab_z_end - slab_z_start);
         }
     }
     
@@ -1344,6 +1424,31 @@ int main(int argc, char **argv)
                     }
                     break;
                 }
+
+                case 4: {
+                    // ===========================================================================
+                    // MODE 4: z-slab format — one segment per z to the owning z-slab file
+                    // ===========================================================================
+                    int s = z * cpd / N;
+                    if (s >= slab_z_start && s < slab_z_end) {
+                        FILE *fp = zslab_fp[s - slab_z_start];
+                        FILE *fp_dens = (s - slab_z_start < (int)zslab_dens_fp.size())
+                                        ? zslab_dens_fp[s - slab_z_start] : NULL;
+                        if (fp != NULL) {
+                            AppendZSlabSegment_M4(
+                                fp, fp_dens, z,
+                                my_extended_bounds.core.x_start, x_count,
+                                local_z_slab, N, narray,
+                                *static_cast<Parameters*>(params)
+                            );
+                        }
+                    }
+                    int ox_total = my_extended_bounds.core.x_end - my_extended_bounds.core.x_start;
+                    total_bytes_written += (size_t)ox_total * N * sizeof(RVZelParticle);
+                    if (static_cast<Parameters*>(params)->qdensity)
+                        total_bytes_written += (size_t)ox_total * N * sizeof(float);
+                    break;
+                }
                 
                 default:
                     break;
@@ -1387,6 +1492,18 @@ int main(int argc, char **argv)
             }
             files_written = slab_x_end - slab_x_start;
         }
+        MPI_Barrier(comm_2d);
+    }
+
+    // MODE 4: Close files and set file count
+    if (PARTICLE_OUTPUT_MODE == 4 && params != NULL) {
+        for (size_t i = 0; i < zslab_fp.size(); i++) {
+            if (zslab_fp[i] != NULL) { fclose(zslab_fp[i]); zslab_fp[i] = NULL; }
+            if (i < zslab_dens_fp.size() && zslab_dens_fp[i] != NULL) {
+                fclose(zslab_dens_fp[i]); zslab_dens_fp[i] = NULL;
+            }
+        }
+        files_written = slab_z_end - slab_z_start;
         MPI_Barrier(comm_2d);
     }
     
