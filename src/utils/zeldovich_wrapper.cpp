@@ -60,16 +60,10 @@ int zeldovich_params_get_cpd(ParametersHandle params) {
     return p->cpd;
 }
 
-int zeldovich_params_get_grid_x(ParametersHandle params) {
+int zeldovich_params_get_NumZRanks(ParametersHandle params) {
     if (!params) return 0;
     Parameters* p = static_cast<Parameters*>(params);
-    return p->grid_x;
-}
-
-int zeldovich_params_get_grid_z(ParametersHandle params) {
-    if (!params) return 0;
-    Parameters* p = static_cast<Parameters*>(params);
-    return p->grid_z;
+    return p->num_z_ranks;
 }
 
 int zeldovich_params_get_seed(ParametersHandle params) {

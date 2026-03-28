@@ -14,8 +14,8 @@ Parameters::Parameters(const fs::path &inputfile) {
     numblock        = 2;       // Ok, but you might not want this!
     boxsize         = 0;       // Illegal
     Pk_scale        = 1;       // Legal default
-    grid_x          = 0;       // Must be specified for MPI-Zeldovich writer
-    grid_z          = 0;       // Must be specified for MPI-Zeldovich writer
+    grid_x          = 0;       // Computed at runtime from MPI size and num_z_ranks
+    num_z_ranks     = 0;       // Must be specified for MPI-Zeldovich writer
     qdensity        = 0;       // Legal default
     qascii          = 0;       // Legal default
     qoneslab        = -1;      // Legal default
@@ -66,8 +66,7 @@ void Parameters::register_vars(void) {
     installscalar("NP", np, MUST_DEFINE);
     installscalar("ZD_NumBlock", numblock, MUST_DEFINE);
     installscalar("CPD", cpd, MUST_DEFINE);
-    installscalar("ZD_grid_x", grid_x, MUST_DEFINE);
-    installscalar("ZD_grid_z", grid_z, MUST_DEFINE);
+    installscalar("ZD_NumZRanks", num_z_ranks, MUST_DEFINE);
     installscalar("ZD_qdensity", qdensity, DONT_CARE);
     installscalar("ZD_qoneslab", qoneslab, DONT_CARE);
     installscalar("ZD_Seed", seed, MUST_DEFINE);

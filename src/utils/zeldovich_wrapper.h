@@ -40,9 +40,8 @@ int64_t zeldovich_params_get_ppd(ParametersHandle params);
 // Get cpd (coarse particle decomposition; number of slabs for output alignment)
 int zeldovich_params_get_cpd(ParametersHandle params);
 
-// Get writer-specified MPI grid dimensions
-int zeldovich_params_get_grid_x(ParametersHandle params);
-int zeldovich_params_get_grid_z(ParametersHandle params);
+// Get user-specified number of ranks along z
+int zeldovich_params_get_NumZRanks(ParametersHandle params);
 
 // Get seed
 int zeldovich_params_get_seed(ParametersHandle params);

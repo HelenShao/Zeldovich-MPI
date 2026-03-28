@@ -174,17 +174,16 @@ int main(int argc, char **argv)
     }
 
     // ========================================================================
-    // MPI Cartesian Topology Setup (writer-specified grid from param file)
+    // MPI Cartesian Topology Setup (grid_z from param file, grid_x from MPI size)
     // ========================================================================
     int grid_x, grid_z;
-    grid_x = zeldovich_params_get_grid_x(params);
-    grid_z = zeldovich_params_get_grid_z(params);
+    grid_z = zeldovich_params_get_NumZRanks(params);
+    grid_x = num_ranks / grid_z;
 
-    if (grid_x * grid_z != num_ranks) {
+    if (num_ranks % grid_z != 0) {
         if (world_rank == 0) {
-            fprintf(stderr, "Error: parameter file grid_x=%d and grid_z=%d do not match num_ranks=%d.\n",
-                    grid_x, grid_z, num_ranks);
-            fprintf(stderr, "       Expected grid_x * grid_z == num_ranks.\n");
+            fprintf(stderr, "Error: num_ranks=%d is not evenly divisible by ZD_NumZRanks=%d.\n",
+                    num_ranks, grid_z);
         }
         MPI_Abort(MPI_COMM_WORLD, 1);
     }
