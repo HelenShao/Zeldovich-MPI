@@ -15,12 +15,6 @@ void setup_fftw_plans_full(int N, int narray, fftw_complex_t *plan_buffer,
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-#ifdef USE_FFTW_WISDOM
-    // Import FFTW wisdom on rank 0 and broadcast to all ranks so every
-    // process starts from an identical planner state
-    fft_wisdom_import_broadcast(rank, MPI_COMM_WORLD);
-#endif
-
     // Ensure N^2 * sizeof(fftw_complex_t) is a multiple of 64 for AVX-512 alignment
     // of consecutive arrays in plan_many_dft (N divisible by 4 is sufficient)
     if (N <= 0 || (N % 4) != 0) {
@@ -31,7 +25,7 @@ void setup_fftw_plans_full(int N, int narray, fftw_complex_t *plan_buffer,
     // ====================================================================================
     // INITIALIZE FFTW THREADING 
     // ====================================================================================
-    // FFTW threading must be initialized before creating plans (to use OMP)
+    // Thread init must precede other FFTW calls (including wisdom import).
 
     static int fftw_threads_initialized = 0;
     if (!fftw_threads_initialized) {
@@ -53,6 +47,12 @@ void setup_fftw_plans_full(int N, int narray, fftw_complex_t *plan_buffer,
         fftw_threads_initialized = 1;
     }
     // ====================================================================================
+
+#ifdef USE_FFTW_WISDOM
+    // Import FFTW wisdom on rank 0 and broadcast to all ranks so every
+    // process starts from an identical planner state (after thread init).
+    fft_wisdom_import_broadcast(rank, MPI_COMM_WORLD);
+#endif
     
     // Create 2D batched plan (plan_many_dft): howmany=narray transforms of size NxN each.
     // plan_buffer must be provided (caller allocates local_y_slices before setup).
