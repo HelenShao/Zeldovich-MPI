@@ -12,16 +12,13 @@
 extern "C" {
 #endif
 
-// Import FFTW wisdom on rank 0 from FFTW_WISDOM_FILENAME, then broadcast
-// the wisdom string to all ranks in 'comm'. If the file does not exist,
-// all ranks start from a clean "no wisdom" state and proceed to plan
-// from scratch.
-void fft_wisdom_import_broadcast(int rank, MPI_Comm comm);
+// Import per-rank FFTW wisdom from "<FFTW_WISDOM_FILENAME>_rankXXXX".
+// Broadcasting is intentionally disabled; each rank manages its own file.
+void fft_wisdom_import_per_rank(int rank, MPI_Comm comm);
 
-// Export FFTW wisdom from rank 0 to FFTW_WISDOM_FILENAME. Other ranks
-// do nothing. This creates the file if it did not exist, and overwrites
-// it otherwise.
-void fft_wisdom_export_rank0(int rank);
+// Export per-rank FFTW wisdom to "<FFTW_WISDOM_FILENAME>_rankXXXX".
+// This creates the file if it did not exist, and overwrites it otherwise.
+void fft_wisdom_export_per_rank(int rank);
 
 #ifdef __cplusplus
 }

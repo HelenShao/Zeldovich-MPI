@@ -4,6 +4,7 @@
 #endif
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <mpi.h>
 #include <omp.h>
 
@@ -31,7 +32,7 @@ void setup_fftw_plans_full(int N, int narray, fftw_complex_t *plan_buffer,
     if (!fftw_threads_initialized) {
         int nthreads = omp_get_max_threads();
         
-        // All threads for FFTW (no outer OpenMP over narray).
+        // All threads for FFTW (no outer omp over narray).
         int fft_threads = nthreads;
         
         if (FFTW_INIT_THREADS() == 0) {
@@ -49,19 +50,46 @@ void setup_fftw_plans_full(int N, int narray, fftw_complex_t *plan_buffer,
     // ====================================================================================
 
 #ifdef USE_FFTW_WISDOM
-    // Import FFTW wisdom on rank 0 and broadcast to all ranks so every
-    // process starts from an identical planner state (after thread init).
-    fft_wisdom_import_broadcast(rank, MPI_COMM_WORLD);
+    // Load per-rank wisdom first so all FFTW_MEASURE calls below (probe on rank 0,
+    // then real 2D/1D plans) can consult it.
+    fft_wisdom_import_per_rank(rank, MPI_COMM_WORLD);
+
+    // Rank 0: optional sanity check that MEASURE still adds bytes vs current store.
+    // Do not FFTW_FORGET_WISDOM here — that would drop imported wisdom before planning.
+    if (rank == 0) {
+        char *pre = FFTW_EXPORT_WISDOM_TO_STRING();
+        size_t pre_len = pre ? strlen(pre) : 0;
+        if (pre) FFTW_FREE(pre);
+
+        fftw_complex_t *probe = NULL;
+        if (posix_memalign((void**)&probe, 64, sizeof(fftw_complex_t) * 16) == 0) {
+            fftw_plan_t p = FFTW_PLAN_DFT_1D(16, probe, probe, FFT_SIGN, FFTW_MEASURE);
+            if (p) FFTW_DESTROY_PLAN(p);
+            free(probe);
+        }
+
+        char *post = FFTW_EXPORT_WISDOM_TO_STRING();
+        size_t post_len = post ? strlen(post) : 0;
+        if (post) FFTW_FREE(post);
+
+        printf("[FFTW-WISDOM-DIAG] Probe (after import): wisdom before=%zu after=%zu bytes "
+               "(delta=%zd). %s\n",
+               pre_len, post_len, (ssize_t)(post_len - pre_len),
+               post_len > pre_len ? "OK - MEASURE appended to wisdom store."
+                                  : "No growth (often OK if probe plan already in imported wisdom).");
+        fflush(stdout);
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
 #endif
     
-    // Create 2D batched plan (plan_many_dft): howmany=narray transforms of size NxN each.
-    // plan_buffer must be provided (caller allocates local_y_slices before setup).
+    // plan_buffer must be provided before setup
     if (plan_buffer == NULL) {
         fprintf(stderr, "[ERROR] Failed to provide plan_buffer for 2D batched FFT plan\n");
         MPI_Abort(MPI_COMM_WORLD, 1);
     }
     buf_2d = plan_buffer;
-    
+
+    // FFTW_MEASURE consults imported wisdom (USE_FFTW_WISDOM) when available.
     {// This creates a single FFTW plan that encodes a batch of narray identical 2D transforms, each of size N×N, over contiguous data in buf_2d
         int n[2] = { N, N };
         *plan_2d_out = FFTW_PLAN_MANY_DFT(
@@ -100,10 +128,8 @@ void setup_fftw_plans_full(int N, int narray, fftw_complex_t *plan_buffer,
     }
 
 #ifdef USE_FFTW_WISDOM
-    // After successful plan creation (and any warm-up executes outside this
-    // function), rank 0 exports the accumulated wisdom back to disk so
-    // subsequent runs can reuse it.
-    fft_wisdom_export_rank0(rank);
+    // each rank exports its own wisdom file for reuse.
+    fft_wisdom_export_per_rank(rank);
 #endif
 }
 
