@@ -153,6 +153,7 @@ TARGET = hermitian_3d_matrix
 REASSEMBLY_TARGET = write_particles_from_reassembled_mpi
 TOY_TARGET = toy_zloop_omp_scaling
 TOY_WISDOM_TARGET = toy_fftw_wisdom_debug
+TOY_WISDOM_SRC = toy/toy_fftw_wisdom_debug.cpp src/fft/fft_setup.c
 
 # ====================================================================================
 # BUILD RULES
@@ -193,12 +194,10 @@ $(TOY_TARGET): toy/toy_zloop_omp_scaling.cpp $(ZELDOVICH_WRAPPER_SRC) src/utils/
 	$(CXX) $(ALL_CXXFLAGS) $(INCLUDES) -o $(TOY_TARGET) toy/toy_zloop_omp_scaling.cpp $(ZELDOVICH_WRAPPER_SRC) src/utils/plt_eigenmodes.c $(PARSEHEADER_SRC) $(ZELDOVICH_CORE_SRC) $(LDFLAGS)
 	@echo "Toy built: ./$(TOY_TARGET) <N> <narray> <param_file> [num_y_repeats]"
 
-# Toy: same fft_setup.c + fft_wisdom.c as production; 2D batched FFT per repeat (wisdom debug)
+# Minimal MPI+OpenMP toy: fft_setup + fft_wisdom only (see toy/toy_fftw_wisdom_debug.cpp)
 toy-wisdom-debug: $(TOY_WISDOM_TARGET)
-$(TOY_WISDOM_TARGET): toy/toy_fftw_wisdom_debug.cpp src/fft/fft_setup.c src/fft/fft_wisdom.c src/config.h
-	$(CXX) $(ALL_CXXFLAGS) $(INCLUDES) -DUSE_FFTW_WISDOM -o $(TOY_WISDOM_TARGET) \
-		toy/toy_fftw_wisdom_debug.cpp src/fft/fft_setup.c src/fft/fft_wisdom.c $(LDFLAGS)
-	@echo "Built: ./$(TOY_WISDOM_TARGET)  (mpiexec -n R ./$(TOY_WISDOM_TARGET) N narray repeats — run from bin_files cwd for wisdom paths)"
+$(TOY_WISDOM_TARGET): $(TOY_WISDOM_SRC) src/config.h
+	$(CXX) $(ALL_CXXFLAGS) $(INCLUDES) -o $(TOY_WISDOM_TARGET) $(TOY_WISDOM_SRC) $(LDFLAGS)
 
 clean:
 	rm -f $(TARGET) $(REASSEMBLY_TARGET) $(TOY_TARGET) $(TOY_WISDOM_TARGET) *.o
@@ -211,8 +210,8 @@ help:
 	@echo ""
 	@echo "  make              - Build main executable (hermitian_3d_matrix)"
 	@echo "  make reassembly   - Build reassembly tool (write_particles_from_reassembled_mpi)"
-	@echo "  make toy-zloop    - Build toy z-loop OMP scaling test"
-	@echo "  make toy-wisdom-debug - Build MPI toy using fft_setup + fft_wisdom (wisdom file debug)"
+	@echo "  make toy-zloop       - Build toy z-loop OMP scaling test"
+	@echo "  make toy-wisdom-debug - Build toy_fftw_wisdom_debug (FFTW wisdom path)"
 	@echo "  make check-omp    - Show CXX, OPENMP_FLAGS, and compiler version"
 	@echo "  make clean        - Remove build artifacts"
 	@echo "  make help         - Show this help message"
