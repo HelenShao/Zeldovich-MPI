@@ -62,7 +62,10 @@ void setup_fftw_plans_full(int N, int narray, fftw_complex_t *plan_buffer,
     }
     buf_2d = plan_buffer;
     
-    {// This creates a single FFTW plan that encodes a batch of narray identical 2D transforms, each of size N×N, over contiguous data in buf_2d
+    /* Memory layout for plan_many_dft below: narray contiguous N×N complex planes.
+     * Plane index a (0 <= a < narray) starts at buf_2d + a * N * N.
+     * Within a plane, row-major C order: element (i,j) at buf_2d[a*N*N + i*N + j]. */
+    {
         int n[2] = { N, N };
         *plan_2d_out = FFTW_PLAN_MANY_DFT(
             2,      // 2D transform
