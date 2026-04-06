@@ -1,0 +1,74 @@
+#!/bin/bash
+#PBS -N w2048_toyw16
+#PBS -A AbacusAurora
+#PBS -l select=2:ncpus=32:mpiprocs=2:ompthreads=16
+#PBS -l walltime=00:30:00
+#PBS -q debug-scaling
+#PBS -l filesystems=home
+#PBS -M helenshao0904@gmail.com
+#PBS -m abe
+#PBS -j oe
+#PBS -o /home/helenshao/InitialConditions/hermitian_3d_matrix_production/toy/logs/N2048_toy_wisdom_debug_OMP16.out
+#
+# Runs toy_fftw_wisdom_debug with the *same* mpiexec binding/env as
+# test_N2048/.../N2048_CPD225_MPI64_OMP16_wisdom_numa.pbs, from toy/bin_files cwd
+# so per-rank wisdom files land under toy/.
+#
+# Smaller test (4 ranks, 2 nodes, 2 ranks/node): use e.g.
+#   #PBS -l select=2:ncpus=32:mpiprocs=2:ompthreads=16
+# and keep NRANKS_PER_NODE=2; NNODES comes from PBS_NODEFILE.
+
+TOY_DIR=/home/helenshao/InitialConditions/hermitian_3d_matrix_production/toy
+PROJ_ROOT=/home/helenshao/InitialConditions/hermitian_3d_matrix_production
+
+cd "$TOY_DIR"
+mkdir -p bin_files logs
+rm -f logs/N2048_toy_wisdom_debug_OMP16.run.log 2>/dev/null || true
+
+cd "$PROJ_ROOT"
+module load frameworks
+module load fftw/3.3.10
+
+if [ -n "$PBS_NODEFILE" ]; then
+    if ! NNODES=$(sort -u "$PBS_NODEFILE" | wc -l); then
+        echo "Error: Failed to read PBS_NODEFILE ($PBS_NODEFILE)" >&2
+        exit 1
+    fi
+else
+    NNODES=4 # tot ranks
+fi
+export NNODES
+NRANKS_PER_NODE=2
+NTHREADS_PER_RANK=16
+NTOTRANKS=$((NNODES * NRANKS_PER_NODE))
+
+# Toy links only fft_setup + fft_wisdom; Makefile adds -DUSE_FFTW_WISDOM. Optional: CFLAGS="-g" for symbols.
+make -B toy-wisdom-debug
+[ ! -f "$PROJ_ROOT/toy_fftw_wisdom_debug" ] && { echo "Compilation failed (toy_fftw_wisdom_debug)!"; exit 1; }
+
+unset OMP_NUM_THREADS
+export OMP_PLACES=cores
+export OMP_PROC_BIND=close
+export OMP_DISPLAY_AFFINITY=false
+
+N=2048
+NARRAY=4
+NUM_Y_REPEATS=17
+
+cd "$TOY_DIR/bin_files"
+ulimit -c unlimited
+
+# Wisdom file: fftw_toy.wisdom in cwd (zeldovich-style fixed name; see toy_fftw_wisdom_debug.cpp).
+# Same launcher line as hermitian_3d_matrix job (OMP_DISPLAY_AFFINITY=false keeps logs small).
+pwd
+ls -la fftw_toy.wisdom || echo "no fftw_toy.wisdom in cwd (first run is ok)"
+
+mpiexec -ppn 2 --cpu-bind depth --depth $NTHREADS_PER_RANK --mem-bind list:0:1 -np $(( 2 * NNODES )) \
+        --env OMP_NUM_THREADS=$NTHREADS_PER_RANK --env OMP_PLACES=cores --env OMP_PROC_BIND=close --env OMP_DISPLAY_AFFINITY=false \
+        "$PROJ_ROOT/toy_fftw_wisdom_debug" $N $NARRAY $NUM_Y_REPEATS \
+        > "$TOY_DIR/logs/N2048_toy_wisdom_debug_OMP16.run.log" 2>&1
+
+echo "Done. toy_fftw_wisdom_debug: N=$N narray=$NARRAY repeats=$NUM_Y_REPEATS ranks=$((2*NNODES)) threads/rank=$NTHREADS_PER_RANK"
+echo "Wisdom file: $TOY_DIR/bin_files/fftw_toy.wisdom"
+echo "Program log: $TOY_DIR/logs/N2048_toy_wisdom_debug_OMP16.run.log"
+echo "PBS merged stdout/stderr: $TOY_DIR/logs/N2048_toy_wisdom_debug_OMP16.out"

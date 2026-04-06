@@ -50,36 +50,9 @@ void setup_fftw_plans_full(int N, int narray, fftw_complex_t *plan_buffer,
     // ====================================================================================
 
 #ifdef USE_FFTW_WISDOM
-    // Load per-rank wisdom first so all FFTW_MEASURE calls below (probe on rank 0,
-    // then real 2D/1D plans) can consult it.
-    fft_wisdom_import_per_rank(rank, MPI_COMM_WORLD);
+    // Each rank imports the same wisdom file (see wisdom_rank0).
+    fft_wisdom_import_from_file(rank);
 
-    // Rank 0: optional sanity check that MEASURE still adds bytes vs current store.
-    // Do not FFTW_FORGET_WISDOM here — that would drop imported wisdom before planning.
-    if (rank == 0) {
-        char *pre = FFTW_EXPORT_WISDOM_TO_STRING();
-        size_t pre_len = pre ? strlen(pre) : 0;
-        if (pre) FFTW_FREE(pre);
-
-        fftw_complex_t *probe = NULL;
-        if (posix_memalign((void**)&probe, 64, sizeof(fftw_complex_t) * 16) == 0) {
-            fftw_plan_t p = FFTW_PLAN_DFT_1D(16, probe, probe, FFT_SIGN, FFTW_MEASURE);
-            if (p) FFTW_DESTROY_PLAN(p);
-            free(probe);
-        }
-
-        char *post = FFTW_EXPORT_WISDOM_TO_STRING();
-        size_t post_len = post ? strlen(post) : 0;
-        if (post) FFTW_FREE(post);
-
-        printf("[FFTW-WISDOM-DIAG] Probe (after import): wisdom before=%zu after=%zu bytes "
-               "(delta=%zd). %s\n",
-               pre_len, post_len, (ssize_t)(post_len - pre_len),
-               post_len > pre_len ? "OK - MEASURE appended to wisdom store."
-                                  : "No growth (often OK if probe plan already in imported wisdom).");
-        fflush(stdout);
-    }
-    MPI_Barrier(MPI_COMM_WORLD);
 #endif
     
     // plan_buffer must be provided before setup
@@ -106,8 +79,9 @@ void setup_fftw_plans_full(int N, int narray, fftw_complex_t *plan_buffer,
 
     // Verify thread count that FFTW will use when executing this plan (must match plan_with_nthreads)
     if (rank == 0) {
-        int planner_n = FFTW_PLANNER_NTHREADS();
-        printf("[FFTW-THREADING] Planner nthreads (used at execute): %d\n", planner_n);
+        int planner_n = omp_get_max_threads();
+        printf("[FFTW-THREADING] OMP max threads (matches FFTW_PLAN_WITH_NTHREADS): %d\n",
+               planner_n);
         fflush(stdout);
     }
     
@@ -130,8 +104,7 @@ void setup_fftw_plans_full(int N, int narray, fftw_complex_t *plan_buffer,
     }
 
 #ifdef USE_FFTW_WISDOM
-    // each rank exports its own wisdom file for reuse.
-    fft_wisdom_export_per_rank(rank);
+    fft_wisdom_export_rank0(rank);
 #endif
 }
 

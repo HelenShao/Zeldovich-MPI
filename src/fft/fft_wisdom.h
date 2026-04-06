@@ -1,21 +1,19 @@
 #ifndef FFT_WISDOM_H
 #define FFT_WISDOM_H
 
-#include <mpi.h>
 #include "../precision.h"
 
-// Default wisdom file (relative to cwd) if FFTW_WISDOM_FILE is unset.
-#define FFTW_WISDOM_FILENAME "fftw_wisdom_float"
+// Wisdom file path (relative to cwd), same for wisdom_rank0 and MPI run.
+#define FFTW_WISDOM_FILENAME "fftw_wisdom_float.wisdom"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-// Import: rank 0 reads FFTW_WISDOM_FILE if set (absolute path from job script),
-// else FFTW_WISDOM_FILENAME; then broadcast wisdom to all ranks in comm.
-void fft_wisdom_import_broadcast(int rank, MPI_Comm comm);
+// Each rank reads the same wisdom file from disk (no MPI broadcast).
+void fft_wisdom_import_from_file(int rank);
 
-// Export: rank 0 writes to the same path. Rank 0 prints a short wisdom preview first.
+// Rank 0 only: writes wisdom to FFTW_WISDOM_FILENAME.
 void fft_wisdom_export_rank0(int rank);
 
 #ifdef __cplusplus
@@ -23,4 +21,3 @@ void fft_wisdom_export_rank0(int rank);
 #endif
 
 #endif
-

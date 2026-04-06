@@ -1,0 +1,30 @@
+# zeldovich-MPI Parameter File (1D / Mode 4)
+
+BoxSize = 1000
+CPD = 675
+ICFormat = "RVZel"
+InitialConditionsDirectory = "/lus/flare/projects/AbacusAurora/hshao/zeldovich-MPI/AbacusSummit_highbase_c000_ph100/1D"
+InitialRedshift = 99.0
+NP = 41278242816                     # N^3 = 3456^3 = 41278242816
+ZD_NumBlock = 2                      # obsolete
+ZD_Seed = 22321                      # match highbase par file
+ZD_Pk_scale = 1.0
+ZD_Pk_norm = 8.0                     # Normalization scale (e.g., sigma_8)
+ZD_Pk_sigma_ratio = 0.02113950155394198 # highbase match
+ZD_Pk_smooth = 0.0
+ZD_Pk_filename = "/home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1920/Abacus-CPD375/cosm_000/abacus_cosm000.txt"
+ZD_Version = 2                       # Use version 2 (recommended)
+ZD_qPk_fix_to_mean = 0               # Random amplitude (not fixed)
+ZD_f_NL = 0                          # No f_NL
+ZD_qdensity = 1                      # Output density + displacement
+ZD_f_cluster = 0.9954948095129318
+
+ZD_k_cutoff = 1.0
+ZD_CornerModes = 0
+
+ZD_qPLT = 1
+ZD_qPLT_rescale = 1
+ZD_PLT_target_z = 12.0
+ZD_PLT_filename = "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128"
+
+ZD_NumZRanks = 32 # z=i -> 32 "abacus-x" ranks
