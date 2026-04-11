@@ -65,7 +65,7 @@ void z_streaming_unpack(
                 rank, z_global, my_bounds.z_start, my_bounds.z_end);
         MPI_Abort(comm_2d, 1);
     }
-    if (thread_1d_bufs == NULL || num_thread_bufs = 0) {
+    if (thread_1d_bufs == NULL || num_thread_bufs == 0) {
         fprintf(stderr, "[ERROR] Rank %d: z_streaming_unpack requires thread_1d_bufs and num_thread_bufs > 0\n",
                 rank);
         MPI_Abort(comm_2d, 1);
