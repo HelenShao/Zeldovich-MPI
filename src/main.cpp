@@ -33,7 +33,7 @@
  *
  * 8. Z-SLAB STREAMING (for each Z owned by this rank)
  *    - Allocate local_z_slab (one Z-slab: [Array][X][Y])
- *    - For each z: z_streaming_unpack(recv_buffer -> local_z_slab, 1D FFT in Y)
+ *    - For each z: z_streaming_unpack(recv_buffer -> local_z_slab, staged 1D FFT in Y)
  *    - Write output: PARTICLE_OUTPUT_MODE 0 -> WriteParticlesSlab_range
  *                    PARTICLE_OUTPUT_MODE 1 -> .bin files
  *                    PARTICLE_OUTPUT_MODE 2 -> .bin then read-back -> WriteParticlesSlab_range
@@ -816,6 +816,7 @@ int main(int argc, char **argv)
         // ===== BATCH STEP 7: Update write cursors =====
         // After MPI_Alltoallv_c completes, the cursor is advanced by recvcounts_batch[src]
         // The next batch then calculates a displacement that points after the current batch's data
+        // (loop over batches of y slices) Each MPI_Alltoallv_c only adds the next chunk of data into the right place in the same pre-sized recv_buffer. The cursors (src_write_cursor) make batch 1’s data sit after batch 0’s data for each source, and so on, until the buffer matches the final “source-grouped” layout described in the file header.
 
         for (int src = 0; src < num_ranks; src++) {
             src_write_cursor[src] += recvcounts_batch[src];
@@ -1149,8 +1150,31 @@ int main(int argc, char **argv)
                    cpd, slab_z_end - slab_z_start);
         }
     }
+
+    double acc_unpack = 0.0;
+    double acc_fft = 0.0;
+    double acc_io = 0.0;
     
     if (!is_idle_rank && my_pencils > 0) {
+        // allocate array of pointers, one per thread
+        // pointers to aligned buffers for 1D Y FFT
+        const int num_threads = omp_get_max_threads();
+        fftw_complex_t **thread_1d_bufs =
+            (fftw_complex_t**)calloc((size_t)num_threads, sizeof(fftw_complex_t*));
+        if (thread_1d_bufs == NULL) {
+            fprintf(stderr, "Rank %d: calloc failed for thread_1d_bufs\n", rank);
+            MPI_Abort(comm_2d, 1);
+        }
+        // each thread gets aligned buffer of size PPD for 1D FFT
+        for (int t = 0; t < num_threads; t++) {
+            if (posix_memalign((void**)&thread_1d_bufs[t], ALIGN_BYTES,
+                               sizeof(fftw_complex_t) * (size_t)N) != 0) {
+                fprintf(stderr, "Rank %d: posix_memalign failed for thread_1d_bufs[%d]\n", rank, t);
+                MPI_Abort(comm_2d, 1);
+            }
+        }
+        const int num_thread_bufs = num_threads;
+
         // Use appropriate bounds for Z-loop (padded if enabled, core otherwise)
 #if USE_X_PADDING
         int x_count = my_extended_bounds.padded.x_end - my_extended_bounds.padded.x_start;
@@ -1187,7 +1211,11 @@ int main(int argc, char **argv)
                 src_batch_slice_counts,          // [src][batch] --> slice count
                 global_max_batches,              // Total number of batches
                 local_z_slab,                    // Destination buffer
-                plan_1d_y                        // FFT plan
+                thread_1d_bufs,
+                num_thread_bufs,
+                &acc_unpack,
+                &acc_fft,
+                plan_1d_y                        // FFT plan (1 FFTW thread; staged)
             );
             
             // ========== DEBUG: Check imaginary parts BEFORE final verification ==========
@@ -1243,6 +1271,8 @@ int main(int argc, char **argv)
             // Skip all output writes - Stage 3 still does unpack+FFT, but no I/O
             (void)0;
 #else
+            {
+            double t_io0 = omp_get_wtime();
             switch (PARTICLE_OUTPUT_MODE) {
                 case 0: {
                     // =======================================================================================
@@ -1464,6 +1494,8 @@ int main(int argc, char **argv)
                 default:
                     break;
             }
+            acc_io += omp_get_wtime() - t_io0;
+            }
 #endif // !SKIP_FILE_WRITE
 
             // =======================================================================================
@@ -1481,6 +1513,14 @@ int main(int argc, char **argv)
                 }
             }
         }
+
+        for (int t = 0; t < num_threads; t++) {
+            if (thread_1d_bufs[t] != NULL) {
+                free(thread_1d_bufs[t]);
+                thread_1d_bufs[t] = NULL;
+            }
+        }
+        free(thread_1d_bufs);
     }
     // Idle ranks: files_written = 0, total_bytes_written = 0 (already initialized)
     
@@ -1519,6 +1559,11 @@ int main(int argc, char **argv)
     }
     
     t_streaming.Stop();
+
+    double acc_unpack_max = 0.0, acc_fft_max = 0.0, acc_io_max = 0.0;
+    MPI_Reduce(&acc_unpack, &acc_unpack_max, 1, MPI_DOUBLE, MPI_MAX, 0, comm_2d);
+    MPI_Reduce(&acc_fft, &acc_fft_max, 1, MPI_DOUBLE, MPI_MAX, 0, comm_2d);
+    MPI_Reduce(&acc_io, &acc_io_max, 1, MPI_DOUBLE, MPI_MAX, 0, comm_2d);
     
     int total_files_written;
     size_t total_bytes_all_ranks;
@@ -1529,6 +1574,9 @@ int main(int argc, char **argv)
     if (rank == 0) {
         printf("[Stage 3] Streaming complete. Time: %.6f s\n", t_streaming.Elapsed());
         printf("          (Includes unpacking, FFT, and I/O for all Z-slabs)\n");
+        printf("          Unpack (recv -> slab, max rank): %.6f s\n", acc_unpack_max);
+        printf("          1D Y FFT (staged, max rank):    %.6f s\n", acc_fft_max);
+        printf("          Write / I/O (switch, max rank):  %.6f s\n", acc_io_max);
         printf("          Total files written: %d (across all ranks)\n", total_files_written);
         printf("          Total data written: %.3f GB\n", 
                total_bytes_all_ranks / (1024.0 * 1024.0 * 1024.0));
@@ -1566,6 +1614,8 @@ int main(int argc, char **argv)
         printf("Stage 2 (Metadata exchange):            %.6f s\n", 0.0);  // Minimal time
         printf("Stage 3 (Communication: Alltoallv):    %.6f s\n", t_comm.Elapsed());
         printf("Stage 4 (Streaming: Unpack+FFT+Write):  %.6f s\n", t_streaming.Elapsed());
+        printf("  (max rank) Unpack / 1D-Y-FFT / I/O:   %.6f / %.6f / %.6f s\n",
+               acc_unpack_max, acc_fft_max, acc_io_max);
         printf("------------------------------------------------------------------------------------\n");
         printf("Total 3D FFT time (Gen + Comm + FFT):   %.6f s\n", 
                t_gen.Elapsed() + t_comm.Elapsed() + t_streaming.Elapsed());
