@@ -158,7 +158,7 @@ void z_streaming_unpack(
     // // ========== DEBUG: Check for Inf values at specific indices BEFORE 1D FFT ==========
     // // Known problematic locations: (j=133, k_local=126), (j=133, k_local=127), (j=134, k_local=0)
     // // Pattern: even z_global -> array 1 has Inf; odd z_global -> array 3 has Inf
-    // #if 1  // Always enable for debugging
+    // #if DEBUG_PRINTS && !SKIP_VERIFICATION
     // if (rank == 0) {
     //     // Check specific (y, x_idx) locations where Inf was found
     //     int debug_y_vals[] = {133, 133, 134};
@@ -287,7 +287,7 @@ void z_streaming_unpack(
     // #endif
     
     // ========== DEBUG: Check for Inf values at specific indices AFTER 1D FFT ==========
-    #if 1  // Always enable for debugging
+    #if DEBUG_PRINTS && !SKIP_VERIFICATION
     if (rank == 0) {
         // Check specific (y, x_idx) locations where Inf was found
         int debug_y_vals[] = {133, 133, 134};
