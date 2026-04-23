@@ -8,7 +8,6 @@
 #include "../config.h"  // For DEBUG_PRINTS, SKIP_VERIFICATION
 #include "../precision.h"  // For real_t, fabs_t, fmax_t
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <math.h>    // For isinf, isnan
 #include <mpi.h>
@@ -29,10 +28,6 @@
 // ** NOTE: Batch-aware unpacking: The receive buffer is organized by batches,
 // so the function computes cumulative batch offsets to find the correct data location
 // ====================================================================================
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 void z_streaming_unpack(
     int rank, int N, int narray,
@@ -163,7 +158,7 @@ void z_streaming_unpack(
     // // ========== DEBUG: Check for Inf values at specific indices BEFORE 1D FFT ==========
     // // Known problematic locations: (j=133, k_local=126), (j=133, k_local=127), (j=134, k_local=0)
     // // Pattern: even z_global -> array 1 has Inf; odd z_global -> array 3 has Inf
-    // #if DEBUG_PRINTS && !SKIP_VERIFICATION
+    // #if 1  // Always enable for debugging
     // if (rank == 0) {
     //     // Check specific (y, x_idx) locations where Inf was found
     //     int debug_y_vals[] = {133, 133, 134};
@@ -239,7 +234,7 @@ void z_streaming_unpack(
     #endif
     
     // ========== 1D FFT: Staged copy -> FFT on aligned buffer -> copy back ==========
-    // One staged buffer per OpenMP thread; FFTW execute itself stays single-threaded.
+    // One thread_1d_buffer per OpenMP thread; FFTW uses 1 thread inside each execute.
     double t0_fft = 0.0;
     if (acc_fft != NULL) {
         t0_fft = omp_get_wtime();
@@ -292,7 +287,7 @@ void z_streaming_unpack(
     // #endif
     
     // ========== DEBUG: Check for Inf values at specific indices AFTER 1D FFT ==========
-    #if DEBUG_PRINTS && !SKIP_VERIFICATION
+    #if 1  // Always enable for debugging
     if (rank == 0) {
         // Check specific (y, x_idx) locations where Inf was found
         int debug_y_vals[] = {133, 133, 134};
@@ -343,10 +338,6 @@ void z_streaming_unpack(
     }
     #endif
     
-// local_z_slab now contains FFT'd data for this Z-slab, ready for writing
+    // local_z_slab now contains FFT'd data for this Z-slab, ready for writing
 }
-
-#ifdef __cplusplus
-}
-#endif
 

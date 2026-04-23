@@ -18,18 +18,17 @@ extern "C" {
 
 // ====================================================================================
 // Z-slab streaming: Unpack one Z-slab from recv_buffer, apply 1D FFT, ready to write
-// V12+: Processes one Z-slab at a time cuz of memory, format for zeldovich-PLT writing 
+// V12+: Processes one Z-slab at a time cuz of mem, format for zeldovich-PLT writing 
 // V14+: Fixed batch-aware unpacking formula to preserve Hermitian symmetry
-
-// Memory layout: local_z_slab[X][Array][Y] matches Zeldovich AZYX format
-// After FFT: Data is ready for WriteParticlesSlab() or file output
+//
+// 1D Y FFT: Staged in ALIGN_BYTES-aligned per-OMP-thread buffers; FFTW plan uses 1 thread.
+// thread_1d_bufs[tid] is exclusive to OpenMP thread tid (no races).
+//
+// Timing: acc_unpack / acc_fft are optional (NULL = skip); when non-NULL, wall time for that phase is added per call (accumulate in caller over Z).
 //
 // NOTE: The batch-aware parameters (y_batch_idx, y_slice_idx_in_batch, src_batch_slice_counts)
 // are required to correctly compute offsets in recv_buffer, which is organized by batches
 // See docs/RECV_BUFFER_REINDEXING_EXPLANATION.md for details
-//
-// Timing: acc_unpack / acc_fft optional (NULL = skip); when non-NULL, wall time for that phase
-// is added per call (caller accumulates over Z).
 // ====================================================================================
 
 void z_streaming_unpack(
@@ -47,15 +46,14 @@ void z_streaming_unpack(
     int **src_batch_slice_counts,           // [src][batch] -> slice count
     int global_max_batches,                // Total number of batches
     fftw_complex_t *local_z_slab,          // Destination buffer (one Z-slab)
-    fftw_complex_t **thread_1d_bufs,       // Per-thread staged FFT buffers
-    int num_thread_bufs,                   // Number of staged FFT buffers
+    fftw_complex_t **thread_1d_bufs,       // Per-OMP-thread staging (length num_thread_bufs)
+    int num_thread_bufs,                   // Must be omp_get_max_threads() at alloc
     double *acc_unpack,                    // Optional: add unpack wall time
-    double *acc_fft,                       // Optional: add 1D FFT wall time
-    fftw_plan_t plan_1d_y);                 // FFT plan for Y-direction
+    double *acc_fft,                       // Optional: add 1D staged FFT wall time
+    fftw_plan_t plan_1d_y);                // FFT plan for Y-direction (1 FFTW thread)
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif
-

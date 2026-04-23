@@ -67,23 +67,24 @@ int wisdom_rank0_plans_and_export(int N, int narray, fftw_complex_t *plan_buffer
 
     /* Keep same order as fft_setup.c: thread init before wisdom import. */
     static int fftw_threads_initialized = 0;
-    int fft_threads_2d = omp_get_max_threads();
     if (!fftw_threads_initialized) {
-        fft_threads_2d = omp_get_max_threads();
-
         if (FFTW_INIT_THREADS() == 0) {
             fprintf(stderr, "[wisdom_rank0] FFTW_INIT_THREADS failed (%s precision)\n",
                     PRECISION_NAME);
             return -1;
         }
-        FFTW_PLAN_WITH_NTHREADS(fft_threads_2d);
-        printf("[wisdom_rank0] %s precision: 2D plan uses %d FFTW threads; 1D plan will use 1 thread\n",
-               PRECISION_NAME, fft_threads_2d);
+        printf("[wisdom_rank0] %s precision: FFTW threads init (2D=OMP_MAX, 1D=1; match fft_setup.c)\n",
+               PRECISION_NAME);
         fflush(stdout);
         fftw_threads_initialized = 1;
     }
 
     wisdom_import_file();
+
+    // 2D plan: use OMP_MAX threads
+    FFTW_PLAN_WITH_NTHREADS(omp_get_max_threads());
+    printf("[wisdom_rank0] 2D batched plan: FFTW_PLAN_WITH_NTHREADS(%d)\n", omp_get_max_threads());
+    fflush(stdout);
 
     {
         int n[2] = { N, N };
@@ -103,11 +104,10 @@ int wisdom_rank0_plans_and_export(int N, int narray, fftw_complex_t *plan_buffer
             FFTW_MEASURE);
     }
 
-    printf("[wisdom_rank0] 2D planner thread target (OMP max): %d\n", omp_get_max_threads());
-    fflush(stdout);
-
-    // Force 1 thread for 1D plan creation so wisdom matches runtime policy.
+    // 1D Y FFT: single FFTW thread (OpenMP parallelizes across pencils; staged buffers in z_streaming)
     FFTW_PLAN_WITH_NTHREADS(1);
+    printf("[wisdom_rank0] 1D Y plan: FFTW_PLAN_WITH_NTHREADS(1)\n");
+    fflush(stdout);
 
     if (posix_memalign((void **)&dummy_1d, ALIGN_BYTES, sizeof(fftw_complex_t) * (size_t)N) != 0) {
         fprintf(stderr, "[wisdom_rank0] posix_memalign failed for 1D dummy\n");
@@ -120,9 +120,6 @@ int wisdom_rank0_plans_and_export(int N, int narray, fftw_complex_t *plan_buffer
 
     *plan_1d_out =
         FFTW_PLAN_DFT_1D(N, dummy_1d, dummy_1d, FFT_SIGN, FFTW_MEASURE);
-
-    printf("[wisdom_rank0] 1D plan created with FFTW threads: 1\n");
-    fflush(stdout);
     free(dummy_1d);
 
     if (*plan_2d_out == NULL || *plan_1d_out == NULL) {
