@@ -399,8 +399,6 @@ int main(int argc, char **argv)
     int num_my_slices = 0;
     fftw_complex_t *local_y_slices = NULL;
     fftw_complex_t *local_z_slab = NULL;
-    fftw_complex_t **thread_1d_bufs = NULL;
-    int num_thread_bufs = 0;
     ExtendedGridBounds my_extended_bounds;
     int my_pencils = 0;
 
@@ -1013,26 +1011,9 @@ int main(int argc, char **argv)
             MPI_Abort(comm_2d, 1);
         }
 
-        // Staged 1D FFT path: allocate one ALIGN_BYTES buffer per OpenMP thread.
-        num_thread_bufs = omp_get_max_threads();
-        if (num_thread_bufs <= 0) num_thread_bufs = 1;
-        thread_1d_bufs = (fftw_complex_t**)calloc((size_t)num_thread_bufs, sizeof(fftw_complex_t*));
-        if (thread_1d_bufs == NULL) {
-            fprintf(stderr, "Rank %d: calloc failed for thread_1d_bufs (count=%d)\n", rank, num_thread_bufs);
-            MPI_Abort(comm_2d, 1);
-        }
-        for (int t = 0; t < num_thread_bufs; t++) {
-            if (posix_memalign((void**)&thread_1d_bufs[t], ALIGN_BYTES,
-                               (size_t)N * sizeof(fftw_complex_t)) != 0) {
-                fprintf(stderr, "Rank %d: posix_memalign failed for thread_1d_bufs[%d]\n", rank, t);
-                MPI_Abort(comm_2d, 1);
-            }
-        }
     } else {
         // Idle ranks: local_z_slab stays NULL
         local_z_slab = NULL;
-        thread_1d_bufs = NULL;
-        num_thread_bufs = 0;
     }
     
     // Create directory for this rank (before Z-loop) -- only needed for Mode 1 or 2 (.bin files)
@@ -1762,14 +1743,6 @@ int main(int argc, char **argv)
         free(local_z_slab);
         local_z_slab = NULL;
     }
-    if (!is_idle_rank && thread_1d_bufs != NULL) {
-        for (int t = 0; t < num_thread_bufs; t++) {
-            free(thread_1d_bufs[t]);
-        }
-        free(thread_1d_bufs);
-        thread_1d_bufs = NULL;
-    }
-    
     // FREE: Y-mapping arrays (used for unpacking)
     if (y_owner_src != NULL) {
         free(y_owner_src);
