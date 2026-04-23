@@ -60,6 +60,9 @@
 #include <errno.h>
 #include <execinfo.h>  
 #include <unistd.h>    // For getpid
+#ifdef __linux__
+#include <sched.h>     // sched_getcpu() — OpenMP thread CPU placement diagnostics
+#endif
 
 // Include PCG RNG and STimer (vendored from zeldovich-PLT)
 #include "pcg-rng/pcg_random.hpp"
@@ -97,26 +100,68 @@
 #include "mpi_topology.h"
 MPI_Comm comm_2d;
 
+/** Rank 0: print MPI thread level from MPI_Init_thread (required vs provided). */
+static void print_mpi_init_thread_levels(int required, int provided, int world_rank)
+{
+    if (world_rank != 0) return;
+    printf("[MPI] MPI_Init_thread: required=%d provided=%d\n", required, provided);
+    fflush(stdout);
+}
+
+/**
+ * If HERMITIAN_PRINT_AFFINITY is set (non-empty, not "0"), print one line per OpenMP thread
+ * with sched_getcpu(). Linux only. Can produce many lines (ranks x threads); use with small jobs
+ * or redirect stdout. Compare with mpiexec --display-bindings (Open MPI).
+ */
+static void print_omp_thread_cpus_if_requested(int world_rank)
+{
+    const char *env = getenv("HERMITIAN_PRINT_AFFINITY");
+    if (env == NULL || env[0] == '\0') return;
+    if (env[0] == '0' && env[1] == '\0') return;
+#ifdef __linux__
+    MPI_Barrier(MPI_COMM_WORLD);
+    fflush(stdout);
+    #pragma omp parallel
+    {
+        int tid = omp_get_thread_num();
+        int cpu = sched_getcpu();
+        printf("[AFFINITY] rank %d thread %d cpu %d\n", world_rank, tid, cpu);
+        fflush(stdout);
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+#else
+    if (world_rank == 0) {
+        fprintf(stderr,
+                "[AFFINITY] HERMITIAN_PRINT_AFFINITY is set but sched_getcpu() is only used on Linux; "
+                "skipped.\n");
+        fflush(stderr);
+    }
+#endif
+}
+
 // --- MAIN ---
 int main(int argc, char **argv)
 {
     int provided;
-    int required = MPI_THREAD_FUNNELED;
+    int required = MPI_THREAD_SINGLE; // MPI_THREAD_FUNNELED;
     int ret = MPI_Init_thread(NULL, NULL, required, &provided);
     if (ret != MPI_SUCCESS) {
         fprintf(stderr, "MPI_Init_thread failed with error code %d\n", ret);
         return 1;
     }
-    if (provided < required) {
-        fprintf(stderr, "FATAL: MPI provides thread level %d, need %d (MPI_THREAD_FUNNELED). Hybrid MPI+OMP will scale badly.\n", provided, required);
-        MPI_Finalize();
-        return 1;
-    }
+    // if (provided < required) {
+    //     fprintf(stderr, "FATAL: MPI provides thread level %d, need %d (MPI_THREAD_FUNNELED). Hybrid MPI+OMP will scale badly.\n", provided, required);
+    //     MPI_Finalize();
+    //     return 1;
+    // }
 
     int num_ranks;
     MPI_Comm_size(MPI_COMM_WORLD, &num_ranks);
     int world_rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+
+    print_mpi_init_thread_levels(required, provided, world_rank);
+    print_omp_thread_cpus_if_requested(world_rank);
 
     // ========================================================================
     // Stage 1: Parse arguments (before topology so we can load params for CPD/PPD)
@@ -1149,6 +1194,10 @@ int main(int argc, char **argv)
                    cpd, slab_z_end - slab_z_start);
         }
     }
+
+    double acc_unpack = 0.0;
+    double acc_fft = 0.0;
+    double acc_io = 0.0;
     
     if (!is_idle_rank && my_pencils > 0) {
         // Use appropriate bounds for Z-loop (padded if enabled, core otherwise)
@@ -1187,6 +1236,8 @@ int main(int argc, char **argv)
                 src_batch_slice_counts,          // [src][batch] --> slice count
                 global_max_batches,              // Total number of batches
                 local_z_slab,                    // Destination buffer
+                &acc_unpack,
+                &acc_fft,
                 plan_1d_y                        // FFT plan
             );
             
@@ -1243,6 +1294,8 @@ int main(int argc, char **argv)
             // Skip all output writes - Stage 3 still does unpack+FFT, but no I/O
             (void)0;
 #else
+            {
+            double t_io0 = omp_get_wtime();
             switch (PARTICLE_OUTPUT_MODE) {
                 case 0: {
                     // =======================================================================================
@@ -1464,6 +1517,8 @@ int main(int argc, char **argv)
                 default:
                     break;
             }
+            acc_io += omp_get_wtime() - t_io0;
+            }
 #endif // !SKIP_FILE_WRITE
 
             // =======================================================================================
@@ -1519,6 +1574,11 @@ int main(int argc, char **argv)
     }
     
     t_streaming.Stop();
+
+    double acc_unpack_max = 0.0, acc_fft_max = 0.0, acc_io_max = 0.0;
+    MPI_Reduce(&acc_unpack, &acc_unpack_max, 1, MPI_DOUBLE, MPI_MAX, 0, comm_2d);
+    MPI_Reduce(&acc_fft, &acc_fft_max, 1, MPI_DOUBLE, MPI_MAX, 0, comm_2d);
+    MPI_Reduce(&acc_io, &acc_io_max, 1, MPI_DOUBLE, MPI_MAX, 0, comm_2d);
     
     int total_files_written;
     size_t total_bytes_all_ranks;
@@ -1529,6 +1589,9 @@ int main(int argc, char **argv)
     if (rank == 0) {
         printf("[Stage 3] Streaming complete. Time: %.6f s\n", t_streaming.Elapsed());
         printf("          (Includes unpacking, FFT, and I/O for all Z-slabs)\n");
+        printf("          Unpack (recv -> slab, max rank): %.6f s\n", acc_unpack_max);
+        printf("          1D Y FFT (max rank):             %.6f s\n", acc_fft_max);
+        printf("          Write / I/O (switch, max rank):  %.6f s\n", acc_io_max);
         printf("          Total files written: %d (across all ranks)\n", total_files_written);
         printf("          Total data written: %.3f GB\n", 
                total_bytes_all_ranks / (1024.0 * 1024.0 * 1024.0));
@@ -1566,6 +1629,8 @@ int main(int argc, char **argv)
         printf("Stage 2 (Metadata exchange):            %.6f s\n", 0.0);  // Minimal time
         printf("Stage 3 (Communication: Alltoallv):    %.6f s\n", t_comm.Elapsed());
         printf("Stage 4 (Streaming: Unpack+FFT+Write):  %.6f s\n", t_streaming.Elapsed());
+        printf("  (max rank) Unpack / 1D-Y-FFT / I/O:   %.6f / %.6f / %.6f s\n",
+               acc_unpack_max, acc_fft_max, acc_io_max);
         printf("------------------------------------------------------------------------------------\n");
         printf("Total 3D FFT time (Gen + Comm + FFT):   %.6f s\n", 
                t_gen.Elapsed() + t_comm.Elapsed() + t_streaming.Elapsed());

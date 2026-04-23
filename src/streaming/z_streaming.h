@@ -27,6 +27,9 @@ extern "C" {
 // NOTE: The batch-aware parameters (y_batch_idx, y_slice_idx_in_batch, src_batch_slice_counts)
 // are required to correctly compute offsets in recv_buffer, which is organized by batches
 // See docs/RECV_BUFFER_REINDEXING_EXPLANATION.md for details
+//
+// Timing: acc_unpack / acc_fft optional (NULL = skip); when non-NULL, wall time for that phase
+// is added per call (caller accumulates over Z).
 // ====================================================================================
 
 void z_streaming_unpack(
@@ -44,6 +47,8 @@ void z_streaming_unpack(
     int **src_batch_slice_counts,           // [src][batch] -> slice count
     int global_max_batches,                // Total number of batches
     fftw_complex_t *local_z_slab,          // Destination buffer (one Z-slab)
+    double *acc_unpack,                    // Optional: add unpack wall time
+    double *acc_fft,                       // Optional: add 1D FFT wall time
     fftw_plan_t plan_1d_y);                 // FFT plan for Y-direction
 
 #ifdef __cplusplus
