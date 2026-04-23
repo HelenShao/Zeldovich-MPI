@@ -47,6 +47,8 @@ void z_streaming_unpack(
     int **src_batch_slice_counts,           // [src][batch] -> slice count
     int global_max_batches,                // Total number of batches
     fftw_complex_t *local_z_slab,          // Destination buffer (one Z-slab)
+    fftw_complex_t **thread_1d_bufs,       // Per-thread staged FFT buffers
+    int num_thread_bufs,                   // Number of staged FFT buffers
     double *acc_unpack,                    // Optional: add unpack wall time
     double *acc_fft,                       // Optional: add 1D FFT wall time
     fftw_plan_t plan_1d_y);                 // FFT plan for Y-direction

@@ -67,18 +67,18 @@ int wisdom_rank0_plans_and_export(int N, int narray, fftw_complex_t *plan_buffer
 
     /* Keep same order as fft_setup.c: thread init before wisdom import. */
     static int fftw_threads_initialized = 0;
+    int fft_threads_2d = omp_get_max_threads();
     if (!fftw_threads_initialized) {
-        const int fft_threads = omp_get_max_threads();
+        fft_threads_2d = omp_get_max_threads();
 
         if (FFTW_INIT_THREADS() == 0) {
             fprintf(stderr, "[wisdom_rank0] FFTW_INIT_THREADS failed (%s precision)\n",
                     PRECISION_NAME);
             return -1;
         }
-        FFTW_PLAN_WITH_NTHREADS(fft_threads);
-        printf("[wisdom_rank0] %s precision: %d FFTW threads (match OMP_NUM_THREADS with "
-               "hermitian_3d_matrix)\n",
-               PRECISION_NAME, fft_threads);
+        FFTW_PLAN_WITH_NTHREADS(fft_threads_2d);
+        printf("[wisdom_rank0] %s precision: 2D plan uses %d FFTW threads; 1D plan will use 1 thread\n",
+               PRECISION_NAME, fft_threads_2d);
         fflush(stdout);
         fftw_threads_initialized = 1;
     }
@@ -103,9 +103,11 @@ int wisdom_rank0_plans_and_export(int N, int narray, fftw_complex_t *plan_buffer
             FFTW_MEASURE);
     }
 
-    printf("[wisdom_rank0] OMP max threads (matches FFTW_PLAN_WITH_NTHREADS): %d\n",
-           omp_get_max_threads());
+    printf("[wisdom_rank0] 2D planner thread target (OMP max): %d\n", omp_get_max_threads());
     fflush(stdout);
+
+    // Force 1 thread for 1D plan creation so wisdom matches runtime policy.
+    FFTW_PLAN_WITH_NTHREADS(1);
 
     if (posix_memalign((void **)&dummy_1d, ALIGN_BYTES, sizeof(fftw_complex_t) * (size_t)N) != 0) {
         fprintf(stderr, "[wisdom_rank0] posix_memalign failed for 1D dummy\n");
@@ -118,6 +120,9 @@ int wisdom_rank0_plans_and_export(int N, int narray, fftw_complex_t *plan_buffer
 
     *plan_1d_out =
         FFTW_PLAN_DFT_1D(N, dummy_1d, dummy_1d, FFT_SIGN, FFTW_MEASURE);
+
+    printf("[wisdom_rank0] 1D plan created with FFTW threads: 1\n");
+    fflush(stdout);
     free(dummy_1d);
 
     if (*plan_2d_out == NULL || *plan_1d_out == NULL) {

@@ -9,7 +9,14 @@
 
 // Write a suitable header into the output file
 Parameters::Parameters(const fs::path &inputfile) {
-    // Set default values first
+    initialize_from_stream(new HeaderStream(inputfile));
+}
+
+Parameters::Parameters(const char *header_bytes, size_t header_len, const fs::path &source_name) {
+    initialize_from_stream(new HeaderStream(header_bytes, header_len, source_name));
+}
+
+void Parameters::set_defaults(void) {
     ppd             = 0;       // Illegal
     numblock        = 2;       // Ok, but you might not want this!
     boxsize         = 0;       // Illegal
@@ -44,10 +51,17 @@ Parameters::Parameters(const fs::path &inputfile) {
     CornerModes = 0;     // Legal default (no corner modes)
     n_s         = 1;     // Legal default (only used for f_NL)
     Omega_M     = 1.0;   // Legal default (only used for f_NL)
+}
 
-    // Read the paramater file values
+void Parameters::initialize_from_stream(HeaderStream *stream) {
+    assert(stream != nullptr);
+
+    // Set default values first
+    set_defaults();
+
+    // Read the parameter file values
     register_vars();
-    inputstream = new HeaderStream(inputfile);
+    inputstream = stream;
     ReadHeader(*inputstream);
 
     // Check the validity and compute derived quantities

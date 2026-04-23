@@ -22,6 +22,15 @@ typedef void* ParametersHandle;
 // Returns NULL on error
 ParametersHandle zeldovich_params_create(const char* param_file);
 
+// Create Parameters object from in-memory header bytes
+// Buffer must include the ParseHeader expected trailing "\0\0".
+// Returns NULL on error.
+ParametersHandle zeldovich_params_create_from_buffer(
+    const char* header_bytes,
+    size_t header_len,
+    const char* source_name
+);
+
 // Destroy Parameters object
 void zeldovich_params_destroy(ParametersHandle params);
 

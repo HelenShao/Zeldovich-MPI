@@ -8,6 +8,7 @@
 #include "../config.h"  // For DEBUG_PRINTS, SKIP_VERIFICATION
 #include "../precision.h"  // For real_t, fabs_t, fmax_t
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <math.h>    // For isinf, isnan
 #include <mpi.h>
@@ -28,6 +29,10 @@
 // ** NOTE: Batch-aware unpacking: The receive buffer is organized by batches,
 // so the function computes cumulative batch offsets to find the correct data location
 // ====================================================================================
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 void z_streaming_unpack(
     int rank, int N, int narray,
@@ -65,7 +70,7 @@ void z_streaming_unpack(
                 rank, z_global, my_bounds.z_start, my_bounds.z_end);
         MPI_Abort(comm_2d, 1);
     }
-    if (thread_1d_bufs == NULL || num_thread_bufs = 0) {
+    if (thread_1d_bufs == NULL || num_thread_bufs == 0) {
         fprintf(stderr, "[ERROR] Rank %d: z_streaming_unpack requires thread_1d_bufs and num_thread_bufs > 0\n",
                 rank);
         MPI_Abort(comm_2d, 1);
@@ -234,7 +239,7 @@ void z_streaming_unpack(
     #endif
     
     // ========== 1D FFT: Staged copy -> FFT on aligned buffer -> copy back ==========
-    // One thread_1d_buffer per OpenMP thread; FFTW uses 1 thread inside each execute.
+    // One staged buffer per OpenMP thread; FFTW execute itself stays single-threaded.
     double t0_fft = 0.0;
     if (acc_fft != NULL) {
         t0_fft = omp_get_wtime();
@@ -338,6 +343,10 @@ void z_streaming_unpack(
     }
     #endif
     
-    // local_z_slab now contains FFT'd data for this Z-slab, ready for writing
+// local_z_slab now contains FFT'd data for this Z-slab, ready for writing
 }
+
+#ifdef __cplusplus
+}
+#endif
 

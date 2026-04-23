@@ -29,23 +29,26 @@ void setup_fftw_plans_full(int N, int narray, fftw_complex_t *plan_buffer,
     // Thread init must precede other FFTW calls (including wisdom import).
 
     static int fftw_threads_initialized = 0;
+    int fft_threads_2d = 1;
     if (!fftw_threads_initialized) {
         int nthreads = omp_get_max_threads();
         
         // All threads for FFTW (no outer omp over narray).
-        int fft_threads = nthreads;
+        fft_threads_2d = nthreads;
         
         if (FFTW_INIT_THREADS() == 0) {
             fprintf(stderr, "[ERROR] Rank %d: Failed to initialize FFTW threads (%s precision)\n", rank, PRECISION_NAME);
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
-        FFTW_PLAN_WITH_NTHREADS(fft_threads);
+        FFTW_PLAN_WITH_NTHREADS(fft_threads_2d);
         if (rank == 0) {
-            printf("[FFTW-THREADING] %s precision: %d FFTW threads (no outer OMP over narray)\n", 
-                   PRECISION_NAME, fft_threads);
+            printf("[FFTW-THREADING] %s precision: 2D plan uses %d FFTW threads; 1D plan will use 1 thread\n",
+                   PRECISION_NAME, fft_threads_2d);
         }
         
         fftw_threads_initialized = 1;
+    } else {
+        fft_threads_2d = omp_get_max_threads();
     }
     // ====================================================================================
 
@@ -77,14 +80,17 @@ void setup_fftw_plans_full(int N, int narray, fftw_complex_t *plan_buffer,
             FFTW_MEASURE);
     }
 
-    // Verify thread count that FFTW will use when executing this plan (must match plan_with_nthreads)
+    // Verify thread count for 2D planning/execution.
     if (rank == 0) {
         int planner_n = omp_get_max_threads();
-        printf("[FFTW-THREADING] OMP max threads (matches FFTW_PLAN_WITH_NTHREADS): %d\n",
+        printf("[FFTW-THREADING] 2D planner thread target (OMP max): %d\n",
                planner_n);
         fflush(stdout);
     }
     
+    // Force 1 thread for 1D plan creation (and later execution of this plan handle).
+    FFTW_PLAN_WITH_NTHREADS(1);
+
     // Create 1D FFT plan with FFTW_MEASURE
     if (posix_memalign((void**)&dummy_1d, ALIGN_BYTES, 
                        sizeof(fftw_complex_t) * N) != 0) {
@@ -94,6 +100,11 @@ void setup_fftw_plans_full(int N, int narray, fftw_complex_t *plan_buffer,
     
     *plan_1d_out = FFTW_PLAN_DFT_1D(N, dummy_1d, dummy_1d, 
                                      FFT_SIGN, FFTW_MEASURE);
+
+    if (rank == 0) {
+        printf("[FFTW-THREADING] 1D plan created with FFTW threads: 1\n");
+        fflush(stdout);
+    }
     
     free(dummy_1d);
     

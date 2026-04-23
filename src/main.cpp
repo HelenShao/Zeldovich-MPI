@@ -67,6 +67,7 @@
 // Include PCG RNG and STimer (vendored from zeldovich-PLT)
 #include "pcg-rng/pcg_random.hpp"
 #include <STimer.h>
+#include <ParseHeader.hh>
 
 // --- CONFIGURATION AND TYPES (config.h, precision.h, types.h) ---
 #include "config.h"
@@ -106,6 +107,51 @@ static void print_mpi_init_thread_levels(int required, int provided, int world_r
     if (world_rank != 0) return;
     printf("[MPI] MPI_Init_thread: required=%d provided=%d\n", required, provided);
     fflush(stdout);
+}
+
+static int broadcast_parameter_header_bytes(
+    const char *param_file,
+    int world_rank,
+    MPI_Comm comm,
+    std::vector<char> &header_bytes
+) {
+    uint64_t header_len = 0;
+    if (world_rank == 0) {
+        HeaderStream hs{fs::path(param_file)};
+        hs.ReadHeader();
+        if (hs.buffer == NULL || hs.bufferlength < 2) {
+            fprintf(stderr, "ERROR: Invalid parameter header read from %s\n", param_file);
+            return 1;
+        }
+        if (hs.bufferlength > static_cast<size_t>(INT_MAX)) {
+            fprintf(stderr, "ERROR: Parameter header too large for MPI_Bcast count: %zu\n", hs.bufferlength);
+            return 1;
+        }
+        header_bytes.assign(hs.buffer, hs.buffer + hs.bufferlength);
+        header_len = static_cast<uint64_t>(hs.bufferlength);
+    }
+
+    MPI_Bcast(&header_len, 1, MPI_UINT64_T, 0, comm);
+    if (header_len < 2) {
+        if (world_rank == 0) {
+            fprintf(stderr, "ERROR: Broadcast parameter header length is invalid: %llu\n",
+                    static_cast<unsigned long long>(header_len));
+        }
+        return 1;
+    }
+    if (header_len > static_cast<uint64_t>(INT_MAX)) {
+        if (world_rank == 0) {
+            fprintf(stderr, "ERROR: Broadcast parameter header exceeds MPI_Bcast int count: %llu\n",
+                    static_cast<unsigned long long>(header_len));
+        }
+        return 1;
+    }
+
+    if (world_rank != 0) {
+        header_bytes.resize(static_cast<size_t>(header_len));
+    }
+    MPI_Bcast(header_bytes.data(), static_cast<int>(header_len), MPI_BYTE, 0, comm);
+    return 0;
 }
 
 /**
@@ -204,7 +250,16 @@ int main(int argc, char **argv)
     // Load param file early for CPD/PPD (used for CPD-aligned MPI grid)
     // ========================================================================
     ParametersHandle params = NULL;
-    params = zeldovich_params_create(param_file);
+    std::vector<char> param_header_bytes;
+    if (broadcast_parameter_header_bytes(param_file, world_rank, MPI_COMM_WORLD, param_header_bytes) != 0) {
+        MPI_Abort(MPI_COMM_WORLD, 1);
+    }
+
+    params = zeldovich_params_create_from_buffer(
+        param_header_bytes.data(),
+        param_header_bytes.size(),
+        param_file
+    );
     if (!params) {
         if (world_rank == 0) {
             fprintf(stderr, "Failed to load param file: %s\n", param_file);
@@ -344,6 +399,8 @@ int main(int argc, char **argv)
     int num_my_slices = 0;
     fftw_complex_t *local_y_slices = NULL;
     fftw_complex_t *local_z_slab = NULL;
+    fftw_complex_t **thread_1d_bufs = NULL;
+    int num_thread_bufs = 0;
     ExtendedGridBounds my_extended_bounds;
     int my_pencils = 0;
 
@@ -954,9 +1011,27 @@ int main(int argc, char **argv)
             fprintf(stderr, "Rank %d: posix_memalign failed for local_z_slab (one Z-slab)\n", rank);
             MPI_Abort(comm_2d, 1);
         }
+
+        // Staged 1D FFT path: allocate one ALIGN_BYTES buffer per OpenMP thread.
+        num_thread_bufs = omp_get_max_threads();
+        if (num_thread_bufs <= 0) num_thread_bufs = 1;
+        thread_1d_bufs = (fftw_complex_t**)calloc((size_t)num_thread_bufs, sizeof(fftw_complex_t*));
+        if (thread_1d_bufs == NULL) {
+            fprintf(stderr, "Rank %d: calloc failed for thread_1d_bufs (count=%d)\n", rank, num_thread_bufs);
+            MPI_Abort(comm_2d, 1);
+        }
+        for (int t = 0; t < num_thread_bufs; t++) {
+            if (posix_memalign((void**)&thread_1d_bufs[t], ALIGN_BYTES,
+                               (size_t)N * sizeof(fftw_complex_t)) != 0) {
+                fprintf(stderr, "Rank %d: posix_memalign failed for thread_1d_bufs[%d]\n", rank, t);
+                MPI_Abort(comm_2d, 1);
+            }
+        }
     } else {
         // Idle ranks: local_z_slab stays NULL
         local_z_slab = NULL;
+        thread_1d_bufs = NULL;
+        num_thread_bufs = 0;
     }
     
     // Create directory for this rank (before Z-loop) -- only needed for Mode 1 or 2 (.bin files)
@@ -1236,6 +1311,8 @@ int main(int argc, char **argv)
                 src_batch_slice_counts,          // [src][batch] --> slice count
                 global_max_batches,              // Total number of batches
                 local_z_slab,                    // Destination buffer
+                thread_1d_bufs,                  // Per-thread staging buffers
+                num_thread_bufs,                 // Number of staging buffers
                 &acc_unpack,
                 &acc_fft,
                 plan_1d_y                        // FFT plan
@@ -1652,6 +1729,13 @@ int main(int argc, char **argv)
     if (!is_idle_rank && local_z_slab != NULL) {
         free(local_z_slab);
         local_z_slab = NULL;
+    }
+    if (!is_idle_rank && thread_1d_bufs != NULL) {
+        for (int t = 0; t < num_thread_bufs; t++) {
+            free(thread_1d_bufs[t]);
+        }
+        free(thread_1d_bufs);
+        thread_1d_bufs = NULL;
     }
     
     // FREE: Y-mapping arrays (used for unpacking)

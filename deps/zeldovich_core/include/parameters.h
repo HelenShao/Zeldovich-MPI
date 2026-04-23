@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <filesystem>
 
 #include "ParseHeader.hh"
@@ -82,7 +83,12 @@ public:
     // Write a suitable header into the output file
     //
     Parameters(const fs::path &inputfile);
+    Parameters(const char *header_bytes, size_t header_len, const fs::path &source_name);
     ~Parameters();
 
     void register_vars(void);
+
+private:
+    void set_defaults(void);
+    void initialize_from_stream(HeaderStream *stream);
 };

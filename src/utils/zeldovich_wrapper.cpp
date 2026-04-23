@@ -22,6 +22,22 @@ ParametersHandle zeldovich_params_create(const char* param_file) {
     }
 }
 
+ParametersHandle zeldovich_params_create_from_buffer(
+    const char* header_bytes,
+    size_t header_len,
+    const char* source_name
+) {
+    if (header_bytes == NULL || header_len == 0 || source_name == NULL) {
+        return NULL;
+    }
+    try {
+        Parameters* params = new Parameters(header_bytes, header_len, fs::path(source_name));
+        return static_cast<ParametersHandle>(params);
+    } catch (...) {
+        return NULL;
+    }
+}
+
 void zeldovich_params_destroy(ParametersHandle params) {
     if (params) {
         delete static_cast<Parameters*>(params);
