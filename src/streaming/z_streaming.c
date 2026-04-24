@@ -287,7 +287,7 @@ void z_streaming_unpack(
     // #endif
     
     // ========== DEBUG: Check for Inf values at specific indices AFTER 1D FFT ==========
-    #if 1  // Always enable for debugging
+    #if DEBUG_PRINTS && !SKIP_VERIFICATION // Always enable for debugging
     if (rank == 0) {
         // Check specific (y, x_idx) locations where Inf was found
         int debug_y_vals[] = {133, 133, 134};
