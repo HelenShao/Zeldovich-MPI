@@ -11,7 +11,6 @@
 void setup_fftw_plans_full(int N, int narray, fftw_complex_t *plan_buffer,
                            fftw_plan_t *plan_2d_out, fftw_plan_t *plan_1d_out)
 {
-    fftw_complex_t *buf_2d = NULL;
     fftw_complex_t *dummy_1d = NULL;
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -48,36 +47,26 @@ void setup_fftw_plans_full(int N, int narray, fftw_complex_t *plan_buffer,
 
 #endif
     
-    // plan_buffer must be provided before setup
+    // plan_buffer: one N×N complex plane (staged 2D FFT). narray is unused for 2D planning.
+    (void)narray;
     if (plan_buffer == NULL) {
-        fprintf(stderr, "[ERROR] Failed to provide plan_buffer for 2D batched FFT plan\n");
+        fprintf(stderr, "[ERROR] Failed to provide plan_buffer for 2D FFT plan (need plane w/ PPD^2 complexes)\n");
         MPI_Abort(MPI_COMM_WORLD, 1);
     }
-    buf_2d = plan_buffer;
 
     {
         int fft_threads_2d = omp_get_max_threads();
         FFTW_PLAN_WITH_NTHREADS(fft_threads_2d);
         if (rank == 0) {
-            printf("[FFTW-THREADING] 2D batched plan: FFTW_PLAN_WITH_NTHREADS(%d)\n", fft_threads_2d);
+            printf("[FFTW-THREADING] 2D single-plane plan (staged): FFTW_PLAN_WITH_NTHREADS(%d)\n",
+                   fft_threads_2d);
             fflush(stdout);
         }
     }
-    
-    /* Memory layout for plan_many_dft below: narray contiguous N×N complex planes.
-     * Plane index a (0 <= a < narray) starts at buf_2d + a * N * N.
-     * Within a plane, row-major C order: element (i,j) at buf_2d[a*N*N + i*N + j]. */
-    {
-        int n[2] = { N, N };
-        *plan_2d_out = FFTW_PLAN_MANY_DFT(
-            2,      // 2D transform
-            n,      // each transform is size N×N
-            narray, // number of transforms in the batch
-            buf_2d, NULL, 1, N * N, // input data
-            buf_2d, NULL, 1, N * N, // output data
-            FFT_SIGN, // FFT direction
-            FFTW_MEASURE);
-    }
+
+    /* In-place 2D complex DFT on one contiguous N×N plane (row-major). Execution loops
+     * over narray planes in hermitian_generation.c with copy-in/copy-out. */
+    *plan_2d_out = FFTW_PLAN_DFT_2D(N, N, plan_buffer, plan_buffer, FFT_SIGN, FFTW_PLANNER_FLAGS);
 
     // 1D Y FFT: single FFTW thread (OpenMP parallelizes across pencils; staged buffers in z_streaming)
     FFTW_PLAN_WITH_NTHREADS(1);
@@ -86,7 +75,7 @@ void setup_fftw_plans_full(int N, int narray, fftw_complex_t *plan_buffer,
         fflush(stdout);
     }
     
-    // Create 1D FFT plan with FFTW_MEASURE
+    // Create 1D FFT plan (planner flags: FFTW_PLANNER_FLAGS in config.h)
     // note: ALIGN_BYTES defined in config.h to be 4096
     if (posix_memalign((void**)&dummy_1d, ALIGN_BYTES, 
                        sizeof(fftw_complex_t) * N) != 0) {
@@ -95,7 +84,7 @@ void setup_fftw_plans_full(int N, int narray, fftw_complex_t *plan_buffer,
     }
     
     *plan_1d_out = FFTW_PLAN_DFT_1D(N, dummy_1d, dummy_1d, 
-                                     FFT_SIGN, FFTW_MEASURE);
+                                     FFT_SIGN, FFTW_PLANNER_FLAGS);
     
     free(dummy_1d);
     

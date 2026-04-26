@@ -236,6 +236,16 @@
 // FFTW_BACKWARD = +1 (Fourier -> real)
 #define FFT_SIGN FFTW_BACKWARD
 
+/*  
+FFTW planner flags for all DFT plans (2D X–Z and 1D Y in fft_setup.c / wisdom_rank0).
+    FFTW_ESTIMATE (fast plan, no timing), FFTW_MEASURE (default: time plans) -> Use this for production runs.
+    FFTW_PATIENT / FFTW_EXHAUSTIVE (slower planning, may yield faster execute).
+    Wisdom is most useful with MEASURE or slower modes.
+*/  
+#ifndef FFTW_PLANNER_FLAGS
+#define FFTW_PLANNER_FLAGS FFTW_MEASURE
+#endif
+
 // # arrays per Y-slice
 #define NARRAY 4
 

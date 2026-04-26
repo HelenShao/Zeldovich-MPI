@@ -11,9 +11,9 @@ extern "C" {
 
 // ====================================================================================
 // Create FFTW plans for 2D and 1D transforms
-// - plan_buffer: Buffer for 2D batched plan (narray * N * N elements). NULL = allocate dummy.
-// - plan_2d_out: Batched plan_many_dft (howmany=narray, NxN each) for Y-slice X-Z plane.
-//   Planned with FFTW_PLAN_WITH_NTHREADS(omp_get_max_threads()).
+// - plan_buffer: Buffer for 2D plan: N * N fftw_complex_t (one X–Z plane). Aligned (e.g. posix_memalign ALIGN_BYTES).
+// - plan_2d_out: Single-plane in-place FFTW_PLAN_DFT_2D(N,N,...) on plan_buffer.
+//   Planned with FFTW_PLAN_WITH_NTHREADS(omp_get_max_threads()). narray is passed for API compatibility only.
 // - plan_1d_out: Y-direction 1D FFT (size N). Planned with FFTW_PLAN_WITH_NTHREADS(1);
 //   execution uses staged per-OMP-thread buffers in z_streaming (no nested FFTW threads).
 // ====================================================================================

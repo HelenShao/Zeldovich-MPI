@@ -12,8 +12,8 @@
  *    - Load PLT eigenmodes if qPLT; set narray (1/2/4 by qdensity/qPLT)
  *
  * 4. FFT SETUP
- *    - setup_fftw_plans_full(plan_2d, plan_1d_y) using dummy memory (avoids FFTW
- *      overwriting during planning)
+ *    - setup_fftw_plans_full(plan_2d, plan_1d_y) using fft_stage_2d (N×N aligned;
+ *      2D plan is FFTW_PLAN_DFT_2D on that stage buffer)
  *
  * 5. GRID DECOMPOSITION
  *    - get_extended_grid_bounds; my_pencils for this rank’s XZ region
@@ -398,6 +398,7 @@ int main(int argc, char **argv)
     
     int num_my_slices = 0;
     fftw_complex_t *local_y_slices = NULL;
+    fftw_complex_t *fft_stage_2d = NULL;
     fftw_complex_t *local_z_slab = NULL;
     ExtendedGridBounds my_extended_bounds;
     int my_pencils = 0;
@@ -516,9 +517,9 @@ int main(int argc, char **argv)
         printf("[Stage 2] Complete.\n");
     }
     
-    // ========================================================================
-    // ALLOCATE local_y_slices (before FFT setup: plan_many_dft plans on primary_ptr)
-    // ========================================================================
+    // ==================================================================================
+    // ALLOCATE local_y_slices + fft_stage_2d (before FFT setup: 2D plan on stage buf)
+    // ==================================================================================
     if (!is_idle_rank) {
         int max_slices_per_batch = 2;
         int64_t slice_buffer_size = (int64_t)max_slices_per_batch * narray * N * N;
@@ -527,27 +528,27 @@ int main(int argc, char **argv)
             fprintf(stderr, "Rank %d: posix_memalign failed for local_y_slices\n", rank);
             MPI_Abort(comm_2d, 1);
         }
+        size_t stage_bytes = (size_t)N * (size_t)N * sizeof(fftw_complex_t);
+        if (posix_memalign((void**)&fft_stage_2d, ALIGN_BYTES, stage_bytes) != 0) {
+            fprintf(stderr, "Rank %d: posix_memalign failed for fft_stage_2d\n", rank);
+            MPI_Abort(comm_2d, 1);
+        }
+        // parallel first touch
+        #pragma omp parallel for schedule(static)
+        for (int y = 0; y < N; y++) {
+            fftw_complex_t *row = fft_stage_2d + (size_t)y * (size_t)N;
+            memset(row, 0, (size_t)N * sizeof(fftw_complex_t));
+        }
     }
 
     // ========================================================================
     // STAGE 3: SETUP FFT PLANS 
     // ========================================================================
-    // plan_2d: plan_many_dft on primary slice (requires plan_buffer)
-    fftw_complex_t *plan_buffer = (!is_idle_rank && local_y_slices != NULL) ? &local_y_slices[0] : nullptr;
+    // plan_2d: FFTW_PLAN_DFT_2D on fft_stage_2d (N×N)
+    fftw_complex_t *plan_buffer = (!is_idle_rank && fft_stage_2d != NULL) ? fft_stage_2d : nullptr;
     fftw_plan_t plan_2d, plan_1d_y; // setup both plans
     setup_fftw_plans_full(N, narray, plan_buffer, &plan_2d, &plan_1d_y);
     
-    if (rank == 0) {
-        printf("\n[MULTI-BATCH] Starting batch processing...\n");
-        printf("              Ranks will process %d pairs each (approx)\n",
-               is_idle_rank ? 0 : my_num_pairs);
-        printf("              sizeof(MPI_Aint)=%zu (%s), sizeof(MPI_Count)=%zu\n",
-               sizeof(MPI_Aint), sizeof(MPI_Aint) == 8 ? "int64" : (sizeof(MPI_Aint) == 4 ? "int32" : "other"),
-               sizeof(MPI_Count));
-
-        fflush(stdout);
-    }
-
     // Grid bounds: CPD-aligned when params/cpd present
     if (!is_idle_rank) {
         if (params != NULL) {
@@ -707,6 +708,16 @@ int main(int argc, char **argv)
     // STAGE 5: MAIN MULTI-BATCH LOOP
     // ========================================================================
     // GENERATION + COMMUNICATION + ACCUMULATION
+    if (rank == 0) {
+        printf("\n[MULTI-BATCH] Starting batch processing...\n");
+        printf("              Ranks will process %d pairs each (approx)\n",
+               is_idle_rank ? 0 : my_num_pairs);
+        printf("              sizeof(MPI_Aint)=%zu (%s), sizeof(MPI_Count)=%zu\n",
+               sizeof(MPI_Aint), sizeof(MPI_Aint) == 8 ? "int64" : (sizeof(MPI_Aint) == 4 ? "int32" : "other"),
+               sizeof(MPI_Count));
+        fflush(stdout);
+    }
+
     STimer t_gen, t_comm;
     t_gen.Start();
     
@@ -740,7 +751,7 @@ int main(int argc, char **argv)
             generate_hermitian_slice_pair_local(
                 N, y_batch_primary, y_batch_mirror,
                 primary_ptr, conjugate_ptr,
-                narray, plan_2d, rank,
+                narray, plan_2d, fft_stage_2d, rank,
                 ps, params,
                 thread_rng_buffers
             );
@@ -951,6 +962,10 @@ int main(int argc, char **argv)
     if (local_y_slices != NULL) {
         free(local_y_slices);
         local_y_slices = NULL;
+    }
+    if (fft_stage_2d != NULL) {
+        free(fft_stage_2d);
+        fft_stage_2d = NULL;
     }
     
     // ========================================================================
@@ -1738,6 +1753,11 @@ int main(int argc, char **argv)
         fprintf(stderr, "[WARNING] Rank %d: local_y_slices was not freed earlier!\n", rank);
         free(local_y_slices);
         local_y_slices = NULL;
+    }
+    if (!is_idle_rank && fft_stage_2d != NULL) {
+        fprintf(stderr, "[WARNING] Rank %d: fft_stage_2d was not freed earlier!\n", rank);
+        free(fft_stage_2d);
+        fft_stage_2d = NULL;
     }
     if (!is_idle_rank && local_z_slab != NULL) {
         free(local_z_slab);

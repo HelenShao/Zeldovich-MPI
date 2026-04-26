@@ -31,7 +31,8 @@ extern "C" {
 //      - primary_slices: Output buffer for primary slice [narray][N][N]
 //      - conjugate_slices: Output buffer for conjugate slice [narray][N][N] (same as primary if self-conjugate)
 //      - narray: Number of arrays per slice
-//      - plan_2d: Batched plan_many_dft (howmany=narray, NxN each) for 2D FFT
+//      - plan_2d: Single-plane FFTW_PLAN_DFT_2D (N×N) in-place on stage_2d
+//      - stage_2d: N×N fftw_complex_t staging buffer (aligned); reused per plane
 //      - rank: MPI rank (for debug output only)
 //      - ps_handle: zeldovich-PLT PowerSpectrum handle
 //      - params_handle: zeldovich-PLT Parameters handle
@@ -47,7 +48,8 @@ void generate_hermitian_slice_pair_local(
     fftw_complex_t *primary_slices,   // Flat array (all narray arrays for primary slice)
     fftw_complex_t *conjugate_slices, // Flat array (all narray arrays for conjugate slice)
     int narray,                       // Number of arrays per slice
-    fftw_plan_t plan_2d,              // 2D FFT plan
+    fftw_plan_t plan_2d,             // 2D FFT plan (single N×N plane)
+    fftw_complex_t *stage_2d,       // Staging buffer N×N (aligned)
     int rank,                         // MPI rank (for debug output)
     PowerSpectrumHandle ps_handle,   // zeldovich-PLT PowerSpectrum handle
     ParametersHandle params_handle,  // zeldovich-PLT Parameters handle

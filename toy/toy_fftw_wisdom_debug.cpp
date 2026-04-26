@@ -1,5 +1,5 @@
 /*
- * Minimal MPI toy to debug FFTW wisdom + the same batched 2D / 1D plan path as production
+ * Minimal MPI toy to debug FFTW wisdom + the same staged 2D (plan_dft_2d) / 1D plan path as production
  * (src/fft/fft_setup.c), with wisdom handling modeled on zeldovich-PLT Setup_FFTW:
  *   - Fixed filename in cwd: fftw_toy.wisdom (like fftw_zeldovich.wisdom there)
  *   - fftw_import_wisdom_from_filename, print return to stderr
@@ -147,6 +147,18 @@ int main(int argc, char** argv)
         local_y_slices[i][1] = (float)((i * 7) % 91);
     }
 
+    const size_t plan_2d_elems = (size_t)N * (size_t)N;
+    const size_t plan_2d_bytes = plan_2d_elems * sizeof(fftw_complex_t);
+    fftw_complex_t* plan_2d_buffer = nullptr;
+    if (posix_memalign((void**)&plan_2d_buffer, (size_t)ALIGN_BYTES, plan_2d_bytes) != 0) {
+        if (rank == 0)
+            fprintf(stderr, "posix_memalign failed for 2D plan buffer (%zu bytes)\n", plan_2d_bytes);
+        std::free(local_y_slices);
+        MPI_Finalize();
+        return 1;
+    }
+    std::memcpy(plan_2d_buffer, primary_slices, plan_2d_bytes);
+
     fftw_plan_t plan_2d{};
     fftw_plan_t plan_1d_y{};
 
@@ -157,20 +169,23 @@ int main(int argc, char** argv)
     }
 
     toy_wisdom_import_mpi(rank, MPI_COMM_WORLD);
-    setup_fftw_plans_full(N, narray, primary_slices, &plan_2d, &plan_1d_y);
+    setup_fftw_plans_full(N, narray, plan_2d_buffer, &plan_2d, &plan_1d_y);
     toy_wisdom_export_rank0(rank);
 
     double t0 = MPI_Wtime();
     for (int yrep = 0; yrep < num_y_repeats; yrep++) {
         (void)yrep;
-        FFTW_EXECUTE_DFT(plan_2d, primary_slices, primary_slices);
-        FFTW_EXECUTE_DFT(plan_2d, conjugate_slices, conjugate_slices);
+        // Match production: two in-place 2D executes per “batch” step (primary + conjugate plane).
+        FFTW_EXECUTE_DFT(plan_2d, plan_2d_buffer, plan_2d_buffer);
+        std::memcpy(plan_2d_buffer, conjugate_slices, plan_2d_bytes);
+        FFTW_EXECUTE_DFT(plan_2d, plan_2d_buffer, plan_2d_buffer);
+        std::memcpy(plan_2d_buffer, primary_slices, plan_2d_bytes);
     }
     MPI_Barrier(MPI_COMM_WORLD);
     double t1 = MPI_Wtime();
 
     if (rank == 0) {
-        printf("[toy-wisdom] 2D execute loop: %.6f s (per rank, %d repeats x 2 slabs)\n",
+        printf("[toy-wisdom] 2D execute loop: %.6f s (per rank, %d repeats x 2 plane executes)\n",
                t1 - t0, num_y_repeats);
         fflush(stdout);
     }
@@ -184,6 +199,7 @@ int main(int argc, char** argv)
     fftwf_cleanup_threads();
 #endif
 
+    std::free(plan_2d_buffer);
     std::free(local_y_slices);
 
     MPI_Finalize();

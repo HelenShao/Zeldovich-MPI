@@ -81,28 +81,14 @@ int wisdom_rank0_plans_and_export(int N, int narray, fftw_complex_t *plan_buffer
 
     wisdom_import_file();
 
-    // 2D plan: use OMP_MAX threads
+    (void)narray;
+    // 2D plan: use OMP_MAX threads; single N×N plane (matches fft_setup.c staged path)
     FFTW_PLAN_WITH_NTHREADS(omp_get_max_threads());
-    printf("[wisdom_rank0] 2D batched plan: FFTW_PLAN_WITH_NTHREADS(%d)\n", omp_get_max_threads());
+    printf("[wisdom_rank0] 2D single-plane plan: FFTW_PLAN_WITH_NTHREADS(%d)\n", omp_get_max_threads());
     fflush(stdout);
 
-    {
-        int n[2] = { N, N };
-        *plan_2d_out = FFTW_PLAN_MANY_DFT(
-            2,
-            n,
-            narray,
-            plan_buffer,
-            NULL,
-            1,
-            N * N,
-            plan_buffer,
-            NULL,
-            1,
-            N * N,
-            FFT_SIGN,
-            FFTW_MEASURE);
-    }
+    *plan_2d_out =
+        FFTW_PLAN_DFT_2D(N, N, plan_buffer, plan_buffer, FFT_SIGN, FFTW_PLANNER_FLAGS);
 
     // 1D Y FFT: single FFTW thread (OpenMP parallelizes across pencils; staged buffers in z_streaming)
     FFTW_PLAN_WITH_NTHREADS(1);
@@ -119,7 +105,7 @@ int wisdom_rank0_plans_and_export(int N, int narray, fftw_complex_t *plan_buffer
     }
 
     *plan_1d_out =
-        FFTW_PLAN_DFT_1D(N, dummy_1d, dummy_1d, FFT_SIGN, FFTW_MEASURE);
+        FFTW_PLAN_DFT_1D(N, dummy_1d, dummy_1d, FFT_SIGN, FFTW_PLANNER_FLAGS);
     free(dummy_1d);
 
     if (*plan_2d_out == NULL || *plan_1d_out == NULL) {

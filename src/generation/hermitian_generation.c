@@ -17,7 +17,26 @@
 static PTimerWall pt_rng_setup(1);   // RNG buffer alloc + copy + advance to z-start
 static PTimerWall pt_zloop(1);       // Z-loop computation (RNG calls + coefficient math + stores)
 static PTimerWall pt_mirror(1);      // Self-conjugate mirroring post-processing
-static PTimerWall pt_fft(1);         // 2D FFT (plan_many_dft execution)
+static PTimerWall pt_fft_copy_in(1); // 2D staged copy primary/conjugate -> stage
+static PTimerWall pt_fft_execute(1); // 2D FFTW_EXECUTE_DFT on stage (plan_dft_2d)
+static PTimerWall pt_fft_copy_out(1);// 2D staged copy stage -> primary/conjugate
+
+#define COPY_CACHE_SIZE_CHUNK 8
+
+static void copy_plane_chunked(fftw_complex_t *dst, const fftw_complex_t *src, int N)
+{
+    #pragma omp parallel for schedule(static)
+    for (int y = 0; y < N; ++y) {
+        fftw_complex_t *dst_row = dst + (size_t)y * (size_t)N;
+        const fftw_complex_t *src_row = src + (size_t)y * (size_t)N;
+        for (int x = 0; x < N; x += COPY_CACHE_SIZE_CHUNK) {
+            const int len = (x + COPY_CACHE_SIZE_CHUNK <= N)
+                ? COPY_CACHE_SIZE_CHUNK
+                : (N - x); // copy remaining elements
+            memcpy(dst_row + x, src_row + x, (size_t)len * sizeof(fftw_complex_t));
+        }
+    }
+}
 
 // ====================================================================================
 // Thread-local RNG helpers for parallel z-loop
@@ -172,6 +191,7 @@ void generate_hermitian_slice_pair_local(
     fftw_complex_t *conjugate_slices, 
     int narray,                       // 4 arrays per slice, 7 C numbers
     fftw_plan_t plan_2d,
+    fftw_complex_t *stage_2d,         // PPD^2 staging buffer (aligned)
     int rank,
     PowerSpectrumHandle ps_handle,   // zeldovich-PLT PowerSpectrum handle
     ParametersHandle params_handle,  // zeldovich-PLT Parameters handle
@@ -665,14 +685,42 @@ void generate_hermitian_slice_pair_local(
     
     t_verify_end = omp_get_wtime();
     
-    // Removed loop over narray!
-    // Apply 2D FFT: batched plan_many_dft (howmany=narray) on primary and conjugate
-    pt_fft.Start(0); // includes mem bandwidth time
-    FFTW_EXECUTE_DFT(plan_2d, primary_slices, primary_slices);
-    if (y_mirror != global_y) {
-        FFTW_EXECUTE_DFT(plan_2d, conjugate_slices, conjugate_slices);
+    // 2D FFT: staged copy — plan_dft_2d on stage_2d, loop over narray
+    for (int a = 0; a < narray; a++) {
+        // plane a starts a * N * N elements after the base.
+        fftw_complex_t *plane = primary_slices + (size_t)a * (size_t)N * (size_t)N;
+
+        // copy to stage_2d
+        pt_fft_copy_in.Start(0);
+        copy_plane_chunked(stage_2d, plane, N);
+        pt_fft_copy_in.Stop(0);
+
+        // execute FFTW_EXECUTE_DFT on stage_2d
+        pt_fft_execute.Start(0);
+        FFTW_EXECUTE_DFT(plan_2d, stage_2d, stage_2d);
+        pt_fft_execute.Stop(0);
+
+        // copy back to primary_slices
+        pt_fft_copy_out.Start(0);
+        copy_plane_chunked(plane, stage_2d, N);
+        pt_fft_copy_out.Stop(0);
     }
-    pt_fft.Stop(0);
+
+    if (y_mirror != global_y) {
+        for (int a = 0; a < narray; a++) {
+            // plane a starts a * N * N elements after the base.
+            fftw_complex_t *plane = conjugate_slices + (size_t)a * (size_t)N * (size_t)N;
+            pt_fft_copy_in.Start(0);
+            copy_plane_chunked(stage_2d, plane, N);
+            pt_fft_copy_in.Stop(0);
+            pt_fft_execute.Start(0);
+            FFTW_EXECUTE_DFT(plan_2d, stage_2d, stage_2d);
+            pt_fft_execute.Stop(0);
+            pt_fft_copy_out.Start(0);
+            copy_plane_chunked(plane, stage_2d, N);
+            pt_fft_copy_out.Stop(0);
+        }
+    }
     
     t_fft_end = omp_get_wtime();
     
@@ -746,9 +794,11 @@ void print_hermitian_gen_timers(int rank) {
     double rng_s    = pt_rng_setup.Elapsed();
     double zloop_s  = pt_zloop.Elapsed();
     double mirror_s = pt_mirror.Elapsed();
-    double fft_s    = pt_fft.Elapsed();
+    double fft_ci_s = pt_fft_copy_in.Elapsed();
+    double fft_ex_s = pt_fft_execute.Elapsed();
+    double fft_co_s = pt_fft_copy_out.Elapsed();
     double gen_s    = rng_s + zloop_s + mirror_s;
-    double total    = gen_s + fft_s;
+    double total    = gen_s + fft_ci_s + fft_ex_s + fft_co_s;
     if (rank == 0) {
         fprintf(stdout,
             "  [PTimerWall] Stage 1 sub-phase breakdown (accumulated over all Y-slices):\n"
@@ -756,18 +806,24 @@ void print_hermitian_gen_timers(int rank) {
             "    Z-loop compute:             %10.6f s  (%5.1f%%)\n"
             "    Mirror (self-conjugate):     %10.6f s  (%5.1f%%)\n"
             "    Generation subtotal:         %10.6f s  (%5.1f%%)\n"
-            "    FFT (plan_many_dft):         %10.6f s  (%5.1f%%)\n"
+            "    2D copy-in (staged):         %10.6f s  (%5.1f%%)\n"
+            "    2D FFT execute (dft_2d):     %10.6f s  (%5.1f%%)\n"
+            "    2D copy-out (staged):        %10.6f s  (%5.1f%%)\n"
             "    Sum:                         %10.6f s\n",
             rng_s,    total > 0 ? 100.0 * rng_s    / total : 0.0,
             zloop_s,  total > 0 ? 100.0 * zloop_s  / total : 0.0,
             mirror_s, total > 0 ? 100.0 * mirror_s / total : 0.0,
             gen_s,    total > 0 ? 100.0 * gen_s    / total : 0.0,
-            fft_s,    total > 0 ? 100.0 * fft_s    / total : 0.0,
+            fft_ci_s, total > 0 ? 100.0 * fft_ci_s / total : 0.0,
+            fft_ex_s, total > 0 ? 100.0 * fft_ex_s / total : 0.0,
+            fft_co_s, total > 0 ? 100.0 * fft_co_s / total : 0.0,
             total);
         fflush(stdout);
     }
     pt_rng_setup.Clear();
     pt_zloop.Clear();
     pt_mirror.Clear();
-    pt_fft.Clear();
+    pt_fft_copy_in.Clear();
+    pt_fft_execute.Clear();
+    pt_fft_copy_out.Clear();
 }

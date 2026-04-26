@@ -27,7 +27,7 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    const size_t nbytes = (size_t)narray * (size_t)N * (size_t)N * sizeof(fftw_complex_t);
+    const size_t nbytes = (size_t)N * (size_t)N * sizeof(fftw_complex_t);
     fftw_complex_t *plan_buffer = NULL;
     if (posix_memalign((void **)&plan_buffer, ALIGN_BYTES, nbytes) != 0) {
         fprintf(stderr, "%s: posix_memalign failed (%zu bytes)\n", argv[0], nbytes);
