@@ -8,6 +8,7 @@
 #include <zeldovich.h>
 #include <cmath>
 #include <cstdint>
+#include <vector>
 
 extern "C" {
 
@@ -219,6 +220,18 @@ int zeldovich_ps_init_file(PowerSpectrumHandle ps, const char* filename, Paramet
     }
 }
 
+int zeldovich_ps_init_from_raw_pk(PowerSpectrumHandle ps, const double* k, const double* p,
+    size_t n, ParametersHandle params) {
+    if (!ps || !params || !k || !p || n == 0) return -1;
+    try {
+        PowerSpectrum* ps_ptr = static_cast<PowerSpectrum*>(ps);
+        Parameters* par = static_cast<Parameters*>(params);
+        return ps_ptr->InitFromRawPk(k, p, n, *par);
+    } catch (...) {
+        return -1;
+    }
+}
+
 double zeldovich_ps_power(PowerSpectrumHandle ps, double wavenumber) {
     if (!ps) return 0.0;
     PowerSpectrum* p = static_cast<PowerSpectrum*>(ps);
@@ -317,4 +330,16 @@ int zeldovich_ps_get_fixed_power(PowerSpectrumHandle ps) {
 }
 
 } 
+
+int zeldovich_pk_load_text_file_vectors(const char* filename, ParametersHandle params,
+    std::vector<double>& k_out, std::vector<double>& p_out)
+{
+    if (!filename || !params) return -1;
+    try {
+        Parameters* par = static_cast<Parameters*>(params);
+        return ReadPkTextFileIntoVectors(fs::path(filename), *par, k_out, p_out);
+    } catch (...) {
+        return -1;
+    }
+}
 

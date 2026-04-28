@@ -1,7 +1,35 @@
 #include <stdint.h>
 
+#include <vector>
+
 #include "parameters.h"
 #include "power_spectrum.h"
+
+int ReadPkTextFileIntoVectors(const fs::path &filename, Parameters &param,
+    std::vector<double> &k_out, std::vector<double> &p_out)
+{
+    char line[200];
+    FILE *fp;
+    double k, P;
+    fp = fopen(filename.c_str(), "r");
+    if (fp == NULL) {
+        fmt::print(stderr, "Power spectrum file \"{}\" not found.\n", filename);
+        return -1;
+    }
+    k_out.clear();
+    p_out.clear();
+    while (fgets(line, 200, fp) != NULL) {
+        if (line[0] == '#') continue;
+        if (sscanf(line, "%lf %lf", &k, &P) < 2) continue;
+        if (k < 0.0) continue;
+        if (P < 0.0) continue;
+        k *= param.Pk_scale;
+        k_out.push_back(k);
+        p_out.push_back(P);
+    }
+    fclose(fp);
+    return 0;
+}
 
 PowerSpectrum::PowerSpectrum(int n, Parameters &param) : SplineFunction(n) {
     is_powerlaw    = 0;
@@ -134,30 +162,11 @@ double PowerSpectrum::Romberg(
     return TT[jj][jj];
 }
 
-int PowerSpectrum::InitFromFile(const fs::path &filename, Parameters &param) {
-    // Read the file and load/compile the spline function
-    // Return 0 if ok
-    // Read the file
-    // Rescale the given wavenumbers to match to simulation units
-    // Renormalize the power spectrum
-    // Divide the power spectrum by the box volume, so that the
-    //    inverse FFT is normalized properly.
-    char line[200];
-    FILE *fp;
-    double k, P;
-    fmt::print(stderr, "Loading power spectrum from file \"{}\"\n", filename);
-    fp = fopen(filename.c_str(), "r");
-    if (fp == NULL) {
-        fmt::print(stderr, "Power spectrum file \"{}\" not found; exiting.\n", filename);
-        exit(1);
-    }
-
-    while (fgets(line, 200, fp) != NULL) {
-        if (line[0] == '#') continue;
-        sscanf(line, "%lf %lf", &k, &P);
-        if (k < 0.0) continue;
-        if (P < 0.0) continue;
-        k *= param.Pk_scale;
+int PowerSpectrum::InitFromRawPk(const double *k_arr, const double *p_arr, size_t n, Parameters &param) {
+    if (n == 0 || k_arr == NULL || p_arr == NULL) return -1;
+    for (size_t i = 0; i < n; i++) {
+        double k = k_arr[i];
+        double P = p_arr[i];
         if (k > 0.0) {
             this->load(log(k), log(P));
             kmin = std::min(k, kmin);
@@ -167,9 +176,17 @@ int PowerSpectrum::InitFromFile(const fs::path &filename, Parameters &param) {
         kmax = std::max(k, kmax);
     }
     this->spline();
-
     Normalize(param);
     return 0;
+}
+
+int PowerSpectrum::InitFromFile(const fs::path &filename, Parameters &param) {
+    fmt::print(stderr, "Loading power spectrum from file \"{}\"\n", filename);
+    std::vector<double> ks, Ps;
+    if (ReadPkTextFileIntoVectors(filename, param, ks, Ps) != 0) {
+        return -1;
+    }
+    return InitFromRawPk(ks.data(), Ps.data(), ks.size(), param);
 }
 
 int PowerSpectrum::InitFromPowerLaw(double _powerlaw_index, Parameters &param) {

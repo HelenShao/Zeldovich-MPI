@@ -113,12 +113,14 @@ PowerSpectrumHandle zeldovich_ps_create(int n, ParametersHandle params);
 void zeldovich_ps_destroy(PowerSpectrumHandle ps);
 
 // Initialize from power law
-// Returns 0 on success, non-zero on error
 int zeldovich_ps_init_powerlaw(PowerSpectrumHandle ps, double powerlaw_index, ParametersHandle params);
 
 // Initialize from file
-// Returns 0 on success, non-zero on error
 int zeldovich_ps_init_file(PowerSpectrumHandle ps, const char* filename, ParametersHandle params);
+
+// Initialize from raw tabulated k,P - use after MPI bcast
+int zeldovich_ps_init_from_raw_pk(PowerSpectrumHandle ps, const double* k, const double* p,
+    size_t n, ParametersHandle params);
 
 // Evaluate power spectrum at given wavenumber
 double zeldovich_ps_power(PowerSpectrumHandle ps, double wavenumber);
@@ -156,6 +158,13 @@ int zeldovich_ps_get_fixed_power(PowerSpectrumHandle ps);
 
 #ifdef __cplusplus
 }
+
+#include <vector>
+
+// Rank 0 only (MPI): read P(k) text file into vectors for broadcasting (Pk_scale applied)
+int zeldovich_pk_load_text_file_vectors(const char* filename, ParametersHandle params,
+    std::vector<double>& k_out, std::vector<double>& p_out);
+
 #endif
 
 #endif

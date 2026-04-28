@@ -2,6 +2,10 @@
  * 1. INITIALIZATION
  *    - MPI_Init; parse N (grid size) and param_file (required)
  *    - Validate N (positive, even); validate num_ranks vs total_pairs
+ *    - comm_2d is a derived communicator with reorder=1, so MPI may remap ranks for topology locality
+*     - ex: world_rank=7 may be rank=3 in comm_2d.
+*     - broadcast steps use MPI_COMM_WORLD + world_rank (all processes must participate)
+*     - most decomposition/compute logic uses comm_2d + rank (grid-aware topology)
  *
  * 2. Y-SLICE PAIR DISTRIBUTION
  *    - total_pairs = N/2 + 1 (conjugate pairs: (0,0), (1,N-1), ..., N/2 self-conj)
@@ -440,14 +444,45 @@ int main(int argc, char **argv)
         
         const char* pk_file = zeldovich_params_get_Pk_filename(params);
         if (pk_file != NULL && pk_file[0] != '\0') {
-            if (zeldovich_ps_init_file(ps, pk_file, params) != 0) {
+            // every rank ends up w/ 2 local recv buffers for pk: 
+            // pk_k (length n_pk); pk_P (length n_pk)
+            // each rank calls zeldovich_ps_init_from_raw_pk()
+            // to run spline() and normalization --> after which ps is ready for cguass, etc..
+
+            uint64_t n_pk = 0;
+            std::vector<double> pk_k;
+            std::vector<double> pk_P;
+            if (world_rank == 0) {
+                if (zeldovich_pk_load_text_file_vectors(pk_file, params, pk_k, pk_P) != 0) {
+                    fprintf(stderr, "ERROR: Failed to read power spectrum file: %s\n", pk_file);
+                    MPI_Abort(MPI_COMM_WORLD, 1);
+                }
+                n_pk = (uint64_t)pk_k.size();
+                if (n_pk == 0) {
+                    fprintf(stderr, "ERROR: Power spectrum file has no valid rows: %s\n", pk_file);
+                    MPI_Abort(MPI_COMM_WORLD, 1);
+                }
+            }
+            MPI_Bcast(&n_pk, 1, MPI_UINT64_T, 0, MPI_COMM_WORLD);
+            if (world_rank != 0) {
+                pk_k.resize((size_t)n_pk);
+                pk_P.resize((size_t)n_pk);
+            }
+
+            int n_pk_i = (int)n_pk;
+            if (n_pk_i > 0) {
+                MPI_Bcast(pk_k.data(), n_pk_i, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+                MPI_Bcast(pk_P.data(), n_pk_i, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+            }
+            if (zeldovich_ps_init_from_raw_pk(ps, pk_k.data(), pk_P.data(), (size_t)n_pk, params) != 0) {
                 if (rank == 0) {
-                    fprintf(stderr, "ERROR: Failed to initialize power spectrum from file: %s\n", pk_file);
+                    fprintf(stderr, "ERROR: Failed to initialize power spectrum from broadcast P(k) table\n");
                 }
                 MPI_Abort(comm_2d, 1);
             }
             if (rank == 0) {
-                printf("[INIT] Power spectrum loaded from file: %s\n", pk_file);
+                printf("[INIT] Power spectrum initialized from file (rank-0 read + MPI broadcast): %s\n",
+                       pk_file);
             }
         } else {
             double powerlaw_index = zeldovich_params_get_Pk_powerlaw_index(params);
@@ -482,17 +517,61 @@ int main(int argc, char **argv)
                 MPI_Abort(comm_2d, 1);
             }
             
-            // Load PLT eigenmodes from file
-            if (plt_load_eigenmodes(PLT_filename) != 0) {
+            uint64_t plt_nbytes = 0;
+            std::vector<uint8_t> plt_buf;
+            if (world_rank == 0) {
+                FILE *eigf = fopen(PLT_filename, "rb");
+                if (!eigf) {
+                    fprintf(stderr, "ERROR: Could not open PLT eigenmode file: %s\n", PLT_filename);
+                    MPI_Abort(MPI_COMM_WORLD, 1);
+                }
+                if (fseek(eigf, 0, SEEK_END) != 0) {
+                    fprintf(stderr, "ERROR: Could not seek PLT eigenmode file: %s\n", PLT_filename);
+                    fclose(eigf);
+                    MPI_Abort(MPI_COMM_WORLD, 1);
+                }
+                long psz = ftell(eigf);
+                if (psz < 0) {
+                    fprintf(stderr, "ERROR: Could not stat PLT eigenmode file: %s\n", PLT_filename);
+                    fclose(eigf);
+                    MPI_Abort(MPI_COMM_WORLD, 1);
+                }
+                rewind(eigf);
+                plt_buf.resize((size_t)psz);
+                if (psz > 0 && fread(plt_buf.data(), 1, (size_t)psz, eigf) != (size_t)psz) {
+                    fprintf(stderr, "ERROR: Could not read PLT eigenmode file: %s\n", PLT_filename);
+                    fclose(eigf);
+                    MPI_Abort(MPI_COMM_WORLD, 1);
+                }
+                fclose(eigf);
+                plt_nbytes = (uint64_t)psz;
+            }
+
+            // broadcast length first, then bytes
+            MPI_Bcast(&plt_nbytes, 1, MPI_UINT64_T, 0, MPI_COMM_WORLD);
+            if (world_rank != 0) {
+                plt_buf.resize((size_t)plt_nbytes);
+            }
+            if (plt_nbytes > (uint64_t)INT_MAX) {
                 if (rank == 0) {
-                    fprintf(stderr, "ERROR: Failed to load PLT eigenmodes from: %s\n", PLT_filename);
-                    fprintf(stderr, "       Check that file exists and has correct format\n");
+                    fprintf(stderr, "ERROR: PLT eigenmode file too large for MPI_Bcast byte count\n");
+                }
+                MPI_Abort(MPI_COMM_WORLD, 1);
+            }
+            if (plt_nbytes > 0u) {
+                MPI_Bcast(plt_buf.data(), (int)plt_nbytes, MPI_BYTE, 0, MPI_COMM_WORLD);
+            }
+            if (plt_load_eigenmodes_from_buffer(plt_buf.data(), (size_t)plt_nbytes) != 0) {
+                if (rank == 0) {
+                    fprintf(stderr, "ERROR: Failed to parse PLT eigenmodes after broadcast (source file: %s)\n",
+                            PLT_filename);
                 }
                 MPI_Abort(comm_2d, 1);
             }
-            
+
             if (rank == 0) {
-                printf("[INIT] Loaded PLT eigenmodes from: %s\n", PLT_filename);
+                printf("[INIT] Loaded PLT eigenmodes from file (rank-0 read + MPI bcast): %s\n",
+                       PLT_filename);
             }
         }
     }

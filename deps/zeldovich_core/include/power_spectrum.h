@@ -2,15 +2,23 @@
 
 #include <stdint.h>
 
+#include <vector>
+
 #include <pcg-rng/pcg_random.hpp>
 
 #ifdef HAVE_GSL
 #include <gsl/gsl_rng.h>
 #endif
 
+#include <stddef.h>
+
 #include "parameters.h"
 #include "spline_function.h"
 #include "zeldovich.h"
+
+/// Rank 0: load P(k) file into vectors.
+int ReadPkTextFileIntoVectors(const fs::path &filename, Parameters &param,
+    std::vector<double> &k_out, std::vector<double> &p_out);
 
 class PowerSpectrum : public SplineFunction {
 public:
@@ -46,6 +54,9 @@ public:
     );
 
     int InitFromFile(const fs::path &filename, Parameters &param);
+
+    // builds spline-interpolated pk from arrays that are in memory, instead of reading from file
+    int InitFromRawPk(const double *k_arr, const double *p_arr, size_t n, Parameters &param);
 
     int InitFromPowerLaw(double _powerlaw_index, Parameters &param);
 
