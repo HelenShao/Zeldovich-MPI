@@ -44,7 +44,7 @@
  *                    PARTICLE_OUTPUT_MODE 3 -> CPD-slab-ordered streaming append (one file per slab, optionally split by z-rank)
  *                    PARTICLE_OUTPUT_MODE 4 -> z-slab streaming append (one file per z-slab, in x-rank subdirs)
  *
- * 9. CLEANUP
+ * 9. CLEANUP (plans, buffers)
  *    - Free plans, recv_buffer, local buffers, params, ps, PLT eigenmodes
  *    - MPI_Finalize
  */
