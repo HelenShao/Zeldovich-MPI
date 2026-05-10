@@ -1,0 +1,31 @@
+#!/bin/bash
+#PBS -N s2048_1dr0_o16
+#PBS -A Abacus
+#PBS -l select=8:ncpus=32:mpiprocs=2:ompthreads=16
+#PBS -l walltime=00:15:00
+#PBS -q debug-scaling
+#PBS -l filesystems=home
+#PBS -M helenshao0904@gmail.com
+#PBS -m abe
+#PBS -j oe
+#PBS -o /home/helenshao/InitialConditions-wisdom/hermitian_3d_matrix_production/test_N2048/rank0-loads/MEASURE/runs/omp-16/N2048_CPD225_MPI32_OMP16.out
+cd "$PBS_O_WORKDIR"
+module load frameworks && module load fftw/3.3.10 && module load hwloc
+cd /home/helenshao/InitialConditions-wisdom/hermitian_3d_matrix_production
+NTOTRANKS=$( [ -f "$PBS_NODEFILE" ] && wc -l < "$PBS_NODEFILE" || echo 16 ); NTHREADS_PER_RANK=16; N=2048
+make clean && make CFLAGS="-DPRODUCTION_MODE -DPARTICLE_OUTPUT_MODE=4 -DSKIP_FILE_WRITE=0 -DPARALLELIZE_Z_LOOP=1 -DDEBUG_PRINTS=0 -DDEBUG_RNG_SKIP=0 -DUSE_FFTW_WISDOM -g" -B && make wisdom-rank0
+cp "/home/helenshao/InitialConditions-wisdom/hermitian_3d_matrix_production/test_N2048/rank0-loads/MEASURE/metadata/param_N2048_CPD_225.par" "/home/helenshao/InitialConditions-wisdom/hermitian_3d_matrix_production/test_N2048/rank0-loads/MEASURE/runs/omp-16/param_runtime_OMP16.par"
+RAMDISK_IC_DIR="/dev/shm/hshao/zeldovich-MPI/${PBS_JOBID:-nojob}/rank0-loads/omp-16"
+mkdir -p "$RAMDISK_IC_DIR"
+if command -v pbsdsh >/dev/null 2>&1; then
+  pbsdsh -u mkdir -p "$RAMDISK_IC_DIR"
+else
+  echo "WARNING: pbsdsh not found; /dev/shm directory may only exist on launch node: $RAMDISK_IC_DIR"
+fi
+
+sed -i "s|^InitialConditionsDirectory[[:space:]]*=.*$|InitialConditionsDirectory = \"/lus/flare/projects/AbacusAurora/hshao/zeldovich-MPI/PPD_2048_cosm_000/z_24/rank0-loads/omp-16/\"|" "/home/helenshao/InitialConditions-wisdom/hermitian_3d_matrix_production/test_N2048/rank0-loads/MEASURE/runs/omp-16/param_runtime_OMP16.par"
+mkdir -p "/home/helenshao/InitialConditions-wisdom/hermitian_3d_matrix_production/test_N2048/rank0-loads/MEASURE/runs/omp-16/bin_files" "/home/helenshao/InitialConditions-wisdom/hermitian_3d_matrix_production/test_N2048/rank0-loads/MEASURE/runs/omp-16/rng_logs"
+cd "/home/helenshao/InitialConditions-wisdom/hermitian_3d_matrix_production/test_N2048/rank0-loads/MEASURE/runs/omp-16/bin_files"
+export OMP_PLACES=cores OMP_PROC_BIND=close OMP_DISPLAY_AFFINITY=false OMP_NUM_THREADS=$NTHREADS_PER_RANK
+/home/helenshao/InitialConditions-wisdom/hermitian_3d_matrix_production/wisdom_rank0 2048 4 >> "/home/helenshao/InitialConditions-wisdom/hermitian_3d_matrix_production/test_N2048/rank0-loads/MEASURE/runs/omp-16/N2048_CPD225_MPI32_OMP16_wisdom_preflight.log" 2>&1
+mpiexec -ppn 2 --cpu-bind depth --depth $NTHREADS_PER_RANK --mem-bind list:0:1 -np $NTOTRANKS --env OMP_NUM_THREADS=$NTHREADS_PER_RANK --env OMP_PLACES=cores --env OMP_PROC_BIND=close --env OMP_DISPLAY_AFFINITY=false /home/helenshao/InitialConditions-wisdom/hermitian_3d_matrix_production/hermitian_3d_matrix $N "/home/helenshao/InitialConditions-wisdom/hermitian_3d_matrix_production/test_N2048/rank0-loads/MEASURE/runs/omp-16/param_runtime_OMP16.par" > "/home/helenshao/InitialConditions-wisdom/hermitian_3d_matrix_production/test_N2048/rank0-loads/MEASURE/runs/omp-16/N2048_CPD225_MPI32_OMP16_bin_generation.log" 2> "/home/helenshao/InitialConditions-wisdom/hermitian_3d_matrix_production/test_N2048/rank0-loads/MEASURE/runs/omp-16/rng_logs/zd_mpi_rng_debug.log"

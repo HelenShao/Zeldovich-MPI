@@ -90,6 +90,10 @@ double zeldovich_params_get_PLT_target_z(ParametersHandle params);
 // Note: The string is valid only while Parameters object exists.
 const char* zeldovich_params_get_ICFormat(ParametersHandle params);
 
+// Get per-rank local FFTW wisdom directory (e.g. /dev/shm/Abacus_wisdom)
+// Returns: C string (caller should not free). Returns NULL if empty.
+const char* zeldovich_params_get_local_wisdom_dir(ParametersHandle params);
+
 // Get qdensity (density output mode)
 // Returns: 0 = normal mode, 1 = normal + density file, 2 = density only (no displacements)
 int zeldovich_params_get_qdensity(ParametersHandle params);

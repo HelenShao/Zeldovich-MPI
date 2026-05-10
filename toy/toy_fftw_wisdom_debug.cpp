@@ -169,7 +169,7 @@ int main(int argc, char** argv)
     }
 
     toy_wisdom_import_mpi(rank, MPI_COMM_WORLD);
-    setup_fftw_plans_full(N, narray, plan_2d_buffer, &plan_2d, &plan_1d_y);
+    setup_fftw_plans_full(N, narray, plan_2d_buffer, &plan_2d, &plan_1d_y, "/dev/shm/Abacus_wisdom");
     toy_wisdom_export_rank0(rank);
 
     double t0 = MPI_Wtime();

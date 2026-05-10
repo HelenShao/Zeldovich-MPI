@@ -1,0 +1,86 @@
+N=2048, CPD=225 — based on 1D-staged OMP sweep layout, but isolated for
+rank0-parameter-broadcast validation runs.
+
+Layout (paths relative to this MEASURE/ directory)
+  metadata/param_N2048_CPD_225.par
+  runs/omp-<T>/N2048_CPD225_MPI32_OMP<T>.pbs
+  runs/omp-<T>/param_runtime_OMP<T>.par    (generated at job runtime)
+  scripts/plot_omp_stage_scaling.py
+  results/                                 (analysis output)
+
+Thread sweep
+  T in {1,2,4,8,16,24,32,51}
+
+Submit from this MEASURE directory:
+  cd /home/helenshao/InitialConditions-wisdom/hermitian_3d_matrix_production/test_N2048/rank0-loads/MEASURE
+  qsub runs/omp-1/N2048_CPD225_MPI32_OMP1.pbs
+  qsub runs/omp-2/N2048_CPD225_MPI32_OMP2.pbs
+  qsub runs/omp-4/N2048_CPD225_MPI32_OMP4.pbs
+  qsub runs/omp-8/N2048_CPD225_MPI32_OMP8.pbs
+  qsub runs/omp-16/N2048_CPD225_MPI32_OMP16.pbs
+  qsub runs/omp-24/N2048_CPD225_MPI32_OMP24.pbs
+  qsub runs/omp-32/N2048_CPD225_MPI32_OMP32.pbs
+  qsub runs/omp-51/N2048_CPD225_MPI32_OMP51.pbs
+
+Inside each PBS:
+  - module load frameworks
+  - module load fftw/3.3.10
+  - module load hwloc
+  - build hermitian_3d_matrix (Makefile default target) and wisdom_rank0
+  - run wisdom_rank0 preflight
+  - launch mpiexec with -ppn 2 and OMP_NUM_THREADS=<T>
+
+Lustre IC root per run:
+  /lus/flare/projects/AbacusAurora/hshao/zeldovich-MPI/PPD_2048_cosm_000/z_24/rank0-loads/omp-<T>/
+
+Analyze results:
+./omp_sweep.sh analyze --dir rank0-loads
+
+MEASURE$ ./omp_sweep.sh analyze --dir rank0-loads
+Baseline OMP threads: 1
+OMP  Stage 1    Stage 2    Stage 3      Total   S1 spd   S2 spd   S3 spd  Tot spd
+-----------------------------------------------------------------------------------
+  1   44.439     20.441    348.214    468.814    1.000    1.000    1.000    1.000
+  2   49.963     39.780    184.079    334.302    0.889    0.514    1.892    1.402
+  4   24.901     25.625    100.027    188.133    1.785    0.798    3.481    2.492
+  8   21.965     15.768    149.296    210.565    2.023    1.296    2.332    2.226
+ 16   11.359     11.626     55.005     95.080    3.912    1.758    6.331    4.931
+ 24    8.545      9.843     39.466     72.680    5.201    2.077    8.823    6.450
+ 32    6.069      7.864     32.359     58.802    7.322    2.599   10.761    7.973
+ 51    3.682      2.198     22.900     34.830   12.070    9.299   15.206   13.460
+
+Stage 1 sub-phase breakdown (from logs)
+OMP  RNG setup    Z-loop    Mirror       FFT   Subphase total
+-------------------------------------------------------------
+  1      0.000    27.382     0.037    17.021          44.439
+  2      0.001    13.893     0.036    36.033          49.963
+  4      0.001     7.475     0.036    17.389          24.901
+  8      0.001     3.815     0.037    18.111          21.965
+ 16      0.000     2.238     0.037     9.084          11.359
+ 24      0.000     1.863     0.038     6.643           8.545
+ 32      0.001     1.409     0.043     4.617           6.069
+ 51      0.001     0.902     0.053     2.726           3.682
+
+Stage 1 staged-FFT breakdown (if available)
+OMP   2D copy-in  2D FFT exec 2D copy-out   Staged FFT total
+---------------------------------------------------------------
+  1       2.053       12.436        2.532             17.021
+  2       8.264        8.083       19.686             36.033
+  4       3.918        3.979        9.491             17.389
+  8       1.890       11.328        4.893             18.111
+ 16       1.055        5.594        2.435              9.084
+ 24       0.645        4.513        1.485              6.643
+ 32       0.349        3.471        0.797              4.617
+ 51       0.186        2.274        0.266              2.726
+
+Stage 3 sub-phase breakdown (streaming; log Stage 4 — Unpack / 1D-Y-FFT / I/O, max rank)
+OMP    Unpack  1D-Y-FFT         I/O   Subphase total
+-------------------------------------------------------------
+  1  270.707     5.124   142.111         417.943
+  2  134.762     2.657    91.821         229.240
+  4  67.541     1.348    48.891         117.780
+  8  34.110     0.693    90.843         125.647
+ 16  18.110     0.467    44.739          63.317
+ 24  12.442     0.338    42.350          55.130
+ 32   9.260     0.299    39.274          48.834
+ 51   3.668     0.249    33.669          37.586

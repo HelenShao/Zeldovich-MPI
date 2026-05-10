@@ -620,13 +620,21 @@ int main(int argc, char **argv)
         }
     }
 
+    const char *local_wisdom_dir = "/dev/shm/Abacus_wisdom";
+    if (params != NULL) {
+        const char *parsed_local_wisdom_dir = zeldovich_params_get_local_wisdom_dir(params);
+        if (parsed_local_wisdom_dir != NULL && parsed_local_wisdom_dir[0] != '\0') {
+            local_wisdom_dir = parsed_local_wisdom_dir;
+        }
+    }
+
     // ========================================================================
     // STAGE 3: SETUP FFT PLANS 
     // ========================================================================
     // plan_2d: FFTW_PLAN_DFT_2D on fft_stage_2d (N×N)
     fftw_complex_t *plan_buffer = (!is_idle_rank && fft_stage_2d != NULL) ? fft_stage_2d : nullptr;
     fftw_plan_t plan_2d, plan_1d_y; // setup both plans
-    setup_fftw_plans_full(N, narray, plan_buffer, &plan_2d, &plan_1d_y);
+    setup_fftw_plans_full(N, narray, plan_buffer, &plan_2d, &plan_1d_y, local_wisdom_dir);
     
     // Grid bounds: CPD-aligned when params/cpd present
     if (!is_idle_rank) {

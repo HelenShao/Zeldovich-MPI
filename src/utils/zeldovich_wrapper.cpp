@@ -145,6 +145,13 @@ const char* zeldovich_params_get_ICFormat(ParametersHandle params) {
     return p->ICFormat.c_str();
 }
 
+const char* zeldovich_params_get_local_wisdom_dir(ParametersHandle params) {
+    if (!params) return NULL;
+    Parameters* p = static_cast<Parameters*>(params);
+    if (p->local_wisdom_dir.empty()) return NULL;
+    return p->local_wisdom_dir.c_str();
+}
+
 int zeldovich_params_get_qdensity(ParametersHandle params) {
     if (!params) return 0;
     Parameters* p = static_cast<Parameters*>(params);

@@ -1,0 +1,1138 @@
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+rm -f Zeldovich_MPI write_particles_from_reassembled_mpi toy_zloop_omp_scaling toy_fftw_wisdom_debug \
+       wisdom_rank0 *.o
+mpicxx -Wall -Wextra -Wno-cast-function-type -std=c++17 -O3 -qopenmp -DFMT_HEADER_ONLY -DPRODUCTION_MODE -DPARTICLE_OUTPUT_MODE=4 -DSKIP_FILE_WRITE=0 -DPARALLELIZE_Z_LOOP=1 -DDEBUG_PRINTS=0 -DDEBUG_RNG_SKIP=0 -DUSE_FFTW_WISDOM -g -Ideps/ParseHeader/include -Ideps/ParseHeader/generated -Ideps/zeldovich_core/include -Ideps/zeldovich_core/pcg -Ideps/fmt/include -Isrc -Isrc/utils -Isrc/fft -Isrc/generation -Isrc/communication -Isrc/streaming -Isrc/output -Ideps -I../.. -I../../../..  -I/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/fftw-3.3.10-6vaqs46/include -o Zeldovich_MPI \
+        src/main.cpp src/utils/printing.c src/utils/verification.c src/utils/decomposition.c src/utils/batch_helpers.c src/utils/rng.c src/utils/power_spectrum.c src/utils/plt_eigenmodes.c src/fft/fft_setup.c src/fft/fft_wisdom.c src/generation/zd_mpi_generation.c src/communication/mpi_exchange.c src/streaming/z_streaming.c src/utils/zeldovich_wrapper.cpp src/output/output_new.cpp \
+        deps/ParseHeader/src/HeaderStream.cc deps/ParseHeader/src/ParseHeader.cc deps/ParseHeader/src/phDriver.cc deps/ParseHeader/src/stringutil.cc deps/ParseHeader/generated/phParser.tab.cc deps/ParseHeader/generated/phScanner.cc deps/zeldovich_core/src/power_spectrum.cpp deps/zeldovich_core/src/parameters.cpp deps/zeldovich_core/src/STimer.cc  -L/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/fftw-3.3.10-6vaqs46/lib -lfftw3f_omp -lfftw3f -lm -lstdc++
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+src/main.cpp:399:9: warning: variable 'num_my_slices' set but not used [-Wunused-but-set-variable]
+  399 |     int num_my_slices = 0;
+      |         ^
+1 warning generated.
+src/generation/zd_mpi_generation.c:203:12: warning: unused variable 't_func_start' [-Wunused-variable]
+  203 |     double t_func_start = omp_get_wtime();
+      |            ^~~~~~~~~~~~
+src/generation/zd_mpi_generation.c:204:12: warning: variable 't_setup_end' set but not used [-Wunused-but-set-variable]
+  204 |     double t_setup_end, t_zloop_end, t_verify_end, t_fft_end;
+      |            ^
+src/generation/zd_mpi_generation.c:204:25: warning: variable 't_zloop_end' set but not used [-Wunused-but-set-variable]
+  204 |     double t_setup_end, t_zloop_end, t_verify_end, t_fft_end;
+      |                         ^
+src/generation/zd_mpi_generation.c:204:38: warning: variable 't_verify_end' set but not used [-Wunused-but-set-variable]
+  204 |     double t_setup_end, t_zloop_end, t_verify_end, t_fft_end;
+      |                                      ^
+src/generation/zd_mpi_generation.c:204:52: warning: variable 't_fft_end' set but not used [-Wunused-but-set-variable]
+  204 |     double t_setup_end, t_zloop_end, t_verify_end, t_fft_end;
+      |                                                    ^
+5 warnings generated.
+In file included from subprojects/ParseHeader/phParser.tab.cc:46:
+subprojects/ParseHeader/phParser.tab.hh:448:26: warning: definition of implicit copy constructor for 'stack_symbol_type' is deprecated because it has a user-provided copy assignment operator [-Wdeprecated-copy-with-user-provided-copy]
+  448 |       stack_symbol_type& operator= (const stack_symbol_type& that);
+      |                          ^
+/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/gcc-13.4.0-hgnyg4p/lib/gcc/x86_64-pc-linux-gnu/13.4.0/../../../../include/c++/13.4.0/bits/stl_construct.h:119:25: note: in implicit copy constructor for 'yy::phParser::stack_symbol_type' first required here
+  119 |       ::new((void*)__p) _Tp(std::forward<_Args>(__args)...);
+      |                         ^
+/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/gcc-13.4.0-hgnyg4p/lib/gcc/x86_64-pc-linux-gnu/13.4.0/../../../../include/c++/13.4.0/bits/stl_uninitialized.h:120:11: note: in instantiation of function template specialization 'std::_Construct<yy::phParser::stack_symbol_type, const yy::phParser::stack_symbol_type &>' requested here
+  120 |             std::_Construct(std::__addressof(*__cur), *__first);
+      |                  ^
+/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/gcc-13.4.0-hgnyg4p/lib/gcc/x86_64-pc-linux-gnu/13.4.0/../../../../include/c++/13.4.0/bits/stl_uninitialized.h:137:16: note: in instantiation of function template specialization 'std::__do_uninit_copy<const yy::phParser::stack_symbol_type *, yy::phParser::stack_symbol_type *>' requested here
+  137 |         { return std::__do_uninit_copy(__first, __last, __result); }
+      |                       ^
+/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/gcc-13.4.0-hgnyg4p/lib/gcc/x86_64-pc-linux-gnu/13.4.0/../../../../include/c++/13.4.0/bits/stl_uninitialized.h:185:2: note: in instantiation of function template specialization 'std::__uninitialized_copy<false>::__uninit_copy<const yy::phParser::stack_symbol_type *, yy::phParser::stack_symbol_type *>' requested here
+  185 |         __uninit_copy(__first, __last, __result);
+      |         ^
+/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/gcc-13.4.0-hgnyg4p/lib/gcc/x86_64-pc-linux-gnu/13.4.0/../../../../include/c++/13.4.0/bits/stl_uninitialized.h:373:19: note: in instantiation of function template specialization 'std::uninitialized_copy<const yy::phParser::stack_symbol_type *, yy::phParser::stack_symbol_type *>' requested here
+  373 |       return std::uninitialized_copy(__first, __last, __result);
+      |                   ^
+/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/gcc-13.4.0-hgnyg4p/lib/gcc/x86_64-pc-linux-gnu/13.4.0/../../../../include/c++/13.4.0/bits/stl_vector.h:1622:13: note: in instantiation of function template specialization 'std::__uninitialized_copy_a<const yy::phParser::stack_symbol_type *, yy::phParser::stack_symbol_type *, yy::phParser::stack_symbol_type>' requested here
+ 1622 |               std::__uninitialized_copy_a(__first, __last, __result,
+      |                    ^
+/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/gcc-13.4.0-hgnyg4p/lib/gcc/x86_64-pc-linux-gnu/13.4.0/../../../../include/c++/13.4.0/bits/vector.tcc:86:16: note: in instantiation of function template specialization 'std::vector<yy::phParser::stack_symbol_type>::_M_allocate_and_copy<const yy::phParser::stack_symbol_type *>' requested here
+   86 |               __tmp = _M_allocate_and_copy(__n,
+      |                       ^
+subprojects/ParseHeader/stack.hh:57:12: note: in instantiation of member function 'std::vector<yy::phParser::stack_symbol_type>::reserve' requested here
+   57 |       seq_.reserve (200);
+      |            ^
+subprojects/ParseHeader/phParser.tab.cc:184:16: note: in instantiation of member function 'yy::stack<yy::phParser::stack_symbol_type>::stack' requested here
+  184 |    phParser :: phParser  (phDriver& driver_yyarg)
+      |                ^
+1 warning generated.
+subprojects/ParseHeader/phScanner.cc:1670:16: warning: function 'yyinput' is not needed and will not be emitted [-Wunneeded-internal-declaration]
+ 1670 |     static int yyinput (void)
+      |                ^~~~~~~
+1 warning generated.
+mpicxx -Wall -Wextra -Wno-cast-function-type -std=c++17 -O3 -qopenmp -DFMT_HEADER_ONLY  -Isrc -Isrc/fft  -I/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/fftw-3.3.10-6vaqs46/include -o wisdom_rank0 \
+    src/fft/wisdom_rank0.c src/fft/wisdom_rank0_main.c -L/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/fftw-3.3.10-6vaqs46/lib -lfftw3f_omp -lfftw3f -lm -lstdc++
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+rm -f Zeldovich_MPI write_particles_from_reassembled_mpi toy_zloop_omp_scaling toy_fftw_wisdom_debug \
+       wisdom_rank0 *.o
+mpicxx -Wall -Wextra -Wno-cast-function-type -std=c++17 -O3 -qopenmp -DFMT_HEADER_ONLY -DPRODUCTION_MODE -DPARTICLE_OUTPUT_MODE=4 -DSKIP_FILE_WRITE=0 -DPARALLELIZE_Z_LOOP=1 -DDEBUG_PRINTS=0 -DDEBUG_RNG_SKIP=0 -DUSE_FFTW_WISDOM -DFFTW_PLANNER_FLAGS=FFTW_PATIENT -g -Ideps/ParseHeader/include -Ideps/ParseHeader/generated -Ideps/zeldovich_core/include -Ideps/zeldovich_core/pcg -Ideps/fmt/include -Isrc -Isrc/utils -Isrc/fft -Isrc/generation -Isrc/communication -Isrc/streaming -Isrc/output -Ideps -I../.. -I../../../..  -I/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/fftw-3.3.10-6vaqs46/include -o Zeldovich_MPI \
+        src/main.cpp src/utils/printing.c src/utils/verification.c src/utils/decomposition.c src/utils/batch_helpers.c src/utils/rng.c src/utils/power_spectrum.c src/utils/plt_eigenmodes.c src/fft/fft_setup.c src/fft/fft_wisdom.c src/generation/zd_mpi_generation.c src/communication/mpi_exchange.c src/streaming/z_streaming.c src/utils/zeldovich_wrapper.cpp src/output/output_new.cpp \
+        deps/ParseHeader/src/HeaderStream.cc deps/ParseHeader/src/ParseHeader.cc deps/ParseHeader/src/phDriver.cc deps/ParseHeader/src/stringutil.cc deps/ParseHeader/generated/phParser.tab.cc deps/ParseHeader/generated/phScanner.cc deps/zeldovich_core/src/power_spectrum.cpp deps/zeldovich_core/src/parameters.cpp deps/zeldovich_core/src/STimer.cc  -L/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/fftw-3.3.10-6vaqs46/lib -lfftw3f_omp -lfftw3f -lm -lstdc++
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+src/main.cpp:399:9: warning: variable 'num_my_slices' set but not used [-Wunused-but-set-variable]
+  399 |     int num_my_slices = 0;
+      |         ^
+1 warning generated.
+src/generation/zd_mpi_generation.c:203:12: warning: unused variable 't_func_start' [-Wunused-variable]
+  203 |     double t_func_start = omp_get_wtime();
+      |            ^~~~~~~~~~~~
+src/generation/zd_mpi_generation.c:204:12: warning: variable 't_setup_end' set but not used [-Wunused-but-set-variable]
+  204 |     double t_setup_end, t_zloop_end, t_verify_end, t_fft_end;
+      |            ^
+src/generation/zd_mpi_generation.c:204:25: warning: variable 't_zloop_end' set but not used [-Wunused-but-set-variable]
+  204 |     double t_setup_end, t_zloop_end, t_verify_end, t_fft_end;
+      |                         ^
+src/generation/zd_mpi_generation.c:204:38: warning: variable 't_verify_end' set but not used [-Wunused-but-set-variable]
+  204 |     double t_setup_end, t_zloop_end, t_verify_end, t_fft_end;
+      |                                      ^
+src/generation/zd_mpi_generation.c:204:52: warning: variable 't_fft_end' set but not used [-Wunused-but-set-variable]
+  204 |     double t_setup_end, t_zloop_end, t_verify_end, t_fft_end;
+      |                                                    ^
+5 warnings generated.
+In file included from subprojects/ParseHeader/phParser.tab.cc:46:
+subprojects/ParseHeader/phParser.tab.hh:448:26: warning: definition of implicit copy constructor for 'stack_symbol_type' is deprecated because it has a user-provided copy assignment operator [-Wdeprecated-copy-with-user-provided-copy]
+  448 |       stack_symbol_type& operator= (const stack_symbol_type& that);
+      |                          ^
+/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/gcc-13.4.0-hgnyg4p/lib/gcc/x86_64-pc-linux-gnu/13.4.0/../../../../include/c++/13.4.0/bits/stl_construct.h:119:25: note: in implicit copy constructor for 'yy::phParser::stack_symbol_type' first required here
+  119 |       ::new((void*)__p) _Tp(std::forward<_Args>(__args)...);
+      |                         ^
+/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/gcc-13.4.0-hgnyg4p/lib/gcc/x86_64-pc-linux-gnu/13.4.0/../../../../include/c++/13.4.0/bits/stl_uninitialized.h:120:11: note: in instantiation of function template specialization 'std::_Construct<yy::phParser::stack_symbol_type, const yy::phParser::stack_symbol_type &>' requested here
+  120 |             std::_Construct(std::__addressof(*__cur), *__first);
+      |                  ^
+/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/gcc-13.4.0-hgnyg4p/lib/gcc/x86_64-pc-linux-gnu/13.4.0/../../../../include/c++/13.4.0/bits/stl_uninitialized.h:137:16: note: in instantiation of function template specialization 'std::__do_uninit_copy<const yy::phParser::stack_symbol_type *, yy::phParser::stack_symbol_type *>' requested here
+  137 |         { return std::__do_uninit_copy(__first, __last, __result); }
+      |                       ^
+/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/gcc-13.4.0-hgnyg4p/lib/gcc/x86_64-pc-linux-gnu/13.4.0/../../../../include/c++/13.4.0/bits/stl_uninitialized.h:185:2: note: in instantiation of function template specialization 'std::__uninitialized_copy<false>::__uninit_copy<const yy::phParser::stack_symbol_type *, yy::phParser::stack_symbol_type *>' requested here
+  185 |         __uninit_copy(__first, __last, __result);
+      |         ^
+/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/gcc-13.4.0-hgnyg4p/lib/gcc/x86_64-pc-linux-gnu/13.4.0/../../../../include/c++/13.4.0/bits/stl_uninitialized.h:373:19: note: in instantiation of function template specialization 'std::uninitialized_copy<const yy::phParser::stack_symbol_type *, yy::phParser::stack_symbol_type *>' requested here
+  373 |       return std::uninitialized_copy(__first, __last, __result);
+      |                   ^
+/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/gcc-13.4.0-hgnyg4p/lib/gcc/x86_64-pc-linux-gnu/13.4.0/../../../../include/c++/13.4.0/bits/stl_vector.h:1622:13: note: in instantiation of function template specialization 'std::__uninitialized_copy_a<const yy::phParser::stack_symbol_type *, yy::phParser::stack_symbol_type *, yy::phParser::stack_symbol_type>' requested here
+ 1622 |               std::__uninitialized_copy_a(__first, __last, __result,
+      |                    ^
+/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/gcc-13.4.0-hgnyg4p/lib/gcc/x86_64-pc-linux-gnu/13.4.0/../../../../include/c++/13.4.0/bits/vector.tcc:86:16: note: in instantiation of function template specialization 'std::vector<yy::phParser::stack_symbol_type>::_M_allocate_and_copy<const yy::phParser::stack_symbol_type *>' requested here
+   86 |               __tmp = _M_allocate_and_copy(__n,
+      |                       ^
+subprojects/ParseHeader/stack.hh:57:12: note: in instantiation of member function 'std::vector<yy::phParser::stack_symbol_type>::reserve' requested here
+   57 |       seq_.reserve (200);
+      |            ^
+subprojects/ParseHeader/phParser.tab.cc:184:16: note: in instantiation of member function 'yy::stack<yy::phParser::stack_symbol_type>::stack' requested here
+  184 |    phParser :: phParser  (phDriver& driver_yyarg)
+      |                ^
+1 warning generated.
+subprojects/ParseHeader/phScanner.cc:1670:16: warning: function 'yyinput' is not needed and will not be emitted [-Wunneeded-internal-declaration]
+ 1670 |     static int yyinput (void)
+      |                ^~~~~~~
+1 warning generated.
+mpicxx -Wall -Wextra -Wno-cast-function-type -std=c++17 -O3 -qopenmp -DFMT_HEADER_ONLY  -Isrc -Isrc/fft  -I/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/fftw-3.3.10-6vaqs46/include -o wisdom_rank0 \
+    src/fft/wisdom_rank0.c src/fft/wisdom_rank0_main.c -L/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/fftw-3.3.10-6vaqs46/lib -lfftw3f_omp -lfftw3f -lm -lstdc++
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+DEBUG: PBS_NODEFILE=/var/spool/pbs/aux/8461347.aurora-pbs-0001.hostmgmt.cm.aurora.alcf.anl.gov, NTOTRANKS=16
+rm -f Zeldovich_MPI write_particles_from_reassembled_mpi toy_zloop_omp_scaling toy_fftw_wisdom_debug \
+       wisdom_rank0 *.o
+mpicxx -Wall -Wextra -Wno-cast-function-type -std=c++17 -O3 -qopenmp -DFMT_HEADER_ONLY -DPRODUCTION_MODE -DPARTICLE_OUTPUT_MODE=4 -DSKIP_FILE_WRITE=0 -DPARALLELIZE_Z_LOOP=1 -DDEBUG_PRINTS=0 -DDEBUG_RNG_SKIP=0 -DUSE_FFTW_WISDOM -g -Ideps/ParseHeader/include -Ideps/ParseHeader/generated -Ideps/zeldovich_core/include -Ideps/zeldovich_core/pcg -Ideps/fmt/include -Isrc -Isrc/utils -Isrc/fft -Isrc/generation -Isrc/communication -Isrc/streaming -Isrc/output -Ideps -I../.. -I../../../..  -I/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/fftw-3.3.10-6vaqs46/include -o Zeldovich_MPI \
+        src/main.cpp src/utils/printing.c src/utils/verification.c src/utils/decomposition.c src/utils/batch_helpers.c src/utils/rng.c src/utils/power_spectrum.c src/utils/plt_eigenmodes.c src/fft/fft_setup.c src/fft/fft_wisdom.c src/generation/zd_mpi_generation.c src/communication/mpi_exchange.c src/streaming/z_streaming.c src/utils/zeldovich_wrapper.cpp src/output/output_new.cpp \
+        deps/ParseHeader/src/HeaderStream.cc deps/ParseHeader/src/ParseHeader.cc deps/ParseHeader/src/phDriver.cc deps/ParseHeader/src/stringutil.cc deps/ParseHeader/generated/phParser.tab.cc deps/ParseHeader/generated/phScanner.cc deps/zeldovich_core/src/power_spectrum.cpp deps/zeldovich_core/src/parameters.cpp deps/zeldovich_core/src/STimer.cc  -L/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/fftw-3.3.10-6vaqs46/lib -lfftw3f_omp -lfftw3f -lm -lstdc++
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+src/main.cpp:403:9: warning: variable 'num_my_slices' set but not used [-Wunused-but-set-variable]
+  403 |     int num_my_slices = 0;
+      |         ^
+1 warning generated.
+src/generation/zd_mpi_generation.c:203:12: warning: unused variable 't_func_start' [-Wunused-variable]
+  203 |     double t_func_start = omp_get_wtime();
+      |            ^~~~~~~~~~~~
+src/generation/zd_mpi_generation.c:204:12: warning: variable 't_setup_end' set but not used [-Wunused-but-set-variable]
+  204 |     double t_setup_end, t_zloop_end, t_verify_end, t_fft_end;
+      |            ^
+src/generation/zd_mpi_generation.c:204:25: warning: variable 't_zloop_end' set but not used [-Wunused-but-set-variable]
+  204 |     double t_setup_end, t_zloop_end, t_verify_end, t_fft_end;
+      |                         ^
+src/generation/zd_mpi_generation.c:204:38: warning: variable 't_verify_end' set but not used [-Wunused-but-set-variable]
+  204 |     double t_setup_end, t_zloop_end, t_verify_end, t_fft_end;
+      |                                      ^
+src/generation/zd_mpi_generation.c:204:52: warning: variable 't_fft_end' set but not used [-Wunused-but-set-variable]
+  204 |     double t_setup_end, t_zloop_end, t_verify_end, t_fft_end;
+      |                                                    ^
+5 warnings generated.
+In file included from subprojects/ParseHeader/phParser.tab.cc:46:
+subprojects/ParseHeader/phParser.tab.hh:448:26: warning: definition of implicit copy constructor for 'stack_symbol_type' is deprecated because it has a user-provided copy assignment operator [-Wdeprecated-copy-with-user-provided-copy]
+  448 |       stack_symbol_type& operator= (const stack_symbol_type& that);
+      |                          ^
+/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/gcc-13.4.0-hgnyg4p/lib/gcc/x86_64-pc-linux-gnu/13.4.0/../../../../include/c++/13.4.0/bits/stl_construct.h:119:25: note: in implicit copy constructor for 'yy::phParser::stack_symbol_type' first required here
+  119 |       ::new((void*)__p) _Tp(std::forward<_Args>(__args)...);
+      |                         ^
+/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/gcc-13.4.0-hgnyg4p/lib/gcc/x86_64-pc-linux-gnu/13.4.0/../../../../include/c++/13.4.0/bits/stl_uninitialized.h:120:11: note: in instantiation of function template specialization 'std::_Construct<yy::phParser::stack_symbol_type, const yy::phParser::stack_symbol_type &>' requested here
+  120 |             std::_Construct(std::__addressof(*__cur), *__first);
+      |                  ^
+/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/gcc-13.4.0-hgnyg4p/lib/gcc/x86_64-pc-linux-gnu/13.4.0/../../../../include/c++/13.4.0/bits/stl_uninitialized.h:137:16: note: in instantiation of function template specialization 'std::__do_uninit_copy<const yy::phParser::stack_symbol_type *, yy::phParser::stack_symbol_type *>' requested here
+  137 |         { return std::__do_uninit_copy(__first, __last, __result); }
+      |                       ^
+/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/gcc-13.4.0-hgnyg4p/lib/gcc/x86_64-pc-linux-gnu/13.4.0/../../../../include/c++/13.4.0/bits/stl_uninitialized.h:185:2: note: in instantiation of function template specialization 'std::__uninitialized_copy<false>::__uninit_copy<const yy::phParser::stack_symbol_type *, yy::phParser::stack_symbol_type *>' requested here
+  185 |         __uninit_copy(__first, __last, __result);
+      |         ^
+/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/gcc-13.4.0-hgnyg4p/lib/gcc/x86_64-pc-linux-gnu/13.4.0/../../../../include/c++/13.4.0/bits/stl_uninitialized.h:373:19: note: in instantiation of function template specialization 'std::uninitialized_copy<const yy::phParser::stack_symbol_type *, yy::phParser::stack_symbol_type *>' requested here
+  373 |       return std::uninitialized_copy(__first, __last, __result);
+      |                   ^
+/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/gcc-13.4.0-hgnyg4p/lib/gcc/x86_64-pc-linux-gnu/13.4.0/../../../../include/c++/13.4.0/bits/stl_vector.h:1622:13: note: in instantiation of function template specialization 'std::__uninitialized_copy_a<const yy::phParser::stack_symbol_type *, yy::phParser::stack_symbol_type *, yy::phParser::stack_symbol_type>' requested here
+ 1622 |               std::__uninitialized_copy_a(__first, __last, __result,
+      |                    ^
+/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/gcc-13.4.0-hgnyg4p/lib/gcc/x86_64-pc-linux-gnu/13.4.0/../../../../include/c++/13.4.0/bits/vector.tcc:86:16: note: in instantiation of function template specialization 'std::vector<yy::phParser::stack_symbol_type>::_M_allocate_and_copy<const yy::phParser::stack_symbol_type *>' requested here
+   86 |               __tmp = _M_allocate_and_copy(__n,
+      |                       ^
+subprojects/ParseHeader/stack.hh:57:12: note: in instantiation of member function 'std::vector<yy::phParser::stack_symbol_type>::reserve' requested here
+   57 |       seq_.reserve (200);
+      |            ^
+subprojects/ParseHeader/phParser.tab.cc:184:16: note: in instantiation of member function 'yy::stack<yy::phParser::stack_symbol_type>::stack' requested here
+  184 |    phParser :: phParser  (phDriver& driver_yyarg)
+      |                ^
+1 warning generated.
+subprojects/ParseHeader/phScanner.cc:1670:16: warning: function 'yyinput' is not needed and will not be emitted [-Wunneeded-internal-declaration]
+ 1670 |     static int yyinput (void)
+      |                ^~~~~~~
+1 warning generated.
+mpicxx -Wall -Wextra -Wno-cast-function-type -std=c++17 -O3 -qopenmp -DFMT_HEADER_ONLY  -Isrc -Isrc/fft  -I/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/fftw-3.3.10-6vaqs46/include -o wisdom_rank0 \
+    src/fft/wisdom_rank0.c src/fft/wisdom_rank0_main.c -L/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/fftw-3.3.10-6vaqs46/lib -lfftw3f_omp -lfftw3f -lm -lstdc++
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+DEBUG: PBS_NODEFILE=/var/spool/pbs/aux/8461427.aurora-pbs-0001.hostmgmt.cm.aurora.alcf.anl.gov, NTOTRANKS=16
+rm -f Zeldovich_MPI write_particles_from_reassembled_mpi toy_zloop_omp_scaling toy_fftw_wisdom_debug \
+       wisdom_rank0 *.o
+mpicxx -Wall -Wextra -Wno-cast-function-type -std=c++17 -O3 -qopenmp -DFMT_HEADER_ONLY -DPRODUCTION_MODE -DPARTICLE_OUTPUT_MODE=4 -DSKIP_FILE_WRITE=0 -DPARALLELIZE_Z_LOOP=1 -DDEBUG_PRINTS=0 -DDEBUG_RNG_SKIP=0 -DUSE_FFTW_WISDOM -g -Ideps/ParseHeader/include -Ideps/ParseHeader/generated -Ideps/zeldovich_core/include -Ideps/zeldovich_core/pcg -Ideps/fmt/include -Isrc -Isrc/utils -Isrc/fft -Isrc/generation -Isrc/communication -Isrc/streaming -Isrc/output -Ideps -I../.. -I../../../..  -I/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/fftw-3.3.10-6vaqs46/include -o Zeldovich_MPI \
+        src/main.cpp src/utils/printing.c src/utils/verification.c src/utils/decomposition.c src/utils/batch_helpers.c src/utils/rng.c src/utils/power_spectrum.c src/utils/plt_eigenmodes.c src/fft/fft_setup.c src/fft/fft_wisdom.c src/generation/zd_mpi_generation.c src/communication/mpi_exchange.c src/streaming/z_streaming.c src/utils/zeldovich_wrapper.cpp src/output/output_new.cpp \
+        deps/ParseHeader/src/HeaderStream.cc deps/ParseHeader/src/ParseHeader.cc deps/ParseHeader/src/phDriver.cc deps/ParseHeader/src/stringutil.cc deps/ParseHeader/generated/phParser.tab.cc deps/ParseHeader/generated/phScanner.cc deps/zeldovich_core/src/power_spectrum.cpp deps/zeldovich_core/src/parameters.cpp deps/zeldovich_core/src/STimer.cc  -L/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/fftw-3.3.10-6vaqs46/lib -lfftw3f_omp -lfftw3f -lm -lstdc++
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+src/main.cpp:403:9: warning: variable 'num_my_slices' set but not used [-Wunused-but-set-variable]
+  403 |     int num_my_slices = 0;
+      |         ^
+1 warning generated.
+src/generation/zd_mpi_generation.c:203:12: warning: unused variable 't_func_start' [-Wunused-variable]
+  203 |     double t_func_start = omp_get_wtime();
+      |            ^~~~~~~~~~~~
+src/generation/zd_mpi_generation.c:204:12: warning: variable 't_setup_end' set but not used [-Wunused-but-set-variable]
+  204 |     double t_setup_end, t_zloop_end, t_verify_end, t_fft_end;
+      |            ^
+src/generation/zd_mpi_generation.c:204:25: warning: variable 't_zloop_end' set but not used [-Wunused-but-set-variable]
+  204 |     double t_setup_end, t_zloop_end, t_verify_end, t_fft_end;
+      |                         ^
+src/generation/zd_mpi_generation.c:204:38: warning: variable 't_verify_end' set but not used [-Wunused-but-set-variable]
+  204 |     double t_setup_end, t_zloop_end, t_verify_end, t_fft_end;
+      |                                      ^
+src/generation/zd_mpi_generation.c:204:52: warning: variable 't_fft_end' set but not used [-Wunused-but-set-variable]
+  204 |     double t_setup_end, t_zloop_end, t_verify_end, t_fft_end;
+      |                                                    ^
+5 warnings generated.
+In file included from subprojects/ParseHeader/phParser.tab.cc:46:
+subprojects/ParseHeader/phParser.tab.hh:448:26: warning: definition of implicit copy constructor for 'stack_symbol_type' is deprecated because it has a user-provided copy assignment operator [-Wdeprecated-copy-with-user-provided-copy]
+  448 |       stack_symbol_type& operator= (const stack_symbol_type& that);
+      |                          ^
+/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/gcc-13.4.0-hgnyg4p/lib/gcc/x86_64-pc-linux-gnu/13.4.0/../../../../include/c++/13.4.0/bits/stl_construct.h:119:25: note: in implicit copy constructor for 'yy::phParser::stack_symbol_type' first required here
+  119 |       ::new((void*)__p) _Tp(std::forward<_Args>(__args)...);
+      |                         ^
+/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/gcc-13.4.0-hgnyg4p/lib/gcc/x86_64-pc-linux-gnu/13.4.0/../../../../include/c++/13.4.0/bits/stl_uninitialized.h:120:11: note: in instantiation of function template specialization 'std::_Construct<yy::phParser::stack_symbol_type, const yy::phParser::stack_symbol_type &>' requested here
+  120 |             std::_Construct(std::__addressof(*__cur), *__first);
+      |                  ^
+/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/gcc-13.4.0-hgnyg4p/lib/gcc/x86_64-pc-linux-gnu/13.4.0/../../../../include/c++/13.4.0/bits/stl_uninitialized.h:137:16: note: in instantiation of function template specialization 'std::__do_uninit_copy<const yy::phParser::stack_symbol_type *, yy::phParser::stack_symbol_type *>' requested here
+  137 |         { return std::__do_uninit_copy(__first, __last, __result); }
+      |                       ^
+/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/gcc-13.4.0-hgnyg4p/lib/gcc/x86_64-pc-linux-gnu/13.4.0/../../../../include/c++/13.4.0/bits/stl_uninitialized.h:185:2: note: in instantiation of function template specialization 'std::__uninitialized_copy<false>::__uninit_copy<const yy::phParser::stack_symbol_type *, yy::phParser::stack_symbol_type *>' requested here
+  185 |         __uninit_copy(__first, __last, __result);
+      |         ^
+/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/gcc-13.4.0-hgnyg4p/lib/gcc/x86_64-pc-linux-gnu/13.4.0/../../../../include/c++/13.4.0/bits/stl_uninitialized.h:373:19: note: in instantiation of function template specialization 'std::uninitialized_copy<const yy::phParser::stack_symbol_type *, yy::phParser::stack_symbol_type *>' requested here
+  373 |       return std::uninitialized_copy(__first, __last, __result);
+      |                   ^
+/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/gcc-13.4.0-hgnyg4p/lib/gcc/x86_64-pc-linux-gnu/13.4.0/../../../../include/c++/13.4.0/bits/stl_vector.h:1622:13: note: in instantiation of function template specialization 'std::__uninitialized_copy_a<const yy::phParser::stack_symbol_type *, yy::phParser::stack_symbol_type *, yy::phParser::stack_symbol_type>' requested here
+ 1622 |               std::__uninitialized_copy_a(__first, __last, __result,
+      |                    ^
+/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/gcc-13.4.0-hgnyg4p/lib/gcc/x86_64-pc-linux-gnu/13.4.0/../../../../include/c++/13.4.0/bits/vector.tcc:86:16: note: in instantiation of function template specialization 'std::vector<yy::phParser::stack_symbol_type>::_M_allocate_and_copy<const yy::phParser::stack_symbol_type *>' requested here
+   86 |               __tmp = _M_allocate_and_copy(__n,
+      |                       ^
+subprojects/ParseHeader/stack.hh:57:12: note: in instantiation of member function 'std::vector<yy::phParser::stack_symbol_type>::reserve' requested here
+   57 |       seq_.reserve (200);
+      |            ^
+subprojects/ParseHeader/phParser.tab.cc:184:16: note: in instantiation of member function 'yy::stack<yy::phParser::stack_symbol_type>::stack' requested here
+  184 |    phParser :: phParser  (phDriver& driver_yyarg)
+      |                ^
+1 warning generated.
+subprojects/ParseHeader/phScanner.cc:1670:16: warning: function 'yyinput' is not needed and will not be emitted [-Wunneeded-internal-declaration]
+ 1670 |     static int yyinput (void)
+      |                ^~~~~~~
+1 warning generated.
+mpicxx -Wall -Wextra -Wno-cast-function-type -std=c++17 -O3 -qopenmp -DFMT_HEADER_ONLY  -Isrc -Isrc/fft  -I/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/fftw-3.3.10-6vaqs46/include -o wisdom_rank0 \
+    src/fft/wisdom_rank0.c src/fft/wisdom_rank0_main.c -L/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/fftw-3.3.10-6vaqs46/lib -lfftw3f_omp -lfftw3f -lm -lstdc++
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+Lmod Warning: ONEAPI_DEVICE_SELECTOR has been set to
+"opencl:gpu;level_zero:gpu"
+to enable Triton-XPU, vLLM, Ray, and dpctl functionality.
+
+If you encounter issues, you can revert to:
+  export ONEAPI_DEVICE_SELECTOR="level_zero:gpu"
+
+If you do need to revert, please email support@alcf.anl.gov
+so we can track and address compatibility issues.
+
+While processing the following module(s):
+    Module fullname      Module Filename
+    ---------------      ---------------
+    frameworks/2025.3.1  /opt/aurora/26.26.0/modulefiles/frameworks/2025.3.1.lua
+
+DEBUG: PBS_NODEFILE=/var/spool/pbs/aux/8461491.aurora-pbs-0001.hostmgmt.cm.aurora.alcf.anl.gov, NTOTRANKS=16
+rm -f Zeldovich_MPI write_particles_from_reassembled_mpi toy_zloop_omp_scaling toy_fftw_wisdom_debug \
+       wisdom_rank0 *.o
+mpicxx -Wall -Wextra -Wno-cast-function-type -std=c++17 -O3 -qopenmp -DFMT_HEADER_ONLY -DPRODUCTION_MODE -DPARTICLE_OUTPUT_MODE=4 -DSKIP_FILE_WRITE=0 -DPARALLELIZE_Z_LOOP=1 -DDEBUG_PRINTS=0 -DDEBUG_RNG_SKIP=0 -DUSE_FFTW_WISDOM -g -Ideps/ParseHeader/include -Ideps/ParseHeader/generated -Ideps/zeldovich_core/include -Ideps/zeldovich_core/pcg -Ideps/fmt/include -Isrc -Isrc/utils -Isrc/fft -Isrc/generation -Isrc/communication -Isrc/streaming -Isrc/output -Ideps -I../.. -I../../../..  -I/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/fftw-3.3.10-6vaqs46/include -o Zeldovich_MPI \
+        src/main.cpp src/utils/printing.c src/utils/verification.c src/utils/decomposition.c src/utils/batch_helpers.c src/utils/rng.c src/utils/power_spectrum.c src/utils/plt_eigenmodes.c src/fft/fft_setup.c src/fft/fft_wisdom.c src/generation/zd_mpi_generation.c src/communication/mpi_exchange.c src/streaming/z_streaming.c src/utils/zeldovich_wrapper.cpp src/output/output_new.cpp \
+        deps/ParseHeader/src/HeaderStream.cc deps/ParseHeader/src/ParseHeader.cc deps/ParseHeader/src/phDriver.cc deps/ParseHeader/src/stringutil.cc deps/ParseHeader/generated/phParser.tab.cc deps/ParseHeader/generated/phScanner.cc deps/zeldovich_core/src/power_spectrum.cpp deps/zeldovich_core/src/parameters.cpp deps/zeldovich_core/src/STimer.cc  -L/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/fftw-3.3.10-6vaqs46/lib -lfftw3f_omp -lfftw3f -lm -lstdc++
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+src/main.cpp:403:9: warning: variable 'num_my_slices' set but not used [-Wunused-but-set-variable]
+  403 |     int num_my_slices = 0;
+      |         ^
+1 warning generated.
+src/generation/zd_mpi_generation.c:203:12: warning: unused variable 't_func_start' [-Wunused-variable]
+  203 |     double t_func_start = omp_get_wtime();
+      |            ^~~~~~~~~~~~
+src/generation/zd_mpi_generation.c:204:12: warning: variable 't_setup_end' set but not used [-Wunused-but-set-variable]
+  204 |     double t_setup_end, t_zloop_end, t_verify_end, t_fft_end;
+      |            ^
+src/generation/zd_mpi_generation.c:204:25: warning: variable 't_zloop_end' set but not used [-Wunused-but-set-variable]
+  204 |     double t_setup_end, t_zloop_end, t_verify_end, t_fft_end;
+      |                         ^
+src/generation/zd_mpi_generation.c:204:38: warning: variable 't_verify_end' set but not used [-Wunused-but-set-variable]
+  204 |     double t_setup_end, t_zloop_end, t_verify_end, t_fft_end;
+      |                                      ^
+src/generation/zd_mpi_generation.c:204:52: warning: variable 't_fft_end' set but not used [-Wunused-but-set-variable]
+  204 |     double t_setup_end, t_zloop_end, t_verify_end, t_fft_end;
+      |                                                    ^
+5 warnings generated.
+In file included from subprojects/ParseHeader/phParser.tab.cc:46:
+subprojects/ParseHeader/phParser.tab.hh:448:26: warning: definition of implicit copy constructor for 'stack_symbol_type' is deprecated because it has a user-provided copy assignment operator [-Wdeprecated-copy-with-user-provided-copy]
+  448 |       stack_symbol_type& operator= (const stack_symbol_type& that);
+      |                          ^
+/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/gcc-13.4.0-hgnyg4p/lib/gcc/x86_64-pc-linux-gnu/13.4.0/../../../../include/c++/13.4.0/bits/stl_construct.h:119:25: note: in implicit copy constructor for 'yy::phParser::stack_symbol_type' first required here
+  119 |       ::new((void*)__p) _Tp(std::forward<_Args>(__args)...);
+      |                         ^
+/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/gcc-13.4.0-hgnyg4p/lib/gcc/x86_64-pc-linux-gnu/13.4.0/../../../../include/c++/13.4.0/bits/stl_uninitialized.h:120:11: note: in instantiation of function template specialization 'std::_Construct<yy::phParser::stack_symbol_type, const yy::phParser::stack_symbol_type &>' requested here
+  120 |             std::_Construct(std::__addressof(*__cur), *__first);
+      |                  ^
+/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/gcc-13.4.0-hgnyg4p/lib/gcc/x86_64-pc-linux-gnu/13.4.0/../../../../include/c++/13.4.0/bits/stl_uninitialized.h:137:16: note: in instantiation of function template specialization 'std::__do_uninit_copy<const yy::phParser::stack_symbol_type *, yy::phParser::stack_symbol_type *>' requested here
+  137 |         { return std::__do_uninit_copy(__first, __last, __result); }
+      |                       ^
+/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/gcc-13.4.0-hgnyg4p/lib/gcc/x86_64-pc-linux-gnu/13.4.0/../../../../include/c++/13.4.0/bits/stl_uninitialized.h:185:2: note: in instantiation of function template specialization 'std::__uninitialized_copy<false>::__uninit_copy<const yy::phParser::stack_symbol_type *, yy::phParser::stack_symbol_type *>' requested here
+  185 |         __uninit_copy(__first, __last, __result);
+      |         ^
+/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/gcc-13.4.0-hgnyg4p/lib/gcc/x86_64-pc-linux-gnu/13.4.0/../../../../include/c++/13.4.0/bits/stl_uninitialized.h:373:19: note: in instantiation of function template specialization 'std::uninitialized_copy<const yy::phParser::stack_symbol_type *, yy::phParser::stack_symbol_type *>' requested here
+  373 |       return std::uninitialized_copy(__first, __last, __result);
+      |                   ^
+/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/gcc-13.4.0-hgnyg4p/lib/gcc/x86_64-pc-linux-gnu/13.4.0/../../../../include/c++/13.4.0/bits/stl_vector.h:1622:13: note: in instantiation of function template specialization 'std::__uninitialized_copy_a<const yy::phParser::stack_symbol_type *, yy::phParser::stack_symbol_type *, yy::phParser::stack_symbol_type>' requested here
+ 1622 |               std::__uninitialized_copy_a(__first, __last, __result,
+      |                    ^
+/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/gcc-13.4.0-hgnyg4p/lib/gcc/x86_64-pc-linux-gnu/13.4.0/../../../../include/c++/13.4.0/bits/vector.tcc:86:16: note: in instantiation of function template specialization 'std::vector<yy::phParser::stack_symbol_type>::_M_allocate_and_copy<const yy::phParser::stack_symbol_type *>' requested here
+   86 |               __tmp = _M_allocate_and_copy(__n,
+      |                       ^
+subprojects/ParseHeader/stack.hh:57:12: note: in instantiation of member function 'std::vector<yy::phParser::stack_symbol_type>::reserve' requested here
+   57 |       seq_.reserve (200);
+      |            ^
+subprojects/ParseHeader/phParser.tab.cc:184:16: note: in instantiation of member function 'yy::stack<yy::phParser::stack_symbol_type>::stack' requested here
+  184 |    phParser :: phParser  (phDriver& driver_yyarg)
+      |                ^
+1 warning generated.
+subprojects/ParseHeader/phScanner.cc:1670:16: warning: function 'yyinput' is not needed and will not be emitted [-Wunneeded-internal-declaration]
+ 1670 |     static int yyinput (void)
+      |                ^~~~~~~
+1 warning generated.
+mpicxx -Wall -Wextra -Wno-cast-function-type -std=c++17 -O3 -qopenmp -DFMT_HEADER_ONLY  -Isrc -Isrc/fft  -I/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/fftw-3.3.10-6vaqs46/include -o wisdom_rank0 \
+    src/fft/wisdom_rank0.c src/fft/wisdom_rank0_main.c -L/opt/aurora/26.26.0/spack/unified/1.1.1/install/linux-x86_64/fftw-3.3.10-6vaqs46/lib -lfftw3f_omp -lfftw3f -lm -lstdc++
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+icpx: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]

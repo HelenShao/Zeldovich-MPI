@@ -19,7 +19,8 @@ extern "C" {
 // ====================================================================================
 
 void setup_fftw_plans_full(int N, int narray, fftw_complex_t *plan_buffer,
-                           fftw_plan_t *plan_2d_out, fftw_plan_t *plan_1d_out);
+                           fftw_plan_t *plan_2d_out, fftw_plan_t *plan_1d_out,
+                           const char *local_wisdom_dir);
 
 #ifdef __cplusplus
 }

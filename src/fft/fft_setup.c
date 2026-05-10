@@ -9,7 +9,8 @@
 #include <omp.h>
 
 void setup_fftw_plans_full(int N, int narray, fftw_complex_t *plan_buffer,
-                           fftw_plan_t *plan_2d_out, fftw_plan_t *plan_1d_out)
+                           fftw_plan_t *plan_2d_out, fftw_plan_t *plan_1d_out,
+                           const char *local_wisdom_dir)
 {
     fftw_complex_t *dummy_1d = NULL;
     int rank;
@@ -42,9 +43,13 @@ void setup_fftw_plans_full(int N, int narray, fftw_complex_t *plan_buffer,
     // ====================================================================================
 
 #ifdef USE_FFTW_WISDOM
-    // Each rank imports the same wisdom file (see wisdom_rank0).
-    fft_wisdom_import_from_file(rank);
+    if (fft_wisdom_import_rank0_broadcast_local(rank, MPI_COMM_WORLD, local_wisdom_dir) != 0) {
+        fprintf(stderr, "[ERROR] Rank %d: failed wisdom broadcast/local import setup\n", rank);
+        MPI_Abort(MPI_COMM_WORLD, 1);
+    }
 
+#else
+    (void)local_wisdom_dir;
 #endif
     
     // plan_buffer: one N×N complex plane (staged 2D FFT). narray is unused for 2D planning.
@@ -94,8 +99,5 @@ void setup_fftw_plans_full(int N, int narray, fftw_complex_t *plan_buffer,
         MPI_Abort(MPI_COMM_WORLD, 1);
     }
 
-#ifdef USE_FFTW_WISDOM
-    fft_wisdom_export_rank0(rank);
-#endif
 }
 

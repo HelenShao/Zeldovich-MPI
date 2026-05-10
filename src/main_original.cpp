@@ -917,7 +917,7 @@ int main(int argc, char **argv)
     }
     
     // Create plans using dummy memory (before allocating actual data)
-    setup_fftw_plans_full(N, narray, &plan_2d, &plan_1d_y);
+    setup_fftw_plans_full(N, narray, NULL, &plan_2d, &plan_1d_y, "/dev/shm/Abacus_wisdom");
     
     if (rank == 0 && DEBUG_PRINTS) {
         printf("[SETUP] FFT plans created successfully (2D and 1D)\n");

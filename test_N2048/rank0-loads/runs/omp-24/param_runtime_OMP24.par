@@ -1,0 +1,30 @@
+# zeldovich-MPI / Zeldovich_MPI (N=2048)
+# Base template for 1D-staged-rank0-param OMP sweep jobs.
+
+BoxSize = 520.8333
+CPD = 225
+ICFormat = "RVZel"
+InitialConditionsDirectory = "/lus/flare/projects/AbacusAurora/hshao/zeldovich-MPI/PPD_2048_cosm_000/z_24/rank0-loads/omp-24/"
+InitialRedshift = 24.0
+NP = 8589934592
+ZD_NumBlock = 2
+ZD_Seed = 4
+ZD_Pk_scale = 1.0
+ZD_Pk_norm = 8.0
+ZD_Pk_sigma_ratio = 0.08423930099351923
+ZD_Pk_smooth = 0.0
+ZD_Pk_filename = "/home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N1920/Abacus-CPD375/cosm_000/abacus_cosm000.txt"
+ZD_Version = 2
+ZD_qPk_fix_to_mean = 0
+ZD_f_NL = 0
+ZD_qdensity = 1
+
+ZD_k_cutoff = 1.0
+ZD_CornerModes = 0
+
+ZD_qPLT = 1
+ZD_qPLTrescale = 1
+ZD_PLT_target_z = 12.0
+ZD_PLT_filename = "/home/helenshao/InitialConditions/zeldovich-PLT/eigmodes128"
+
+ZD_NumZRanks = 4
