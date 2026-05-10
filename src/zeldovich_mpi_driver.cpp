@@ -56,6 +56,7 @@
 #include <stdint.h>
 #include <assert.h>
 #include <limits.h>
+#include <string>
 #include <vector>
 #include <mpi.h>
 #include <omp.h> 
@@ -425,6 +426,9 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
     if (params != NULL) {
         if (rank == 0) {
             printf("[INIT] Using zeldovich-PLT parameters from: %s (cpd=%d)\n", param_file, cpd);
+            printf("[INIT] InitialConditionsDirectory: %s\n",
+                   static_cast<Parameters*>(params)->output_dir.string().c_str());
+            fflush(stdout);
         }
 
         uint64_t seed = (uint64_t)zeldovich_params_get_seed(params);
