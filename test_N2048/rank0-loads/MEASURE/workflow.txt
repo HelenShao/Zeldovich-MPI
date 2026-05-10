@@ -26,17 +26,22 @@ Inside each PBS:
   - module load frameworks
   - module load fftw/3.3.10
   - module load hwloc
-  - build hermitian_3d_matrix (Makefile default target) and wisdom_rank0
-  - run wisdom_rank0 preflight
-  - launch mpiexec with -ppn 2 and OMP_NUM_THREADS=<T>
+  - source test_N2048/rank0-loads/scripts/meson_build_zmpi.sh
+    (meson setup + meson compile; binaries under build/src/Zeldovich_MPI and build/src/wisdom_rank0)
+  - run wisdom_rank0 preflight via "$WISDOM_EXE"
+  - launch mpiexec with "$ZMPI_EXE", -ppn 2, and OMP_NUM_THREADS=<T>
 
 Lustre IC root per run:
   /lus/flare/projects/AbacusAurora/hshao/zeldovich-MPI/PPD_2048_cosm_000/z_24/rank0-loads/omp-<T>/
 
-Analyze results:
-./omp_sweep.sh analyze --dir rank0-loads
+Analyze results (from rank0-loads, experiment dir MEASURE):
+  ./omp_sweep.sh analyze --dir MEASURE/
 
-MEASURE$ ./omp_sweep.sh analyze --dir rank0-loads
+Manual Meson build (same options as PBS snippet):
+  cd /home/helenshao/InitialConditions-wisdom/hermitian_3d_matrix_production
+  source test_N2048/rank0-loads/scripts/meson_build_zmpi.sh
+
+MEASURE$ ./omp_sweep.sh analyze --dir MEASURE/
 Baseline OMP threads: 1
 OMP  Stage 1    Stage 2    Stage 3      Total   S1 spd   S2 spd   S3 spd  Tot spd
 -----------------------------------------------------------------------------------

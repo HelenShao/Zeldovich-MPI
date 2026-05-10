@@ -30,11 +30,7 @@ fi
 export NTOTRANKS
 NTHREADS_PER_RANK=1
 
-make clean
-make CFLAGS="-DPRODUCTION_MODE -DPARTICLE_OUTPUT_MODE=4 -DSKIP_FILE_WRITE=0 -DPARALLELIZE_Z_LOOP=1 -DDEBUG_PRINTS=0 -DDEBUG_RNG_SKIP=0 -DUSE_FFTW_WISDOM -g" -B
-[ ! -f "./hermitian_3d_matrix" ] && { echo "Compilation failed!"; exit 1; }
-make wisdom-rank0
-[ ! -f "./wisdom_rank0" ] && { echo "wisdom_rank0 build failed!"; exit 1; }
+source "/home/helenshao/InitialConditions-wisdom/hermitian_3d_matrix_production/test_N2048/rank0-loads/scripts/meson_build_zmpi.sh"
 
 N=2048
 cp "/home/helenshao/InitialConditions-wisdom/hermitian_3d_matrix_production/test_N2048/rank0-loads/MEASURE/metadata/param_N2048_CPD_225.par" "/home/helenshao/InitialConditions-wisdom/hermitian_3d_matrix_production/test_N2048/rank0-loads/MEASURE/runs/omp-1/param_runtime_OMP1.par"
@@ -61,12 +57,12 @@ export OMP_PLACES=cores
 export OMP_PROC_BIND=close
 export OMP_DISPLAY_AFFINITY=false
 export OMP_NUM_THREADS=$NTHREADS_PER_RANK
-/home/helenshao/InitialConditions-wisdom/hermitian_3d_matrix_production/wisdom_rank0 2048 4 >> "/home/helenshao/InitialConditions-wisdom/hermitian_3d_matrix_production/test_N2048/rank0-loads/MEASURE/runs/omp-1/N2048_CPD225_MPI32_OMP1_wisdom_preflight.log" 2>&1
+"$WISDOM_EXE" 2048 4 >> "/home/helenshao/InitialConditions-wisdom/hermitian_3d_matrix_production/test_N2048/rank0-loads/MEASURE/runs/omp-1/N2048_CPD225_MPI32_OMP1_wisdom_preflight.log" 2>&1
 unset OMP_NUM_THREADS
 
 ulimit -c unlimited
 
 mpiexec -ppn 2 --cpu-bind depth --depth $NTHREADS_PER_RANK --mem-bind list:0:1 -np $NTOTRANKS \
         --env OMP_NUM_THREADS=$NTHREADS_PER_RANK --env OMP_PLACES=cores --env OMP_PROC_BIND=close --env OMP_DISPLAY_AFFINITY=false \
-        /home/helenshao/InitialConditions-wisdom/hermitian_3d_matrix_production/hermitian_3d_matrix $N "/home/helenshao/InitialConditions-wisdom/hermitian_3d_matrix_production/test_N2048/rank0-loads/MEASURE/runs/omp-1/param_runtime_OMP1.par" \
+        "$ZMPI_EXE" $N "/home/helenshao/InitialConditions-wisdom/hermitian_3d_matrix_production/test_N2048/rank0-loads/MEASURE/runs/omp-1/param_runtime_OMP1.par" \
         > "/home/helenshao/InitialConditions-wisdom/hermitian_3d_matrix_production/test_N2048/rank0-loads/MEASURE/runs/omp-1/N2048_CPD225_MPI32_OMP1_bin_generation.log" 2> "$RNG_LOG_DIR/zd_mpi_rng_debug.log"

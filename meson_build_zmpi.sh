@@ -1,0 +1,1 @@
+test_N2048/rank0-loads/scripts/meson_build_zmpi.sh

@@ -1477,8 +1477,6 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
 #else
             {
             double t_io0 = omp_get_wtime();
-            {
-            double t_io0 = omp_get_wtime();
             switch (PARTICLE_OUTPUT_MODE) {
                 case 0: {
                     // =======================================================================================
@@ -1699,8 +1697,6 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
                 
                 default:
                     break;
-            }
-            acc_io += omp_get_wtime() - t_io0;
             }
             acc_io += omp_get_wtime() - t_io0;
             }

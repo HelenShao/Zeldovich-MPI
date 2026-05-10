@@ -57,6 +57,7 @@ cmd_setup() {
 
     cp "$PARAM_SOURCE" "$dir/metadata/param_N2048_CPD_225.par"
     cp "$SCRIPT_DIR/plot_omp_stage_scaling.py" "$dir/scripts/"
+    [[ -f "$SCRIPT_DIR/scripts/meson_build_zmpi.sh" ]] && cp "$SCRIPT_DIR/scripts/meson_build_zmpi.sh" "$dir/scripts/"
     [[ -n "$summary" ]] && printf '%s\n' "$summary" > "$dir/README_change_summary.txt"
 
     local param_dest="$dir/metadata/param_N2048_CPD_225.par"
