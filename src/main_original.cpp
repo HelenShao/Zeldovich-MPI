@@ -79,7 +79,7 @@ extern "C" {
 // ====================================================================================
 // Core algorithm modules extracted in Phase 5
 #include "fft/fft_setup.h"
-#include "generation/hermitian_generation.h"
+#include "generation/ZD_MPI_generation.h"
 #include "communication/mpi_exchange.h"
 #include "streaming/z_streaming.h"
 
@@ -105,7 +105,7 @@ extern "C" {
 // ====================================================================================
 // Note: All function prototypes are now in module headers:
 //   - FFT functions: fft/fft_setup.h
-//   - Generation functions: generation/hermitian_generation.h
+//   - Generation functions: generation/ZD_MPI_generation.h
 //   - Communication functions: communication/mpi_exchange.h
 //   - Streaming functions: streaming/z_streaming.h
 //   - Utility functions: utils/*.h
@@ -188,7 +188,7 @@ extern "C" {
 // ====================================================================================
 // Core algorithm modules extracted in Phase 5
 #include "fft/fft_setup.h"
-#include "generation/hermitian_generation.h"
+#include "generation/ZD_MPI_generation.h"
 #include "communication/mpi_exchange.h"
 #include "streaming/z_streaming.h"
 
@@ -246,7 +246,7 @@ extern "C" {
 // ====================================================================================
 // Note: All function prototypes are now in module headers:
 //   - FFT functions: fft/fft_setup.h
-//   - Generation functions: generation/hermitian_generation.h
+//   - Generation functions: generation/ZD_MPI_generation.h
 //   - Communication functions: communication/mpi_exchange.h
 //   - Streaming functions: streaming/z_streaming.h
 //   - Utility functions: utils/*.h
@@ -289,7 +289,7 @@ extern "C" {
 // ====================================================================================
 // The following functions have been extracted to separate modules:
 //   - setup_fftw_plans_full() -> fft/fft_setup.c
-//   - generate_hermitian_slice_pair_local() -> generation/hermitian_generation.c
+//   - generate_zd_mpi_slice_pair_local() -> generation/ZD_MPI_generation.c
 //   - exchange_metadata() -> communication/mpi_exchange.c
 //   - pack_slices_to_send_buffer() -> communication/mpi_exchange.c
 //   - unpack_recv_buffer_to_pencils() -> communication/mpi_exchange.c
@@ -298,8 +298,8 @@ extern "C" {
 // All implementations are available via the module headers included above.
 // ====================================================================================
 
-// NOTE: generate_hermitian_slice_pair_local() is now implemented in 
-// generation/hermitian_generation.c and declared in generation/hermitian_generation.h
+// NOTE: generate_zd_mpi_slice_pair_local() is now implemented in 
+// generation/ZD_MPI_generation.c and declared in generation/ZD_MPI_generation.h
 // The old implementation has been removed to avoid duplicate definitions.
 
 // All verification function implementations have been moved to utils/verification.c
@@ -1398,7 +1398,7 @@ int main(int argc, char **argv)
                 ? &local_y_slices[0 * narray * N * N]
                 : &local_y_slices[1 * narray * N * N];
             
-            generate_hermitian_slice_pair_local(
+            generate_zd_mpi_slice_pair_local(
                 N, y_batch_primary, y_batch_mirror,
                 primary_ptr, conjugate_ptr,
                 narray, plan_2d, rank,
@@ -1409,7 +1409,7 @@ int main(int argc, char **argv)
             
             // DEBUG: Memory guard after generation + 2D FFT
             if (rank < 4 || DEBUG_PRINTS) {
-                fprintf(stderr, "[Rank %d] After generate_hermitian_slice_pair_local (Y=%d): Verifying local_y_slices buffer...\n",
+                fprintf(stderr, "[Rank %d] After generate_zd_mpi_slice_pair_local (Y=%d): Verifying local_y_slices buffer...\n",
                        rank, y_batch_primary);
                 fflush(stderr);
                 
@@ -2037,7 +2037,7 @@ int main(int argc, char **argv)
     // STAGE 7: INVERSE FFT VERIFICATION (DISABLED)
     // ========================================================================
     // NOTE: Inverse FFT code has been moved to:
-    //       hermitian_3d_matrix_mpi_real_inverse_fft.c.archived
+    //       zd_mpi_3d_matrix_mpi_real_inverse_fft.c.archived
     // The forward FFT already produces a purely real result, so inverse
     // FFT verification is not needed for production.
     

@@ -19,7 +19,7 @@ extern "C" {
 // ====================================================================================
 // Z-slab streaming: Unpack one Z-slab from recv_buffer, apply 1D FFT, ready to write
 // V12+: Processes one Z-slab at a time cuz of mem, format for zeldovich-PLT writing 
-// V14+: Fixed batch-aware unpacking formula to preserve Hermitian symmetry
+// V14+: Fixed batch-aware unpacking formula to preserve conjugate symmetry
 //
 // 1D Y FFT: Staged in ALIGN_BYTES-aligned per-OMP-thread buffers; FFTW plan uses 1 thread.
 // thread_1d_bufs[tid] is exclusive to OpenMP thread tid (no races).

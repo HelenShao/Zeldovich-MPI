@@ -1,10 +1,14 @@
-#ifndef HERMITIAN_BATCH_HELPERS_H
-#define HERMITIAN_BATCH_HELPERS_H
+#ifndef ZD_MPI_BATCH_HELPERS_H
+#define ZD_MPI_BATCH_HELPERS_H
 
 #include <stdint.h>
 #include "config.h"
 #include "types.h"
 #include <mpi.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // ====================================================================================
 // Calculate how many Y-slices a given rank processes in a given batch
@@ -37,6 +41,10 @@ void calculate_batch_send_recv_counts(
     int64_t **out_recvcounts,
     int64_t *out_total_send, int64_t *out_total_recv);
 // ====================================================================================
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif 
 

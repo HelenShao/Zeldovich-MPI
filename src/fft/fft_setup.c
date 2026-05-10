@@ -65,7 +65,7 @@ void setup_fftw_plans_full(int N, int narray, fftw_complex_t *plan_buffer,
     }
 
     /* In-place 2D complex DFT on one contiguous N×N plane (row-major). Execution loops
-     * over narray planes in hermitian_generation.c with copy-in/copy-out. */
+     * over narray planes in ZD_MPI_generation.c with copy-in/copy-out. */
     *plan_2d_out = FFTW_PLAN_DFT_2D(N, N, plan_buffer, plan_buffer, FFT_SIGN, FFTW_PLANNER_FLAGS);
 
     // 1D Y FFT: single FFTW thread (OpenMP parallelizes across pencils; staged buffers in z_streaming)
