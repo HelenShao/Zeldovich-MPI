@@ -620,6 +620,7 @@ int main(int argc, char **argv)
         }
     }
 
+    // parse local wisdom dir from params, default to /dev/shm/Abacus_wisdom if not set
     const char *local_wisdom_dir = "/dev/shm/Abacus_wisdom";
     if (params != NULL) {
         const char *parsed_local_wisdom_dir = zeldovich_params_get_local_wisdom_dir(params);

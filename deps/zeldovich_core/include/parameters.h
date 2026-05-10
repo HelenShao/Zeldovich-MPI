@@ -44,6 +44,7 @@ public:
     fs::path Pk_filename;  // The file name for the P(k) input
     double Pk_powerlaw_index;  // The power law index n for a pure power law P(k) ~ k^n
     fs::path output_dir;     // The file name for the Output
+    fs::path local_wisdom_dir;  // Per-rank local FFTW wisdom directory (e.g. /dev/shm/Abacus_wisdom)
     fs::path density_filename;  // The file name for a density file output
     double z_initial;
     HeaderStream *inputstream;  // Header stream from which the parameters were read.

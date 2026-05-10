@@ -36,6 +36,7 @@ void Parameters::set_defaults(void) {
     Pk_filename = "";   // Must specify Pk file or power law
     Pk_powerlaw_index = 1000;  // Must specify Pk file or power law
     density_filename = "density{:d}";  // Legal default
+    local_wisdom_dir = "/dev/shm/Abacus_wisdom";
     qonemode = 0;                           // Legal default
     one_mode = {0, 0, 0};   // Legal default
     qPLT = 0;                               // Legal default
@@ -93,6 +94,7 @@ void Parameters::register_vars(void) {
     installscalar("ZD_Pk_filename", Pk_filename, DONT_CARE);
     installscalar("ZD_Pk_powerlaw_index", Pk_powerlaw_index, DONT_CARE);
     installscalar("InitialConditionsDirectory", output_dir, MUST_DEFINE);
+    installscalar("ZD_local_wisdom_dir", local_wisdom_dir, DONT_CARE);
     installscalar("ZD_density_filename", density_filename, DONT_CARE);
     installscalar("InitialRedshift", z_initial, MUST_DEFINE);
     installscalar("ZD_qonemode", qonemode, DONT_CARE);

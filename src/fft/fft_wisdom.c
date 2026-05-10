@@ -49,12 +49,13 @@ int fft_wisdom_import_rank0_broadcast_local(int rank, MPI_Comm comm, const char 
         }
     }
 
+    // broadcast length of wisdom str for mem allocation on each rank 
     MPI_Bcast(&wisdom_len, 1, MPI_UNSIGNED_LONG_LONG, 0, comm);
     if (wisdom_len == 0u) {
         if (rank == 0 && wisdom_str != NULL && wisdom_from_fftw_alloc) {
             FFTW_FREE(wisdom_str);
         }
-        fprintf(stderr, "[FFTW-WISDOM] Rank %d: received empty wisdom payload\n", rank);
+        fprintf(stderr, "[FFTW-WISDOM] Rank %d: received empty wisdom\n", rank);
         fflush(stderr);
         return -1;
     }
@@ -62,7 +63,7 @@ int fft_wisdom_import_rank0_broadcast_local(int rank, MPI_Comm comm, const char 
         if (rank == 0 && wisdom_str != NULL && wisdom_from_fftw_alloc) {
             FFTW_FREE(wisdom_str);
         }
-        fprintf(stderr, "[FFTW-WISDOM] Rank %d: wisdom payload too large for MPI_Bcast (%zu)\n", rank,
+        fprintf(stderr, "[FFTW-WISDOM] Rank %d: wisdom too large for MPI_Bcast (%zu)\n", rank,
                 wisdom_len);
         fflush(stderr);
         return -1;
@@ -78,9 +79,11 @@ int fft_wisdom_import_rank0_broadcast_local(int rank, MPI_Comm comm, const char 
         }
     }
 
+    // broadcast wisdom string for each rank
     MPI_Bcast(wisdom_str, (int)wisdom_len, MPI_CHAR, 0, comm);
     wisdom_str[wisdom_len] = '\0';
 
+    // create wisdom dir on /dev/shm if it doesn't exist (0775 = permissins)
     if (mkdir(target_dir, 0775) != 0 && errno != EEXIST) {
         fprintf(stderr, "[FFTW-WISDOM] Rank %d: failed to create local wisdom dir '%s': %s\n", rank,
                 target_dir, strerror(errno));
@@ -144,6 +147,8 @@ int fft_wisdom_import_rank0_broadcast_local(int rank, MPI_Comm comm, const char 
         return -1;
     }
 
+    // free temporary buffer on rank 0 after received bcast
+    // two different frees cuz rank0 wisdom_str came from FFTW_EXPORT_WISDOM_TO_STRING()
     if (rank == 0 && wisdom_from_fftw_alloc) {
         FFTW_FREE(wisdom_str);
     } else {
