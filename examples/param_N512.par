@@ -1,6 +1,6 @@
 # zeldovich-PLT Parameter File
 # For N=512 grid with power law power spectrum
-# Usage: ./hermitian_3d_matrix 512 examples/param_N512.par
+# Usage: ./Zeldovich_MPI 512 examples/param_N512.par
 
 BoxSize = 100.0
 CPD = 4                            # Node grid size (4x4 = 16 ranks)

@@ -1,6 +1,6 @@
 # zeldovich-PLT Parameter File
 # For N=64 grid with power law power spectrum
-# Usage: ./hermitian_3d_matrix 64 examples/param_N64.par
+# Usage: ./Zeldovich_MPI 64 examples/param_N64.par
 
 BoxSize = 100.0
 CPD = 64                           # Cells per dimension (= N)

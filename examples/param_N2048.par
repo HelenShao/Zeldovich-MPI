@@ -1,6 +1,6 @@
 # zeldovich-PLT Parameter File
 # For N=2048 grid with power law power spectrum
-# Usage: ./hermitian_3d_matrix 2048 examples/param_N2048.par
+# Usage: ./Zeldovich_MPI 2048 examples/param_N2048.par
 
 BoxSize = 100.0
 CPD = 9                         # Cells per dimension (= N)

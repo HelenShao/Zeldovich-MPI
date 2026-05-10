@@ -1,6 +1,6 @@
 /*
  * batched 2D complex FFT (same layout as fft_setup.c /
- * generate_hermitian_slice_pair_local), threaded FFTW, sweep OpenMP thread counts.
+ * generate_zd_mpi_slice_pair_local), threaded FFTW, sweep OpenMP thread counts.
  */
 
 #include <cstdio>
