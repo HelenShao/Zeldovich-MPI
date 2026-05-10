@@ -3,12 +3,16 @@
 *.a
 *.so
 *.dylib
-hermitian_3d_matrix_mpi
-hermitian_3d_matrix_mpi_debug
-hermitian_3d_matrix_mpi_double
+Zeldovich_MPI
+Zeldovich_MPI_debug
+Zeldovich_MPI_double
+hermitian_3d_matrix
+write_particles_from_reassembled_mpi_old
+zd_mpi_3d_matrix
 
 # Build directories
 build/
+builddir/
 obj/
 
 # Output files
@@ -22,18 +26,39 @@ rank_*/
 **/bin_files/
 **/particle_ics/
 
+# --- Job scratch / HPC captures (PBS, legacy test *.out patterns; regenerate locally) ---
+**/*.out
+*.pbs.o*
+# Per-job param copies from templates (e.g. sed InitialConditionsDirectory on cluster)
+**/runs/**/param_runtime_*.par
+
+# FFTW wisdom emitted next to job cwd (import/export cycles); do not version
+fftw_wisdom*.wisdom
+
+# RNG trace intermediates (full logs already covered by *.log above)
+*zd_mpi_rng_debug_filtered.txt
+*zd_mpi_rng_debug_sorted.txt
+
+# Large numerical dumps / trace dirs (regenerate from jobs)
+**/matrix_before_fft.txt
+**/matrix_after_fft.txt
+**/fft_difference_analysis.txt
+**/trace_report.txt
+**/hermitian_output/
+**/dumps/
+
+# Plots produced by comparison/timing scripts (keep checked-in figures only when intentional)
+**/*comparison*.pdf
+**/*comparison*.png
+
 # Test output directories and files
 tests/options_ab/output_option_*/
 ic_rank*
 test_*/bin_files/
 test_*/particle_ics/
 test_*/output/
-test_*/rng_logs/
-test_*/visualizations/
-# Large PBS job output files in test directories (keep small expected outputs)
-tests/options_ab/*.out
-test_*/*N*.out
-test_*/*test*.out
+**/rng_logs/
+**/visualizations/
 
 # Editor files
 .vscode/
@@ -57,8 +82,6 @@ __pycache__/
 # Documentation build
 docs/_build/
 
-hermitian_3d_matrix
-
 # Sensitive documentation (moved to private repo)
 *.private.md
 docs/internal/
@@ -69,7 +92,6 @@ STATUS_REFRESHER.md
 POWER_SPECTRUM_LOADING.md
 RNG_SKIP_COMPARISON.md
 v15_3_tests/README_RNG_CONSISTENCY.md
-v15_3_tests/README_RNG_CONSISTENCY.md
 
 # External folders
 ../plt_ics_lehman/
@@ -77,11 +99,6 @@ v15_3_tests/README_RNG_CONSISTENCY.md
 zeldovich-PLT/
 ../abacus/
 abacus/
-
-# External folders
-../plt_ics_lehman/
-../zeldovich-PLT/
-zeldovich-PLT/
 
 # Documentation files (temporary notes)
 AXIS_NOTATION_MAPPING.md
