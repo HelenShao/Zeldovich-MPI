@@ -1,5 +1,5 @@
-#ifndef HERMITIAN_DECOMPOSITION_H
-#define HERMITIAN_DECOMPOSITION_H
+#ifndef ZD_MPI_DECOMPOSITION_H
+#define ZD_MPI_DECOMPOSITION_H
 
 // ====================================================================================
 // GRID DECOMPOSITION UTILITIES

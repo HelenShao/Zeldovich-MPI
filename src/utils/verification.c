@@ -42,7 +42,7 @@ void verify_hermitian_pair(int rank, int y1, int y2, fftw_complex_t *slice1, fft
     if (N > 16) return;
     
     const char *stage = is_after_2d_fft ? "after 2D FFT" : "before 2D FFT";
-    printf("\n[RANK %d] Checking Hermitian pair Y=%d and Y=%d, Array=%d (%s):\n", rank, y1, y2, array_idx, stage);
+    printf("\n[RANK %d] Checking conjugate pair Y=%d and Y=%d, Array=%d (%s):\n", rank, y1, y2, array_idx, stage);
     
     double max_error = 0.0;
     int error_count = 0;

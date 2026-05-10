@@ -1,6 +1,6 @@
 /*
  * Standalone binary: ./wisdom_rank0 <N> <narray>
- * Run before hermitian_3d_matrix with the same OMP_NUM_THREADS; wisdom path is FFTW_WISDOM_FILENAME (cwd).
+ * Run before Zeldovich_MPI with the same OMP_NUM_THREADS; wisdom path is FFTW_WISDOM_FILENAME (cwd).
  */
 
 #include "../config.h"

@@ -272,7 +272,7 @@ void pack_slices_to_send_buffer(
 
 // ====================================================================================
 //  Unpack recv buffer (different for each rank) into pencils, 
-//  keepin track of global y-indices to maintain correct Hermitian symmetry
+//  keepin track of global y-indices to maintain correct conjugate symmetry
 // ====================================================================================
 
 void unpack_recv_buffer_to_pencils(

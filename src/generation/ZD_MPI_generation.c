@@ -1,4 +1,4 @@
-#include "hermitian_generation.h"
+#include "ZD_MPI_generation.h"
 #include "../utils/verification.h"
 #include "../utils/zeldovich_wrapper.h" 
 #include "../utils/plt_eigenmodes.h" 
@@ -177,13 +177,13 @@ static inline void store_prim_conj(
 }
 
 // ====================================================================================
-// Generates one pair of Hermitian Y-slices (primary + conjugate) in Fourier space
+// Generates one pair of conjugate Y-slices (primary + mirror) in Fourier space
 // Gaussian w/ power spectrum weighting (w/ zeldovich-PLT ps_handle & params_handle)
 // 2D FFT: Fourier --> real space (X,Z)
 // Handles RNG nskip tracking
 // ====================================================================================
 
-void generate_hermitian_slice_pair_local(
+void generate_zd_mpi_slice_pair_local(
     int N,
     int global_y,
     int y_mirror,
@@ -206,7 +206,7 @@ void generate_hermitian_slice_pair_local(
     // Debug: Log entry for seg fault error
     // #if DEBUG_PRINTS
     // fprintf(stderr,
-    //         "[Rank %d] ENTER generate_hermitian_slice_pair_local: "
+    //         "[Rank %d] ENTER generate_zd_mpi_slice_pair_local: "
     //         "Y_primary=%d, Y_mirror=%d, ps_handle=%p, params_handle=%p\n",
     //         rank, global_y, y_mirror, (void*)ps_handle, (void*)params_handle);
     // fflush(stderr);
@@ -576,12 +576,12 @@ void generate_hermitian_slice_pair_local(
                 #endif
                 {
                     if (rng_debug_fp == NULL) {
-                        const char *base = getenv("HERMITIAN_RNG_DEBUG_DIR");
+                        const char *base = getenv("ZD_MPI_RNG_DEBUG_DIR");
                         char path[512];
                         if (base && base[0]) {
-                            snprintf(path, sizeof(path), "%s/hermitian_rng_debug_rank%03d.log", base, rank);
+                            snprintf(path, sizeof(path), "%s/zd_mpi_rng_debug_rank%03d.log", base, rank);
                         } else {
-                            snprintf(path, sizeof(path), "hermitian_rng_debug_rank%03d.log", rank);
+                            snprintf(path, sizeof(path), "zd_mpi_rng_debug_rank%03d.log", rank);
                         }
                         rng_debug_fp = fopen(path, "a");
                     }
@@ -790,7 +790,7 @@ void generate_hermitian_slice_pair_local(
     #undef CONJ_SLICE
 }
 
-void print_hermitian_gen_timers(int rank) {
+void print_zd_mpi_gen_timers(int rank) {
     double rng_s    = pt_rng_setup.Elapsed();
     double zloop_s  = pt_zloop.Elapsed();
     double mirror_s = pt_mirror.Elapsed();

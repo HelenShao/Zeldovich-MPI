@@ -1,5 +1,5 @@
-#ifndef HERMITIAN_CONFIG_H
-#define HERMITIAN_CONFIG_H
+#ifndef ZD_MPI_CONFIG_H
+#define ZD_MPI_CONFIG_H
 
 // Modify flags or override them at compile time using -D flags.
 // Ex. make CFLAGS="-DUSE_DOUBLE_PRECISION -DDEBUG_PRINTS=0"
