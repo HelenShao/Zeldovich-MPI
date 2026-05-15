@@ -9,10 +9,6 @@
 
 #define DEFAULT_LOCAL_WISDOM_DIR "/dev/shm/Abacus_wisdom"
 
-#ifndef FFTW_WISDOM_PREVIEW_MAX
-#define FFTW_WISDOM_PREVIEW_MAX 512u // cap on printed wisdom string (during debug)
-#endif
-
 int fft_wisdom_import_rank0_broadcast_local(int rank, MPI_Comm comm, const char *local_wisdom_dir)
 {
     const char *target_dir = local_wisdom_dir;
@@ -155,44 +151,4 @@ int fft_wisdom_import_rank0_broadcast_local(int rank, MPI_Comm comm, const char 
         free(wisdom_str);
     }
     return 0;
-}
-
-void fft_wisdom_export_rank0(int rank)
-{
-    if (rank != 0) {
-        return;
-    }
-
-    char *pre = FFTW_EXPORT_WISDOM_TO_STRING();
-    if (pre != NULL) {
-        const size_t n = strlen(pre);
-        printf("[FFTW-WISDOM] Rank 0: pre-export wisdom length %zu bytes (%s precision)\n", n,
-               PRECISION_NAME);
-        if (n <= FFTW_WISDOM_PREVIEW_MAX) {
-            printf("[FFTW-WISDOM] Rank 0: wisdom (full):\n%.*s\n", (int)n, pre);
-        } else {
-            printf("[FFTW-WISDOM] Rank 0: wisdom (first %u bytes):\n%.*s\n... (%zu more bytes)\n",
-                   (unsigned)FFTW_WISDOM_PREVIEW_MAX, (int)FFTW_WISDOM_PREVIEW_MAX, pre,
-                   n - (size_t)FFTW_WISDOM_PREVIEW_MAX);
-        }
-        fflush(stdout);
-        FFTW_FREE(pre);
-    } else {
-        fprintf(stderr,
-                "[FFTW-WISDOM] Rank 0: FFTW_EXPORT_WISDOM_TO_STRING returned NULL (%s precision)\n",
-                PRECISION_NAME);
-        fflush(stderr);
-    }
-
-    const int ok = FFTW_EXPORT_WISDOM_TO_FILENAME(FFTW_WISDOM_FILENAME);
-    if (!ok) {
-        fprintf(stderr,
-                "[FFTW-WISDOM] Rank 0: failed to export wisdom to '%s' (%s precision)\n",
-                FFTW_WISDOM_FILENAME, PRECISION_NAME);
-        fflush(stderr);
-    } else {
-        printf("[FFTW-WISDOM] Rank 0: exported wisdom to '%s' (%s precision)\n",
-               FFTW_WISDOM_FILENAME, PRECISION_NAME);
-        fflush(stdout);
-    }
 }

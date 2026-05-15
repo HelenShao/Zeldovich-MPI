@@ -29,6 +29,7 @@ zd_mpi_sources = files(
   'communication/mpi_exchange.c',
   'fft/fft_setup.c',
   'fft/fft_wisdom.c',
+  'fft/wisdom_rank0.c',
   'ic_stage_api.cpp',
   'mpi_topology.cpp',
   'output/output_new.cpp',

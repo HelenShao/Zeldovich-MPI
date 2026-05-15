@@ -1,7 +1,7 @@
 /*
  * 1. INITIALIZATION
- *    - MPI_Init; parse N (grid size) and param_file (required)
- *    - Validate N (positive, even); validate num_ranks vs total_pairs
+ *    - MPI_Init; parse param_file (required)
+ *    - Read NP from param file, derive ppd (= N), validate N; validate num_ranks vs total_pairs
  *    - comm_2d is a derived communicator with reorder=1, so MPI may remap ranks for topology locality
 *     - ex: world_rank=7 may be rank=3 in comm_2d.
 *     - broadcast steps use MPI_COMM_WORLD + world_rank (all processes must participate)
@@ -211,10 +211,9 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
     int N = 64;
     const char* param_file = NULL;
 
-    if (argc < 3) {
+    if (argc < 2) {
         if (world_rank == 0) {
-            fprintf(stderr, "Usage: %s N param_file.par\n", argv[0]);
-            fprintf(stderr, "  N: Grid size (e.g, 256)\n");
+            fprintf(stderr, "Usage: %s param_file.par\n", argv[0]);
             fprintf(stderr, "  param_file.par: zeldovich-PLT parameter file (required)\n");
         }
         if (!zeldovich_ic_embedded) {
@@ -223,24 +222,13 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
         return 1;
     }
 
-    N = atoi(argv[1]);
-    if (N <= 0 || N % 2 != 0) {
-        if (world_rank == 0) {
-            fprintf(stderr, "Error: N must be positive even integer\n");
-        }
-        if (!zeldovich_ic_embedded) {
-            MPI_Finalize();
-        }
-        return 1;
-    }
-
-    if (argc >= 3) {
-        param_file = argv[2];
+    if (argc >= 2) {
+        param_file = argv[1];
     }
     if (param_file == NULL) {
         if (world_rank == 0) {
             fprintf(stderr, "Error: Parameter file required \n");
-            fprintf(stderr, "Usage: %s N param_file.par\n", argv[0]);
+            fprintf(stderr, "Usage: %s param_file.par\n", argv[0]);
         }
         if (!zeldovich_ic_embedded) {
             MPI_Finalize();
@@ -271,9 +259,10 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
 
     int cpd = zeldovich_params_get_cpd(params);
     int64_t ppd_from_file = zeldovich_params_get_ppd(params);
-    if (ppd_from_file != (int64_t)N && world_rank == 0) {
-        fprintf(stderr, "WARNING: Parameter file ppd=%ld != N=%d; using N=%d from command line\n",
-                (long)ppd_from_file, N, N);
+    N = (int)ppd_from_file;
+    if (world_rank == 0) {
+        fprintf(stdout, "Using ppd=%ld (N=%d) derived from NP in param file.\n",
+                (long)ppd_from_file, N);
     }
 
     // ========================================================================
@@ -282,6 +271,9 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
     int grid_x, grid_z;
     grid_z = zeldovich_params_get_NumZRanks(params);
     grid_x = num_ranks / grid_z;
+
+    // When integrated in abacus, InitParallelTopology() in multistep will
+    // assert that grid_z == MPI_SIZE/NumZRanks.
 
     if (num_ranks % grid_z != 0) {
         if (world_rank == 0) {

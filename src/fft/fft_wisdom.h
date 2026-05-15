@@ -16,9 +16,6 @@ extern "C" {
 // Returns 0 on success, non-zero on failure.
 int fft_wisdom_import_rank0_broadcast_local(int rank, MPI_Comm comm, const char *local_wisdom_dir);
 
-// Rank 0 only: writes wisdom to FFTW_WISDOM_FILENAME.
-void fft_wisdom_export_rank0(int rank);
-
 #ifdef __cplusplus
 }
 #endif
