@@ -205,3 +205,8 @@ void FinalizeHeader(FILE *fout) {
     char tag[2] = {0x02, '\n'};
     fmt::print(fout, "{}", fmt::string_view(tag,2));
 }
+
+void FinalizeHeader(std::stringstream &ss) {
+    char tag[2] = {0x02, '\n'};
+    ss.write(tag, 2);
+}

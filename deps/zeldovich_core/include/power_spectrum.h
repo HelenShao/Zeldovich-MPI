@@ -17,12 +17,12 @@
 #include "zeldovich.h"
 
 /// Rank 0: load P(k) file into vectors.
-int ReadPkTextFileIntoVectors(const fs::path &filename, Parameters &param,
+int ReadPkTextFileIntoVectors(const fs::path &filename, ZeldovichParameters &param,
     std::vector<double> &k_out, std::vector<double> &p_out);
 
 class PowerSpectrum : public SplineFunction {
 public:
-    PowerSpectrum(int n, Parameters &param);
+    PowerSpectrum(int n, ZeldovichParameters &param);
     ~PowerSpectrum();
 
     int fixed_power;
@@ -53,14 +53,14 @@ public:
        double *obtprec
     );
 
-    int InitFromFile(const fs::path &filename, Parameters &param);
+    int InitFromFile(const fs::path &filename, ZeldovichParameters &param);
 
     // builds spline-interpolated pk from arrays that are in memory, instead of reading from file
-    int InitFromRawPk(const double *k_arr, const double *p_arr, size_t n, Parameters &param);
+    int InitFromRawPk(const double *k_arr, const double *p_arr, size_t n, ZeldovichParameters &param);
 
-    int InitFromPowerLaw(double _powerlaw_index, Parameters &param);
+    int InitFromPowerLaw(double _powerlaw_index, ZeldovichParameters &param);
 
-    void Normalize(Parameters &param);
+    void Normalize(ZeldovichParameters &param);
 
     double power(double wavenumber);
     double primordial_power(double wavenumber);

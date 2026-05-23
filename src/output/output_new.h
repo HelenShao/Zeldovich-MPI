@@ -30,7 +30,7 @@ void WriteParticlesSlab_range(
    Complx *slab_data,      // Data in [array][x_local][y] layout (ZSLAB format)
    int N,                  // Grid size (ppd)
    int narray,             // Number of arrays (typically 4)
-   Parameters &param
+   ZeldovichParameters &param
 );
 
 // Overload 2: [y][x] layout (JK format) - for backward compatibility
@@ -44,7 +44,7 @@ void WriteParticlesSlab_range(
    Complx *slab2,          // Array 1 in [y][x] layout
    Complx *slab3,          // Array 2 in [y][x] layout
    Complx *slab4,          // Array 3 in [y][x] layout
-   Parameters &param
+   ZeldovichParameters &param
 );
 
 // WriteParticlesSlab_range_from_zslab - Legacy function (now equivalent to WriteParticlesSlab_range)
@@ -58,7 +58,7 @@ void WriteParticlesSlab_range_from_zslab(
    Complx *slab_data,      // Data in [array][x_local][y] layout (ZSLAB format)
    int N,                  // Grid size (ppd)
    int narray,             // Number of arrays (typically 4)
-   Parameters &param
+   ZeldovichParameters &param
 );
 
 // Write full-range particle ICs (all X, all Y) for one i-slab
@@ -70,12 +70,12 @@ void WriteParticlesSlab_new(
    Complx *slab2,          // Array 1 in [y][x] layout
    Complx *slab3,          // Array 2 in [y][x] layout
    Complx *slab4,          // Array 3 in [y][x] layout
-   Parameters &param
+   ZeldovichParameters &param
 );
 
 // Setup and teardown functions
-void SetupOutputDir(Parameters &param);
-double InitOutputBuffers(Parameters &param);
+void SetupOutputDir(ZeldovichParameters &param);
+double InitOutputBuffers(ZeldovichParameters &param);
 void TeardownOutput();
 
 // ====================================================================================
@@ -98,7 +98,7 @@ void AppendSlabZSegment(
     fftw_complex_t *slab_data,
     int N,
     int narray,
-    Parameters &param
+    ZeldovichParameters &param
 );
 
 // ====================================================================================
@@ -118,7 +118,7 @@ void AppendZSlabFull(
     fftw_complex_t *slab_data,
     int N,
     int narray,
-    Parameters &param
+    ZeldovichParameters &param
 );
 
 // ====================================================================================
@@ -139,7 +139,7 @@ void AppendZSlabSegment_M4(
     fftw_complex_t *slab_data,
     int N,
     int narray,
-    Parameters &param
+    ZeldovichParameters &param
 );
 
 #endif 

@@ -25,7 +25,6 @@ zd_mpi_sources = files(
   '../deps/ParseHeader/src/stringutil.cc',
   '../deps/zeldovich_core/src/parameters.cpp',
   '../deps/zeldovich_core/src/power_spectrum.cpp',
-  '../deps/zeldovich_core/src/STimer.cc',
   'communication/mpi_exchange.c',
   'fft/fft_setup.c',
   'fft/fft_wisdom.c',
@@ -43,6 +42,10 @@ zd_mpi_sources = files(
   'utils/zeldovich_wrapper.cpp',
   'zeldovich_mpi_driver.cpp',
 )
+if not get_option('abacus_embed')
+  zd_mpi_sources += files('../deps/zeldovich_core/src/STimer.cc')
+endif
+
 zeldovich_ic_lib_sources = zd_mpi_sources + [ZD_MPI_generation_cpp, rng_cpp]
 # =============================================================================
 # Static library — IC logic + deps (reused by standalone exe and Abacus subproject)
@@ -58,25 +61,24 @@ zeldovich_ic_dep = declare_dependency(
   include_directories: zd_mpi_inc,
   dependencies: [mpi_dep, omp_dep, fftw_dep, fmt_dep],
 )
-# =============================================================================
-# Executable — Zeldovich_MPI (main only; links IC static lib)
-# =============================================================================
-executable(
-  'Zeldovich_MPI',
-  ['main.cpp'],
-  link_with: zeldovich_ic_lib,
-  dependencies: zd_mpi_common_dep,
-  install: true,
-)
-# =============================================================================
-# Executable — wisdom_rank0 (FFTW preflight; lighter link than main)
-# =============================================================================
-wisdom_inc = include_directories('.', 'fft')
-executable(
-  'wisdom_rank0',
-  ['fft/wisdom_rank0.c', 'fft/wisdom_rank0_main.c'],
-  include_directories: wisdom_inc,
-  dependencies: [fftw_dep, omp_dep],
-  link_language: 'cpp',
-  install: true,
-)
+# Standalone tools are not built when embedded in Abacus: libzeldovich_ic omits
+# STimer.cc (Abacus multistep provides STimer via proepi.cpp).
+if not get_option('abacus_embed')
+  executable(
+    'Zeldovich_MPI',
+    ['main.cpp'],
+    link_with: zeldovich_ic_lib,
+    dependencies: zd_mpi_common_dep,
+    install: true,
+  )
+
+  wisdom_inc = include_directories('.', 'fft')
+  executable(
+    'wisdom_rank0',
+    ['fft/wisdom_rank0.c', 'fft/wisdom_rank0_main.c'],
+    include_directories: wisdom_inc,
+    dependencies: [fftw_dep, omp_dep],
+    link_language: 'cpp',
+    install: true,
+  )
+endif

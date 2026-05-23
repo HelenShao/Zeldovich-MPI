@@ -16,7 +16,7 @@ extern "C" {
 
 ParametersHandle zeldovich_params_create(const char* param_file) {
     try {
-        Parameters* params = new Parameters(fs::path(param_file));
+        ZeldovichParameters* params = new ZeldovichParameters(fs::path(param_file));
         return static_cast<ParametersHandle>(params);
     } catch (...) {
         return NULL;
@@ -32,7 +32,7 @@ ParametersHandle zeldovich_params_create_from_buffer(
         return NULL;
     }
     try {
-        Parameters* params = new Parameters(header_bytes, header_len, fs::path(source_name));
+        ZeldovichParameters* params = new ZeldovichParameters(header_bytes, header_len, fs::path(source_name));
         return static_cast<ParametersHandle>(params);
     } catch (...) {
         return NULL;
@@ -41,7 +41,7 @@ ParametersHandle zeldovich_params_create_from_buffer(
 
 void zeldovich_params_destroy(ParametersHandle params) {
     if (params) {
-        delete static_cast<Parameters*>(params);
+        delete static_cast<ZeldovichParameters*>(params);
     }
 }
 
@@ -49,124 +49,124 @@ void zeldovich_params_destroy(ParametersHandle params) {
 double zeldovich_params_get_fundamental(ParametersHandle params) {
     if (!params) return 0.0;
     // Cast to Parameters object and return fundamental
-    Parameters* p = static_cast<Parameters*>(params);
+    ZeldovichParameters* p = static_cast<ZeldovichParameters*>(params);
     return p->fundamental;
 }
 
 double zeldovich_params_get_boxsize(ParametersHandle params) {
     if (!params) return 0.0;
-    Parameters* p = static_cast<Parameters*>(params);
+    ZeldovichParameters* p = static_cast<ZeldovichParameters*>(params);
     return p->boxsize;
 }
 
 double zeldovich_params_get_Pk_scale(ParametersHandle params) {
     if (!params) return 0.0;
-    Parameters* p = static_cast<Parameters*>(params);
+    ZeldovichParameters* p = static_cast<ZeldovichParameters*>(params);
     return p->Pk_scale;
 }
 
 int64_t zeldovich_params_get_ppd(ParametersHandle params) {
     if (!params) return 0;
-    Parameters* p = static_cast<Parameters*>(params);
+    ZeldovichParameters* p = static_cast<ZeldovichParameters*>(params);
     return p->ppd;
 }
 
 int zeldovich_params_get_cpd(ParametersHandle params) {
     if (!params) return 0;
-    Parameters* p = static_cast<Parameters*>(params);
+    ZeldovichParameters* p = static_cast<ZeldovichParameters*>(params);
     return p->cpd;
 }
 
 int zeldovich_params_get_NumZRanks(ParametersHandle params) {
     if (!params) return 0;
-    Parameters* p = static_cast<Parameters*>(params);
+    ZeldovichParameters* p = static_cast<ZeldovichParameters*>(params);
     return p->num_z_ranks;
 }
 
 int zeldovich_params_get_seed(ParametersHandle params) {
     if (!params) return 0;
-    Parameters* p = static_cast<Parameters*>(params);
+    ZeldovichParameters* p = static_cast<ZeldovichParameters*>(params);
     return p->seed;
 }
 
 double zeldovich_params_get_Pk_powerlaw_index(ParametersHandle params) {
     if (!params) return 1000.0;
-    Parameters* p = static_cast<Parameters*>(params);
+    ZeldovichParameters* p = static_cast<ZeldovichParameters*>(params);
     return p->Pk_powerlaw_index;
 }
 
 const char* zeldovich_params_get_Pk_filename(ParametersHandle params) {
     if (!params) return NULL;
-    Parameters* p = static_cast<Parameters*>(params);
+    ZeldovichParameters* p = static_cast<ZeldovichParameters*>(params);
     if (p->Pk_filename.empty()) return NULL;
     return p->Pk_filename.c_str();
 }
 
 double zeldovich_params_get_f_cluster(ParametersHandle params) {
     if (!params) return 0.0;
-    Parameters* p = static_cast<Parameters*>(params);
+    ZeldovichParameters* p = static_cast<ZeldovichParameters*>(params);
     return p->f_cluster;
 }
 
 double zeldovich_params_get_z_initial(ParametersHandle params) {
     if (!params) return 0.0;
-    Parameters* p = static_cast<Parameters*>(params);
+    ZeldovichParameters* p = static_cast<ZeldovichParameters*>(params);
     return p->z_initial;
 }
 
 int zeldovich_params_get_qPLT(ParametersHandle params) {
     if (!params) return 0;
-    Parameters* p = static_cast<Parameters*>(params);
+    ZeldovichParameters* p = static_cast<ZeldovichParameters*>(params);
     return p->qPLT;
 }
 
 const char* zeldovich_params_get_PLT_filename(ParametersHandle params) {
     if (!params) return NULL;
-    Parameters* p = static_cast<Parameters*>(params);
+    ZeldovichParameters* p = static_cast<ZeldovichParameters*>(params);
     if (p->PLT_filename.empty()) return NULL;
     return p->PLT_filename.c_str();
 }
 
 int zeldovich_params_get_qPLTrescale(ParametersHandle params) {
     if (!params) return 0;
-    Parameters* p = static_cast<Parameters*>(params);
+    ZeldovichParameters* p = static_cast<ZeldovichParameters*>(params);
     return p->qPLTrescale;
 }
 
 double zeldovich_params_get_PLT_target_z(ParametersHandle params) {
     if (!params) return 0.0;
-    Parameters* p = static_cast<Parameters*>(params);
+    ZeldovichParameters* p = static_cast<ZeldovichParameters*>(params);
     return p->PLT_target_z;
 }
 
 const char* zeldovich_params_get_ICFormat(ParametersHandle params) {
     if (!params) return NULL;
-    Parameters* p = static_cast<Parameters*>(params);
+    ZeldovichParameters* p = static_cast<ZeldovichParameters*>(params);
     return p->ICFormat.c_str();
 }
 
 const char* zeldovich_params_get_local_wisdom_dir(ParametersHandle params) {
     if (!params) return NULL;
-    Parameters* p = static_cast<Parameters*>(params);
+    ZeldovichParameters* p = static_cast<ZeldovichParameters*>(params);
     if (p->local_wisdom_dir.empty()) return NULL;
     return p->local_wisdom_dir.c_str();
 }
 
 int zeldovich_params_get_qdensity(ParametersHandle params) {
     if (!params) return 0;
-    Parameters* p = static_cast<Parameters*>(params);
+    ZeldovichParameters* p = static_cast<ZeldovichParameters*>(params);
     return p->qdensity;
 }
 
 double zeldovich_params_get_k_cutoff(ParametersHandle params) {
     if (!params) return 1.0;
-    Parameters* p = static_cast<Parameters*>(params);
+    ZeldovichParameters* p = static_cast<ZeldovichParameters*>(params);
     return p->k_cutoff;
 }
 
 int zeldovich_params_get_CornerModes(ParametersHandle params) {
     if (!params) return 0;
-    Parameters* p = static_cast<Parameters*>(params);
+    ZeldovichParameters* p = static_cast<ZeldovichParameters*>(params);
     return p->CornerModes;
 }
 
@@ -179,7 +179,7 @@ static int num_destroyed = 0;
 PowerSpectrumHandle zeldovich_ps_create(int n, ParametersHandle params) {
     if (!params) return NULL;
     try {
-        Parameters* p = static_cast<Parameters*>(params);
+        ZeldovichParameters* p = static_cast<ZeldovichParameters*>(params);
         PowerSpectrum* ps = new PowerSpectrum(n, *p);
         return static_cast<PowerSpectrumHandle>(ps);
     } catch (...) {
@@ -209,7 +209,7 @@ int zeldovich_ps_init_powerlaw(PowerSpectrumHandle ps, double powerlaw_index, Pa
     if (!ps || !params) return -1;
     try {
         PowerSpectrum* p = static_cast<PowerSpectrum*>(ps);
-        Parameters* par = static_cast<Parameters*>(params);
+        ZeldovichParameters* par = static_cast<ZeldovichParameters*>(params);
         return p->InitFromPowerLaw(powerlaw_index, *par);
     } catch (...) {
         return -1;
@@ -220,7 +220,7 @@ int zeldovich_ps_init_file(PowerSpectrumHandle ps, const char* filename, Paramet
     if (!ps || !params) return -1;
     try {
         PowerSpectrum* p = static_cast<PowerSpectrum*>(ps);
-        Parameters* par = static_cast<Parameters*>(params);
+        ZeldovichParameters* par = static_cast<ZeldovichParameters*>(params);
         return p->InitFromFile(fs::path(filename), *par);
     } catch (...) {
         return -1;
@@ -232,7 +232,7 @@ int zeldovich_ps_init_from_raw_pk(PowerSpectrumHandle ps, const double* k, const
     if (!ps || !params || !k || !p || n == 0) return -1;
     try {
         PowerSpectrum* ps_ptr = static_cast<PowerSpectrum*>(ps);
-        Parameters* par = static_cast<Parameters*>(params);
+        ZeldovichParameters* par = static_cast<ZeldovichParameters*>(params);
         return ps_ptr->InitFromRawPk(k, p, n, *par);
     } catch (...) {
         return -1;
@@ -262,7 +262,7 @@ void zeldovich_ps_cgauss(PowerSpectrumHandle ps, double wavenumber, int64_t rng_
 void zeldovich_ps_advance_rng(PowerSpectrumHandle ps, ParametersHandle params, int64_t rng_index, int64_t nskip) {
     if (!ps || !params || nskip <= 0) return;
     PowerSpectrum* p = static_cast<PowerSpectrum*>(ps);
-    Parameters* param = static_cast<Parameters*>(params);
+    ZeldovichParameters* param = static_cast<ZeldovichParameters*>(params);
     int64_t ppd_half = param->ppd / 2;
     if (rng_index >= 0 && rng_index < ppd_half && p->v2rng) {
         uint64_t advance_amount = (uint64_t)2 * (uint64_t)nskip;
@@ -343,7 +343,7 @@ int zeldovich_pk_load_text_file_vectors(const char* filename, ParametersHandle p
 {
     if (!filename || !params) return -1;
     try {
-        Parameters* par = static_cast<Parameters*>(params);
+        ZeldovichParameters* par = static_cast<ZeldovichParameters*>(params);
         return ReadPkTextFileIntoVectors(fs::path(filename), *par, k_out, p_out);
     } catch (...) {
         return -1;

@@ -7,7 +7,8 @@
 
 namespace fs = std::filesystem;
 
-class Parameters : public ParseHeader {
+// Distinct from Abacus::Parameters (src/include/Parameters.cpp) when IC-embed links both.
+class ZeldovichParameters : public ParseHeader {
     // This is where we're going to stick all of the control parameters.
     // It is responsible for being able to load from an input param file
     // and to write an output header.
@@ -83,9 +84,9 @@ public:
     void print(FILE *fp);
     // Write a suitable header into the output file
     //
-    Parameters(const fs::path &inputfile);
-    Parameters(const char *header_bytes, size_t header_len, const fs::path &source_name);
-    ~Parameters();
+    ZeldovichParameters(const fs::path &inputfile);
+    ZeldovichParameters(const char *header_bytes, size_t header_len, const fs::path &source_name);
+    ~ZeldovichParameters();
 
     void register_vars(void);
 

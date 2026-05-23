@@ -14,8 +14,10 @@ int main(int argc, char **argv)
         return 1;
     }
 
+    // Run zeldovich as a standalone executable
     zeldovich_ic_embedded = false;
-    const int r = zeldovich_mpi_driver_run(argc, argv);
+    const int r = zeldovich_mpi_driver_run(argc, argv); // param_file = argv[1]
+    // Rank 0 reads header bytes; all ranks get them via broadcast_parameter_header_bytes.
 
     MPI_Finalize();
     return r;

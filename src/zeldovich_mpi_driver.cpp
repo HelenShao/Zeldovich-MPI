@@ -419,15 +419,15 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
         if (rank == 0) {
             printf("[INIT] Using zeldovich-PLT parameters from: %s (cpd=%d)\n", param_file, cpd);
             printf("[INIT] InitialConditionsDirectory: %s\n",
-                   static_cast<Parameters*>(params)->output_dir.string().c_str());
+                   static_cast<ZeldovichParameters*>(params)->output_dir.string().c_str());
             fflush(stdout);
         }
 
         uint64_t seed = (uint64_t)zeldovich_params_get_seed(params);
         initialize_global_pcg(N, N, N, seed);
 
-        SetupOutputDir(*static_cast<Parameters*>(params));
-        InitOutputBuffers(*static_cast<Parameters*>(params));
+        SetupOutputDir(*static_cast<ZeldovichParameters*>(params));
+        InitOutputBuffers(*static_cast<ZeldovichParameters*>(params));
 
         // Create PowerSpectrum object (each rank creates its own)
         // Spline resolution: configured via SPLINE_RESOLUTION (default 128)
@@ -1144,7 +1144,7 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
     std::vector<FILE*> zslab_dens_fp;
     
     if (PARTICLE_OUTPUT_MODE == 3 && params != NULL && !is_idle_rank) {
-        Parameters *p = static_cast<Parameters*>(params);
+        ZeldovichParameters *p = static_cast<ZeldovichParameters*>(params);
 
         char ic_dir[PATH_MAX];
         snprintf(ic_dir, sizeof(ic_dir), "%s/ic", p->output_dir.c_str());
@@ -1280,7 +1280,7 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
 
     // MODE 4: z(k)-slab files under ic/z%03d/ (dual of Mode 3 grid_x>1); dirname z_ matches downstream readers
     if (PARTICLE_OUTPUT_MODE == 4 && params != NULL && !is_idle_rank) {
-        Parameters *p = static_cast<Parameters*>(params);
+        ZeldovichParameters *p = static_cast<ZeldovichParameters*>(params);
 
         char ic_dir[PATH_MAX];
         snprintf(ic_dir, sizeof(ic_dir), "%s/ic", p->output_dir.c_str());
@@ -1491,7 +1491,7 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
                     WriteParticlesSlab_range(
                         rank, i, k_start_global, k_extent,
                         (Complx*)local_z_slab, N, narray,
-                        *static_cast<Parameters*>(params)
+                        *static_cast<ZeldovichParameters*>(params)
                     );
                     
                     files_written++;
@@ -1610,7 +1610,7 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
                     WriteParticlesSlab_range(
                         rank, i, k_start_global, k_extent,
                         (Complx*)T_slab1, (Complx*)T_slab2, (Complx*)T_slab3, (Complx*)T_slab4,
-                        *static_cast<Parameters*>(params)
+                        *static_cast<ZeldovichParameters*>(params)
                     );
                     
                     FFTW_FREE(T_slab1);
@@ -1636,11 +1636,11 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
                                 fp, fp_dens, z,
                                 my_extended_bounds.core.x_start, x_count,
                                 local_z_slab, N, narray,
-                                *static_cast<Parameters*>(params)
+                                *static_cast<ZeldovichParameters*>(params)
                             );
                         }
                         total_bytes_written += (size_t)N * N * sizeof(RVZelParticle);
-                        if (static_cast<Parameters*>(params)->qdensity)
+                        if (static_cast<ZeldovichParameters*>(params)->qdensity)
                             total_bytes_written += (size_t)N * N * sizeof(float);
                     } else {
                         // ===========================================================================
@@ -1655,12 +1655,12 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
                                 fp, fp_dens, s, cpd, z,
                                 my_extended_bounds.core.x_start, x_count,
                                 local_z_slab, N, narray,
-                                *static_cast<Parameters*>(params)
+                                *static_cast<ZeldovichParameters*>(params)
                             );
                         }
                         int ox_total = my_extended_bounds.core.x_end - my_extended_bounds.core.x_start;
                         total_bytes_written += (size_t)ox_total * N * sizeof(RVZelParticle);
-                        if (static_cast<Parameters*>(params)->qdensity)
+                        if (static_cast<ZeldovichParameters*>(params)->qdensity)
                             total_bytes_written += (size_t)ox_total * N * sizeof(float);
                     }
                     break;
@@ -1680,13 +1680,13 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
                                 fp, fp_dens, z,
                                 my_extended_bounds.core.x_start, x_count,
                                 local_z_slab, N, narray,
-                                *static_cast<Parameters*>(params)
+                                *static_cast<ZeldovichParameters*>(params)
                             );
                         }
                     }
                     int ox_total = my_extended_bounds.core.x_end - my_extended_bounds.core.x_start;
                     total_bytes_written += (size_t)ox_total * N * sizeof(RVZelParticle);
-                    if (static_cast<Parameters*>(params)->qdensity)
+                    if (static_cast<ZeldovichParameters*>(params)->qdensity)
                         total_bytes_written += (size_t)ox_total * N * sizeof(float);
                     break;
                 }

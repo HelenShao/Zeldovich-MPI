@@ -244,10 +244,10 @@ int main(int argc, char* argv[]) {
     printf("================================================================================\n\n");
     
     // Create Parameters object
-    Parameters* param = nullptr;
+    ZeldovichParameters* param = nullptr;
     if (!param_file.empty() && fs::exists(param_file)) {
         try {
-            param = new Parameters(fs::path(param_file));
+            param = new ZeldovichParameters(fs::path(param_file));
             printf("Loaded parameters from: %s\n", param_file.c_str());
             printf("  ppd: %ld\n", param->ppd);
             printf("  boxsize: %f\n", param->boxsize);
@@ -302,7 +302,7 @@ int main(int argc, char* argv[]) {
             fclose(tmp_fp);
             
             try {
-                param = new Parameters(fs::path(tmp_param_file));
+                param = new ZeldovichParameters(fs::path(tmp_param_file));
                 printf("Created minimal parameters (ppd=%ld, boxsize=%f)\n", param->ppd, param->boxsize);
             } catch (const std::exception& e) {
                 fprintf(stderr, "ERROR: Failed to create minimal parameters: %s\n", e.what());
