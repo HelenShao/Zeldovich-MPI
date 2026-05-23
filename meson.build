@@ -90,7 +90,14 @@ else
   _fftw_pc = dependency('fftw3f', required: false)
 endif
 if _fftw_pc.found()
-  _fftw_omp_lib = cxx.find_library(_omp_lib_base + '_omp', required: true)
+  # find_library does not use pkg-config -L paths; pass fftw libdir (needed when
+  # fftw3f / fftw3f_omp live under a non-default prefix, e.g. local float build).
+  _fftw_libdir = _fftw_pc.get_variable(pkgconfig: 'libdir')
+  _fftw_omp_lib = cxx.find_library(
+    _omp_lib_base + '_omp',
+    dirs: _fftw_libdir,
+    required: true,
+  )
   fftw_dep = declare_dependency(
     dependencies: [_fftw_pc, _fftw_omp_lib],
   )
