@@ -2,6 +2,7 @@
 #define __PARSEHEADER_HH__
 
 #include <stdio.h>
+#include <sstream>
 #include <string>
 #include <filesystem>
 #include <vector>
@@ -46,6 +47,7 @@ void WriteHStream(FILE *fp, const std::string &m, const std::string &pre);
 void WriteHStream(FILE *fp, HeaderStream &in);
 void WriteHStream(FILE *fp, HeaderStream &in, const std::string &pre);
 void FinalizeHeader(FILE *fout);
+void FinalizeHeader(std::stringstream &ss);
 
 class phDriver;
 
