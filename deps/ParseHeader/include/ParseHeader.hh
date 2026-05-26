@@ -69,6 +69,7 @@ public:
     void installvector(const std::string &name, std::vector<T> &var, bool must_define, size_t maxlen = 1024);
 
     void ReadHeader(HeaderStream &in);
+    void ParseBuffer(HeaderStream &in);
 
 private:
     phDriver *phdriver;

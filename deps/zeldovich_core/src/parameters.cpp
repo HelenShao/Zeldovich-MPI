@@ -8,15 +8,15 @@
 #include "zeldovich.h"
 
 // Write a suitable header into the output file
-Parameters::Parameters(const fs::path &inputfile) {
+ZeldovichParameters::ZeldovichParameters(const fs::path &inputfile) {
     initialize_from_stream(new HeaderStream(inputfile));
 }
 
-Parameters::Parameters(const char *header_bytes, size_t header_len, const fs::path &source_name) {
+ZeldovichParameters::ZeldovichParameters(const char *header_bytes, size_t header_len, const fs::path &source_name) {
     initialize_from_stream(new HeaderStream(header_bytes, header_len, source_name));
 }
 
-void Parameters::set_defaults(void) {
+void ZeldovichParameters::set_defaults(void) {
     ppd             = 0;       // Illegal
     numblock        = 2;       // Ok, but you might not want this!
     boxsize         = 0;       // Illegal
@@ -54,7 +54,7 @@ void Parameters::set_defaults(void) {
     Omega_M     = 1.0;   // Legal default (only used for f_NL)
 }
 
-void Parameters::initialize_from_stream(HeaderStream *stream) {
+void ZeldovichParameters::initialize_from_stream(HeaderStream *stream) {
     assert(stream != nullptr);
 
     // Set default values first
@@ -73,9 +73,9 @@ void Parameters::initialize_from_stream(HeaderStream *stream) {
     }
 }
 
-Parameters::~Parameters() { inputstream->Close(); delete inputstream;}
+ZeldovichParameters::~ZeldovichParameters() { inputstream->Close(); delete inputstream;}
 
-void Parameters::register_vars(void) {
+void ZeldovichParameters::register_vars(void) {
     installscalar("BoxSize", boxsize, MUST_DEFINE);
     installscalar("ZD_Pk_scale", Pk_scale, MUST_DEFINE);
     installscalar("NP", np, MUST_DEFINE);
@@ -113,7 +113,7 @@ void Parameters::register_vars(void) {
     installscalar("ZD_CornerModes", CornerModes, DONT_CARE);
 }
 
-int Parameters::setup() {
+int ZeldovichParameters::setup() {
     // Compute any derived quantities.  Look for errors.
     // Return 0 if all is well, 1 if this failed.
 
@@ -215,7 +215,7 @@ int Parameters::setup() {
     return 0;
 }
 
-void Parameters::print(FILE *fp) {
+void ZeldovichParameters::print(FILE *fp) {
     // Print the results
     time_t t = time(0);
     tm *now  = localtime(&t);

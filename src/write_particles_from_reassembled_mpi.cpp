@@ -263,17 +263,17 @@ int main(int argc, char* argv[]) {
     }
     
     // Create Parameters object first to determine narray
-    Parameters* param = nullptr;
+    ZeldovichParameters* param = nullptr;
     if (!param_file.empty() && fs::exists(param_file)) {
         try {
-            param = new Parameters(fs::path(param_file));
+            param = new ZeldovichParameters(fs::path(param_file));
             printf("Loaded parameters from: %s\n", param_file.c_str());
             printf("  ppd: %ld\n", param->ppd);
             printf("  boxsize: %f\n", param->boxsize);
             printf("  separation: %f\n", param->separation);
             
             // Determine narray from parameter file (same logic as main.cpp)
-            // Cast Parameters* to ParametersHandle (void*)
+            // Cast ZeldovichParameters* to ParametersHandle (void*)
             ParametersHandle params_handle = reinterpret_cast<ParametersHandle>(param);
             int qdensity = zeldovich_params_get_qdensity(params_handle);
             if (qdensity == 2) {
@@ -327,7 +327,7 @@ int main(int argc, char* argv[]) {
             fclose(tmp_fp);
             
             try {
-                param = new Parameters(fs::path(tmp_param_file));
+                param = new ZeldovichParameters(fs::path(tmp_param_file));
                 printf("Created minimal parameters (ppd=%ld, boxsize=%f)\n", param->ppd, param->boxsize);
             } catch (const std::exception& e) {
                 fprintf(stderr, "ERROR: Failed to create minimal parameters: %s\n", e.what());

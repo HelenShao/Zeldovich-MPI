@@ -10,3 +10,9 @@ option('use_fftw_wisdom', type: 'boolean', value: false, description: 'Define US
 option('fftw_root', type: 'string', value: '', description: 'FFTW install prefix if pkg-config is unavailable')
 option('extra_cpp_args', type: 'array', value: [], description: 'Extra compiler defines/flags (e.g. -DMYFLAG)')
 option('enable_asan', type: 'boolean', value: false, description: 'Enable AddressSanitizer')
+option(
+  'abacus_embed',
+  type: 'boolean',
+  value: false,
+  description: 'Built as Abacus IC-embed subproject: omit STimer from libzeldovich_ic (Abacus provides STimer)',
+)

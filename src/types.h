@@ -1,6 +1,7 @@
 #ifndef ZD_MPI_TYPES_H
 #define ZD_MPI_TYPES_H
 
+#include <stdint.h>
 #include "precision.h"
 
 // ====================================================================================

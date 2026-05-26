@@ -5,7 +5,7 @@
 #include "parameters.h"
 #include "power_spectrum.h"
 
-int ReadPkTextFileIntoVectors(const fs::path &filename, Parameters &param,
+int ReadPkTextFileIntoVectors(const fs::path &filename, ZeldovichParameters &param,
     std::vector<double> &k_out, std::vector<double> &p_out)
 {
     char line[200];
@@ -31,7 +31,7 @@ int ReadPkTextFileIntoVectors(const fs::path &filename, Parameters &param,
     return 0;
 }
 
-PowerSpectrum::PowerSpectrum(int n, Parameters &param) : SplineFunction(n) {
+PowerSpectrum::PowerSpectrum(int n, ZeldovichParameters &param) : SplineFunction(n) {
     is_powerlaw    = 0;
     powerlaw_index = 1000;
     kmin           = std::numeric_limits<double>::max();
@@ -162,7 +162,7 @@ double PowerSpectrum::Romberg(
     return TT[jj][jj];
 }
 
-int PowerSpectrum::InitFromRawPk(const double *k_arr, const double *p_arr, size_t n, Parameters &param) {
+int PowerSpectrum::InitFromRawPk(const double *k_arr, const double *p_arr, size_t n, ZeldovichParameters &param) {
     if (n == 0 || k_arr == NULL || p_arr == NULL) return -1;
     for (size_t i = 0; i < n; i++) {
         double k = k_arr[i];
@@ -180,7 +180,7 @@ int PowerSpectrum::InitFromRawPk(const double *k_arr, const double *p_arr, size_
     return 0;
 }
 
-int PowerSpectrum::InitFromFile(const fs::path &filename, Parameters &param) {
+int PowerSpectrum::InitFromFile(const fs::path &filename, ZeldovichParameters &param) {
     fmt::print(stderr, "Loading power spectrum from file \"{}\"\n", filename);
     std::vector<double> ks, Ps;
     if (ReadPkTextFileIntoVectors(filename, param, ks, Ps) != 0) {
@@ -189,7 +189,7 @@ int PowerSpectrum::InitFromFile(const fs::path &filename, Parameters &param) {
     return InitFromRawPk(ks.data(), Ps.data(), ks.size(), param);
 }
 
-int PowerSpectrum::InitFromPowerLaw(double _powerlaw_index, Parameters &param) {
+int PowerSpectrum::InitFromPowerLaw(double _powerlaw_index, ZeldovichParameters &param) {
     assert(_powerlaw_index != 1000);
     powerlaw_index = _powerlaw_index;
     is_powerlaw    = 1;
@@ -202,7 +202,7 @@ int PowerSpectrum::InitFromPowerLaw(double _powerlaw_index, Parameters &param) {
     return 0;
 }
 
-void PowerSpectrum::Normalize(Parameters &param) {
+void PowerSpectrum::Normalize(ZeldovichParameters &param) {
     Pk_smooth2    = 0.0;
     normalization = 1.0;
 
