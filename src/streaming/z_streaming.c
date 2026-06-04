@@ -63,12 +63,12 @@ void z_streaming_unpack(
     if (z_global < my_bounds.z_start || z_global >= my_bounds.z_end) {
         fprintf(stderr, "[ERROR] Rank %d: z_global=%d out of bounds [%d,%d)\n",
                 rank, z_global, my_bounds.z_start, my_bounds.z_end);
-        MPI_Abort(comm_2d, 1);
+        MPI_Abort(zd_comm_2d, 1);
     }
     if (thread_1d_bufs == NULL || num_thread_bufs == 0) {
         fprintf(stderr, "[ERROR] Rank %d: z_streaming_unpack requires thread_1d_bufs and num_thread_bufs > 0\n",
                 rank);
-        MPI_Abort(comm_2d, 1);
+        MPI_Abort(zd_comm_2d, 1);
     }
     
     // ========== UNPACKING: Extract this Z-slab from recv_buffer ==========
@@ -122,7 +122,7 @@ void z_streaming_unpack(
                             "[OFFSET-VERIFY] Rank %d: Invalid slices_in_this_batch=%d for src=%d, batch=%d "
                             "(src_total_slices=%d)\n",
                             rank, slices_in_this_batch, src, batch, src_total_slices[src]);
-                    MPI_Abort(comm_2d, 1);
+                    MPI_Abort(zd_comm_2d, 1);
                 }
 
                 // 2) recv_offset must lie within this source's allocated region in recv_buffer.
@@ -136,7 +136,7 @@ void z_streaming_unpack(
                             rank, src, batch, slice_idx, array_idx, pencil_idx, x_idx, z_idx,
                             (long long)rel_src, (long long)max_src,
                             src_total_slices[src], my_pencils, narray);
-                    MPI_Abort(comm_2d, 1);
+                    MPI_Abort(zd_comm_2d, 1);
                 }
 #endif
                 
@@ -246,7 +246,7 @@ void z_streaming_unpack(
             if (tid >= num_thread_bufs) {
                 fprintf(stderr, "[ERROR] Rank %d: omp thread_num %d >= num_thread_bufs %d\n",
                         rank, tid, num_thread_bufs);
-                MPI_Abort(comm_2d, 1);
+                MPI_Abort(zd_comm_2d, 1);
             }
             fftw_complex_t *thread_1d_buffer = thread_1d_bufs[tid];
             fftw_complex_t *slab_line = &ZSLAB(array_idx, x_idx, 0, N, narray, x_count);

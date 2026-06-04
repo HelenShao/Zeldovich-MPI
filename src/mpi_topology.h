@@ -19,6 +19,7 @@
  */
 
 // Global 2D Cartesian communicator
-extern MPI_Comm comm_2d;
+// Zeldovich MPI Cartesian grid — NOT Abacus comm_2d (see mpi_header.cpp when embedded).
+extern MPI_Comm zd_comm_2d;
 
 #endif

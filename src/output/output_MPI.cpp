@@ -16,7 +16,7 @@
 int ParseOutputFormat(const char *format_str) {
     if (strcmp(format_str, "RVdoubleZel") == 0) {
         return OUTPUT_RVDOUBLEZEL;
-    } else if (strcmp(format_str, "RVZel") == 0) {
+    } else if (strcmp(format_str, "RVZel") == 0 || strcmp(format_str, "RVZel_2D") == 0) {
         return OUTPUT_RVZEL;
     } else if (strcmp(format_str, "Zeldovich") == 0) {
         return OUTPUT_ZEL;

@@ -46,10 +46,9 @@
 #include "output/output_new.h"
 
 // Linking error: makefile builds this executable with UTILS library, which includes mpi_topology.h
-// mpi_topology.h declares MPI_Comm comm_2d - not defined in this executable
-// This executable does not use MPI ->; define a dummy so the linker resolves the symbol
+// mpi_topology.h declares MPI_Comm zd_comm_2d - not defined in this executable
 #include "mpi_topology.h"
-MPI_Comm comm_2d = MPI_COMM_NULL;
+MPI_Comm zd_comm_2d = MPI_COMM_NULL;
 
 // Include grid decomposition utilities
 extern "C" {

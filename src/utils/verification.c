@@ -183,7 +183,7 @@ void verify_pencil_completeness_with_flags(char *y_filled, int pencils_per_rank,
     
     // Global verification: Count missing across all ranks
     int global_missing;
-    MPI_Reduce(&missing_count, &global_missing, 1, MPI_INT, MPI_SUM, 0, comm_2d);
+    MPI_Reduce(&missing_count, &global_missing, 1, MPI_INT, MPI_SUM, 0, zd_comm_2d);
     
     if (rank == 0) {
         if (global_missing > 0) {

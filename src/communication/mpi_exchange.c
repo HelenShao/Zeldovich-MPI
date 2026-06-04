@@ -32,7 +32,7 @@ void exchange_metadata(int rank, int num_y_ranks, int N,
     // array containing the number of Y-slices for each rank
     int *all_num_my_slices = (int*)malloc(sizeof(int) * num_y_ranks);
     MPI_Allgather(&num_my_slices, 1, MPI_INT, 
-                  all_num_my_slices, 1, MPI_INT, comm_2d);
+                  all_num_my_slices, 1, MPI_INT, zd_comm_2d);
     
     // Step 2: Share y_global_map using MPI_Allgatherv
     // Calculate displacements and total size
@@ -49,7 +49,7 @@ void exchange_metadata(int rank, int num_y_ranks, int N,
     int *all_y_maps_flat = (int*)malloc(sizeof(int) * total_slices);
     
     MPI_Allgatherv(y_global_map, num_my_slices, MPI_INT,
-                   all_y_maps_flat, recvcounts, displs, MPI_INT, comm_2d);
+                   all_y_maps_flat, recvcounts, displs, MPI_INT, zd_comm_2d);
     
     // Step 3: Rebuild pointer array (allocate separately for each rank to avoid pointer issues)
     int **all_y_global_maps = (int**)malloc(sizeof(int*) * num_y_ranks);
@@ -127,14 +127,14 @@ void exchange_metadata(int rank, int num_y_ranks, int N,
     }
     
     // Broadcast all_num_my_slices
-    MPI_Bcast(all_num_my_slices, num_y_ranks, MPI_INT, 0, comm_2d);
+    MPI_Bcast(all_num_my_slices, num_y_ranks, MPI_INT, 0, zd_comm_2d);
     
     // Broadcast each y_global_map
     for (int i = 0; i < num_y_ranks; i++) {
         if (rank != 0) {
             all_y_global_maps[i] = (int*)malloc(sizeof(int) * all_num_my_slices[i]);
         }
-        MPI_Bcast(all_y_global_maps[i], all_num_my_slices[i], MPI_INT, 0, comm_2d);
+        MPI_Bcast(all_y_global_maps[i], all_num_my_slices[i], MPI_INT, 0, zd_comm_2d);
     }
     
     // Assign outputs to the function args ("return values")
@@ -183,7 +183,7 @@ void pack_slices_to_send_buffer(
     int *z_count_arr = (int *)malloc((size_t)num_ranks * sizeof(int));
     if (bounds_arr == NULL || z_count_arr == NULL) {
         fprintf(stderr, "[PACK ERROR] Rank %d: Failed to allocate bounds/z_count arrays\n", rank);
-        MPI_Abort(comm_2d, 1);
+        MPI_Abort(zd_comm_2d, 1);
     }
     
     for (int dest = 0; dest < num_ranks; dest++) {
@@ -237,12 +237,12 @@ void pack_slices_to_send_buffer(
                                    array_idx, slice_idx, x, z, local_x, local_z);
         fprintf(stderr, "  pack_idx=%ld, offset=%ld, region_size=%ld, sendcounts[dest]=%ld\n",
                (long)pack_idx, (long)dest_offset, (long)region_size, (long)sendcounts[dest]);
-                            MPI_Abort(comm_2d, 1);
+                            MPI_Abort(zd_comm_2d, 1);
                         }
                         if (pack_idx < 0 || pack_idx >= sendcounts[dest]) {
                             fprintf(stderr, "[PACK ERROR] Rank %d: pack_idx=%ld out of dest region [0, %lld) for dest=%d\n",
                                    rank, (long)pack_idx, (long long)sendcounts[dest], dest);
-                            MPI_Abort(comm_2d, 1);
+                            MPI_Abort(zd_comm_2d, 1);
                         }
 
                         send_buffer[dest_offset + pack_idx][0] = 

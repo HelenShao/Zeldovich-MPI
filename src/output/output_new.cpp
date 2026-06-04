@@ -848,7 +848,7 @@ double InitOutputBuffers(ZeldovichParameters &param) {
             param_icformat    = OUTPUT_RVDOUBLEZEL;
             output_tmp        = new RVdoubleZelParticle[param.ppd * param.ppd];
             sizeof_outputtype = sizeof(RVdoubleZelParticle);
-        } else if (param.ICFormat == "RVZel") {
+        } else if (param.ICFormat == "RVZel" || param.ICFormat == "RVZel_2D") {
             param_icformat    = OUTPUT_RVZEL;
             output_tmp        = new RVZelParticle[param.ppd * param.ppd];
             sizeof_outputtype = sizeof(RVZelParticle);

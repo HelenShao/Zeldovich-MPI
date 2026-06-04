@@ -119,10 +119,8 @@ endif
 # =============================================================================
 # Include directories (repo layout)
 # =============================================================================
-zd_mpi_inc = include_directories(
+_zd_mpi_inc_base = [
   'deps',
-  'deps/ParseHeader/generated',
-  'deps/ParseHeader/include',
   'deps/zeldovich_core/include',
   'deps/zeldovich_core/pcg',
   'src',
@@ -132,7 +130,21 @@ zd_mpi_inc = include_directories(
   'src/output',
   'src/streaming',
   'src/utils',
-)
+]
+_abacus_embed = get_option('abacus_embed')
+if _abacus_embed
+  # Parent Abacus must call meson.override_dependency('parseheader', ...) first.
+  parseheader_dep = dependency('parseheader')
+  zd_mpi_inc = include_directories(_zd_mpi_inc_base)
+else
+  parseheader_dep = disabler()
+  zd_mpi_inc = include_directories(
+    _zd_mpi_inc_base + [
+      'deps/ParseHeader/generated',
+      'deps/ParseHeader/include',
+    ],
+  )
+endif
 # =============================================================================
 # Composite dependency (includes + link deps for Zeldovich_MPI)
 # =============================================================================

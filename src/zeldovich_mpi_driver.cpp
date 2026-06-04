@@ -2,10 +2,10 @@
  * 1. INITIALIZATION
  *    - MPI_Init; parse param_file (required)
  *    - Read NP from param file, derive ppd (= N), validate N; validate num_ranks vs total_pairs
- *    - comm_2d is a derived communicator with reorder=1, so MPI may remap ranks for topology locality
-*     - ex: world_rank=7 may be rank=3 in comm_2d.
+ *    - zd_comm_2d is a derived communicator with reorder=1, so MPI may remap ranks for topology locality
+*     - ex: world_rank=7 may be rank=3 in zd_comm_2d.
 *     - broadcast steps use MPI_COMM_WORLD + world_rank (all processes must participate)
-*     - most decomposition/compute logic uses comm_2d + rank (grid-aware topology)
+*     - most decomposition/compute logic uses zd_comm_2d + rank (grid-aware topology)
  *
  * 2. Y-SLICE PAIR DISTRIBUTION
  *    - total_pairs = N/2 + 1 (conjugate pairs: (0,0), (1,N-1), ..., N/2 self-conj)
@@ -58,6 +58,7 @@
 #include <limits.h>
 #include <string>
 #include <vector>
+#include <algorithm>
 #include <mpi.h>
 #include <omp.h> 
 #include <fftw3.h>
@@ -287,9 +288,9 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
     int periodic[2] = { 1, 1 };
     int reorder = 1;
 
-    MPI_Cart_create(MPI_COMM_WORLD, 2, dims, periodic, reorder, &comm_2d);
+    MPI_Cart_create(MPI_COMM_WORLD, 2, dims, periodic, reorder, &zd_comm_2d);
 
-    if (comm_2d == MPI_COMM_NULL) {
+    if (zd_comm_2d == MPI_COMM_NULL) {
         if (world_rank == 0) {
             fprintf(stderr, "Error: unable to create MPI Cartesian grid with grid_x=%d, grid_z=%d.\n",
                     grid_x, grid_z);
@@ -301,13 +302,13 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
         return 1;
     }
 
-    MPI_Comm_set_errhandler(comm_2d, MPI_ERRORS_RETURN);
+    MPI_Comm_set_errhandler(zd_comm_2d, MPI_ERRORS_RETURN);
 
     int rank;
-    MPI_Comm_rank(comm_2d, &rank);
+    MPI_Comm_rank(zd_comm_2d, &rank);
 
     int coords[2];
-    MPI_Cart_coords(comm_2d, rank, 2, coords);
+    MPI_Cart_coords(zd_comm_2d, rank, 2, coords);
     int rank_x = coords[0];
     int rank_z = coords[1];
 
@@ -436,7 +437,7 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
             if (rank == 0) {
                 fprintf(stderr, "ERROR: Failed to create PowerSpectrum object\n");
             }
-            MPI_Abort(comm_2d, 1);
+            MPI_Abort(zd_comm_2d, 1);
         }
         
         const char* pk_file = zeldovich_params_get_Pk_filename(params);
@@ -475,7 +476,7 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
                 if (rank == 0) {
                     fprintf(stderr, "ERROR: Failed to initialize power spectrum from broadcast P(k) table\n");
                 }
-                MPI_Abort(comm_2d, 1);
+                MPI_Abort(zd_comm_2d, 1);
             }
             if (rank == 0) {
                 printf("[INIT] Power spectrum initialized from file (rank-0 read + MPI broadcast): %s\n",
@@ -487,13 +488,13 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
                 if (rank == 0) {
                     fprintf(stderr, "ERROR: Set ZD_Pk_filename or ZD_Pk_powerlaw_index (mutually exclusive)\n");
                 }
-                MPI_Abort(comm_2d, 1);
+                MPI_Abort(zd_comm_2d, 1);
             }
             if (zeldovich_ps_init_powerlaw(ps, powerlaw_index, params) != 0) {
                 if (rank == 0) {
                     fprintf(stderr, "ERROR: Failed to initialize power spectrum (power law index: %.2f)\n", powerlaw_index);
                 }
-                MPI_Abort(comm_2d, 1);
+                MPI_Abort(zd_comm_2d, 1);
             }
         }
         
@@ -511,7 +512,7 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
                     fprintf(stderr, "       Current ICFormat: '%s'\n", ICFormat ? ICFormat : "(empty)");
                     fprintf(stderr, "       Set 'ICFormat = RV' or 'ICFormat = RVDoubleZel' in parameter file\n");
                 }
-                MPI_Abort(comm_2d, 1);
+                MPI_Abort(zd_comm_2d, 1);
             }
             
             uint64_t plt_nbytes = 0;
@@ -563,7 +564,7 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
                     fprintf(stderr, "ERROR: Failed to parse PLT eigenmodes after broadcast (source file: %s)\n",
                             PLT_filename);
                 }
-                MPI_Abort(comm_2d, 1);
+                MPI_Abort(zd_comm_2d, 1);
             }
 
             if (rank == 0) {
@@ -602,12 +603,12 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
         size_t requested_bytes = (size_t)slice_buffer_size * sizeof(fftw_complex_t);
         if (posix_memalign((void**)&local_y_slices, ALIGN_BYTES, requested_bytes) != 0) {
             fprintf(stderr, "Rank %d: posix_memalign failed for local_y_slices\n", rank);
-            MPI_Abort(comm_2d, 1);
+            MPI_Abort(zd_comm_2d, 1);
         }
         size_t stage_bytes = (size_t)N * (size_t)N * sizeof(fftw_complex_t);
         if (posix_memalign((void**)&fft_stage_2d, ALIGN_BYTES, stage_bytes) != 0) {
             fprintf(stderr, "Rank %d: posix_memalign failed for fft_stage_2d\n", rank);
-            MPI_Abort(comm_2d, 1);
+            MPI_Abort(zd_comm_2d, 1);
         }
         // parallel first touch
         #pragma omp parallel for schedule(static)
@@ -656,7 +657,7 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
         max_batches = my_num_pairs;
     }
     int global_max_batches = 0;
-    MPI_Allreduce(&max_batches, &global_max_batches, 1, MPI_INT, MPI_MAX, comm_2d);
+    MPI_Allreduce(&max_batches, &global_max_batches, 1, MPI_INT, MPI_MAX, zd_comm_2d);
     
     // Calculate per-source totals and allocate persistent recv_buffer
     int *src_total_slices = NULL;       // [num_ranks] - total Y-slices from each source
@@ -696,7 +697,7 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
         size_t recv_alloc = ROUND_UP_PAGE(recv_bytes);
         if (posix_memalign((void**)&recv_buffer, ALIGN_BYTES, recv_alloc) != 0) {
             fprintf(stderr, "Rank %d: posix_memalign failed for recv_buffer\n", rank);
-            MPI_Abort(comm_2d, 1);
+            MPI_Abort(zd_comm_2d, 1);
         }
         
         memset(recv_buffer, 0, recv_bytes);
@@ -757,7 +758,7 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
                 if (y_owner_src[y_global] != -1) {
                     fprintf(stderr, "[ERROR] Y=%d already assigned to src %d, now src %d wants it!\n",
                            y_global, y_owner_src[y_global], src);
-                    MPI_Abort(comm_2d, 1);
+                    MPI_Abort(zd_comm_2d, 1);
                 }
                 
                 y_owner_src[y_global] = src;
@@ -865,7 +866,7 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
             if (new_displ < 0) {
                 fprintf(stderr, "[Rank %d] ERROR: Negative rdispls! src=%d, displ=%lld\n",
                        rank, src, (long long)new_displ);
-                MPI_Abort(comm_2d, 1);
+                MPI_Abort(zd_comm_2d, 1);
             }
             rdispls_elem[src] = new_displ;
         }
@@ -878,7 +879,7 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
             size_t alloc_bytes = ROUND_UP_PAGE(requested_bytes);
             if (posix_memalign((void**)&send_buffer_batch, ALIGN_BYTES, alloc_bytes) != 0) {
                 fprintf(stderr, "Rank %d: posix_memalign failed for send_buffer_batch\n", rank);
-                MPI_Abort(comm_2d, 1);
+                MPI_Abort(zd_comm_2d, 1);
             }
         }
         
@@ -903,7 +904,7 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
             if (sum_sendcounts != total_send_batch) {
                 fprintf(stderr, "[Rank %d] ERROR: sendcounts sum (%lld) != total_send_batch (%lld)!\n",
                        rank, (long long)sum_sendcounts, (long long)total_send_batch);
-                MPI_Abort(comm_2d, 1);
+                MPI_Abort(zd_comm_2d, 1);
             }
         }
         
@@ -916,7 +917,7 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
             if (sum_recvcounts != total_recv_batch) {
                 fprintf(stderr, "[Rank %d] ERROR: recvcounts sum (%lld) != total_recv_batch (%lld)!\n",
                        rank, (long long)sum_recvcounts, (long long)total_recv_batch);
-                MPI_Abort(comm_2d, 1);
+                MPI_Abort(zd_comm_2d, 1);
             }
             
             // Verify rdispls don't exceed recv_buffer bounds
@@ -927,7 +928,7 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
                     if (end_offset > recv_buffer_size) {
                         fprintf(stderr, "[Rank %d] ERROR: rdispls[%d] + recvcounts[%d] = %ld exceeds buffer size %ld!\n",
                                rank, i, i, (long)end_offset, (long)recv_buffer_size);
-                        MPI_Abort(comm_2d, 1);
+                        MPI_Abort(zd_comm_2d, 1);
                     }
                 }
             }
@@ -944,20 +945,20 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
                 if (sdispls_batch[i] < 0 || rdispls_elem[i] < 0) {
                     fprintf(stderr, "[Rank %d] ERROR: Negative displacement! sdispls[%d]=%lld, rdispls[%d]=%lld\n",
                            rank, i, (long long)sdispls_batch[i], i, (long long)rdispls_elem[i]);
-                    MPI_Abort(comm_2d, 1);
+                    MPI_Abort(zd_comm_2d, 1);
                 }
             }
             
             if (max_send_displ > total_send_batch) {
                 fprintf(stderr, "[Rank %d] ERROR: Send displacement exceeds buffer! max=%lld > total=%lld\n",
                        rank, (long long)max_send_displ, (long long)total_send_batch);
-                MPI_Abort(comm_2d, 1);
+                MPI_Abort(zd_comm_2d, 1);
             }
             
             if (max_recv_displ > recv_total_elems) {
                 fprintf(stderr, "[Rank %d] ERROR: Recv displacement exceeds buffer! max=%lld > total=%lld\n",
                        rank, (long long)max_recv_displ, (long long)recv_total_elems);
-                MPI_Abort(comm_2d, 1);
+                MPI_Abort(zd_comm_2d, 1);
             }
         }
         #endif
@@ -989,7 +990,7 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
             int mpi_err = MPI_Alltoallv_c(
                 send_buffer_batch, sendcounts_c, sdispls_c, MPI_COMPLEX_TYPE,
                 recv_buffer, recvcounts_c, rdispls_c, MPI_COMPLEX_TYPE,
-                comm_2d
+                zd_comm_2d
             );
             if (mpi_err != MPI_SUCCESS) {
                 char errstr[MPI_MAX_ERROR_STRING];
@@ -1003,7 +1004,7 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
                             i, (long long)recvcounts_c[i], i, (long long)rdispls_c[i]);
                 }
                 fflush(stderr);
-                MPI_Abort(comm_2d, mpi_err);
+                MPI_Abort(zd_comm_2d, mpi_err);
             }
         }
         t_comm.Stop();
@@ -1068,7 +1069,7 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
         }
         
         if (cursor_error) {
-            MPI_Abort(comm_2d, 1);
+            MPI_Abort(zd_comm_2d, 1);
         }
     }
     
@@ -1107,7 +1108,7 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
         if (posix_memalign((void**)&local_z_slab, ALIGN_BYTES, 
                            sizeof(fftw_complex_t) * elements_per_z_slab) != 0) {
             fprintf(stderr, "Rank %d: posix_memalign failed for local_z_slab (one Z-slab)\n", rank);
-            MPI_Abort(comm_2d, 1);
+            MPI_Abort(zd_comm_2d, 1);
         }
 
     } else {
@@ -1122,7 +1123,7 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
     int mkdir_result = mkdir(dirname, 0755);
     if (mkdir_result != 0 && errno != EEXIST) {
         fprintf(stderr, "Rank %d: ERROR creating directory %s (errno=%d)\n", rank, dirname, errno);
-        MPI_Abort(comm_2d, 1);
+        MPI_Abort(zd_comm_2d, 1);
     }
 #endif
     // Process one Z-slab at a time (Zeldovich-compatible)
@@ -1146,28 +1147,10 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
     if (PARTICLE_OUTPUT_MODE == 3 && params != NULL && !is_idle_rank) {
         ZeldovichParameters *p = static_cast<ZeldovichParameters*>(params);
 
-        char ic_dir[PATH_MAX];
-        snprintf(ic_dir, sizeof(ic_dir), "%s/ic", p->output_dir.c_str());
-        int mkdir_ic = mkdir(ic_dir, 0755);
-        if (mkdir_ic != 0 && errno != EEXIST) {
-            fprintf(stderr, "Rank %d: ERROR creating directory %s (errno=%d)\n", rank, ic_dir, errno);
-            MPI_Abort(comm_2d, 1);
-        }
-        // dens/ subdir for _dens files (parallel to ic/)
-        if (p->qdensity) {
-            char dens_dir[PATH_MAX];
-            snprintf(dens_dir, sizeof(dens_dir), "%s/dens", p->output_dir.c_str());
-            int mkdir_dens = mkdir(dens_dir, 0755);
-            if (mkdir_dens != 0 && errno != EEXIST) {
-                fprintf(stderr, "Rank %d: ERROR creating directory %s (errno=%d)\n", rank, dens_dir, errno);
-                MPI_Abort(comm_2d, 1);
-            }
-        }
-
         if (grid_x == 1) {
             // ---------------------------------------------------------------
-            // grid_x==1: z-group file mapping (zeldovich-compatible)
-            // Each z-rank writes CPD/grid_z files: ic/ic_{file_index:04d}
+            // grid_x==1: z-group file mapping (Abacus RVZel_2D, MPI_size_z==1)
+            // Each z-rank writes CPD/grid_z files: ic_{file_index:04d}
             // file_index = z * CPD / N, each file holds N/CPD z-planes.
             // ---------------------------------------------------------------
             int s_z_start = (rank_z * cpd) / grid_z;
@@ -1180,7 +1163,7 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
 
             for (int f = zgrp_start; f < zgrp_end; f++) {
                 char fp_path[PATH_MAX];
-                snprintf(fp_path, sizeof(fp_path), "%s/ic/ic_%04d",
+                snprintf(fp_path, sizeof(fp_path), "%s/ic_%04d",
                          p->output_dir.c_str(), f);
                 zgrp_fp[f - zgrp_start] = fopen(fp_path, "wb");
                 if (!zgrp_fp[f - zgrp_start]) {
@@ -1189,7 +1172,7 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
                 }
                 if (p->qdensity && zgrp_fp[f - zgrp_start] != NULL) {
                     char fd_path[PATH_MAX];
-                    snprintf(fd_path, sizeof(fd_path), "%s/dens/dens_%04d",
+                    snprintf(fd_path, sizeof(fd_path), "%s/dens_%04d",
                              p->output_dir.c_str(), f);
                     zgrp_dens_fp[f - zgrp_start] = fopen(fd_path, "wb");
                     if (!zgrp_dens_fp[f - zgrp_start]) {
@@ -1200,7 +1183,7 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
             }
 
             if (rank == 0) {
-                printf("[MODE 3] grid_x==1, z-group format (zeldovich-compatible): cpd=%d, files_per_rank=%d, ic/ic_%%04d\n",
+                printf("[MODE 3] grid_x==1, z-group format (RVZel_2D flat): cpd=%d, files_per_rank=%d, ic_%%04d\n",
                        cpd, zgrp_end - zgrp_start);
                 printf("         Each file holds %d z-planes of %d x %d particles\n",
                        N / cpd, N, N);
@@ -1208,18 +1191,42 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
         } else {
             // ---------------------------------------------------------------
             // grid_x>1: x-slab file mapping (existing Mode 3)
+            // Standalone: {output_dir}/ic/z###/... ; embedded Abacus: {output_dir}/z###/...
             // ---------------------------------------------------------------
+            if (!zeldovich_ic_embedded) {
+                char ic_dir[PATH_MAX];
+                snprintf(ic_dir, sizeof(ic_dir), "%s/ic", p->output_dir.c_str());
+                int mkdir_ic = mkdir(ic_dir, 0755);
+                if (mkdir_ic != 0 && errno != EEXIST) {
+                    fprintf(stderr, "Rank %d: ERROR creating directory %s (errno=%d)\n", rank, ic_dir, errno);
+                    MPI_Abort(zd_comm_2d, 1);
+                }
+            }
+            if (p->qdensity) {
+                char dens_dir[PATH_MAX];
+                snprintf(dens_dir, sizeof(dens_dir), "%s/dens", p->output_dir.c_str());
+                int mkdir_dens = mkdir(dens_dir, 0755);
+                if (mkdir_dens != 0 && errno != EEXIST) {
+                    fprintf(stderr, "Rank %d: ERROR creating directory %s (errno=%d)\n", rank, dens_dir, errno);
+                    MPI_Abort(zd_comm_2d, 1);
+                }
+            }
+
             slab_x_start = (rank_x * cpd) / grid_x;
             slab_x_end   = ((rank_x + 1) * cpd) / grid_x;
 
             char z_dir[PATH_MAX];
             z_dir[0] = '\0';
             if (grid_z > 1) {
-                snprintf(z_dir, sizeof(z_dir), "%s/ic/z%03d", p->output_dir.c_str(), rank_z);
+                if (zeldovich_ic_embedded) {
+                    snprintf(z_dir, sizeof(z_dir), "%s/z%03d", p->output_dir.c_str(), rank_z);
+                } else {
+                    snprintf(z_dir, sizeof(z_dir), "%s/ic/z%03d", p->output_dir.c_str(), rank_z);
+                }
                 int mkdir_z = mkdir(z_dir, 0755);
                 if (mkdir_z != 0 && errno != EEXIST) {
                     fprintf(stderr, "Rank %d: ERROR creating directory %s (errno=%d)\n", rank, z_dir, errno);
-                    MPI_Abort(comm_2d, 1);
+                    MPI_Abort(zd_comm_2d, 1);
                 }
                 if (p->qdensity) {
                     char dens_z_dir[PATH_MAX];
@@ -1227,7 +1234,7 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
                     int mkdir_dens_z = mkdir(dens_z_dir, 0755);
                     if (mkdir_dens_z != 0 && errno != EEXIST) {
                         fprintf(stderr, "Rank %d: ERROR creating directory %s (errno=%d)\n", rank, dens_z_dir, errno);
-                        MPI_Abort(comm_2d, 1);
+                        MPI_Abort(zd_comm_2d, 1);
                     }
                 }
             }
@@ -1238,11 +1245,21 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
             for (int s = slab_x_start; s < slab_x_end; s++) {
                 char fp_path[PATH_MAX];
                 if (grid_z > 1) {
-                    snprintf(fp_path, sizeof(fp_path), "%s/ic/z%03d/ic_%04d_z%03d",
-                             p->output_dir.c_str(), rank_z, s, rank_z);
+                    if (zeldovich_ic_embedded) {
+                        snprintf(fp_path, sizeof(fp_path), "%s/z%03d/ic_%04d_z%03d",
+                                 p->output_dir.c_str(), rank_z, s, rank_z);
+                    } else {
+                        snprintf(fp_path, sizeof(fp_path), "%s/ic/z%03d/ic_%04d_z%03d",
+                                 p->output_dir.c_str(), rank_z, s, rank_z);
+                    }
                 } else {
-                    snprintf(fp_path, sizeof(fp_path), "%s/ic/ic_%04d",
-                             p->output_dir.c_str(), s);
+                    if (zeldovich_ic_embedded) {
+                        snprintf(fp_path, sizeof(fp_path), "%s/ic_%04d",
+                                 p->output_dir.c_str(), s);
+                    } else {
+                        snprintf(fp_path, sizeof(fp_path), "%s/ic/ic_%04d",
+                                 p->output_dir.c_str(), s);
+                    }
                 }
                 slab_fp[s - slab_x_start] = fopen(fp_path, "wb");
                 if (!slab_fp[s - slab_x_start]) {
@@ -1266,37 +1283,67 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
                 }
             }
 
+            if (!is_idle_rank && grid_x > 1) {
+                fprintf(stderr,
+                        "[IC_WRITE_DEBUG] MPI_rank=%d (rank_x=%d, rank_z=%d) MODE3 writer ic band "
+                        "file_index in [%d,%d) (%d files) output_dir=%s\n",
+                        rank, rank_x, rank_z, slab_x_start, slab_x_end,
+                        slab_x_end - slab_x_start, p->output_dir.c_str());
+                if (slab_x_end > slab_x_start) {
+                    fprintf(stderr,
+                            "[IC_WRITE_DEBUG] MPI_rank=%d writes ic_%04d .. ic_%04d\n",
+                            rank, slab_x_start, slab_x_end - 1);
+                }
+                fflush(stderr);
+            }
+
             if (rank == 0) {
                 if (grid_z > 1) {
-                    printf("[MODE 3] One file per x-slab and z-rank: cpd=%d, slabs_per_rank=%d, ic/z%%03d/ic_%%04d_z%%03d\n",
-                           cpd, slab_x_end - slab_x_start);
+                    if (zeldovich_ic_embedded) {
+                        printf("[MODE 3] One file per x-slab and z-rank: cpd=%d, slabs_per_rank=%d, z%%03d/ic_%%04d_z%%03d (embedded)\n",
+                               cpd, slab_x_end - slab_x_start);
+                    } else {
+                        printf("[MODE 3] One file per x-slab and z-rank: cpd=%d, slabs_per_rank=%d, ic/z%%03d/ic_%%04d_z%%03d\n",
+                               cpd, slab_x_end - slab_x_start);
+                    }
                 } else {
-                    printf("[MODE 3] One file per x-slab: cpd=%d, slabs_per_rank=%d, ic/ic_%%04d\n",
-                           cpd, slab_x_end - slab_x_start);
+                    if (zeldovich_ic_embedded) {
+                        printf("[MODE 3] One file per x-slab: cpd=%d, slabs_per_rank=%d, ic_%%04d (embedded)\n",
+                               cpd, slab_x_end - slab_x_start);
+                    } else {
+                        printf("[MODE 3] One file per x-slab: cpd=%d, slabs_per_rank=%d, ic/ic_%%04d\n",
+                               cpd, slab_x_end - slab_x_start);
+                    }
                 }
             }
         }
     }
 
-    // MODE 4: z(k)-slab files under ic/z%03d/ (dual of Mode 3 grid_x>1); dirname z_ matches downstream readers
+    // MODE 4: z(k)-slab files under ic/z%03d/ standalone, or z%03d/ when embedded in Abacus
     if (PARTICLE_OUTPUT_MODE == 4 && params != NULL && !is_idle_rank) {
         ZeldovichParameters *p = static_cast<ZeldovichParameters*>(params);
 
-        char ic_dir[PATH_MAX];
-        snprintf(ic_dir, sizeof(ic_dir), "%s/ic", p->output_dir.c_str());
-        int mkdir_ic = mkdir(ic_dir, 0755);
-        if (mkdir_ic != 0 && errno != EEXIST) {
-            fprintf(stderr, "Rank %d: ERROR creating directory %s (errno=%d)\n", rank, ic_dir, errno);
-            MPI_Abort(comm_2d, 1);
+        if (!zeldovich_ic_embedded) {
+            char ic_dir[PATH_MAX];
+            snprintf(ic_dir, sizeof(ic_dir), "%s/ic", p->output_dir.c_str());
+            int mkdir_ic = mkdir(ic_dir, 0755);
+            if (mkdir_ic != 0 && errno != EEXIST) {
+                fprintf(stderr, "Rank %d: ERROR creating directory %s (errno=%d)\n", rank, ic_dir, errno);
+                MPI_Abort(zd_comm_2d, 1);
+            }
         }
 
-        // ic/z%03d/ per rank_x (Abacus "x" split); z_ prefix is on-disk convention only
+        // z%03d/ per rank_x (Abacus "x" split); z_ prefix is on-disk convention only
         char ic_z_subdir[PATH_MAX];
-        snprintf(ic_z_subdir, sizeof(ic_z_subdir), "%s/ic/z%03d", p->output_dir.c_str(), rank_x);
+        if (zeldovich_ic_embedded) {
+            snprintf(ic_z_subdir, sizeof(ic_z_subdir), "%s/z%03d", p->output_dir.c_str(), rank_x);
+        } else {
+            snprintf(ic_z_subdir, sizeof(ic_z_subdir), "%s/ic/z%03d", p->output_dir.c_str(), rank_x);
+        }
         int mkdir_ic_z = mkdir(ic_z_subdir, 0755);
         if (mkdir_ic_z != 0 && errno != EEXIST) {
             fprintf(stderr, "Rank %d: ERROR creating directory %s (errno=%d)\n", rank, ic_z_subdir, errno);
-            MPI_Abort(comm_2d, 1);
+            MPI_Abort(zd_comm_2d, 1);
         }
 
         if (p->qdensity) {
@@ -1305,14 +1352,14 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
             int mkdir_dens = mkdir(dens_dir, 0755);
             if (mkdir_dens != 0 && errno != EEXIST) {
                 fprintf(stderr, "Rank %d: ERROR creating directory %s (errno=%d)\n", rank, dens_dir, errno);
-                MPI_Abort(comm_2d, 1);
+                MPI_Abort(zd_comm_2d, 1);
             }
             char dens_z_subdir[PATH_MAX];
             snprintf(dens_z_subdir, sizeof(dens_z_subdir), "%s/dens/z%03d", p->output_dir.c_str(), rank_x);
             int mkdir_dens_z = mkdir(dens_z_subdir, 0755);
             if (mkdir_dens_z != 0 && errno != EEXIST) {
                 fprintf(stderr, "Rank %d: ERROR creating directory %s (errno=%d)\n", rank, dens_z_subdir, errno);
-                MPI_Abort(comm_2d, 1);
+                MPI_Abort(zd_comm_2d, 1);
             }
         }
 
@@ -1326,8 +1373,13 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
         // Zeldovich-MPI "z" = Abacus "x" T^T
         for (int s = slab_z_start; s < slab_z_end; s++) {
             char fp_path[PATH_MAX];
-            snprintf(fp_path, sizeof(fp_path), "%s/ic/z%03d/ic_%04d_z%03d",
-                     p->output_dir.c_str(), rank_x, s, rank_x);
+            if (zeldovich_ic_embedded) {
+                snprintf(fp_path, sizeof(fp_path), "%s/z%03d/ic_%04d_z%03d",
+                         p->output_dir.c_str(), rank_x, s, rank_x);
+            } else {
+                snprintf(fp_path, sizeof(fp_path), "%s/ic/z%03d/ic_%04d_z%03d",
+                         p->output_dir.c_str(), rank_x, s, rank_x);
+            }
             zslab_fp[s - slab_z_start] = fopen(fp_path, "wb");
             if (!zslab_fp[s - slab_z_start]) {
                 fprintf(stderr, "Rank %d: ERROR opening %s for writing (errno=%d)\n",
@@ -1346,8 +1398,13 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
         }
 
         if (rank == 0) {
-            printf("[MODE 4] z-slab files: cpd=%d, slabs_per_rank=%d, ic/z%%03d/ic_%%04d_z%%03d (and dens/z%%03d/dens_%%04d if qdensity)\n",
-                   cpd, slab_z_end - slab_z_start);
+            if (zeldovich_ic_embedded) {
+                printf("[MODE 4] z-slab files: cpd=%d, slabs_per_rank=%d, z%%03d/ic_%%04d_z%%03d (embedded; dens/z%%03d/dens_%%04d if qdensity)\n",
+                       cpd, slab_z_end - slab_z_start);
+            } else {
+                printf("[MODE 4] z-slab files: cpd=%d, slabs_per_rank=%d, ic/z%%03d/ic_%%04d_z%%03d (and dens/z%%03d/dens_%%04d if qdensity)\n",
+                       cpd, slab_z_end - slab_z_start);
+            }
         }
     }
 
@@ -1363,14 +1420,14 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
             (fftw_complex_t**)calloc((size_t)num_threads, sizeof(fftw_complex_t*));
         if (thread_1d_bufs == NULL) {
             fprintf(stderr, "Rank %d: calloc failed for thread_1d_bufs\n", rank);
-            MPI_Abort(comm_2d, 1);
+            MPI_Abort(zd_comm_2d, 1);
         }
         // each thread gets aligned buffer of size PPD for 1D FFT
         for (int t = 0; t < num_threads; t++) {
             if (posix_memalign((void**)&thread_1d_bufs[t], ALIGN_BYTES,
                                sizeof(fftw_complex_t) * (size_t)N) != 0) {
                 fprintf(stderr, "Rank %d: posix_memalign failed for thread_1d_bufs[%d]\n", rank, t);
-                MPI_Abort(comm_2d, 1);
+                MPI_Abort(zd_comm_2d, 1);
             }
         }
         const int num_thread_bufs = num_threads;
@@ -1644,24 +1701,38 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
                             total_bytes_written += (size_t)N * N * sizeof(float);
                     } else {
                         // ===========================================================================
-                        // grid_x>1: x-slab format — one segment per slab per z
+                        // grid_x>1: ic_s is Abacus x-slab s; per z append to every ic_s in rank band
                         // ===========================================================================
                         for (int s = slab_x_start; s < slab_x_end; s++) {
                             FILE *fp = slab_fp[s - slab_x_start];
-                            FILE *fp_dens = slab_dens_fp[s - slab_x_start];
-                            if (fp == NULL) continue;
-
-                            AppendSlabZSegment(
-                                fp, fp_dens, s, cpd, z,
-                                my_extended_bounds.core.x_start, x_count,
-                                local_z_slab, N, narray,
-                                *static_cast<ZeldovichParameters*>(params)
-                            );
+                            FILE *fp_dens = (s - slab_x_start < (int)slab_dens_fp.size())
+                                            ? slab_dens_fp[s - slab_x_start] : NULL;
+                            if (fp != NULL) {
+                                if (z == 0) {
+                                    fprintf(stderr,
+                                            "[IC_WRITE_DEBUG] MPI_rank=%d z=%d append ic_%04d\n",
+                                            rank, z, s);
+                                    fflush(stderr);
+                                }
+                                AppendSlabZSegment(
+                                    fp, fp_dens, s, cpd, z,
+                                    my_extended_bounds.core.x_start, x_count,
+                                    local_z_slab, N, narray,
+                                    *static_cast<ZeldovichParameters*>(params)
+                                );
+                            }
+                            int firstx = (s * N + cpd - 1) / cpd;
+                            int lastx  = ((s + 1) * N + cpd - 1) / cpd;
+                            int k_start = my_extended_bounds.core.x_start;
+                            int seg_start = std::max(firstx, k_start);
+                            int seg_end   = std::min(lastx, k_start + x_count);
+                            if (seg_start < seg_end) {
+                                int ox_count = seg_end - seg_start;
+                                total_bytes_written += (size_t)ox_count * N * sizeof(RVZelParticle);
+                                if (static_cast<ZeldovichParameters*>(params)->qdensity)
+                                    total_bytes_written += (size_t)ox_count * N * sizeof(float);
+                            }
                         }
-                        int ox_total = my_extended_bounds.core.x_end - my_extended_bounds.core.x_start;
-                        total_bytes_written += (size_t)ox_total * N * sizeof(RVZelParticle);
-                        if (static_cast<ZeldovichParameters*>(params)->qdensity)
-                            total_bytes_written += (size_t)ox_total * N * sizeof(float);
                     }
                     break;
                 }
@@ -1743,7 +1814,7 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
             }
             files_written = slab_x_end - slab_x_start;
         }
-        MPI_Barrier(comm_2d);
+        MPI_Barrier(zd_comm_2d);
     }
 
     // MODE 4: Close files and set file count
@@ -1755,21 +1826,21 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
             }
         }
         files_written = slab_z_end - slab_z_start;
-        MPI_Barrier(comm_2d);
+        MPI_Barrier(zd_comm_2d);
     }
     
     t_streaming.Stop();
 
     double acc_unpack_max = 0.0, acc_fft_max = 0.0, acc_io_max = 0.0;
-    MPI_Reduce(&acc_unpack, &acc_unpack_max, 1, MPI_DOUBLE, MPI_MAX, 0, comm_2d);
-    MPI_Reduce(&acc_fft, &acc_fft_max, 1, MPI_DOUBLE, MPI_MAX, 0, comm_2d);
-    MPI_Reduce(&acc_io, &acc_io_max, 1, MPI_DOUBLE, MPI_MAX, 0, comm_2d);
+    MPI_Reduce(&acc_unpack, &acc_unpack_max, 1, MPI_DOUBLE, MPI_MAX, 0, zd_comm_2d);
+    MPI_Reduce(&acc_fft, &acc_fft_max, 1, MPI_DOUBLE, MPI_MAX, 0, zd_comm_2d);
+    MPI_Reduce(&acc_io, &acc_io_max, 1, MPI_DOUBLE, MPI_MAX, 0, zd_comm_2d);
     
     int total_files_written;
     size_t total_bytes_all_ranks;
-    MPI_Reduce(&files_written, &total_files_written, 1, MPI_INT, MPI_SUM, 0, comm_2d);
+    MPI_Reduce(&files_written, &total_files_written, 1, MPI_INT, MPI_SUM, 0, zd_comm_2d);
     MPI_Reduce(&total_bytes_written, &total_bytes_all_ranks, 1, MPI_UNSIGNED_LONG, 
-               MPI_SUM, 0, comm_2d);
+               MPI_SUM, 0, zd_comm_2d);
 
     if (rank == 0) {
         printf("[Stage 3] Streaming complete. Time: %.6f s\n", t_streaming.Elapsed());
@@ -1894,30 +1965,15 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
         zeldovich_ps_destroy(ps);
         ps = NULL;
     }
+    TeardownOutput();
     if (params) {
         zeldovich_params_destroy(params);
         params = NULL;
     }
-    
-    // Free persistent thread-local RNG buffers
-// #if PARALLELIZE_Z_LOOP
-//     if (thread_rng_buffers != NULL) {
-//         int max_threads = omp_get_max_threads();
-//         for (int t = 0; t < max_threads; t++) {
-//             free(thread_rng_buffers[t]);
-//         }
-//         free(thread_rng_buffers);
-//         thread_rng_buffers = NULL;
-//     }
-// #endif
-    
+
     // Free PLT eigenmodes if they were loaded
     plt_free_eigenmodes();
-    
-    // Cleanup particle output system
-    if (params != NULL) {
-        TeardownOutput();
-    }
+
     /* Plans destroyed above; tear down threaded FFTW state for given precision (standalone + embedded). */
 #ifdef USE_DOUBLE_PRECISION
     fftw_cleanup_threads();
@@ -1925,9 +1981,9 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
     fftwf_cleanup_threads();
 #endif
 
-    if (comm_2d != MPI_COMM_NULL) {
-        MPI_Comm_free(&comm_2d);
-        comm_2d = MPI_COMM_NULL;
+    if (zd_comm_2d != MPI_COMM_NULL) {
+        MPI_Comm_free(&zd_comm_2d);
+        zd_comm_2d = MPI_COMM_NULL;
     }
 
     if (rank == 0) {

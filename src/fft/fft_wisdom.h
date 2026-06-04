@@ -4,8 +4,8 @@
 #include "../precision.h"
 #include <mpi.h>
 
-// Wisdom file path (relative to cwd), same for wisdom_rank0 and MPI run.
-#define FFTW_WISDOM_FILENAME "fftw_wisdom_float.wisdom"
+// Wisdom file path (relative to cwd), same for wisdom_rank0 / IC_Rank0Wisdom and IC_Run import.
+#define FFTW_WISDOM_FILENAME "fftw_wisdom.wisdom"
 
 #ifdef __cplusplus
 extern "C" {
