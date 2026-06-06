@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stdio.h>
 
 #include <vector>
 
@@ -41,10 +42,12 @@ PowerSpectrum::PowerSpectrum(int n, ZeldovichParameters &param) : SplineFunction
     // seed the rng. a seed of zero uses the current time
     unsigned long int longseed = param.seed;
     block                      = param.ppd / param.numblock;
+    v2rng_count                = 0;
     n_s                        = param.n_s;
 
 #ifdef HAVE_GSL
     v1rng = NULL;
+    v2rng = NULL;
 
     if (param.version == 1) {
         v1rng = new gsl_rng *[block];
@@ -53,16 +56,16 @@ PowerSpectrum::PowerSpectrum(int n, ZeldovichParameters &param) : SplineFunction
             v1rng[i] = gsl_rng_alloc(gsl_rng_mt19937);
             gsl_rng_set(v1rng[i], longseed + i);
         }
-        v2rng = NULL;
     } else
 #endif
     {
         // We'll make ppd/2 independent y-planes
         // But we do so by fast-forwarding the base RNG,
         // so logically this is just a single output stream from the RNG
-        v2rng    = new pcg64[param.ppd / 2];
+        v2rng_count = param.ppd / 2;
+        v2rng       = new pcg64[v2rng_count];
         v2rng[0] = pcg64(longseed);
-        for (int i = 1; i < param.ppd / 2; i++) {
+        for (int i = 1; i < v2rng_count; i++) {
             v2rng[i] = v2rng[i - 1];
             // Each plane is ppd^2 complexes
             v2rng[i].advance(2 * MAX_PPD * MAX_PPD);
@@ -382,11 +385,22 @@ Complx PowerSpectrum::cgauss<2>(double wavenumber, int64_t rng) {
 }
 
 pcg64 PowerSpectrum::get_rng_copy(int64_t rng_index) const {
-    // Return a copy of the RNG for thread-local use
-    // Bounds check to ensure valid index
-    if (v2rng && rng_index >= 0 && rng_index < block) {
+    // Return a copy of the RNG for thread-local use (hermitian OpenMP z-loop).
+    // ZD_Version 2: index is global Y in [0, ppd/2); v2rng has v2rng_count entries.
+    // Do NOT use `block` (ppd/numblock) here — that is the v1 slab height only.
+    if (v2rng && rng_index >= 0 && rng_index < v2rng_count) {
         return v2rng[rng_index];  // PCG64 copy constructor
     }
-    // Return default-constructed PCG if invalid
+    if (v2rng) {
+        static int warned = 0;
+        if (!warned) {
+            fprintf(stderr,
+                    "[RNG-WARNING] get_rng_copy: Y=%lld out of range [0, %d) "
+                    "(v2rng_count=ppd/2; PowerSpectrum.block=ppd/numblock is v1-only). "
+                    "Returning pcg64(0) — hermitian ICs will be wrong for Y >= block.\n",
+                    (long long)rng_index, v2rng_count);
+            warned = 1;
+        }
+    }
     return pcg64(0);
 }
