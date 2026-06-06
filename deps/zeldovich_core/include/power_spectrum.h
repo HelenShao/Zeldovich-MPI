@@ -33,7 +33,8 @@ public:
     double Rnorm;
     double kmax;  // max k in the input PS
     double kmin;  // min (non-zero) k in the input PS
-    int block;
+    int block;         // ppd/numblock — v1 slab height only; NOT v2rng length
+    int v2rng_count;   // ppd/2 when v2rng is active (global Y index range)
     double primordial_norm;
     double n_s;
 
