@@ -154,6 +154,37 @@ void z_streaming_unpack(
     if (acc_unpack != NULL) {
         *acc_unpack += omp_get_wtime() - t0_unpack;
     }
+
+    // ========== DEBUG: Values in local_z_slab after unpack, before 1D Y-FFT ==========
+    // Sparse grid (same as REAL-FFT-DEBUG). For full Y pencils see PRE-Y-PENCIL-DEBUG below.
+    #ifdef DEBUG_RNG_CONSISTENCY
+    if (rank == 0 && z_global < 4) {
+        int just_density_flag = (narray == 1) ? 1 : 0;
+        int max_test_coord = (N <= DEBUG_FULL_PRINT_MAX_N) ? N : 4;
+        for (int x_idx = 0; x_idx < x_count && x_idx < max_test_coord; x_idx++) {
+            int x_global = my_bounds.x_start + x_idx;
+            for (int y = 0; y < max_test_coord && y < N; y++) {
+                real_t re = ZSLAB(0, x_idx, y, N, narray, x_count)[0];
+                real_t im = ZSLAB(0, x_idx, y, N, narray, x_count)[1];
+                fprintf(stderr, "[PRE-Y-FFT-DEBUG] N=%d just_density=%d Z=%d (x,y)=(%d,%d): "
+                        "real(Array0)=%.10e imag(Array0)=%.10e\n",
+                        N, just_density_flag, z_global, x_global, y, (double)re, (double)im);
+            }
+        }
+        // Full Y pencils at (Z,x) in [0,4)^2 for Python Y-IFFT vs 0D REAL-FFT compare script.
+        for (int x_idx = 0; x_idx < x_count && x_idx < max_test_coord; x_idx++) {
+            int x_global = my_bounds.x_start + x_idx;
+            for (int y = 0; y < N; y++) {
+                real_t re = ZSLAB(0, x_idx, y, N, narray, x_count)[0];
+                real_t im = ZSLAB(0, x_idx, y, N, narray, x_count)[1];
+                fprintf(stderr, "[PRE-Y-PENCIL-DEBUG] N=%d just_density=%d Z=%d x=%d y=%d: "
+                        "real(Array0)=%.10e imag(Array0)=%.10e\n",
+                        N, just_density_flag, z_global, x_global, y, (double)re, (double)im);
+            }
+        }
+        fflush(stderr);
+    }
+    #endif
     
     // // ========== DEBUG: Check for Inf values at specific indices BEFORE 1D FFT ==========
     // // Known problematic locations: (j=133, k_local=126), (j=133, k_local=127), (j=134, k_local=0)
@@ -259,32 +290,26 @@ void z_streaming_unpack(
         *acc_fft += omp_get_wtime() - t0_fft;
     }
     
-    // // ========== DEBUG: Extract real(FFT(D + i*F)) or real(FFT(D)) for comparison ==========
-    // // After 3D FFT, Array 0 contains either FFT(D + i*F) or FFT(D) depending on just_density
-    // // Print real parts for test coordinates to compare between runs
-    // // Enable for N <= 16 to match zeldovich code debug output
-    // // Match zeldovich.cpp format: [REAL-FFT-DEBUG] N=%d just_density=%d Z=%d (x,y)=(%d,%d): real(Array0)=%.10e imag(Array0)=%.10e
-    // // Print for all Z slabs (not just z_global == 0) to match previous behavior
-    // // Only print from rank 0 to avoid potential issues with concurrent writes
-    // #if DEBUG_RNG_CONSISTENCY
-    // if (rank == 0 && N <= 16) {
-    //     int just_density_flag = (narray == 1) ? 1 : 0;  // narray == 1 means just_density mode
-    //     int max_test_coord = (N <= 16) ? N : 4;
-    //     for (int x_idx = 0; x_idx < x_count && x_idx < max_test_coord; x_idx++) {
-    //         int x_global = my_bounds.x_start + x_idx;
-    //         for (int y = 0; y < max_test_coord && y < N; y++) {
-    //             // Array 0: Contains FFT(D + i*F) when just_density=false, or FFT(D) when just_density=true
-    //             // Use ZSLAB: (array_idx, x_idx, y, N, narray, x_count)
-    //             real_t re = ZSLAB(0, x_idx, y, N, narray, x_count)[0];
-    //             real_t im = ZSLAB(0, x_idx, y, N, narray, x_count)[1];
-    //             fprintf(stderr, "[REAL-FFT-DEBUG] N=%d just_density=%d Z=%d (x,y)=(%d,%d): "
-    //                     "real(Array0)=%.10e imag(Array0)=%.10e\n",
-    //                     N, just_density_flag, z_global, x_global, y, (double)re, (double)im);
-    //         }
-    //     }
-    //     fflush(stderr);
-    // }
-    // #endif
+    // ========== DEBUG: Extract real(FFT(D + i*F)) or real(FFT(D)) for comparison ==========
+    // Match zeldovich.cpp: first 4 Z slabs, 4x4 (x,y) when N > DEBUG_FULL_PRINT_MAX_N.
+    // Compile with -DDEBUG_RNG_CONSISTENCY=1 (already in Cosm1200 1D PBS MAKE_CFLAGS).
+    #ifdef DEBUG_RNG_CONSISTENCY
+    if (rank == 0 && z_global < 4) {
+        int just_density_flag = (narray == 1) ? 1 : 0;
+        int max_test_coord = (N <= DEBUG_FULL_PRINT_MAX_N) ? N : 4;
+        for (int x_idx = 0; x_idx < x_count && x_idx < max_test_coord; x_idx++) {
+            int x_global = my_bounds.x_start + x_idx;
+            for (int y = 0; y < max_test_coord && y < N; y++) {
+                real_t re = ZSLAB(0, x_idx, y, N, narray, x_count)[0];
+                real_t im = ZSLAB(0, x_idx, y, N, narray, x_count)[1];
+                fprintf(stderr, "[REAL-FFT-DEBUG] N=%d just_density=%d Z=%d (x,y)=(%d,%d): "
+                        "real(Array0)=%.10e imag(Array0)=%.10e\n",
+                        N, just_density_flag, z_global, x_global, y, (double)re, (double)im);
+            }
+        }
+        fflush(stderr);
+    }
+    #endif
     
     // ========== DEBUG: Check for Inf values at specific indices AFTER 1D FFT ==========
     #if DEBUG_PRINTS && !SKIP_VERIFICATION // Always enable for debugging
