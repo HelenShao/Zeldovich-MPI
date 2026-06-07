@@ -18,7 +18,7 @@ ZeldovichParameters::ZeldovichParameters(const char *header_bytes, size_t header
 
 void ZeldovichParameters::set_defaults(void) {
     ppd             = 0;       // Illegal
-    numblock        = 2;       // Ok, but you might not want this!
+    numblock        = 0;       // unset; required only for ZD_Version = 1
     boxsize         = 0;       // Illegal
     Pk_scale        = 1;       // Legal default
     grid_x          = 0;       // Computed at runtime from MPI size and num_z_ranks
@@ -79,7 +79,9 @@ void ZeldovichParameters::register_vars(void) {
     installscalar("BoxSize", boxsize, MUST_DEFINE);
     installscalar("ZD_Pk_scale", Pk_scale, MUST_DEFINE);
     installscalar("NP", np, MUST_DEFINE);
-    installscalar("ZD_NumBlock", numblock, MUST_DEFINE);
+    // Legacy zeldovich-PLT v1 only. Optional: old par files may still set it;
+    // zeldovich-MPI (ZD_Version = 2) ignores the value.
+    installscalar("ZD_NumBlock", numblock, DONT_CARE);
     installscalar("CPD", cpd, MUST_DEFINE);
     installscalar("ZD_NumZRanks", num_z_ranks, MUST_DEFINE);
     installscalar("ZD_qdensity", qdensity, DONT_CARE);
@@ -144,10 +146,25 @@ int ZeldovichParameters::setup() {
     assert(ppd * ppd * ppd == np);
     assert(ppd <= MAX_PPD);
 
-    // NumBlock is only modified in version 1
-    if (version == 1) {
-        // This is critical for random number synchronization among different ppd
+    if (version == 2) {
+        if (numblock > 0) {
+            fmt::print(
+               stderr,
+               "Note: ZD_NumBlock={:d} is ignored for ZD_Version = 2 "
+               "(legacy zeldovich-PLT v1 tuning; not used by zeldovich-MPI).\n",
+               numblock
+            );
+        }
+    } else {
+        // NumBlock is only used in version 1
+        if (numblock <= 0) {
+            fmt::print(stderr,
+                       "*** ERROR: ZD_Version = 1 requires ZD_NumBlock "
+                       "(legacy zeldovich-PLT slab tuning).\n");
+            exit(1);
+        }
         if (k_cutoff != 1.) {
+            // Critical for random number synchronization among different ppd
             int numblock_old = numblock;
             numblock         = numblock * k_cutoff + .5;  // Ensure rounding
             fmt::print(
@@ -163,7 +180,6 @@ int ZeldovichParameters::setup() {
     // Check for illegal values
     assert(!(boxsize <= 0.0));
     assert(!(ppd <= 0));
-    assert(!(numblock <= 0));
     assert(!(Pk_scale <= 0.0));
     assert(!(Pk_norm < 0.0));
 

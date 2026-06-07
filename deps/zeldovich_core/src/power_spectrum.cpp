@@ -41,15 +41,16 @@ PowerSpectrum::PowerSpectrum(int n, ZeldovichParameters &param) : SplineFunction
     // Set up multiple RNGs to support parallelism and over-/down-sampling
     // seed the rng. a seed of zero uses the current time
     unsigned long int longseed = param.seed;
-    block                      = param.ppd / param.numblock;
-    v2rng_count                = 0;
-    n_s                        = param.n_s;
+    block       = 0;
+    v2rng_count = 0;
+    n_s         = param.n_s;
 
 #ifdef HAVE_GSL
     v1rng = NULL;
     v2rng = NULL;
 
     if (param.version == 1) {
+        block = param.ppd / param.numblock;
         v1rng = new gsl_rng *[block];
 
         for (int i = 0; i < block; i++) {
@@ -396,8 +397,8 @@ pcg64 PowerSpectrum::get_rng_copy(int64_t rng_index) const {
         if (!warned) {
             fprintf(stderr,
                     "[RNG-WARNING] get_rng_copy: Y=%lld out of range [0, %d) "
-                    "(v2rng_count=ppd/2; PowerSpectrum.block=ppd/numblock is v1-only). "
-                    "Returning pcg64(0) — hermitian ICs will be wrong for Y >= block.\n",
+                    "(v2rng_count=ppd/2). "
+                    "Returning pcg64(0).\n",
                     (long long)rng_index, v2rng_count);
             warned = 1;
         }

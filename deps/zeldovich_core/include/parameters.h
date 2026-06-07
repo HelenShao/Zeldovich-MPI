@@ -21,8 +21,9 @@ public:
     int grid_x;       // Computed MPI grid in x
     int num_z_ranks;  // User-specified number of ranks along z
     long long int np;
-    int numblock;  // The number of blocks to divide this into.
-    // This must be an even divisor!
+    // Legacy zeldovich-PLT v1 tuning (ZD_NumBlock). Optional in param files;
+    // ignored when ZD_Version = 2 (all zeldovich-MPI / hermitian runs).
+    int numblock;
     double separation;   // boxsize/ppd
     double fundamental;  // 2*PI/boxsize
     double nyquist;      // PI/separation
@@ -72,8 +73,7 @@ public:
     // Version of the algorithm for getting modes from RNG
     // This directly impacts the phases you get out.
     // Use version = 2 unless you need backwards compatibility with old ICs,
-    // in which case use version = 1 (but beware the phases will depend
-    // on ZD_NumBlock)
+    // in which case use version = 1 (requires ZD_NumBlock; phases depend on it)
     int version;
 
     int CornerModes;  // fill modes k > k_Ny. Default: 0.

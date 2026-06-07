@@ -726,68 +726,98 @@ namespace yy {
 #line 727 "subprojects/ParseHeader/phParser.tab.cc" // lalr1.cc:859
     break;
 
-  case 24:
-#line 147 "../subprojects/ParseHeader/src/phParser.yy" // lalr1.cc:859
-    { driver.AddToValStack((yystack_[0].value.y_lli)); }
-#line 733 "subprojects/ParseHeader/phParser.tab.cc" // lalr1.cc:859
-    break;
-
-  case 25:
-#line 149 "../subprojects/ParseHeader/src/phParser.yy" // lalr1.cc:859
-    { driver.AddToValStack((yystack_[0].value.y_float)); }
-#line 739 "subprojects/ParseHeader/phParser.tab.cc" // lalr1.cc:859
-    break;
-
-  case 26:
-#line 151 "../subprojects/ParseHeader/src/phParser.yy" // lalr1.cc:859
-    { driver.AddToValStack(true); }
-#line 745 "subprojects/ParseHeader/phParser.tab.cc" // lalr1.cc:859
-    break;
-
   case 27:
 #line 153 "../subprojects/ParseHeader/src/phParser.yy" // lalr1.cc:859
-    { driver.AddToValStack(false); }
-#line 751 "subprojects/ParseHeader/phParser.tab.cc" // lalr1.cc:859
+    { driver.ReSetValStack((yystack_[0].value.y_lli)); }
+#line 733 "subprojects/ParseHeader/phParser.tab.cc" // lalr1.cc:859
     break;
 
   case 28:
 #line 155 "../subprojects/ParseHeader/src/phParser.yy" // lalr1.cc:859
-    { driver.AddToValStack((yystack_[0].value.y_str)); }
-#line 757 "subprojects/ParseHeader/phParser.tab.cc" // lalr1.cc:859
+    { driver.ReSetValStack((yystack_[0].value.y_float)); }
+#line 739 "subprojects/ParseHeader/phParser.tab.cc" // lalr1.cc:859
     break;
 
   case 29:
 #line 157 "../subprojects/ParseHeader/src/phParser.yy" // lalr1.cc:859
-    { driver.ReSetValStack((yystack_[0].value.y_lli)); }
-#line 763 "subprojects/ParseHeader/phParser.tab.cc" // lalr1.cc:859
+    { driver.ReSetValStack(true); }
+#line 745 "subprojects/ParseHeader/phParser.tab.cc" // lalr1.cc:859
     break;
 
   case 30:
 #line 159 "../subprojects/ParseHeader/src/phParser.yy" // lalr1.cc:859
-    { driver.ReSetValStack((yystack_[0].value.y_float)); }
-#line 769 "subprojects/ParseHeader/phParser.tab.cc" // lalr1.cc:859
+    { driver.ReSetValStack(false); }
+#line 751 "subprojects/ParseHeader/phParser.tab.cc" // lalr1.cc:859
     break;
 
   case 31:
 #line 161 "../subprojects/ParseHeader/src/phParser.yy" // lalr1.cc:859
-    { driver.ReSetValStack(true); }
-#line 775 "subprojects/ParseHeader/phParser.tab.cc" // lalr1.cc:859
+    { driver.ReSetValStack((yystack_[0].value.y_str)); }
+#line 757 "subprojects/ParseHeader/phParser.tab.cc" // lalr1.cc:859
     break;
 
   case 32:
-#line 163 "../subprojects/ParseHeader/src/phParser.yy" // lalr1.cc:859
-    { driver.ReSetValStack(false); }
-#line 781 "subprojects/ParseHeader/phParser.tab.cc" // lalr1.cc:859
+#line 166 "../subprojects/ParseHeader/src/phParser.yy" // lalr1.cc:859
+    { driver.AddToValStack((yystack_[0].value.y_lli)); }
+#line 763 "subprojects/ParseHeader/phParser.tab.cc" // lalr1.cc:859
     break;
 
   case 33:
-#line 165 "../subprojects/ParseHeader/src/phParser.yy" // lalr1.cc:859
-    { driver.ReSetValStack((yystack_[0].value.y_str)); }
+#line 168 "../subprojects/ParseHeader/src/phParser.yy" // lalr1.cc:859
+    { driver.AddToValStack((yystack_[0].value.y_float)); }
+#line 769 "subprojects/ParseHeader/phParser.tab.cc" // lalr1.cc:859
+    break;
+
+  case 34:
+#line 170 "../subprojects/ParseHeader/src/phParser.yy" // lalr1.cc:859
+    { driver.AddToValStack(true); }
+#line 775 "subprojects/ParseHeader/phParser.tab.cc" // lalr1.cc:859
+    break;
+
+  case 35:
+#line 172 "../subprojects/ParseHeader/src/phParser.yy" // lalr1.cc:859
+    { driver.AddToValStack(false); }
+#line 781 "subprojects/ParseHeader/phParser.tab.cc" // lalr1.cc:859
+    break;
+
+  case 36:
+#line 174 "../subprojects/ParseHeader/src/phParser.yy" // lalr1.cc:859
+    { driver.AddToValStack((yystack_[0].value.y_str)); }
 #line 787 "subprojects/ParseHeader/phParser.tab.cc" // lalr1.cc:859
     break;
 
+  case 37:
+#line 176 "../subprojects/ParseHeader/src/phParser.yy" // lalr1.cc:859
+    { driver.ReSetValStack((yystack_[0].value.y_lli)); }
+#line 793 "subprojects/ParseHeader/phParser.tab.cc" // lalr1.cc:859
+    break;
 
-#line 791 "subprojects/ParseHeader/phParser.tab.cc" // lalr1.cc:859
+  case 38:
+#line 178 "../subprojects/ParseHeader/src/phParser.yy" // lalr1.cc:859
+    { driver.ReSetValStack((yystack_[0].value.y_float)); }
+#line 799 "subprojects/ParseHeader/phParser.tab.cc" // lalr1.cc:859
+    break;
+
+  case 39:
+#line 180 "../subprojects/ParseHeader/src/phParser.yy" // lalr1.cc:859
+    { driver.ReSetValStack(true); }
+#line 805 "subprojects/ParseHeader/phParser.tab.cc" // lalr1.cc:859
+    break;
+
+  case 40:
+#line 182 "../subprojects/ParseHeader/src/phParser.yy" // lalr1.cc:859
+    { driver.ReSetValStack(false); }
+#line 811 "subprojects/ParseHeader/phParser.tab.cc" // lalr1.cc:859
+    break;
+
+  case 41:
+#line 184 "../subprojects/ParseHeader/src/phParser.yy" // lalr1.cc:859
+    { driver.ReSetValStack((yystack_[0].value.y_str)); }
+#line 817 "subprojects/ParseHeader/phParser.tab.cc" // lalr1.cc:859
+    break;
+
+
+#line 821 "subprojects/ParseHeader/phParser.tab.cc" // lalr1.cc:859
             default:
               break;
             }
@@ -1042,92 +1072,94 @@ namespace yy {
   }
 
 
-  const signed char  phParser ::yypact_ninf_ = -6;
+  const signed char  phParser ::yypact_ninf_ = -11;
 
   const signed char  phParser ::yytable_ninf_ = -1;
 
   const signed char
    phParser ::yypact_[] =
   {
-      15,     1,    -6,    81,    23,    81,    -1,     6,     9,     3,
-      -6,    81,    -6,    -6,    -6,    -6,    -6,    -6,    -6,    33,
-      81,    40,    47,     6,    -6,    54,     4,    -6,    -6,    81,
-      -6,    61,    -6,    -6,    -6,    -6,    -6,    -6,    68,    -6,
-      -6,    75,    -6,    -6,    -6,    -6,    -6,    -6,    -6,    -6,
-      -6,    -6,    -6
+      15,     4,   -11,    39,    29,    39,     6,     9,    11,     3,
+     -11,    39,   -11,   -11,   -11,   -11,   -11,   -11,   -11,    23,
+      21,   -11,    39,    28,    36,     9,   -11,    50,    37,   -11,
+     -11,    39,   -11,    44,   -11,   -11,   -11,   -11,   -11,   -11,
+     -10,   -11,    46,   -11,   -11,    57,   -11,   -11,   -11,   -11,
+     -11,   -11,   -11,   -11,   -11,   -11,    63,   -11,   -11,   -11,
+     -11,   -11,   -11,   -11
   };
 
   const unsigned char
    phParser ::yydefact_[] =
   {
        0,     0,    12,     0,     0,     0,     0,     0,     0,     0,
-       3,     0,     5,     4,    32,    30,    33,    29,    31,     0,
-       0,     0,     0,     0,    19,     0,     0,     1,     2,     6,
-      15,     0,    10,    27,    25,    28,    24,    26,     0,     9,
-      11,     0,    13,    23,    21,    18,    20,    22,     8,    14,
-      16,    17,     7
+       3,     0,     5,     4,    30,    28,    31,    27,    29,     0,
+       0,    24,     0,     0,     0,     0,    19,     0,     0,     1,
+       2,     6,    15,     0,    40,    38,    41,    37,    39,    26,
+       0,    10,     0,     9,    11,     0,    13,    23,    21,    18,
+      20,    22,     8,    14,    16,    25,     0,    17,     7,    35,
+      33,    36,    32,    34
   };
 
   const signed char
    phParser ::yypgoto_[] =
   {
-      -6,    -6,    10,    -6,    -6,    -5,    -6,     8,    -3
+     -11,   -11,    41,   -11,   -11,    20,   -11,    33,    -3,   -11,
+     -11
   };
 
   const signed char
    phParser ::yydefgoto_[] =
   {
-      -1,     9,    10,    11,    29,    30,    12,    25,    31
+      -1,     9,    10,    11,    31,    32,    12,    27,    33,    21,
+      40
   };
 
   const unsigned char
    phParser ::yytable_[] =
   {
-      19,    21,    22,    27,    13,    23,     2,    48,     3,     4,
-       5,     6,    24,     7,     8,    26,     1,    38,     2,    28,
-       3,     4,     5,     6,    49,     7,     8,    14,    15,    16,
-      17,    41,    18,     0,     0,    20,    32,    33,    34,    35,
-      36,     0,    37,    39,    33,    34,    35,    36,     0,    37,
-      40,    33,    34,    35,    36,     0,    37,    42,    43,    44,
-      45,    46,     0,    47,    50,    33,    34,    35,    36,     0,
-      37,    51,    33,    34,    35,    36,     0,    37,    52,    43,
-      44,    45,    46,     0,    47,    14,    15,    16,    17,     0,
-      18
+      20,    23,    24,    29,    55,    56,     2,    13,     3,     4,
+       5,     6,    25,     7,     8,    26,     1,    28,     2,    42,
+       3,     4,     5,     6,    41,     7,     8,    34,    35,    36,
+      37,    43,    38,    14,    15,    16,    17,    39,    18,    44,
+      52,    22,    19,    14,    15,    16,    17,    54,    18,    57,
+      30,    53,    19,    46,    47,    48,    49,    50,    45,    51,
+      58,    47,    48,    49,    50,     0,    51,    59,    60,    61,
+      62,     0,    63
   };
 
   const signed char
    phParser ::yycheck_[] =
   {
-       3,     4,     5,     0,     3,     6,     3,     3,     5,     6,
-       7,     8,     6,    10,    11,     6,     1,    20,     3,     9,
-       5,     6,     7,     8,    29,    10,    11,     4,     5,     6,
-       7,    23,     9,    -1,    -1,    12,     3,     4,     5,     6,
-       7,    -1,     9,     3,     4,     5,     6,     7,    -1,     9,
-       3,     4,     5,     6,     7,    -1,     9,     3,     4,     5,
-       6,     7,    -1,     9,     3,     4,     5,     6,     7,    -1,
-       9,     3,     4,     5,     6,     7,    -1,     9,     3,     4,
-       5,     6,     7,    -1,     9,     4,     5,     6,     7,    -1,
-       9
+       3,     4,     5,     0,    14,    15,     3,     3,     5,     6,
+       7,     8,     6,    10,    11,     6,     1,     6,     3,    22,
+       5,     6,     7,     8,     3,    10,    11,     4,     5,     6,
+       7,     3,     9,     4,     5,     6,     7,    14,     9,     3,
+       3,    12,    13,     4,     5,     6,     7,     3,     9,     3,
+       9,    31,    13,     3,     4,     5,     6,     7,    25,     9,
+       3,     4,     5,     6,     7,    -1,     9,     4,     5,     6,
+       7,    -1,     9
   };
 
   const unsigned char
    phParser ::yystos_[] =
   {
-       0,     1,     3,     5,     6,     7,     8,    10,    11,    14,
-      15,    16,    19,     3,     4,     5,     6,     7,     9,    21,
-      12,    21,    21,     6,     6,    20,     6,     0,    15,    17,
-      18,    21,     3,     4,     5,     6,     7,     9,    21,     3,
-       3,    20,     3,     4,     5,     6,     7,     9,     3,    18,
-       3,     3,     3
+       0,     1,     3,     5,     6,     7,     8,    10,    11,    17,
+      18,    19,    22,     3,     4,     5,     6,     7,     9,    13,
+      24,    25,    12,    24,    24,     6,     6,    23,     6,     0,
+      18,    20,    21,    24,     4,     5,     6,     7,     9,    14,
+      26,     3,    24,     3,     3,    23,     3,     4,     5,     6,
+       7,     9,     3,    21,     3,    14,    15,     3,     3,     4,
+       5,     6,     7,     9
   };
 
   const unsigned char
    phParser ::yyr1_[] =
   {
-       0,    13,    14,    14,    14,    15,    15,    15,    15,    15,
-      15,    15,    15,    16,    17,    17,    18,    19,    20,    20,
-      20,    20,    20,    20,    21,    21,    21,    21,    21,    21,
-      21,    21,    21,    21
+       0,    16,    17,    17,    17,    18,    18,    18,    18,    18,
+      18,    18,    18,    19,    20,    20,    21,    22,    23,    23,
+      23,    23,    23,    23,    24,    24,    24,    25,    25,    25,
+      25,    25,    26,    26,    26,    26,    26,    26,    26,    26,
+      26,    26
   };
 
   const unsigned char
@@ -1135,8 +1167,9 @@ namespace yy {
   {
        0,     2,     2,     1,     2,     1,     2,     4,     3,     3,
        3,     3,     1,     3,     2,     1,     2,     4,     2,     1,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     1,
-       1,     1,     1,     1
+       2,     2,     2,     2,     1,     3,     2,     1,     1,     1,
+       1,     1,     3,     3,     3,     3,     3,     1,     1,     1,
+       1,     1
   };
 
 
@@ -1148,9 +1181,10 @@ namespace yy {
   {
   "\"end of file\"", "error", "$undefined", "EOS", "FALSEval",
   "\"floating-point value\"", "\"string\"", "\"integer value\"",
-  "MAPVARkey", "TRUEval", "VECTOR", "VCOUNTER", "'='", "$accept",
-  "gen_stmt_list", "gen_stmt", "vec_start", "vec_list", "vec_stmt",
-  "id_stmt", "id_list", "value_list", YY_NULLPTR
+  "MAPVARkey", "TRUEval", "VECTOR", "VCOUNTER", "'='", "'['", "']'", "','",
+  "$accept", "gen_stmt_list", "gen_stmt", "vec_start", "vec_list",
+  "vec_stmt", "id_stmt", "id_list", "value_list", "single_value",
+  "bracket_values", YY_NULLPTR
   };
 
 #if YYDEBUG
@@ -1159,8 +1193,9 @@ namespace yy {
   {
        0,    75,    75,    76,    77,    81,    83,    85,    88,    91,
       97,   103,   109,   113,   117,   118,   121,   126,   131,   133,
-     135,   137,   139,   141,   146,   148,   150,   152,   154,   156,
-     158,   160,   162,   164
+     135,   137,   139,   141,   146,   147,   148,   152,   154,   156,
+     158,   160,   165,   167,   169,   171,   173,   175,   177,   179,
+     181,   183
   };
 
   // Print the state stack on the debug stream.
@@ -1205,12 +1240,12 @@ namespace yy {
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,    15,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,    12,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,    13,     2,    14,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
@@ -1242,8 +1277,8 @@ namespace yy {
 
 
 } // yy
-#line 1246 "subprojects/ParseHeader/phParser.tab.cc" // lalr1.cc:1167
-#line 168 "../subprojects/ParseHeader/src/phParser.yy" // lalr1.cc:1168
+#line 1281 "subprojects/ParseHeader/phParser.tab.cc" // lalr1.cc:1167
+#line 187 "../subprojects/ParseHeader/src/phParser.yy" // lalr1.cc:1168
 
 
 // the error member function registers the errors to the driver. 
