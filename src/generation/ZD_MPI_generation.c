@@ -311,10 +311,16 @@ void generate_zd_mpi_slice_pair_local(
             int _tid = omp_get_thread_num();
             local_rng_buf = malloc(_rng_size);
             _rng_bufs[_tid] = local_rng_buf;
-            zeldovich_ps_get_rng_copy(ps_handle, global_y, local_rng_buf);
-            int64_t vstart = compute_virtual_position(z, 0, N, Nhalf) / 2;
-            if (vstart > 0)
-                zeldovich_ps_advance_rng_buffer(local_rng_buf, vstart);
+            // Serial zeldovich never uses v2rng[N/2]; that Y plane is zeroed post-FFT.
+            // Here every mode has abs(ky)==N/2, so the z-loop only accumulates nskip (no cgauss).
+            if (global_y != Nhalf) {
+                zeldovich_ps_get_rng_copy(ps_handle, global_y, local_rng_buf);
+                int64_t vstart = compute_virtual_position(z, 0, N, Nhalf) / 2;
+                if (vstart > 0)
+                    zeldovich_ps_advance_rng_buffer(local_rng_buf, vstart);
+            } else {
+                memset(local_rng_buf, 0, _rng_size);
+            }
             _rng_ready = 1;
 
             int prev_value;
@@ -743,7 +749,8 @@ void generate_zd_mpi_slice_pair_local(
     // See zeldovich.cpp: Pk.v2rng[y].advance(2 * nskip)
     // Ensures that exactly MAX_PPD * MAX_PPD complex numbers (2 * MAX_PPD * MAX_PPD real numbers)
     // were consumed/skipped for this y-row
-    if (nskip > 0) {
+    // Y=N/2 has no v2rng slot in serial zeldovich (plane zeroed, not drawn).
+    if (nskip > 0 && global_y != Nhalf) {
         if (ps_handle != NULL && params_handle != NULL) {
             int64_t rng_index = global_y;
             zeldovich_ps_advance_rng(ps_handle, params_handle, rng_index, nskip);
