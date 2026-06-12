@@ -23,6 +23,7 @@ void ZeldovichParameters::set_defaults(void) {
     Pk_scale        = 1;       // Legal default
     grid_x          = 0;       // Computed at runtime from MPI size and num_z_ranks
     num_z_ranks     = 0;       // Must be specified for MPI-Zeldovich writer
+    abacus_num_z_ranks = 0;    // Abacus NumZRanks (MUST_DEFINE in combined par files)
     qdensity        = 0;       // Legal default
     qascii          = 0;       // Legal default
     qoneslab        = -1;      // Legal default
@@ -84,6 +85,7 @@ void ZeldovichParameters::register_vars(void) {
     installscalar("ZD_NumBlock", numblock, DONT_CARE);
     installscalar("CPD", cpd, MUST_DEFINE);
     installscalar("ZD_NumZRanks", num_z_ranks, MUST_DEFINE);
+    installscalar("NumZRanks", abacus_num_z_ranks, MUST_DEFINE);
     installscalar("ZD_qdensity", qdensity, DONT_CARE);
     installscalar("ZD_qoneslab", qoneslab, DONT_CARE);
     installscalar("ZD_Seed", seed, MUST_DEFINE);

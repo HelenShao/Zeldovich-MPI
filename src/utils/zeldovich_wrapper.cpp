@@ -83,6 +83,12 @@ int zeldovich_params_get_NumZRanks(ParametersHandle params) {
     return p->num_z_ranks;
 }
 
+int abacus_params_get_NumZRanks(ParametersHandle params) {
+    if (!params) return 0;
+    ZeldovichParameters* p = static_cast<ZeldovichParameters*>(params);
+    return p->abacus_num_z_ranks;
+}
+
 int zeldovich_params_get_seed(ParametersHandle params) {
     if (!params) return 0;
     ZeldovichParameters* p = static_cast<ZeldovichParameters*>(params);

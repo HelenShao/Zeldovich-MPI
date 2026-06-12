@@ -275,7 +275,7 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
     // grid_x = num_ranks / grid_z; // set equal to number abacus zranks 
     
     // make this change:
-    grid_x = abacus_params_get_NumZRanks(params);
+    grid_x = abacus_params_get_NumZRanks(params); // third transpose! before it was ZD z ranks!
     grid_z = num_ranks / grid_x;
 
     // When integrated in abacus, InitParallelTopology() in multistep will

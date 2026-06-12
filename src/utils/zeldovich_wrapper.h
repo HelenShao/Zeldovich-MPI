@@ -49,8 +49,11 @@ int64_t zeldovich_params_get_ppd(ParametersHandle params);
 // Get cpd (coarse particle decomposition; number of slabs for output alignment)
 int zeldovich_params_get_cpd(ParametersHandle params);
 
-// Get user-specified number of ranks along z
+// Get user-specified number of ranks along z (ZD_NumZRanks)
 int zeldovich_params_get_NumZRanks(ParametersHandle params);
+
+// Get Abacus NumZRanks (no ZD_ prefix): z-dimension ranks in Abacus 2D decomposition
+int abacus_params_get_NumZRanks(ParametersHandle params);
 
 // Get seed
 int zeldovich_params_get_seed(ParametersHandle params);

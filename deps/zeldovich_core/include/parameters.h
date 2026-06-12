@@ -19,7 +19,8 @@ public:
     int64_t ppd;  // The size of the simulation grid to generate
     int cpd;
     int grid_x;       // Computed MPI grid in x
-    int num_z_ranks;  // User-specified number of ranks along z
+    int num_z_ranks;  // ZD_NumZRanks: Zeldovich MPI grid along z
+    int abacus_num_z_ranks;  // Abacus NumZRanks (no ZD_ prefix): z-dimension ranks in Abacus 2D decomposition
     long long int np;
     // Legacy zeldovich-PLT v1 tuning (ZD_NumBlock). Optional in param files;
     // ignored when ZD_Version = 2 (all zeldovich-MPI / hermitian runs).
