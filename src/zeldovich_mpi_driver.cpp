@@ -270,21 +270,40 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
     // MPI Cartesian Topology Setup (grid_z from param file, grid_x from MPI size)
     // ========================================================================
     int grid_x, grid_z;
-    grid_z = zeldovich_params_get_NumZRanks(params);
-    grid_x = num_ranks / grid_z;
+    // old code:
+    // grid_z = zeldovich_params_get_NumZRanks(params);
+    // grid_x = num_ranks / grid_z; // set equal to number abacus zranks 
+    
+    // make this change:
+    grid_x = abacus_params_get_NumZRanks(params);
+    grid_z = num_ranks / grid_x;
 
     // When integrated in abacus, InitParallelTopology() in multistep will
     // assert that grid_z == MPI_SIZE/NumZRanks.
 
-    if (num_ranks % grid_z != 0) {
+    // old code:
+    // if (num_ranks % grid_z != 0) {
+    //     if (world_rank == 0) {
+    //         fprintf(stderr, "Error: num_ranks=%d is not evenly divisible by ZD_NumZRanks=%d.\n",
+    //                 num_ranks, grid_z);
+    //     }
+    //     MPI_Abort(MPI_COMM_WORLD, 1);
+    // }
+
+    // new change:
+    if (num_ranks % grid_x != 0) {
         if (world_rank == 0) {
-            fprintf(stderr, "Error: num_ranks=%d is not evenly divisible by ZD_NumZRanks=%d.\n",
-                    num_ranks, grid_z);
+            fprintf(stderr, "Error: num_ranks=%d is not evenly divisible by NumZRanks=%d.\n",
+                    num_ranks, grid_x);
         }
         MPI_Abort(MPI_COMM_WORLD, 1);
     }
 
-    int dims[2] = { grid_x, grid_z };
+    // old code:
+    // int dims[2] = { grid_x, grid_z };
+
+    // new change:
+    int dims[2] = { grid_z, grid_x }; //made this change
     int periodic[2] = { 1, 1 };
     int reorder = 1;
 
@@ -1126,7 +1145,7 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
         MPI_Abort(zd_comm_2d, 1);
     }
 #endif
-    // Process one Z-slab at a time (Zeldovich-compatible)
+    // Process one Z-slab at a time 
     int files_written = 0;
     size_t total_bytes_written = 0;
     
@@ -1396,6 +1415,15 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
                 }
             }
         }
+
+        fprintf(stderr,
+            "[IC_WRITE_DEBUG] Zeldovich writer: world_rank=%d comm_2d_rank=%d "
+            "cart(rank_x=%d, rank_z=%d) embedded=%d -> %s/ic_%%04d_z%03d "
+            "slabs [%d,%d) (%d files)\n",
+            world_rank, rank, rank_x, rank_z, zeldovich_ic_embedded ? 1 : 0,
+            ic_z_subdir, rank_x,
+            slab_z_start, slab_z_end, slab_z_end - slab_z_start);
+        fflush(stderr);
 
         if (rank == 0) {
             if (zeldovich_ic_embedded) {
