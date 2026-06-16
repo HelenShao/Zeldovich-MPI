@@ -1172,8 +1172,8 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
             // Each z-rank writes CPD/grid_z files: ic_{file_index:04d}
             // file_index = z * CPD / N, each file holds N/CPD z-planes.
             // ---------------------------------------------------------------
-            int s_z_start = (rank_z * cpd) / grid_z;
-            int s_z_end   = ((rank_z + 1) * cpd) / grid_z;
+            int s_z_start = (rank_z * cpd) / grid_z; //might change
+            int s_z_end   = ((rank_z + 1) * cpd) / grid_z; //might change
             zgrp_start = s_z_start;
             zgrp_end   = s_z_end;
 
@@ -1354,10 +1354,18 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
 
         // z%03d/ per rank_x (Abacus "x" split); z_ prefix is on-disk convention only
         char ic_z_subdir[PATH_MAX];
+        // old code:
+        // if (zeldovich_ic_embedded) {
+        //     snprintf(ic_z_subdir, sizeof(ic_z_subdir), "%s/z%03d", p->output_dir.c_str(), rank_x);
+        // } else {
+        //     snprintf(ic_z_subdir, sizeof(ic_z_subdir), "%s/ic/z%03d", p->output_dir.c_str(), rank_x);
+        // }
+
+        // new change:
         if (zeldovich_ic_embedded) {
-            snprintf(ic_z_subdir, sizeof(ic_z_subdir), "%s/z%03d", p->output_dir.c_str(), rank_x);
+            snprintf(ic_z_subdir, sizeof(ic_z_subdir), "%s/z%03d", p->output_dir.c_str(), rank_z);
         } else {
-            snprintf(ic_z_subdir, sizeof(ic_z_subdir), "%s/ic/z%03d", p->output_dir.c_str(), rank_x);
+            snprintf(ic_z_subdir, sizeof(ic_z_subdir), "%s/ic/z%03d", p->output_dir.c_str(), rank_z);
         }
         int mkdir_ic_z = mkdir(ic_z_subdir, 0755);
         if (mkdir_ic_z != 0 && errno != EEXIST) {
@@ -1374,7 +1382,10 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
                 MPI_Abort(zd_comm_2d, 1);
             }
             char dens_z_subdir[PATH_MAX];
-            snprintf(dens_z_subdir, sizeof(dens_z_subdir), "%s/dens/z%03d", p->output_dir.c_str(), rank_x);
+            // old code:
+            // snprintf(dens_z_subdir, sizeof(dens_z_subdir), "%s/dens/z%03d", p->output_dir.c_str(), rank_x);
+            // new change:
+            snprintf(dens_z_subdir, sizeof(dens_z_subdir), "%s/dens/z%03d", p->output_dir.c_str(), rank_z);
             int mkdir_dens_z = mkdir(dens_z_subdir, 0755);
             if (mkdir_dens_z != 0 && errno != EEXIST) {
                 fprintf(stderr, "Rank %d: ERROR creating directory %s (errno=%d)\n", rank, dens_z_subdir, errno);
@@ -1382,9 +1393,16 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
             }
         }
 
-        // Z(k)-slab ownership: partition cpd z-slabs among z(k)-ranks
-        slab_z_start = (rank_z * cpd) / grid_z;
-        slab_z_end   = ((rank_z + 1) * cpd) / grid_z;
+        // old code:
+        // // Z(k)-slab ownership: partition cpd z-slabs among z(k)-ranks
+        // slab_z_start = (rank_z * cpd) / grid_z;
+        // slab_z_end   = ((rank_z + 1) * cpd) / grid_z;
+
+        // new change:
+        // Slab band follows rank_x (Abacus x-decomposition), NOT rank_z.
+        // rank_x = coords[0] ranges over dims[0] = grid_z (= num_ranks/NumZRanks = MPI_size_x).
+        slab_z_start = (rank_x * cpd) / grid_z;
+        slab_z_end   = ((rank_x + 1) * cpd) / grid_z;
 
         zslab_fp.resize(slab_z_end - slab_z_start, NULL);
         zslab_dens_fp.resize(slab_z_end - slab_z_start, NULL);
@@ -1393,11 +1411,18 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
         for (int s = slab_z_start; s < slab_z_end; s++) {
             char fp_path[PATH_MAX];
             if (zeldovich_ic_embedded) {
-                snprintf(fp_path, sizeof(fp_path), "%s/z%03d/ic_%04d_z%03d",
-                         p->output_dir.c_str(), rank_x, s, rank_x);
+                // old code:
+                // snprintf(fp_path, sizeof(fp_path), "%s/z%03d/ic_%04d_z%03d",
+                //          p->output_dir.c_str(), rank_x, s, rank_x);
+                // new change:
+                snprintf(fp_path, sizeof(fp_path), "%s/z%03d/ic_%04d_z%03d", p->output_dir.c_str(), rank_z, s, rank_z);
             } else {
+                // old code:
+                // snprintf(fp_path, sizeof(fp_path), "%s/ic/z%03d/ic_%04d_z%03d",
+                //          p->output_dir.c_str(), rank_x, s, rank_x);
+                // new change:
                 snprintf(fp_path, sizeof(fp_path), "%s/ic/z%03d/ic_%04d_z%03d",
-                         p->output_dir.c_str(), rank_x, s, rank_x);
+                         p->output_dir.c_str(), rank_z, s, rank_z);
             }
             zslab_fp[s - slab_z_start] = fopen(fp_path, "wb");
             if (!zslab_fp[s - slab_z_start]) {
@@ -1406,8 +1431,12 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
             }
             if (p->qdensity && zslab_fp[s - slab_z_start] != NULL) {
                 char fd_path[PATH_MAX];
+                // old code:
+                // snprintf(fd_path, sizeof(fd_path), "%s/dens/z%03d/dens_%04d",
+                //          p->output_dir.c_str(), rank_x, s);
+                // new change:
                 snprintf(fd_path, sizeof(fd_path), "%s/dens/z%03d/dens_%04d",
-                         p->output_dir.c_str(), rank_x, s);
+                         p->output_dir.c_str(), rank_z, s);
                 zslab_dens_fp[s - slab_z_start] = fopen(fd_path, "wb");
                 if (!zslab_dens_fp[s - slab_z_start]) {
                     fprintf(stderr, "Rank %d: ERROR opening %s for density (errno=%d)\n",
@@ -1416,12 +1445,23 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
             }
         }
 
+        // old code:
+        // fprintf(stderr,
+        //     "[IC_WRITE_DEBUG] Zeldovich writer: world_rank=%d comm_2d_rank=%d "
+        //     "cart(rank_x=%d, rank_z=%d) embedded=%d -> %s/ic_%%04d_z%03d "
+        //     "slabs [%d,%d) (%d files)\n",
+        //     world_rank, rank, rank_x, rank_z, zeldovich_ic_embedded ? 1 : 0,
+        //     ic_z_subdir, rank_x,
+        //     slab_z_start, slab_z_end, slab_z_end - slab_z_start);
+        // fflush(stderr);
+
+        // new change:
         fprintf(stderr,
             "[IC_WRITE_DEBUG] Zeldovich writer: world_rank=%d comm_2d_rank=%d "
             "cart(rank_x=%d, rank_z=%d) embedded=%d -> %s/ic_%%04d_z%03d "
             "slabs [%d,%d) (%d files)\n",
             world_rank, rank, rank_x, rank_z, zeldovich_ic_embedded ? 1 : 0,
-            ic_z_subdir, rank_x,
+            ic_z_subdir, rank_z,
             slab_z_start, slab_z_end, slab_z_end - slab_z_start);
         fflush(stderr);
 
