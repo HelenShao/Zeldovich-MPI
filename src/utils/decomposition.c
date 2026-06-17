@@ -99,9 +99,16 @@ GridBounds get_grid_bounds_CPD_aligned(int dest, int N, int num_ranks,
         return get_grid_bounds(dest, N, num_ranks);
     }
 
+    // old code:
     // Row-major: dest = x_block * grid_z + z_block
-    int x_block = dest / grid_z;
-    int z_block = dest % grid_z;
+    // int x_block = dest / grid_z;
+    // int z_block = dest % grid_z;
+
+    // new code:
+    // Match MPI cart (dims={grid_z, grid_x}, row-major): dest = rank_x*grid_x + rank_z
+    // Zeldovich-x (x_block) = Abacus z-dir (rank_z); Zeldovich-z (z_block) = Abacus slab (rank_x)
+    int x_block = dest % grid_x;   // = rank_z, range [0, grid_x)
+    int z_block = dest / grid_x;   // = rank_x, range [0, grid_z)
 
     // CPD-aligned: slab indices [s_x_start, s_x_end) exclusive
     int s_x_start = (x_block * cpd) / grid_x;
