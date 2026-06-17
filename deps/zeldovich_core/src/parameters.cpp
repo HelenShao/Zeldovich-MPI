@@ -21,8 +21,8 @@ void ZeldovichParameters::set_defaults(void) {
     numblock        = 0;       // unset; required only for ZD_Version = 1
     boxsize         = 0;       // Illegal
     Pk_scale        = 1;       // Legal default
-    grid_x          = 0;       // Computed at runtime from MPI size and num_z_ranks
-    num_z_ranks     = 0;       // Must be specified for MPI-Zeldovich writer
+    grid_x          = 0;       // Computed at runtime from MPI size and NumZRanks
+    num_z_ranks     = 0;       // Legacy ZD_NumZRanks; optional, unused by zeldovich-MPI grid
     abacus_num_z_ranks = 0;    // Abacus NumZRanks (MUST_DEFINE in combined par files)
     qdensity        = 0;       // Legal default
     qascii          = 0;       // Legal default
@@ -84,7 +84,8 @@ void ZeldovichParameters::register_vars(void) {
     // zeldovich-MPI (ZD_Version = 2) ignores the value.
     installscalar("ZD_NumBlock", numblock, DONT_CARE);
     installscalar("CPD", cpd, MUST_DEFINE);
-    installscalar("ZD_NumZRanks", num_z_ranks, MUST_DEFINE);
+    // Legacy name; grid topology uses NumZRanks (abacus_num_z_ranks). Old par files may still set it.
+    installscalar("ZD_NumZRanks", num_z_ranks, DONT_CARE);
     installscalar("NumZRanks", abacus_num_z_ranks, MUST_DEFINE);
     installscalar("ZD_qdensity", qdensity, DONT_CARE);
     installscalar("ZD_qoneslab", qoneslab, DONT_CARE);
