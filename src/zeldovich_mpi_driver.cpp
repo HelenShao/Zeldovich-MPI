@@ -1172,8 +1172,16 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
             // Each z-rank writes CPD/grid_z files: ic_{file_index:04d}
             // file_index = z * CPD / N, each file holds N/CPD z-planes.
             // ---------------------------------------------------------------
-            int s_z_start = (rank_z * cpd) / grid_z; //might change
-            int s_z_end   = ((rank_z + 1) * cpd) / grid_z; //might change
+            // old code:
+            // int s_z_start = (rank_z * cpd) / grid_z;
+            // int s_z_end   = ((rank_z + 1) * cpd) / grid_z;
+
+            // Slab band follows rank_x (Abacus x-decomposition), NOT rank_z.
+            // After the cart transpose (dims={grid_z, grid_x}), grid_x==1 pins rank_z=0
+            // for all ranks, so rank_x is the varying coordinate that selects the slab band.
+            // Matches the flat Abacus reader (MPI_size_z==1): InitialConditionsDirectory/ic_%04d.
+            int s_z_start = (rank_x * cpd) / grid_z;
+            int s_z_end   = ((rank_x + 1) * cpd) / grid_z;
             zgrp_start = s_z_start;
             zgrp_end   = s_z_end;
 
