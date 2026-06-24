@@ -1484,14 +1484,14 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
         // fflush(stderr);
 
         // new change:
-        fprintf(stderr,
-            "[IC_WRITE_DEBUG] Zeldovich writer: world_rank=%d comm_2d_rank=%d "
-            "cart(rank_x=%d, rank_z=%d) embedded=%d -> %s/ic_%%04d_z%03d "
-            "slabs [%d,%d) (%d files)\n",
-            world_rank, rank, rank_x, rank_z, zeldovich_ic_embedded ? 1 : 0,
-            ic_z_subdir, rank_z,
-            slab_z_start, slab_z_end, slab_z_end - slab_z_start);
-        fflush(stderr);
+        // fprintf(stderr,
+        //     "[IC_WRITE_DEBUG] Zeldovich writer: world_rank=%d comm_2d_rank=%d "
+        //     "cart(rank_x=%d, rank_z=%d) embedded=%d -> %s/ic_%%04d_z%03d "
+        //     "slabs [%d,%d) (%d files)\n",
+        //     world_rank, rank, rank_x, rank_z, zeldovich_ic_embedded ? 1 : 0,
+        //     ic_z_subdir, rank_z,
+        //     slab_z_start, slab_z_end, slab_z_end - slab_z_start);
+        // fflush(stderr);
 
         if (rank == 0) {
             if (zeldovich_ic_embedded) {
