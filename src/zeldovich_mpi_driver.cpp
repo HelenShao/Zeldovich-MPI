@@ -16,8 +16,8 @@
  *    - Load PLT eigenmodes if qPLT; set narray (1/2/4 by qdensity/qPLT)
  *
  * 4. FFT SETUP
- *    - setup_fftw_plans_full(plan_2d, plan_1d_y) using fft_stage_2d (NxN aligned;
- *      2D plan is FFTW_PLAN_DFT_2D on that stage buffer)
+ *    - setup_fftw_plans_full(plan_2d, plan_1d_y) on a temporary N×N plan buffer;
+ *      free plan buffer before recv_buffer alloc (Option A: no stage/recv overlap at peak)
  *
  * 5. GRID DECOMPOSITION
  *    - get_extended_grid_bounds; my_pencils for this rank’s XZ region
@@ -26,12 +26,11 @@
  *    - global_max_batches; src_total_slices per source; prefix-sum recv_displs_src
  *    - Allocate persistent recv_buffer (source-grouped: [src][y][pencil][array])
  *    - Build y_owner_src, y_src_local_idx, y_batch_idx, y_slice_idx_in_batch
- *    - Allocate local_y_slices (reused per batch)
  *
  * 7. MULTI-BATCH LOOP (for each batch)
  *    a. Get batch’s (y_primary, y_mirror)
- *    b. generate_zd_mpi_slice_pair_local -> Generate + 2D FFT
- *    c. calculate_batch_send_recv_counts; pack_slices_to_send_buffer
+ *    b. Alloc local_y_slices + fft_stage_2d → generate + 2D FFT → free stage
+ *    c. calculate_batch_send_recv_counts; pack_slices_to_send_buffer; free local_y_slices
  *    d. MPI_Alltoallv_c(send_buffer -> recv_buffer)
  *    e. Update src_write_cursor; free per-batch send buffer
  *
@@ -614,25 +613,25 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
     }
     
     // ==================================================================================
-    // ALLOCATE local_y_slices + fft_stage_2d (before FFT setup: 2D plan on stage buf)
+    // Temporary plan buffer for 2D FFT setup only
+    // local_y_slices: per-batch alloc before generate, free after pack (before MPI).
+    // fft_stage_2d: per-batch alloc around generate+2D FFT, freed before pack.
     // ==================================================================================
+    size_t fft_stage_bytes = (size_t)N * (size_t)N * sizeof(fftw_complex_t);
+    size_t local_y_slices_bytes = 0;
+    fftw_complex_t *fft_plan_buffer = NULL;
+
     if (!is_idle_rank) {
-        int max_slices_per_batch = 2;
-        int64_t slice_buffer_size = (int64_t)max_slices_per_batch * narray * N * N;
-        size_t requested_bytes = (size_t)slice_buffer_size * sizeof(fftw_complex_t);
-        if (posix_memalign((void**)&local_y_slices, ALIGN_BYTES, requested_bytes) != 0) {
-            fprintf(stderr, "Rank %d: posix_memalign failed for local_y_slices\n", rank);
+        local_y_slices_bytes =
+            (size_t)2 * (size_t)narray * (size_t)N * (size_t)N * sizeof(fftw_complex_t);
+        if (posix_memalign((void**)&fft_plan_buffer, ALIGN_BYTES, fft_stage_bytes) != 0) {
+            fprintf(stderr, "Rank %d: posix_memalign failed for fft_plan_buffer\n", rank);
             MPI_Abort(zd_comm_2d, 1);
         }
-        size_t stage_bytes = (size_t)N * (size_t)N * sizeof(fftw_complex_t);
-        if (posix_memalign((void**)&fft_stage_2d, ALIGN_BYTES, stage_bytes) != 0) {
-            fprintf(stderr, "Rank %d: posix_memalign failed for fft_stage_2d\n", rank);
-            MPI_Abort(zd_comm_2d, 1);
-        }
-        // parallel first touch
+        // parallel first touch (FFTW_MEASURE may overwrite during planning)
         #pragma omp parallel for schedule(static)
         for (int y = 0; y < N; y++) {
-            fftw_complex_t *row = fft_stage_2d + (size_t)y * (size_t)N;
+            fftw_complex_t *row = fft_plan_buffer + (size_t)y * (size_t)N;
             memset(row, 0, (size_t)N * sizeof(fftw_complex_t));
         }
     }
@@ -648,10 +647,15 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
     // ========================================================================
     // STAGE 3: SETUP FFT PLANS 
     // ========================================================================
-    // plan_2d: FFTW_PLAN_DFT_2D on fft_stage_2d (N×N)
-    fftw_complex_t *plan_buffer = (!is_idle_rank && fft_stage_2d != NULL) ? fft_stage_2d : nullptr;
+    // plan_2d: FFTW_PLAN_DFT_2D on fft_plan_buffer (temporary; freed before recv_buffer)
+    fftw_complex_t *plan_buffer = (!is_idle_rank && fft_plan_buffer != NULL) ? fft_plan_buffer : nullptr;
     fftw_plan_t plan_2d, plan_1d_y; // setup both plans
     setup_fftw_plans_full(N, narray, plan_buffer, &plan_2d, &plan_1d_y, local_wisdom_dir);
+
+    if (fft_plan_buffer != NULL) {
+        free(fft_plan_buffer);
+        fft_plan_buffer = NULL;
+    }
     
     // Grid bounds: CPD-aligned when params/cpd present
     if (!is_idle_rank) {
@@ -840,10 +844,18 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
         
         // ===== BATCH STEP 2: Generate + 2D FFT =====
         if (!is_idle_rank && my_batch_slice_count > 0) {
-            // Clear buffer for reuse
-            // Use int64_t to avoid overflow: 2*narray*N*N can exceed INT_MAX for large N
-            size_t slice_bytes = (size_t)2 * (size_t)narray * (size_t)N * (size_t)N * sizeof(fftw_complex_t);
-            memset(local_y_slices, 0, slice_bytes);
+            if (posix_memalign((void**)&local_y_slices, ALIGN_BYTES, local_y_slices_bytes) != 0) {
+                fprintf(stderr, "Rank %d: posix_memalign failed for local_y_slices (batch %d)\n",
+                        rank, batch_idx);
+                MPI_Abort(zd_comm_2d, 1);
+            }
+            if (posix_memalign((void**)&fft_stage_2d, ALIGN_BYTES, fft_stage_bytes) != 0) {
+                fprintf(stderr, "Rank %d: posix_memalign failed for fft_stage_2d (batch %d)\n",
+                        rank, batch_idx);
+                MPI_Abort(zd_comm_2d, 1);
+            }
+
+            memset(local_y_slices, 0, local_y_slices_bytes);
 
             // Generate this batch's pair
             // For self-conjugate slices, conjugate_slices acts as temporary storage
@@ -859,10 +871,9 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
                 ps, params,
                 thread_rng_buffers
             );
-            
-            if (local_y_slices == NULL) {
-                fprintf(stderr, "[Rank %d] WARNING: local_y_slices is NULL!\n", rank);
-            }
+
+            free(fft_stage_2d);
+            fft_stage_2d = NULL;
         }
         
         // ===== BATCH STEP 3: Calculate send/recv counts =====
@@ -910,6 +921,12 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
                 send_buffer_batch, sendcounts_batch, sdispls_batch,
                 grid_x, grid_z, cpd
             );
+        }
+
+        // Free local_y_slices before MPI so peak comm memory is recv_buffer + send_buffer only.
+        if (local_y_slices != NULL) {
+            free(local_y_slices);
+            local_y_slices = NULL;
         }
         
         // ===== BATCH STEP 6: MPI_Alltoallv_c =====
@@ -1064,10 +1081,13 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
     }
     
     if (local_y_slices != NULL) {
+        fprintf(stderr, "[WARNING] Rank %d: local_y_slices still allocated after batch loop\n", rank);
         free(local_y_slices);
         local_y_slices = NULL;
     }
+    // fft_stage_2d is per-batch (freed after each generate+2D FFT); safety check:
     if (fft_stage_2d != NULL) {
+        fprintf(stderr, "[WARNING] Rank %d: fft_stage_2d still allocated after batch loop\n", rank);
         free(fft_stage_2d);
         fft_stage_2d = NULL;
     }
@@ -1975,9 +1995,9 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
     FFTW_DESTROY_PLAN(plan_2d);
     FFTW_DESTROY_PLAN(plan_1d_y);
     
-    // FREE: Y-slices (normally freed after packing; check for safety)
+    // FREE: local_y_slices (normally freed after each batch pack; safety check)
     if (!is_idle_rank && local_y_slices != NULL) {
-        fprintf(stderr, "[WARNING] Rank %d: local_y_slices was not freed earlier!\n", rank);
+        fprintf(stderr, "[WARNING] Rank %d: local_y_slices still allocated at final cleanup\n", rank);
         free(local_y_slices);
         local_y_slices = NULL;
     }
