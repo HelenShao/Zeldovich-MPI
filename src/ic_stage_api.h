@@ -1,5 +1,7 @@
 #pragma once // include this header at most once per file
 
+#include <stddef.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -11,13 +13,23 @@ extern "C" {
 void IC_InitStage(int from_abacus_host);
 
 /**
- * Rank-0 FFTW wisdom preflight (embedded IC): same work as standalone `wisdom_rank0`.
- * Loads param_file w/ ZD param parser to get PPD and narray (qdensity/qPLT),
- * measures/plans on rank 0 and writes `FFTW_WISDOM_FILENAME` in cwd
- * (must match where fft_wisdom_import_rank0_broadcast_local() will look during IC_Run).
- * Other ranks only participate in MPI_Barrier.
+ * Rank-0 FFTW wisdom preflight (standalone CLI): reads param_file on rank 0.
+ * Embedded Abacus hosts should use IC_ParamBuffer instead (no second file read).
  */
 int IC_Rank0Wisdom(const char *param_file);
+
+/**
+ * Embedded IC entry (Abacus): rank-0 param header bytes already broadcast by host.
+ *
+ * Two-stage wisdom flow:
+ * 1. wisdom_preflight_from_param_buffer (internal): rank 0 parses bytes for PPD/narray,
+ *    exports FFTW_WISDOM_FILENAME; other ranks barrier.
+ * 2. IC driver: re-broadcasts the same header bytes, then runs generation; rank 0 imports
+ *    wisdom and MPI_Bcast's it inside IC_Run (no multi-rank global wisdom file read).
+ *
+ * @param param_path Path string for relative par2 lookups only (not re-read on rank 0).
+ */
+int IC_ParamBuffer(const char *bytes, size_t len, const char *param_path);
 
 /** Run full IC generation: argv is Zeldovich_MPI CLI (param_file only; N is derived from NP->ppd). */
 int IC_Run(int argc, char **argv);

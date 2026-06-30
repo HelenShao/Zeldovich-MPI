@@ -111,28 +111,12 @@ static void print_mpi_init_thread_levels(int required, int provided, int world_r
     fflush(stdout);
 }
 
-static int broadcast_parameter_header_bytes(
-    const char *param_file,
+static int broadcast_parameter_header_bcast(
+    uint64_t header_len,
     int world_rank,
     MPI_Comm comm,
     std::vector<char> &header_bytes
 ) {
-    uint64_t header_len = 0;
-    if (world_rank == 0) {
-        HeaderStream hs{fs::path(param_file)};
-        hs.ReadHeader();
-        if (hs.buffer == NULL || hs.bufferlength < 2) {
-            fprintf(stderr, "ERROR: Invalid parameter header read from %s\n", param_file);
-            return 1;
-        }
-        if (hs.bufferlength > static_cast<size_t>(INT_MAX)) {
-            fprintf(stderr, "ERROR: Parameter header too large for MPI_Bcast count: %zu\n", hs.bufferlength);
-            return 1;
-        }
-        header_bytes.assign(hs.buffer, hs.buffer + hs.bufferlength);
-        header_len = static_cast<uint64_t>(hs.bufferlength);
-    }
-
     MPI_Bcast(&header_len, 1, MPI_UINT64_T, 0, comm);
     if (header_len < 2) {
         if (world_rank == 0) {
@@ -154,6 +138,53 @@ static int broadcast_parameter_header_bytes(
     }
     MPI_Bcast(header_bytes.data(), static_cast<int>(header_len), MPI_BYTE, 0, comm);
     return 0;
+}
+
+static int broadcast_parameter_header_bytes_from_file(
+    const char *param_file,
+    int world_rank,
+    MPI_Comm comm,
+    std::vector<char> &header_bytes
+) {
+    uint64_t header_len = 0;
+    if (world_rank == 0) {
+        HeaderStream hs{fs::path(param_file)};
+        hs.ReadHeader();
+        if (hs.buffer == NULL || hs.bufferlength < 2) {
+            fprintf(stderr, "ERROR: Invalid parameter header read from %s\n", param_file);
+            return 1;
+        }
+        if (hs.bufferlength > static_cast<size_t>(INT_MAX)) {
+            fprintf(stderr, "ERROR: Parameter header too large for MPI_Bcast count: %zu\n", hs.bufferlength);
+            return 1;
+        }
+        header_bytes.assign(hs.buffer, hs.buffer + hs.bufferlength);
+        header_len = static_cast<uint64_t>(hs.bufferlength);
+    }
+    return broadcast_parameter_header_bcast(header_len, world_rank, comm, header_bytes);
+}
+
+static int broadcast_parameter_header_bytes_from_memory(
+    const char *header_bytes_in,
+    size_t header_len_in,
+    int world_rank,
+    MPI_Comm comm,
+    std::vector<char> &header_bytes
+) {
+    uint64_t header_len = 0;
+    if (world_rank == 0) {
+        if (header_bytes_in == NULL || header_len_in < 2) {
+            fprintf(stderr, "ERROR: Invalid in-memory parameter header (len=%zu)\n", header_len_in);
+            return 1;
+        }
+        if (header_len_in > static_cast<size_t>(INT_MAX)) {
+            fprintf(stderr, "ERROR: Parameter header too large for MPI_Bcast count: %zu\n", header_len_in);
+            return 1;
+        }
+        header_bytes.assign(header_bytes_in, header_bytes_in + header_len_in);
+        header_len = static_cast<uint64_t>(header_len_in);
+    }
+    return broadcast_parameter_header_bcast(header_len, world_rank, comm, header_bytes);
 }
 
 /**
@@ -238,7 +269,20 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
     // ========================================================================
     ParametersHandle params = NULL;
     std::vector<char> param_header_bytes;
-    if (broadcast_parameter_header_bytes(param_file, world_rank, MPI_COMM_WORLD, param_header_bytes) != 0) {
+    int header_broadcast_rc = 0;
+    if (zeldovich_embed_param_header.bytes != NULL) {
+        header_broadcast_rc = broadcast_parameter_header_bytes_from_memory(
+            zeldovich_embed_param_header.bytes,
+            zeldovich_embed_param_header.len,
+            world_rank,
+            MPI_COMM_WORLD,
+            param_header_bytes
+        );
+    } else {
+        header_broadcast_rc = broadcast_parameter_header_bytes_from_file(
+            param_file, world_rank, MPI_COMM_WORLD, param_header_bytes);
+    }
+    if (header_broadcast_rc != 0) {
         MPI_Abort(MPI_COMM_WORLD, 1);
     }
 
