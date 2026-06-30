@@ -1,20 +1,13 @@
 #include "fft_wisdom.h"
 
-#include <errno.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/stat.h>
 #include <string.h>
-
-#define DEFAULT_LOCAL_WISDOM_DIR "/dev/shm/Abacus_wisdom"
 
 int fft_wisdom_import_rank0_broadcast_local(int rank, MPI_Comm comm, const char *local_wisdom_dir)
 {
-    const char *target_dir = local_wisdom_dir;
-    if (target_dir == NULL || target_dir[0] == '\0') {
-        target_dir = DEFAULT_LOCAL_WISDOM_DIR;
-    }
+    (void)local_wisdom_dir;
 
     char *wisdom_str = NULL;
     size_t wisdom_len = 0;
@@ -45,7 +38,6 @@ int fft_wisdom_import_rank0_broadcast_local(int rank, MPI_Comm comm, const char 
         }
     }
 
-    // broadcast length of wisdom str for mem allocation on each rank 
     MPI_Bcast(&wisdom_len, 1, MPI_UNSIGNED_LONG_LONG, 0, comm);
     if (wisdom_len == 0u) {
         if (rank == 0 && wisdom_str != NULL && wisdom_from_fftw_alloc) {
@@ -75,14 +67,14 @@ int fft_wisdom_import_rank0_broadcast_local(int rank, MPI_Comm comm, const char 
         }
     }
 
-    // broadcast wisdom string for each rank
     MPI_Bcast(wisdom_str, (int)wisdom_len, MPI_CHAR, 0, comm);
     wisdom_str[wisdom_len] = '\0';
 
-    // create wisdom dir on /dev/shm if it doesn't exist (0775 = permissins)
-    if (mkdir(target_dir, 0775) != 0 && errno != EEXIST) {
-        fprintf(stderr, "[FFTW-WISDOM] Rank %d: failed to create local wisdom dir '%s': %s\n", rank,
-                target_dir, strerror(errno));
+    FFTW_FORGET_WISDOM();
+    const int imported = FFTW_IMPORT_WISDOM_FROM_STRING(wisdom_str);
+    if (!imported) {
+        fprintf(stderr, "[FFTW-WISDOM] Rank %d: failed to import broadcast wisdom string (%s precision)\n",
+                rank, PRECISION_NAME);
         fflush(stderr);
         if (rank == 0 && wisdom_from_fftw_alloc) {
             FFTW_FREE(wisdom_str);
@@ -92,59 +84,6 @@ int fft_wisdom_import_rank0_broadcast_local(int rank, MPI_Comm comm, const char 
         return -1;
     }
 
-    char local_path[PATH_MAX];
-    const int n = snprintf(local_path, sizeof(local_path), "%s/fftw_wisdom_rank_%d.wisdom", target_dir, rank);
-    if (n <= 0 || (size_t)n >= sizeof(local_path)) {
-        fprintf(stderr, "[FFTW-WISDOM] Rank %d: local wisdom path too long for dir '%s'\n", rank, target_dir);
-        fflush(stderr);
-        if (rank == 0 && wisdom_from_fftw_alloc) {
-            FFTW_FREE(wisdom_str);
-        } else {
-            free(wisdom_str);
-        }
-        return -1;
-    }
-
-    FILE *wf = fopen(local_path, "wb");
-    if (wf == NULL) {
-        fprintf(stderr, "[FFTW-WISDOM] Rank %d: failed to open '%s' for write: %s\n", rank, local_path,
-                strerror(errno));
-        fflush(stderr);
-        if (rank == 0 && wisdom_from_fftw_alloc) {
-            FFTW_FREE(wisdom_str);
-        } else {
-            free(wisdom_str);
-        }
-        return -1;
-    }
-    if (fwrite(wisdom_str, 1, wisdom_len, wf) != wisdom_len) {
-        fprintf(stderr, "[FFTW-WISDOM] Rank %d: failed to write wisdom to '%s'\n", rank, local_path);
-        fflush(stderr);
-        fclose(wf);
-        if (rank == 0 && wisdom_from_fftw_alloc) {
-            FFTW_FREE(wisdom_str);
-        } else {
-            free(wisdom_str);
-        }
-        return -1;
-    }
-    fclose(wf);
-
-    const int imported_local = FFTW_IMPORT_WISDOM_FROM_FILENAME(local_path);
-    if (!imported_local) {
-        fprintf(stderr, "[FFTW-WISDOM] Rank %d: failed to import local wisdom '%s' (%s precision)\n", rank,
-                local_path, PRECISION_NAME);
-        fflush(stderr);
-        if (rank == 0 && wisdom_from_fftw_alloc) {
-            FFTW_FREE(wisdom_str);
-        } else {
-            free(wisdom_str);
-        }
-        return -1;
-    }
-
-    // free temporary buffer on rank 0 after received bcast
-    // two different frees cuz rank0 wisdom_str came from FFTW_EXPORT_WISDOM_TO_STRING()
     if (rank == 0 && wisdom_from_fftw_alloc) {
         FFTW_FREE(wisdom_str);
     } else {

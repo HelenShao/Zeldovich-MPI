@@ -11,8 +11,9 @@
 extern "C" {
 #endif
 
-// Rank 0 imports FFTW_WISDOM_FILENAME, broadcasts wisdom string, and each rank
-// writes/imports its own local wisdom file in local_wisdom_dir.
+// Rank 0 imports FFTW_WISDOM_FILENAME (from preflight), broadcasts the wisdom string,
+// and each rank loads it via FFTW_IMPORT_WISDOM_FROM_STRING.
+// local_wisdom_dir is unused (kept for API compatibility).
 // Returns 0 on success, non-zero on failure.
 int fft_wisdom_import_rank0_broadcast_local(int rank, MPI_Comm comm, const char *local_wisdom_dir);
 
