@@ -162,38 +162,10 @@
 #endif
 
 // Particle output mode (unified flag for all output paths)
-// 0 = Write particle ICs directly (no transpose needed)
-//     - Uses WriteParticlesSlab_range with [array][x][y] layout (ZSLAB format)
-//     - No transpose overhead, no extra allocation
-//     - Works directly with main.cpp's data layout
-//     - Writes particle ICs directly
-// 1 = Write .bin files for later re-assembly
-//     - Writes complex .bin files (rank_*/i*_slab_N*.bin)
-//     - Files can be reassembled by write_particles_from_reassembled_mpi.cpp
-//     - No particle IC writing in main.cpp
-// 2 = Write .bin files then immediately read back and write particle ICs
-//     - Writes .bin files first (same as Mode 1)
-//     - Then reads them back and calls WriteParticlesSlab_range on local data
-//     - Writes particle ICs from .bin file data (useful for verifying .bin format)
-// 3 = Streaming-append CPD-slab-ordered: one particle file per rank
-//     - Opens one file ic2D_xr<rx>_zr<rz>_N<N>.bin before z-loop
-//     - For each z: converts complex -> RVZel particles, grouped by CPD slab
-//     - Each z-block: [slab s0 segment][slab s1 segment]...[slab sK segment]
-//     - Abacus seeks directly to the contiguous segment for its CPD slab
-//     - Rank 0: Writes ic_metadata.txt at the end
-//     - Reads CPD param from param file
-//     - Optional: companion _dens.bin file when param.qdensity is set
-// 4 = Z-slab streaming append with x-rank subdirectories (dual of Mode 3 grid_x>1)
-//     - CPD-aligned slabs along Z (instead of X)
-//     - Directory: ic/x%03d/ per x-rank, files ic_%04d_x%03d per z-slab
-//     - Z-slab s covers z in [ceil(s*N/cpd), ceil((s+1)*N/cpd))
-//     - Each z-rank owns z-slabs [slab_z_start, slab_z_end) with no collision
-//     - Particle record: RVZel 32 bytes, i=Z(global), j=Y(global), k=X(global)
-//     - Optional: density files under dens/z%03d/dens_%04d
-#ifndef PARTICLE_OUTPUT_MODE
-#define PARTICLE_OUTPUT_MODE 1  // Default: Write .bin files for later re-assembly
-#endif
-
+// Abacus embed: output mode 3 (flat ic_%04d) or 4 (z%%03d/ic_*) selected at runtime from NumZRanks.
+// Standalone Makefile builds may still pass -DPARTICLE_OUTPUT_MODE for legacy modes 0–2.
+// 3 = Streaming-append flat ic_%04d (grid_x==1 / NumZRanks==1)
+// 4 = Z-slab streaming append under z%%03d/ (grid_x>1 / NumZRanks>1)
 // ====================================================================================
 // COMMUNICATION METHOD
 // ====================================================================================

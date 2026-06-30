@@ -870,16 +870,14 @@ double InitOutputBuffers(ZeldovichParameters &param) {
         output_tmp = NULL;
     }
 
-    // Mode 3 & 4 writes density to per-file ic_*_dens; skip global density1920 file
-#if (PARTICLE_OUTPUT_MODE != 3 and PARTICLE_OUTPUT_MODE != 4)
-    if (param.qdensity) {
+    // Embedded IC output (NumZRanks>=1): per-file dens_*; skip global density file
+    if (param.abacus_num_z_ranks < 1 && param.qdensity) {
         fs::path path = param.output_dir / fmt::format(fmt::runtime(param.density_filename.string()), param.ppd);
 
         densfp = fopen(path.c_str(), "wb");
         assert(densfp != NULL);
         densoutput_tmp = new float[param.ppd * param.ppd];
     }
-#endif
 
     return sizeof_outputtype * param.ppd * param.ppd / 1024. / 1024. / 1024.;
 }

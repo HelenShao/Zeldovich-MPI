@@ -36,7 +36,6 @@ endif
 if get_option('production_mode')
   proj_defs += '-DPRODUCTION_MODE'
 endif
-proj_defs += '-DPARTICLE_OUTPUT_MODE=@0@'.format(get_option('particle_output_mode'))
 proj_defs += '-DSKIP_FILE_WRITE=@0@'.format(get_option('skip_file_write'))
 proj_defs += '-DPARALLELIZE_Z_LOOP=@0@'.format(get_option('parallelize_z_loop'))
 if get_option('debug_prints')

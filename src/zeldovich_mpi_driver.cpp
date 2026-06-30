@@ -37,11 +37,8 @@
  * 8. Z-SLAB STREAMING (for each Z owned by this rank)
  *    - Allocate local_z_slab (one Z-slab: [Array][X][Y])
  *    - For each z: z_streaming_unpack(recv_buffer -> local_z_slab, staged 1D FFT in Y)
- *    - Write output: PARTICLE_OUTPUT_MODE 0 -> WriteParticlesSlab_range
- *                    PARTICLE_OUTPUT_MODE 1 -> .bin files
- *                    PARTICLE_OUTPUT_MODE 2 -> .bin then read-back -> WriteParticlesSlab_range
- *                    PARTICLE_OUTPUT_MODE 3 -> CPD-slab-ordered streaming append (one file per slab, optionally split by z-rank)
- *                    PARTICLE_OUTPUT_MODE 4 -> z-slab streaming append (one file per z-slab, in x-rank subdirs)
+ *    - Write output: mode 3 -> flat ic_%04d (NumZRanks==1)
+ *                    mode 4 -> z%%03d/ic_* (NumZRanks>1); selected at runtime
  *
  * 9. CLEANUP (plans, buffers)
  *    - Free plans, recv_buffer, local buffers, params, ps, PLT eigenmodes
@@ -276,6 +273,11 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
     // make this change:
     grid_x = abacus_params_get_NumZRanks(params); // third transpose! before it was ZD z ranks!
     grid_z = num_ranks / grid_x;
+    const int particle_output_mode = (grid_x > 1) ? 4 : 3;
+    if (world_rank == 0) {
+        printf("[INIT] particle_output_mode=%d (NumZRanks=grid_x=%d)\n",
+               particle_output_mode, grid_x);
+    }
 
     // When integrated in abacus, InitParallelTopology() in multistep will
     // assert that grid_z == MPI_SIZE/NumZRanks.
@@ -1155,25 +1157,11 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
         local_z_slab = NULL;
     }
     
-    // Create directory for this rank (before Z-loop) -- only needed for Mode 1 or 2 (.bin files)
-#if (PARTICLE_OUTPUT_MODE != 3 && PARTICLE_OUTPUT_MODE != 4)
-    char dirname[64];
-    snprintf(dirname, sizeof(dirname), "rank_%d", rank);
-    int mkdir_result = mkdir(dirname, 0755);
-    if (mkdir_result != 0 && errno != EEXIST) {
-        fprintf(stderr, "Rank %d: ERROR creating directory %s (errno=%d)\n", rank, dirname, errno);
-        MPI_Abort(zd_comm_2d, 1);
-    }
-#endif
     // Process one Z-slab at a time 
     int files_written = 0;
     size_t total_bytes_written = 0;
     
-    // MODE 3: file vectors for x-slab format (grid_x>1) or z-group format (grid_x==1)
-    int slab_x_start = 0, slab_x_end = 0;
-    std::vector<FILE*> slab_fp;
-    std::vector<FILE*> slab_dens_fp;
-
+    // MODE 3 (grid_x==1): file vectors for z-group format (flat ic_%04d)
     int zgrp_start = 0, zgrp_end = 0;
     std::vector<FILE*> zgrp_fp;
     std::vector<FILE*> zgrp_dens_fp;
@@ -1183,191 +1171,50 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
     std::vector<FILE*> zslab_fp;
     std::vector<FILE*> zslab_dens_fp;
     
-    if (PARTICLE_OUTPUT_MODE == 3 && params != NULL && !is_idle_rank) {
+    if (particle_output_mode == 3 && params != NULL && !is_idle_rank) {
         ZeldovichParameters *p = static_cast<ZeldovichParameters*>(params);
 
-        if (grid_x == 1) {
-            // ---------------------------------------------------------------
-            // grid_x==1: z-group file mapping (Abacus RVZel_2D, MPI_size_z==1)
-            // Each z-rank writes CPD/grid_z files: ic_{file_index:04d}
-            // file_index = z * CPD / N, each file holds N/CPD z-planes.
-            // ---------------------------------------------------------------
-            // old code:
-            // int s_z_start = (rank_z * cpd) / grid_z;
-            // int s_z_end   = ((rank_z + 1) * cpd) / grid_z;
+        // grid_x==1: z-group file mapping (Abacus RVZel_2D, MPI_size_z==1)
+        // Each z-rank writes CPD/grid_z files: ic_{file_index:04d}
+        int s_z_start = (rank_x * cpd) / grid_z;
+        int s_z_end   = ((rank_x + 1) * cpd) / grid_z;
+        zgrp_start = s_z_start;
+        zgrp_end   = s_z_end;
 
-            // Slab band follows rank_x (Abacus x-decomposition), NOT rank_z.
-            // After the cart transpose (dims={grid_z, grid_x}), grid_x==1 pins rank_z=0
-            // for all ranks, so rank_x is the varying coordinate that selects the slab band.
-            // Matches the flat Abacus reader (MPI_size_z==1): InitialConditionsDirectory/ic_%04d.
-            int s_z_start = (rank_x * cpd) / grid_z;
-            int s_z_end   = ((rank_x + 1) * cpd) / grid_z;
-            zgrp_start = s_z_start;
-            zgrp_end   = s_z_end;
+        zgrp_fp.resize(zgrp_end - zgrp_start, NULL);
+        zgrp_dens_fp.resize(zgrp_end - zgrp_start, NULL);
 
-            zgrp_fp.resize(zgrp_end - zgrp_start, NULL);
-            zgrp_dens_fp.resize(zgrp_end - zgrp_start, NULL);
-
-            for (int f = zgrp_start; f < zgrp_end; f++) {
-                char fp_path[PATH_MAX];
-                snprintf(fp_path, sizeof(fp_path), "%s/ic_%04d",
+        for (int f = zgrp_start; f < zgrp_end; f++) {
+            char fp_path[PATH_MAX];
+            snprintf(fp_path, sizeof(fp_path), "%s/ic_%04d",
+                     p->output_dir.c_str(), f);
+            zgrp_fp[f - zgrp_start] = fopen(fp_path, "wb");
+            if (!zgrp_fp[f - zgrp_start]) {
+                fprintf(stderr, "Rank %d: ERROR opening %s for writing (errno=%d)\n",
+                        rank, fp_path, errno);
+            }
+            if (p->qdensity && zgrp_fp[f - zgrp_start] != NULL) {
+                char fd_path[PATH_MAX];
+                snprintf(fd_path, sizeof(fd_path), "%s/dens_%04d",
                          p->output_dir.c_str(), f);
-                zgrp_fp[f - zgrp_start] = fopen(fp_path, "wb");
-                if (!zgrp_fp[f - zgrp_start]) {
-                    fprintf(stderr, "Rank %d: ERROR opening %s for writing (errno=%d)\n",
-                            rank, fp_path, errno);
-                }
-                if (p->qdensity && zgrp_fp[f - zgrp_start] != NULL) {
-                    char fd_path[PATH_MAX];
-                    snprintf(fd_path, sizeof(fd_path), "%s/dens_%04d",
-                             p->output_dir.c_str(), f);
-                    zgrp_dens_fp[f - zgrp_start] = fopen(fd_path, "wb");
-                    if (!zgrp_dens_fp[f - zgrp_start]) {
-                        fprintf(stderr, "Rank %d: ERROR opening %s for density (errno=%d)\n",
-                                rank, fd_path, errno);
-                    }
+                zgrp_dens_fp[f - zgrp_start] = fopen(fd_path, "wb");
+                if (!zgrp_dens_fp[f - zgrp_start]) {
+                    fprintf(stderr, "Rank %d: ERROR opening %s for density (errno=%d)\n",
+                            rank, fd_path, errno);
                 }
             }
+        }
 
-            if (rank == 0) {
-                printf("[MODE 3] grid_x==1, z-group format (RVZel_2D flat): cpd=%d, files_per_rank=%d, ic_%%04d\n",
-                       cpd, zgrp_end - zgrp_start);
-                printf("         Each file holds %d z-planes of %d x %d particles\n",
-                       N / cpd, N, N);
-            }
-        } else {
-            // ---------------------------------------------------------------
-            // grid_x>1: x-slab file mapping (existing Mode 3)
-            // Standalone: {output_dir}/ic/z###/... ; embedded Abacus: {output_dir}/z###/...
-            // ---------------------------------------------------------------
-            if (!zeldovich_ic_embedded) {
-                char ic_dir[PATH_MAX];
-                snprintf(ic_dir, sizeof(ic_dir), "%s/ic", p->output_dir.c_str());
-                int mkdir_ic = mkdir(ic_dir, 0755);
-                if (mkdir_ic != 0 && errno != EEXIST) {
-                    fprintf(stderr, "Rank %d: ERROR creating directory %s (errno=%d)\n", rank, ic_dir, errno);
-                    MPI_Abort(zd_comm_2d, 1);
-                }
-            }
-            if (p->qdensity) {
-                char dens_dir[PATH_MAX];
-                snprintf(dens_dir, sizeof(dens_dir), "%s/dens", p->output_dir.c_str());
-                int mkdir_dens = mkdir(dens_dir, 0755);
-                if (mkdir_dens != 0 && errno != EEXIST) {
-                    fprintf(stderr, "Rank %d: ERROR creating directory %s (errno=%d)\n", rank, dens_dir, errno);
-                    MPI_Abort(zd_comm_2d, 1);
-                }
-            }
-
-            slab_x_start = (rank_x * cpd) / grid_x;
-            slab_x_end   = ((rank_x + 1) * cpd) / grid_x;
-
-            char z_dir[PATH_MAX];
-            z_dir[0] = '\0';
-            if (grid_z > 1) {
-                if (zeldovich_ic_embedded) {
-                    snprintf(z_dir, sizeof(z_dir), "%s/z%03d", p->output_dir.c_str(), rank_z);
-                } else {
-                    snprintf(z_dir, sizeof(z_dir), "%s/ic/z%03d", p->output_dir.c_str(), rank_z);
-                }
-                int mkdir_z = mkdir(z_dir, 0755);
-                if (mkdir_z != 0 && errno != EEXIST) {
-                    fprintf(stderr, "Rank %d: ERROR creating directory %s (errno=%d)\n", rank, z_dir, errno);
-                    MPI_Abort(zd_comm_2d, 1);
-                }
-                if (p->qdensity) {
-                    char dens_z_dir[PATH_MAX];
-                    snprintf(dens_z_dir, sizeof(dens_z_dir), "%s/dens/z%03d", p->output_dir.c_str(), rank_z);
-                    int mkdir_dens_z = mkdir(dens_z_dir, 0755);
-                    if (mkdir_dens_z != 0 && errno != EEXIST) {
-                        fprintf(stderr, "Rank %d: ERROR creating directory %s (errno=%d)\n", rank, dens_z_dir, errno);
-                        MPI_Abort(zd_comm_2d, 1);
-                    }
-                }
-            }
-
-            slab_fp.resize(slab_x_end - slab_x_start, NULL);
-            slab_dens_fp.resize(slab_x_end - slab_x_start, NULL);
-
-            for (int s = slab_x_start; s < slab_x_end; s++) {
-                char fp_path[PATH_MAX];
-                if (grid_z > 1) {
-                    if (zeldovich_ic_embedded) {
-                        snprintf(fp_path, sizeof(fp_path), "%s/z%03d/ic_%04d_z%03d",
-                                 p->output_dir.c_str(), rank_z, s, rank_z);
-                    } else {
-                        snprintf(fp_path, sizeof(fp_path), "%s/ic/z%03d/ic_%04d_z%03d",
-                                 p->output_dir.c_str(), rank_z, s, rank_z);
-                    }
-                } else {
-                    if (zeldovich_ic_embedded) {
-                        snprintf(fp_path, sizeof(fp_path), "%s/ic_%04d",
-                                 p->output_dir.c_str(), s);
-                    } else {
-                        snprintf(fp_path, sizeof(fp_path), "%s/ic/ic_%04d",
-                                 p->output_dir.c_str(), s);
-                    }
-                }
-                slab_fp[s - slab_x_start] = fopen(fp_path, "wb");
-                if (!slab_fp[s - slab_x_start]) {
-                    fprintf(stderr, "Rank %d: ERROR opening %s for writing (errno=%d)\n",
-                            rank, fp_path, errno);
-                }
-                if (p->qdensity && slab_fp[s - slab_x_start] != NULL) {
-                    char fd_path[PATH_MAX];
-                    if (grid_z > 1) {
-                        snprintf(fd_path, sizeof(fd_path), "%s/dens/z%03d/dens_%04d",
-                                 p->output_dir.c_str(), rank_z, s);
-                    } else {
-                        snprintf(fd_path, sizeof(fd_path), "%s/dens/dens_%04d",
-                                 p->output_dir.c_str(), s);
-                    }
-                    slab_dens_fp[s - slab_x_start] = fopen(fd_path, "wb");
-                    if (!slab_dens_fp[s - slab_x_start]) {
-                        fprintf(stderr, "Rank %d: ERROR opening %s for density (errno=%d)\n",
-                                rank, fd_path, errno);
-                    }
-                }
-            }
-
-            if (!is_idle_rank && grid_x > 1) {
-                fprintf(stderr,
-                        "[IC_WRITE_DEBUG] MPI_rank=%d (rank_x=%d, rank_z=%d) MODE3 writer ic band "
-                        "file_index in [%d,%d) (%d files) output_dir=%s\n",
-                        rank, rank_x, rank_z, slab_x_start, slab_x_end,
-                        slab_x_end - slab_x_start, p->output_dir.c_str());
-                if (slab_x_end > slab_x_start) {
-                    fprintf(stderr,
-                            "[IC_WRITE_DEBUG] MPI_rank=%d writes ic_%04d .. ic_%04d\n",
-                            rank, slab_x_start, slab_x_end - 1);
-                }
-                fflush(stderr);
-            }
-
-            if (rank == 0) {
-                if (grid_z > 1) {
-                    if (zeldovich_ic_embedded) {
-                        printf("[MODE 3] One file per x-slab and z-rank: cpd=%d, slabs_per_rank=%d, z%%03d/ic_%%04d_z%%03d (embedded)\n",
-                               cpd, slab_x_end - slab_x_start);
-                    } else {
-                        printf("[MODE 3] One file per x-slab and z-rank: cpd=%d, slabs_per_rank=%d, ic/z%%03d/ic_%%04d_z%%03d\n",
-                               cpd, slab_x_end - slab_x_start);
-                    }
-                } else {
-                    if (zeldovich_ic_embedded) {
-                        printf("[MODE 3] One file per x-slab: cpd=%d, slabs_per_rank=%d, ic_%%04d (embedded)\n",
-                               cpd, slab_x_end - slab_x_start);
-                    } else {
-                        printf("[MODE 3] One file per x-slab: cpd=%d, slabs_per_rank=%d, ic/ic_%%04d\n",
-                               cpd, slab_x_end - slab_x_start);
-                    }
-                }
-            }
+        if (rank == 0) {
+            printf("[MODE 3] grid_x==1, z-group format (RVZel_2D flat): cpd=%d, files_per_rank=%d, ic_%%04d\n",
+                   cpd, zgrp_end - zgrp_start);
+            printf("         Each file holds %d z-planes of %d x %d particles\n",
+                   N / cpd, N, N);
         }
     }
 
     // MODE 4: z(k)-slab files under ic/z%03d/ standalone, or z%03d/ when embedded in Abacus
-    if (PARTICLE_OUTPUT_MODE == 4 && params != NULL && !is_idle_rank) {
+    if (particle_output_mode == 4 && params != NULL && !is_idle_rank) {
         ZeldovichParameters *p = static_cast<ZeldovichParameters*>(params);
 
         if (!zeldovich_ic_embedded) {
@@ -1609,13 +1456,10 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
             //      Data is in [Array][k_rng][j] format (memory), transpose to [Array][j][k_rng] for output
             // =======================================================================================
 
-            // Use i,j,k notation for output writing
-            int i = z;
-            
             // Debug: Check output mode
             if (rank == 0 && z == 0) {
-                printf("[OUTPUT-DEBUG] z=%d: param_file=%p, params=%p, PARTICLE_OUTPUT_MODE=%d\n", 
-                       z, (void*)param_file, (void*)params, PARTICLE_OUTPUT_MODE);
+                printf("[OUTPUT-DEBUG] z=%d: param_file=%p, params=%p, particle_output_mode=%d\n", 
+                       z, (void*)param_file, (void*)params, particle_output_mode);
                 fflush(stdout);
             }
             
@@ -1626,240 +1470,41 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
 #else
             {
             double t_io0 = omp_get_wtime();
-            switch (PARTICLE_OUTPUT_MODE) {
-                case 0: {
-                    // =======================================================================================
-                    // MODE 0: Write particle ICs directly (no transpose needed)
-                    // =======================================================================================
-                    // Uses WriteParticlesSlab_range with [array][x][y] layout (ZSLAB format)
-                    if (param_file == NULL || params == NULL) {
-                        break;
-                    }
-                    
-                    int k_start_global = my_extended_bounds.core.x_start;
-                    int k_extent = x_count;
-                    
-                    // Call WriteParticlesSlab_range directly with [array][x][y] layout (ZSLAB format)
-                    // No transpose - function handles [x][y] indexing internally
-                    WriteParticlesSlab_range(
-                        rank, i, k_start_global, k_extent,
-                        (Complx*)local_z_slab, N, narray,
+            if (particle_output_mode == 3) {
+                int file_index = z * cpd / N;
+                FILE *fp = zgrp_fp[file_index - zgrp_start];
+                FILE *fp_dens = (file_index - zgrp_start < (int)zgrp_dens_fp.size())
+                                ? zgrp_dens_fp[file_index - zgrp_start] : NULL;
+                if (fp != NULL) {
+                    AppendZSlabFull(
+                        fp, fp_dens, z,
+                        my_extended_bounds.core.x_start, x_count,
+                        local_z_slab, N, narray,
                         *static_cast<ZeldovichParameters*>(params)
                     );
-                    
-                    files_written++;
-                    break;
                 }
-                case 1: {
-                    // =======================================================================================
-                    // MODE 1: Write .bin files for later re-assembly
-                    // =======================================================================================
-                    char filename[256];
-                    snprintf(filename, sizeof(filename), "rank_%d/i%d_slab_N%d.bin", rank, i, N);
-                    
-                    FILE *fp = fopen(filename, "wb");
-                    if (fp) {
-                        // Write in [Array][X][Y] order (no transpose)
-                        // Loop order: for (array) for (X) for (Y) to match ZSLAB layout
-                        for (int array_idx = 0; array_idx < narray; array_idx++) {
-                            for (int k_idx = 0; k_idx < x_count; k_idx++) {
-                                for (int j = 0; j < N; j++) {
-                                    fftw_complex_t *src = &ZSLAB(array_idx, k_idx, j, N, narray, x_count);
-                                    size_t written = fwrite(src, sizeof(fftw_complex_t), 1, fp);
-                                    if (written != 1) {
-                                        fprintf(stderr, "Rank %d: Write error in %s at (array=%d,k_idx=%d,j=%d)\n",
-                                               rank, filename, array_idx, k_idx, j);
-                                    }
-                                }
-                            }
-                        }
-                        fclose(fp);
-                        
-                        files_written++;
-                        size_t slab_bytes = (size_t)x_count * narray * N * sizeof(fftw_complex_t);
-                        total_bytes_written += slab_bytes;
-                    } else {
-                        fprintf(stderr, "Rank %d: ERROR opening %s for writing (errno=%d)\n", 
-                               rank, filename, errno);
+                total_bytes_written += (size_t)N * N * sizeof(RVZelParticle);
+                if (static_cast<ZeldovichParameters*>(params)->qdensity)
+                    total_bytes_written += (size_t)N * N * sizeof(float);
+            } else if (particle_output_mode == 4) {
+                int s = z * cpd / N;
+                if (s >= slab_z_start && s < slab_z_end) {
+                    FILE *fp = zslab_fp[s - slab_z_start];
+                    FILE *fp_dens = (s - slab_z_start < (int)zslab_dens_fp.size())
+                                    ? zslab_dens_fp[s - slab_z_start] : NULL;
+                    if (fp != NULL) {
+                        AppendZSlabSegment_M4(
+                            fp, fp_dens, z,
+                            my_extended_bounds.core.x_start, x_count,
+                            local_z_slab, N, narray,
+                            *static_cast<ZeldovichParameters*>(params)
+                        );
                     }
-                    break;
                 }
-                
-                case 2: {
-                    // =======================================================================================
-                    // MODE 2: Write .bin files then immediately read back and write particle ICs
-                    // =======================================================================================
-                    // Useful for verifying .bin file format and re-assembly logic
-                    if (param_file == NULL || params == NULL) {
-                        break;
-                    }
-                    
-                    // Step 1: Write .bin file (same as Mode 2)
-                    char filename[256];
-                    snprintf(filename, sizeof(filename), "rank_%d/i%d_slab_N%d.bin", rank, i, N);
-                    
-                    FILE *fp = fopen(filename, "wb");
-                    if (!fp) {
-                        fprintf(stderr, "Rank %d: ERROR opening %s for writing (errno=%d)\n", 
-                               rank, filename, errno);
-                        break;
-                    }
-                    
-                    // Transpose from [Array][X][Y] to [Array][Y][X] and write to .bin file
-                    for (int array_idx = 0; array_idx < narray; array_idx++) {
-                        for (int j = 0; j < N; j++) {
-                            for (int k_idx = 0; k_idx < x_count; k_idx++) {
-                                fftw_complex_t *src = &ZSLAB(array_idx, k_idx, j, N, narray, x_count);
-                                size_t written = fwrite(src, sizeof(fftw_complex_t), 1, fp);
-                                if (written != 1) {
-                                    fprintf(stderr, "Rank %d: Write error in %s at (array=%d,j=%d,k_idx=%d)\n",
-                                           rank, filename, array_idx, j, k_idx);
-                                }
-                            }
-                        }
-                    }
-                    fclose(fp);
-                    
-                    // Step 2: Read .bin file back into [y][x] format and call WriteParticlesSlab_range
-                    fp = fopen(filename, "rb");
-                    if (!fp) {
-                        fprintf(stderr, "Rank %d: ERROR opening %s for reading (errno=%d)\n", 
-                               rank, filename, errno);
-                        break;
-                    }
-                    fftw_complex_t *T_slab1 = (fftw_complex_t*)FFTW_MALLOC(x_count * N * sizeof(fftw_complex_t));
-                    fftw_complex_t *T_slab2 = (fftw_complex_t*)FFTW_MALLOC(x_count * N * sizeof(fftw_complex_t));
-                    fftw_complex_t *T_slab3 = (fftw_complex_t*)FFTW_MALLOC(x_count * N * sizeof(fftw_complex_t));
-                    fftw_complex_t *T_slab4 = (fftw_complex_t*)FFTW_MALLOC(x_count * N * sizeof(fftw_complex_t));
-                    
-                    if (!T_slab1 || !T_slab2 || !T_slab3 || !T_slab4) {
-                        fprintf(stderr, "Rank %d: ERROR: Failed to allocate read buffers for i=%d\n", rank, i);
-                        fclose(fp);
-                        break;
-                    }
-                    
-                    // Read in [Array][Y][X] order (as written)
-                    for (int array_idx = 0; array_idx < narray; array_idx++) {
-                        fftw_complex_t *dest = (array_idx == 0) ? T_slab1 :
-                                               (array_idx == 1) ? T_slab2 :
-                                               (array_idx == 2) ? T_slab3 : T_slab4;
-                        
-                        for (int j = 0; j < N; j++) {
-                            for (int k_idx = 0; k_idx < x_count; k_idx++) {
-                                size_t read = fread(&dest[j * x_count + k_idx], sizeof(fftw_complex_t), 1, fp);
-                                if (read != 1) {
-                                    fprintf(stderr, "Rank %d: Read error in %s at (array=%d,j=%d,k_idx=%d)\n",
-                                           rank, filename, array_idx, j, k_idx);
-                                }
-                            }
-                        }
-                    }
-                    fclose(fp);
-                    
-                    // Step 3: Call WriteParticlesSlab_range
-                    int k_start_global = my_extended_bounds.core.x_start;
-                    int k_extent = x_count;
-                    
-                    WriteParticlesSlab_range(
-                        rank, i, k_start_global, k_extent,
-                        (Complx*)T_slab1, (Complx*)T_slab2, (Complx*)T_slab3, (Complx*)T_slab4,
-                        *static_cast<ZeldovichParameters*>(params)
-                    );
-                    
-                    FFTW_FREE(T_slab1);
-                    FFTW_FREE(T_slab2);
-                    FFTW_FREE(T_slab3);
-                    FFTW_FREE(T_slab4);
-                    
-                    files_written++;
-                    break;
-                }
-                
-                case 3: {
-                    if (grid_x == 1) {
-                        // ===========================================================================
-                        // grid_x==1: z-group format — one full NxN plane per z (zeldovich-compatible)
-                        // ===========================================================================
-                        int file_index = z * cpd / N;
-                        FILE *fp = zgrp_fp[file_index - zgrp_start];
-                        FILE *fp_dens = (file_index - zgrp_start < (int)zgrp_dens_fp.size())
-                                        ? zgrp_dens_fp[file_index - zgrp_start] : NULL;
-                        if (fp != NULL) {
-                            AppendZSlabFull(
-                                fp, fp_dens, z,
-                                my_extended_bounds.core.x_start, x_count,
-                                local_z_slab, N, narray,
-                                *static_cast<ZeldovichParameters*>(params)
-                            );
-                        }
-                        total_bytes_written += (size_t)N * N * sizeof(RVZelParticle);
-                        if (static_cast<ZeldovichParameters*>(params)->qdensity)
-                            total_bytes_written += (size_t)N * N * sizeof(float);
-                    } else {
-                        // ===========================================================================
-                        // grid_x>1: ic_s is Abacus x-slab s; per z append to every ic_s in rank band
-                        // ===========================================================================
-                        for (int s = slab_x_start; s < slab_x_end; s++) {
-                            FILE *fp = slab_fp[s - slab_x_start];
-                            FILE *fp_dens = (s - slab_x_start < (int)slab_dens_fp.size())
-                                            ? slab_dens_fp[s - slab_x_start] : NULL;
-                            if (fp != NULL) {
-                                if (z == 0) {
-                                    fprintf(stderr,
-                                            "[IC_WRITE_DEBUG] MPI_rank=%d z=%d append ic_%04d\n",
-                                            rank, z, s);
-                                    fflush(stderr);
-                                }
-                                AppendSlabZSegment(
-                                    fp, fp_dens, s, cpd, z,
-                                    my_extended_bounds.core.x_start, x_count,
-                                    local_z_slab, N, narray,
-                                    *static_cast<ZeldovichParameters*>(params)
-                                );
-                            }
-                            int firstx = (s * N + cpd - 1) / cpd;
-                            int lastx  = ((s + 1) * N + cpd - 1) / cpd;
-                            int k_start = my_extended_bounds.core.x_start;
-                            int seg_start = std::max(firstx, k_start);
-                            int seg_end   = std::min(lastx, k_start + x_count);
-                            if (seg_start < seg_end) {
-                                int ox_count = seg_end - seg_start;
-                                total_bytes_written += (size_t)ox_count * N * sizeof(RVZelParticle);
-                                if (static_cast<ZeldovichParameters*>(params)->qdensity)
-                                    total_bytes_written += (size_t)ox_count * N * sizeof(float);
-                            }
-                        }
-                    }
-                    break;
-                }
-
-                case 4: {
-                    // ===========================================================================
-                    // MODE 4: z-slab format — one segment per z to the owning z-slab file
-                    // ===========================================================================
-                    int s = z * cpd / N;
-                    if (s >= slab_z_start && s < slab_z_end) {
-                        FILE *fp = zslab_fp[s - slab_z_start];
-                        FILE *fp_dens = (s - slab_z_start < (int)zslab_dens_fp.size())
-                                        ? zslab_dens_fp[s - slab_z_start] : NULL;
-                        if (fp != NULL) {
-                            AppendZSlabSegment_M4(
-                                fp, fp_dens, z,
-                                my_extended_bounds.core.x_start, x_count,
-                                local_z_slab, N, narray,
-                                *static_cast<ZeldovichParameters*>(params)
-                            );
-                        }
-                    }
-                    int ox_total = my_extended_bounds.core.x_end - my_extended_bounds.core.x_start;
-                    total_bytes_written += (size_t)ox_total * N * sizeof(RVZelParticle);
-                    if (static_cast<ZeldovichParameters*>(params)->qdensity)
-                        total_bytes_written += (size_t)ox_total * N * sizeof(float);
-                    break;
-                }
-                
-                default:
-                    break;
+                int ox_total = my_extended_bounds.core.x_end - my_extended_bounds.core.x_start;
+                total_bytes_written += (size_t)ox_total * N * sizeof(RVZelParticle);
+                if (static_cast<ZeldovichParameters*>(params)->qdensity)
+                    total_bytes_written += (size_t)ox_total * N * sizeof(float);
             }
             acc_io += omp_get_wtime() - t_io0;
             }
@@ -1892,29 +1537,19 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
     // Idle ranks: files_written = 0, total_bytes_written = 0 (already initialized)
     
     // MODE 3: Close files and set file count
-    if (PARTICLE_OUTPUT_MODE == 3 && params != NULL) {
-        if (grid_x == 1) {
-            for (size_t i = 0; i < zgrp_fp.size(); i++) {
-                if (zgrp_fp[i] != NULL) { fclose(zgrp_fp[i]); zgrp_fp[i] = NULL; }
-                if (i < zgrp_dens_fp.size() && zgrp_dens_fp[i] != NULL) {
-                    fclose(zgrp_dens_fp[i]); zgrp_dens_fp[i] = NULL;
-                }
+    if (particle_output_mode == 3 && params != NULL) {
+        for (size_t i = 0; i < zgrp_fp.size(); i++) {
+            if (zgrp_fp[i] != NULL) { fclose(zgrp_fp[i]); zgrp_fp[i] = NULL; }
+            if (i < zgrp_dens_fp.size() && zgrp_dens_fp[i] != NULL) {
+                fclose(zgrp_dens_fp[i]); zgrp_dens_fp[i] = NULL;
             }
-            files_written = zgrp_end - zgrp_start;
-        } else {
-            for (size_t i = 0; i < slab_fp.size(); i++) {
-                if (slab_fp[i] != NULL) { fclose(slab_fp[i]); slab_fp[i] = NULL; }
-                if (i < slab_dens_fp.size() && slab_dens_fp[i] != NULL) {
-                    fclose(slab_dens_fp[i]); slab_dens_fp[i] = NULL;
-                }
-            }
-            files_written = slab_x_end - slab_x_start;
         }
+        files_written = zgrp_end - zgrp_start;
         MPI_Barrier(zd_comm_2d);
     }
 
     // MODE 4: Close files and set file count
-    if (PARTICLE_OUTPUT_MODE == 4 && params != NULL) {
+    if (particle_output_mode == 4 && params != NULL) {
         for (size_t i = 0; i < zslab_fp.size(); i++) {
             if (zslab_fp[i] != NULL) { fclose(zslab_fp[i]); zslab_fp[i] = NULL; }
             if (i < zslab_dens_fp.size() && zslab_dens_fp[i] != NULL) {
