@@ -36,6 +36,7 @@ endif
 if get_option('production_mode')
   proj_defs += '-DPRODUCTION_MODE'
 endif
+proj_defs += '-DPARTICLE_OUTPUT_MODE=@0@'.format(get_option('particle_output_mode'))
 proj_defs += '-DSKIP_FILE_WRITE=@0@'.format(get_option('skip_file_write'))
 proj_defs += '-DPARALLELIZE_Z_LOOP=@0@'.format(get_option('parallelize_z_loop'))
 if get_option('debug_prints')
@@ -130,20 +131,10 @@ _zd_mpi_inc_base = [
   'src/streaming',
   'src/utils',
 ]
-_abacus_embed = get_option('abacus_embed')
-if _abacus_embed
-  # Parent Abacus must call meson.override_dependency('parseheader', ...) first.
-  parseheader_dep = dependency('parseheader')
-  zd_mpi_inc = include_directories(_zd_mpi_inc_base)
-else
-  parseheader_dep = disabler()
-  zd_mpi_inc = include_directories(
-    _zd_mpi_inc_base + [
-      'deps/ParseHeader/generated',
-      'deps/ParseHeader/include',
-    ],
-  )
-endif
+# ParseHeader via Meson subproject (dedupes with parent Abacus when abacus_embed=true).
+ph_proj = subproject('ParseHeader', default_options: ['b_sanitize=none'])
+parseheader_dep = ph_proj.get_variable('parseheader_dep')
+zd_mpi_inc = include_directories(_zd_mpi_inc_base)
 # =============================================================================
 # Composite dependency (includes + link deps for Zeldovich_MPI)
 # =============================================================================

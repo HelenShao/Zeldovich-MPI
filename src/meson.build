@@ -16,14 +16,6 @@ rng_cpp = configure_file(
 # =============================================================================
 # Zeldovich_MPI — translation units (files())
 # =============================================================================
-_vendored_parseheader_sources = files(
-  '../deps/ParseHeader/generated/phParser.tab.cc',
-  '../deps/ParseHeader/generated/phScanner.cc',
-  '../deps/ParseHeader/src/HeaderStream.cc',
-  '../deps/ParseHeader/src/ParseHeader.cc',
-  '../deps/ParseHeader/src/phDriver.cc',
-  '../deps/ParseHeader/src/stringutil.cc',
-)
 _zd_mpi_core_sources = files(
   '../deps/zeldovich_core/src/parameters.cpp',
   '../deps/zeldovich_core/src/power_spectrum.cpp',
@@ -44,16 +36,9 @@ _zd_mpi_core_sources = files(
   'utils/zeldovich_wrapper.cpp',
   'zeldovich_mpi_driver.cpp',
 )
-if get_option('abacus_embed')
-  # Use Abacus subprojects/ParseHeader via meson.override_dependency('parseheader').
-  zd_mpi_sources = _zd_mpi_core_sources
-  zeldovich_ic_lib_deps = [zd_mpi_common_dep, parseheader_dep]
-  zeldovich_ic_export_deps = [mpi_dep, omp_dep, fftw_dep, fmt_dep, parseheader_dep]
-else
-  zd_mpi_sources = _vendored_parseheader_sources + _zd_mpi_core_sources
-  zeldovich_ic_lib_deps = [zd_mpi_common_dep]
-  zeldovich_ic_export_deps = [mpi_dep, omp_dep, fftw_dep, fmt_dep]
-endif
+zd_mpi_sources = _zd_mpi_core_sources
+zeldovich_ic_lib_deps = [zd_mpi_common_dep, parseheader_dep]
+zeldovich_ic_export_deps = [mpi_dep, omp_dep, fftw_dep, fmt_dep, parseheader_dep]
 if not get_option('abacus_embed')
   zd_mpi_sources += files('../deps/zeldovich_core/src/STimer.cc')
 endif
