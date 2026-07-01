@@ -43,7 +43,7 @@ void setup_fftw_plans_full(int N, int narray, fftw_complex_t *plan_buffer,
     // ====================================================================================
 
 #ifdef USE_FFTW_WISDOM
-    if (fft_wisdom_import_rank0_broadcast_local(rank, MPI_COMM_WORLD, local_wisdom_dir) != 0) {
+    if (fft_wisdom_broadcast_from_rank0(rank, MPI_COMM_WORLD, local_wisdom_dir) != 0) {
         fprintf(stderr, "[ERROR] Rank %d: failed wisdom broadcast/local import setup\n", rank);
         MPI_Abort(MPI_COMM_WORLD, 1);
     }
