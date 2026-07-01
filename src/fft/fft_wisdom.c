@@ -72,6 +72,22 @@ bool zd_wisdom_preflight_broadcast_done(void)
     return zd_wisdom_preflight_broadcast_done_flag;
 }
 
+static int zd_fftw_threads_once(int rank)
+{
+    static int done = 0;
+    if (done) {
+        return 0;
+    }
+    if (FFTW_INIT_THREADS() == 0) {
+        fprintf(stderr, "[FFTW-WISDOM] Rank %d: FFTW_INIT_THREADS failed (%s precision)\n", rank,
+                PRECISION_NAME);
+        fflush(stderr);
+        return -1;
+    }
+    done = 1;
+    return 0;
+}
+
 static int fft_wisdom_import_string_on_all_ranks(
     int rank,
     char *wisdom_str,
@@ -152,6 +168,10 @@ int fft_wisdom_broadcast_from_rank0(int rank, MPI_Comm comm, const char *local_w
 {
     if (zd_wisdom_preflight_broadcast_done()) {
         return 0;
+    }
+
+    if (zd_fftw_threads_once(rank) != 0) {
+        return -1;
     }
 
     char *wisdom_str = NULL;

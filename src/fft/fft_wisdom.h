@@ -22,14 +22,13 @@ const char *zd_wisdom_rank0_file(void);
 // Rank 0: mkdir parent of zd_wisdom_rank0_file() when it contains a '/'. Returns 0 on success.
 int zd_wisdom_ensure_dir_rank0(void);
 
-// Set flag to indicate that wisdom preflight broadcast has been done.
-// In broadcast-only mode, wisdom is already on all ranks after preflight. 
-// The flag tells the driver path to skip the second file-read + broadcast. 
+// Set after successful MPI wisdom broadcast (driver); skips duplicate broadcast.
 void zd_wisdom_set_preflight_broadcast_done(bool done);
 bool zd_wisdom_preflight_broadcast_done(void);
 
-// MPI_Bcast wisdom from rank 0; all ranks IMPORT_FROM_STRING. No-op if preflight already ran.
-// local_wisdom_dir: file fallback on rank 0 when FFTW has no in-memory wisdom (standalone driver).
+// MPI_Bcast wisdom from rank 0; all ranks IMPORT_FROM_STRING. No-op if already broadcast.
+// Call from setup_fftw_plans_full after FFTW_INIT_THREADS on all ranks.
+// local_wisdom_dir: file fallback on rank 0 when FFTW has no in-memory wisdom (standalone).
 int fft_wisdom_broadcast_from_rank0(int rank, MPI_Comm comm, const char *local_wisdom_dir);
 
 #ifdef __cplusplus

@@ -136,10 +136,7 @@ static int wisdom_preflight_from_param_buffer(
         }
     }
 
-    if (fft_wisdom_broadcast_from_rank0(world_rank, MPI_COMM_WORLD, NULL) != 0) {
-        return 1;
-    }
-
+    MPI_Barrier(MPI_COMM_WORLD);
     return 0;
 }
 
