@@ -37,7 +37,7 @@ int main(int argc, char **argv)
     fftw_plan_t plan_2d = NULL;
     fftw_plan_t plan_1d = NULL;
 
-    const int rc = wisdom_rank0_plans_and_export(N, narray, plan_buffer, &plan_2d, &plan_1d);
+    const int rc = wisdom_rank0_plans(N, narray, plan_buffer, &plan_2d, &plan_1d, 1);
     if (plan_2d) {
         FFTW_DESTROY_PLAN(plan_2d);
     }

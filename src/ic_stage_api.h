@@ -21,15 +21,14 @@ int IC_Rank0Wisdom(const char *param_file);
 /**
  * Embedded IC entry (Abacus): rank-0 param header bytes already broadcast by host.
  *
- * Two-stage wisdom flow:
- * 1. wisdom_preflight_from_param_buffer (internal): rank 0 parses bytes for PPD/narray,
- *    exports FFTW_WISDOM_FILENAME; other ranks barrier.
- * 2. IC driver: re-broadcasts the same header bytes, then runs generation; rank 0 imports
- *    wisdom and MPI_Bcast's it inside IC_Run (no multi-rank global wisdom file read).
+ * Wisdom preflight (before IC driver), all ranks:
+ * - Rank 0 plans 2D+1D FFTW; optionally writes fftw_wisdom.wisdom when wisdom_save_dir is set.
+ * - All ranks: rank 0 exports wisdom string, MPI_Bcast, IMPORT_FROM_STRING (driver skips repeat).
  *
  * @param param_path Path string for relative par2 lookups only (not re-read on rank 0).
+ * @param wisdom_save_dir Abacus ICWisdomSaveDirectory, or NULL for broadcast-only preflight.
  */
-int IC_ParamBuffer(const char *bytes, size_t len, const char *param_path);
+int IC_ParamBuffer(const char *bytes, size_t len, const char *param_path, const char *wisdom_save_dir);
 
 /** Run full IC generation: argv is Zeldovich_MPI CLI (param_file only; N is derived from NP->ppd). */
 int IC_Run(int argc, char **argv);

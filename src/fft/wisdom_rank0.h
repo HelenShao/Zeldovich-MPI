@@ -8,16 +8,12 @@ extern "C" {
 #endif
 
 /**
- * Import/export wisdom at FFTW_WISDOM_FILENAME (see fft_wisdom.h),
- * initialize FFTW threads, create 2D DFT_2D + 1D DFT plans on plan_buffer (in-place 2D on one N×N plane),
- * export accumulated wisdom to the same path.
- *
+ * Create 2D + 1D FFTW plans on plan_buffer.
  * plan_buffer must be posix_memalign(ALIGN_BYTES, N * N * sizeof(fftw_complex_t)).
- * narray is accepted for CLI compatibility; 2D wisdom does not depend on it.
- * Caller destroys returned plans after this returns.
+ * @param save_to_file Non-zero to also write wisdom to zd_wisdom_rank0_file(); zero to keep wisdom in memory only.
  */
-int wisdom_rank0_plans_and_export(int N, int narray, fftw_complex_t *plan_buffer,
-                                  fftw_plan_t *plan_2d_out, fftw_plan_t *plan_1d_out);
+int wisdom_rank0_plans(int N, int narray, fftw_complex_t *plan_buffer, fftw_plan_t *plan_2d_out,
+                       fftw_plan_t *plan_1d_out, int save_to_file);
 
 #ifdef __cplusplus
 }

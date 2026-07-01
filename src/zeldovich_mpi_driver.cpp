@@ -89,6 +89,7 @@
 
 // --- CORE MODULES ---
 #include "fft/fft_setup.h"
+#include "fft/fft_wisdom.h"
 #include "generation/ZD_MPI_generation.h"
 #include "communication/mpi_exchange.h"
 #include "streaming/z_streaming.h"
@@ -111,7 +112,7 @@ static void print_mpi_init_thread_levels(int required, int provided, int world_r
     fflush(stdout);
 }
 
-static int broadcast_parameter_header_bcast(
+static int bcast_param_header(
     uint64_t header_len,
     int world_rank,
     MPI_Comm comm,
@@ -140,7 +141,7 @@ static int broadcast_parameter_header_bcast(
     return 0;
 }
 
-static int broadcast_parameter_header_bytes_from_file(
+static int bcast_param_header_file(
     const char *param_file,
     int world_rank,
     MPI_Comm comm,
@@ -161,10 +162,10 @@ static int broadcast_parameter_header_bytes_from_file(
         header_bytes.assign(hs.buffer, hs.buffer + hs.bufferlength);
         header_len = static_cast<uint64_t>(hs.bufferlength);
     }
-    return broadcast_parameter_header_bcast(header_len, world_rank, comm, header_bytes);
+    return bcast_param_header(header_len, world_rank, comm, header_bytes);
 }
 
-static int broadcast_parameter_header_bytes_from_memory(
+static int bcast_param_header_mem(
     const char *header_bytes_in,
     size_t header_len_in,
     int world_rank,
@@ -184,7 +185,7 @@ static int broadcast_parameter_header_bytes_from_memory(
         header_bytes.assign(header_bytes_in, header_bytes_in + header_len_in);
         header_len = static_cast<uint64_t>(header_len_in);
     }
-    return broadcast_parameter_header_bcast(header_len, world_rank, comm, header_bytes);
+    return bcast_param_header(header_len, world_rank, comm, header_bytes);
 }
 
 /**
@@ -271,7 +272,7 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
     std::vector<char> param_header_bytes;
     int header_broadcast_rc = 0;
     if (zeldovich_embed_param_header.bytes != NULL) {
-        header_broadcast_rc = broadcast_parameter_header_bytes_from_memory(
+        header_broadcast_rc = bcast_param_header_mem(
             zeldovich_embed_param_header.bytes,
             zeldovich_embed_param_header.len,
             world_rank,
@@ -279,14 +280,14 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
             param_header_bytes
         );
     } else {
-        header_broadcast_rc = broadcast_parameter_header_bytes_from_file(
+        header_broadcast_rc = bcast_param_header_file(
             param_file, world_rank, MPI_COMM_WORLD, param_header_bytes);
     }
     if (header_broadcast_rc != 0) {
         MPI_Abort(MPI_COMM_WORLD, 1);
     }
 
-    params = zeldovich_params_create_from_buffer(
+    params = zd_params_from_buffer(
         param_header_bytes.data(),
         param_header_bytes.size(),
         param_file
@@ -682,12 +683,19 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
         }
     }
 
-    const char *local_wisdom_dir = "/dev/shm/Abacus_wisdom";
+    const char *local_wisdom_dir = NULL;
     if (params != NULL) {
         const char *parsed_local_wisdom_dir = zeldovich_params_get_local_wisdom_dir(params);
         if (parsed_local_wisdom_dir != NULL && parsed_local_wisdom_dir[0] != '\0') {
             local_wisdom_dir = parsed_local_wisdom_dir;
         }
+    }
+    if (local_wisdom_dir == NULL && zeldovich_ic_embedded && zd_ic_wisdom_save_dir != NULL &&
+        zd_ic_wisdom_save_dir[0] != '\0') {
+        local_wisdom_dir = zd_ic_wisdom_save_dir;
+    }
+    if (local_wisdom_dir != NULL) {
+        zd_wisdom_set_dir(local_wisdom_dir);
     }
 
     // ========================================================================
@@ -696,7 +704,9 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
     // plan_2d: FFTW_PLAN_DFT_2D on fft_plan_buffer (temporary; freed before recv_buffer)
     fftw_complex_t *plan_buffer = (!is_idle_rank && fft_plan_buffer != NULL) ? fft_plan_buffer : nullptr;
     fftw_plan_t plan_2d, plan_1d_y; // setup both plans
-    setup_fftw_plans_full(N, narray, plan_buffer, &plan_2d, &plan_1d_y, local_wisdom_dir);
+    setup_fftw_plans_full(
+        N, narray, plan_buffer, &plan_2d, &plan_1d_y, local_wisdom_dir != NULL ? local_wisdom_dir : ""
+    );
 
     if (fft_plan_buffer != NULL) {
         free(fft_plan_buffer);

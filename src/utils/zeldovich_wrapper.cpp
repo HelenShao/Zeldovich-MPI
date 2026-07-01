@@ -23,7 +23,7 @@ ParametersHandle zeldovich_params_create(const char* param_file) {
     }
 }
 
-ParametersHandle zeldovich_params_create_from_buffer(
+ParametersHandle zd_params_from_buffer(
     const char* header_bytes,
     size_t header_len,
     const char* source_name
