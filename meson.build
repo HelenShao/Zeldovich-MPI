@@ -78,42 +78,12 @@ fmt_dep = dependency(
 mpi_dep = dependency('mpi', language: 'cpp')
 omp_dep = dependency('openmp')
 # =============================================================================
-# Libraries — FFTW (pkg-config or fftw_root + find_library)
+# Libraries — FFTW (pkg-config; e.g. module load fftw on Aurora)
 # =============================================================================
-_fftw_root = get_option('fftw_root')
 if _double_prec
-  _omp_lib_base = 'fftw3'
-  _fftw_pc = dependency('fftw3', required: false)
+  fftw_dep = dependency('fftw3', required: true)
 else
-  _omp_lib_base = 'fftw3f'
-  _fftw_pc = dependency('fftw3f', required: false)
-endif
-if _fftw_pc.found()
-  # find_library does not use pkg-config -L paths; pass fftw libdir (needed when
-  # fftw3f / fftw3f_omp live under a non-default prefix, e.g. local float build).
-  _fftw_libdir = _fftw_pc.get_variable(pkgconfig: 'libdir')
-  _fftw_omp_lib = cxx.find_library(
-    _omp_lib_base + '_omp',
-    dirs: _fftw_libdir,
-    required: true,
-  )
-  fftw_dep = declare_dependency(
-    dependencies: [_fftw_pc, _fftw_omp_lib],
-  )
-elif _fftw_root != ''
-  fftw_inc = include_directories(join_paths(_fftw_root, 'include'))
-  fftw_libdir = join_paths(_fftw_root, 'lib')
-  fftw_omp = cxx.find_library(_omp_lib_base + '_omp', dirs: fftw_libdir, required: true)
-  fftw_base = cxx.find_library(_omp_lib_base, dirs: fftw_libdir, required: true)
-  fftw_dep = declare_dependency(
-    include_directories: fftw_inc,
-    dependencies: [fftw_omp, fftw_base],
-  )
-else
-  error(
-    'FFTW not found via pkg-config and fftw_root is empty. ' +
-    'Load an fftw module or pass -Dfftw_root=/path/to/fftw/prefix',
-  )
+  fftw_dep = dependency('fftw3f', required: true)
 endif
 # =============================================================================
 # Include directories (repo layout)
