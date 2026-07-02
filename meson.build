@@ -79,11 +79,30 @@ mpi_dep = dependency('mpi', language: 'cpp')
 omp_dep = dependency('openmp')
 # =============================================================================
 # Libraries — FFTW (pkg-config; e.g. module load fftw on Aurora)
+# Threaded plan API (fftwf_init_threads, etc.) lives in libfftw3f_omp — no .pc on Aurora.
 # =============================================================================
 if _double_prec
-  fftw_dep = dependency('fftw3', required: true)
+  _fftw_base_dep = dependency('fftw3', required: true)
+  _fftw_omp_pc = 'fftw3_omp'
+  _fftw_omp_lib = 'fftw3_omp'
 else
-  fftw_dep = dependency('fftw3f', required: true)
+  _fftw_base_dep = dependency('fftw3f', required: true)
+  _fftw_omp_pc = 'fftw3f_omp'
+  _fftw_omp_lib = 'fftw3f_omp'
+endif
+_fftw_omp_dep = dependency(_fftw_omp_pc, required: false)
+if _fftw_omp_dep.found()
+  fftw_dep = declare_dependency(
+    dependencies: [_fftw_base_dep, _fftw_omp_dep],
+  )
+else
+  fftw_dep = declare_dependency(
+    dependencies: [_fftw_base_dep],
+    link_args: [
+      '-L' + _fftw_base_dep.get_variable('libdir'),
+      '-l' + _fftw_omp_lib,
+    ],
+  )
 endif
 # =============================================================================
 # Include directories (repo layout)
