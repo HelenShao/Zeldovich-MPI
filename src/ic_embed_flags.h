@@ -1,10 +1,14 @@
 #pragma once
 
+#include <mpi.h>
 #include <stdbool.h>
 #include <stddef.h>
 
 /** True when Zeldovich_IC runs inside an Abacus host (skip global FFTW cleanup, etc.). */
 extern bool zeldovich_ic_embedded;
+
+/** Abacus comm_2d passed to IC_InitStage; used by driver for MPI_Comm_dup when embedded. */
+extern MPI_Comm zd_abacus_host_comm_2d;
 
 /** When set, zeldovich_mpi_driver_run uses these bytes instead of re-reading the param file. */
 struct ZeldovichEmbedParamHeader {

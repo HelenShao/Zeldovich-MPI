@@ -10,18 +10,28 @@
 #include "fft/wisdom_rank0.h"
 #include "fft/fft_wisdom.h"
 #include "ic_embed_flags.h"
+#include "mpi_topology.h"
 #include "zeldovich_mpi_driver.h"
 #include "zeldovich_wrapper.h"
 
 bool zeldovich_ic_embedded = false;
+MPI_Comm zd_abacus_host_comm_2d = MPI_COMM_NULL;
 ZeldovichEmbedParamHeader zeldovich_embed_param_header = {NULL, 0};
 const char *zd_ic_wisdom_save_dir = NULL;
 
 extern "C" {
 
-void IC_InitStage(int from_abacus_host)
+void IC_InitStage(int from_abacus_host, MPI_Comm abacus_comm_2d)
 {
     zeldovich_ic_embedded = (from_abacus_host != 0);
+    zd_abacus_host_comm_2d = zeldovich_ic_embedded ? abacus_comm_2d : MPI_COMM_NULL;
+    if (zeldovich_ic_embedded && abacus_comm_2d == MPI_COMM_NULL) {
+        int world_rank = 0;
+        MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+        if (world_rank == 0) {
+            fprintf(stderr, "IC_InitStage: embedded host requires non-null abacus_comm_2d\n");
+        }
+    }
     zd_ic_wisdom_save_dir = NULL;
     zd_wisdom_set_preflight_broadcast_done(false);
     zd_wisdom_set_dir(NULL);
@@ -29,6 +39,9 @@ void IC_InitStage(int from_abacus_host)
 
 static int wisdom_narray_from_params(ParametersHandle params, int *narray_out)
 {
+    /*
+     static helper that figures out how many field arrays (narray) the FFTW wisdom preflight must plan for
+     */
     if (!params || !narray_out) {
         return 1;
     }
@@ -236,6 +249,7 @@ int IC_Run(int argc, char **argv)
 void IC_FinalizeStage(void)
 {
     MPI_Barrier(MPI_COMM_WORLD);
+    zd_topology_cleanup();
     zeldovich_ic_embedded = false;
     zeldovich_embed_param_header.bytes = NULL;
     zeldovich_embed_param_header.len = 0;

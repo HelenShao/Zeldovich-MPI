@@ -2,10 +2,13 @@
  * 1. INITIALIZATION
  *    - MPI_Init; parse param_file (required)
  *    - Read NP from param file, derive ppd (= N), validate N; validate num_ranks vs total_pairs
- *    - zd_comm_2d is a derived communicator with reorder=1, so MPI may remap ranks for topology locality
-*     - ex: world_rank=7 may be rank=3 in zd_comm_2d.
-*     - broadcast steps use MPI_COMM_WORLD + world_rank (all processes must participate)
-*     - most decomposition/compute logic uses zd_comm_2d + rank (grid-aware topology)
+*     - NOTE: All ranks end up parsing via zd_params_from_buffer — the driver no longer does a separate full-file read on every rank after the header is available:
+*           - the difference is where param_header_bytes comes from:    
+*           - Embedded: zeldovich_embed_param_header set by IC_ParamBuffer -> bcast_param_header_mem
+*     - Standalone: Rank 0 reads file with HeaderStream -> bcast_param_header_file -> all ranks get bytes
+ *    - Embedded: zd_comm_2d = MPI_Comm_dup(Abacus comm_2d) from IC_InitStage
+ *    - Standalone: zd_comm_2d from MPI_Cart_create with dims={size_x,size_z}, reorder=1.
+ *    - was: zd_comm_2d is a separate MPI_Cart_create; world_rank may differ from cart rank.
  *
  * 2. Y-SLICE PAIR DISTRIBUTION
  *    - total_pairs = N/2 + 1 (conjugate pairs: (0,0), (1,N-1), ..., N/2 self-conj)
@@ -308,24 +311,23 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
     }
 
     // ========================================================================
-    // MPI Cartesian Topology Setup (grid_z from param file, grid_x from MPI size)
+    // MPI Cartesian Topology Setup (Phase 7: Abacus-aligned size_x/size_z)
     // ========================================================================
-    int grid_x, grid_z;
-    // old code:
-    // grid_z = zeldovich_params_get_NumZRanks(params);
-    // grid_x = num_ranks / grid_z; // set equal to number abacus zranks 
-    
-    // make this change:
-    grid_x = abacus_params_get_NumZRanks(params); // third transpose! before it was ZD z ranks!
-    grid_z = num_ranks / grid_x;
-    const int particle_output_mode = (grid_x > 1) ? 4 : 3;
+    // was: int grid_x, grid_z;
+    // was: grid_x = abacus_params_get_NumZRanks(params);
+    // was: grid_z = num_ranks / grid_x;
+    const int num_z_ranks = abacus_params_get_NumZRanks(params);
+    // was: const int particle_output_mode = (grid_x > 1) ? 4 : 3;
+    const int size_z = num_z_ranks;  // cart dim 1 = Abacus MPI_size_z = NumZRanks
+    const int size_x = num_ranks / size_z;  // cart dim 0 = Abacus MPI_size_x
+    const int particle_output_mode = (size_z > 1) ? 4 : 3;
     if (world_rank == 0) {
-        printf("[INIT] particle_output_mode=%d (NumZRanks=grid_x=%d)\n",
-               particle_output_mode, grid_x);
+        printf("[INIT] particle_output_mode=%d (NumZRanks=size_z=%d)\n",
+               particle_output_mode, size_z);
     }
 
     // When integrated in abacus, InitParallelTopology() in multistep will
-    // assert that grid_z == MPI_SIZE/NumZRanks.
+    // assert that size_x == MPI_SIZE/NumZRanks.
 
     // old code:
     // if (num_ranks % grid_z != 0) {
@@ -337,10 +339,11 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
     // }
 
     // new change:
-    if (num_ranks % grid_x != 0) {
+    // was: if (num_ranks % grid_x != 0) { ... MPI_Abort ... grid_x ... }
+    if (!zeldovich_ic_embedded && num_ranks % size_z != 0) {
         if (world_rank == 0) {
             fprintf(stderr, "Error: num_ranks=%d is not evenly divisible by NumZRanks=%d.\n",
-                    num_ranks, grid_x);
+                    num_ranks, size_z);
         }
         MPI_Abort(MPI_COMM_WORLD, 1);
     }
@@ -349,46 +352,30 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
     // int dims[2] = { grid_x, grid_z };
 
     // new change:
-    int dims[2] = { grid_z, grid_x }; //made this change
-    int periodic[2] = { 1, 1 };
-    int reorder = 1;
-
-    MPI_Cart_create(MPI_COMM_WORLD, 2, dims, periodic, reorder, &zd_comm_2d);
-
-    if (zd_comm_2d == MPI_COMM_NULL) {
-        if (world_rank == 0) {
-            fprintf(stderr, "Error: unable to create MPI Cartesian grid with grid_x=%d, grid_z=%d.\n",
-                    grid_x, grid_z);
-            fprintf(stderr, "       Check that the supplied grid dimensions are valid for this MPI launch.\n");
-        }
+    // was: int dims[2] = { grid_z, grid_x };
+    // was: MPI_Cart_create(MPI_COMM_WORLD, 2, dims, periodic, reorder, &zd_comm_2d);
+    int topo_rc = 0;
+    if (zeldovich_ic_embedded) {
+        topo_rc = zd_topology_init_embedded(zd_abacus_host_comm_2d, num_z_ranks);
+    } else {
+        topo_rc = zd_topology_init_standalone(num_ranks, num_z_ranks);
+    }
+    if (topo_rc != 0) {
         if (!zeldovich_ic_embedded) {
             MPI_Finalize();
         }
         return 1;
     }
 
-    MPI_Comm_set_errhandler(zd_comm_2d, MPI_ERRORS_RETURN);
-
-    int rank;
-    MPI_Comm_rank(zd_comm_2d, &rank);
-
-    int coords[2];
-    MPI_Cart_coords(zd_comm_2d, rank, 2, coords);
-    int rank_x = coords[0];
-    int rank_z = coords[1];
+    // was: MPI_Comm_rank(zd_comm_2d, &rank); MPI_Cart_coords(...); int rank_x = coords[0]; ...
+    int rank = zd_cart_rank;
+    int rank_x = zd_cart_rank_x;
+    int rank_z = zd_cart_rank_z;
 
     if (rank == 0) {
-        printf("========================================================================\n");
-        printf("MPI Cartesian Topology Initialized (parameter-driven)\n");
-        printf("  Grid: %d x %d = %d ranks (cpd=%d, N=%d)\n", grid_x, grid_z, num_ranks, cpd, N);
-        printf("  Periodic: [X=%s, Z=%s]\n",
-               periodic[0] ? "yes" : "no", periodic[1] ? "yes" : "no");
-        printf("  Reorder: %s (hardware-aware rank assignment)\n",
-               reorder ? "enabled" : "disabled");
-        printf("========================================================================\n");
+        printf("  Grid: size_x=%d x size_z=%d = %d ranks (cpd=%d, N=%d)\n",
+               size_x, size_z, num_ranks, cpd, N);
     }
-
-    printf("[Rank %d] Cartesian coords: (rank_x=%d, rank_z=%d)\n", rank, rank_x, rank_z);
 
     (void)rank_x;
     (void)rank_z;
@@ -716,9 +703,9 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
     // Grid bounds: CPD-aligned when params/cpd present
     if (!is_idle_rank) {
         if (params != NULL) {
-            my_extended_bounds = get_extended_grid_bounds_CPD_aligned(rank, N, num_ranks, grid_x, grid_z, cpd);
+            my_extended_bounds = get_extended_grid_bounds_CPD_aligned(rank, N, num_ranks, size_x, size_z, cpd);
         } else {
-            my_extended_bounds = get_extended_grid_bounds(rank, N, num_ranks, grid_x, grid_z);
+            my_extended_bounds = get_extended_grid_bounds(rank, N, num_ranks, size_x, size_z);
         }
 #if USE_X_PADDING
         my_pencils = my_extended_bounds.num_pencils_padded;
@@ -939,7 +926,7 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
         calculate_batch_send_recv_counts(
             rank, num_ranks, N, narray, batch_idx,
             my_batch_slice_count, my_pencils,
-            grid_x, grid_z, cpd,
+            size_x, size_z, cpd,
             &sendcounts_batch, &sdispls_batch,
             &recvcounts_batch,
             &total_send_batch, &total_recv_batch
@@ -975,7 +962,7 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
                 rank, num_ranks, N, narray,
                 local_y_slices, my_batch_slice_count, NULL,
                 send_buffer_batch, sendcounts_batch, sdispls_batch,
-                grid_x, grid_z, cpd
+                size_x, size_z, cpd
             );
         }
 
@@ -1215,7 +1202,7 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
     int files_written = 0;
     size_t total_bytes_written = 0;
     
-    // MODE 3 (grid_x==1): file vectors for z-group format (flat ic_%04d)
+    // MODE 3 (size_z==1): file vectors for z-group format (flat ic_%04d)
     int zgrp_start = 0, zgrp_end = 0;
     std::vector<FILE*> zgrp_fp;
     std::vector<FILE*> zgrp_dens_fp;
@@ -1228,10 +1215,13 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
     if (particle_output_mode == 3 && params != NULL && !is_idle_rank) {
         ZeldovichParameters *p = static_cast<ZeldovichParameters*>(params);
 
-        // grid_x==1: z-group file mapping (Abacus RVZel_2D, MPI_size_z==1)
-        // Each z-rank writes CPD/grid_z files: ic_{file_index:04d}
-        int s_z_start = (rank_x * cpd) / grid_z;
-        int s_z_end   = ((rank_x + 1) * cpd) / grid_z;
+        // size_z==1: z-group file mapping (Abacus RVZel_2D, MPI_size_z==1)
+        // was: grid_x==1
+        // Each x-rank writes CPD/size_x files: ic_{file_index:04d}
+        // was: (rank_x * cpd) / grid_z
+        // grid_z was defined incorrectly to mean number x ranks, now it has been corrected
+        int s_z_start = (rank_x * cpd) / size_x;
+        int s_z_end   = ((rank_x + 1) * cpd) / size_x;
         zgrp_start = s_z_start;
         zgrp_end   = s_z_end;
 
@@ -1260,7 +1250,7 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
         }
 
         if (rank == 0) {
-            printf("[MODE 3] grid_x==1, z-group format (RVZel_2D flat): cpd=%d, files_per_rank=%d, ic_%%04d\n",
+            printf("[MODE 3] size_z==1, z-group format (RVZel_2D flat): cpd=%d, files_per_rank=%d, ic_%%04d\n",
                    cpd, zgrp_end - zgrp_start);
             printf("         Each file holds %d z-planes of %d x %d particles\n",
                    N / cpd, N, N);
@@ -1329,9 +1319,10 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
 
         // new change:
         // Slab band follows rank_x (Abacus x-decomposition), NOT rank_z.
-        // rank_x = coords[0] ranges over dims[0] = grid_z (= num_ranks/NumZRanks = MPI_size_x).
-        slab_z_start = (rank_x * cpd) / grid_z;
-        slab_z_end   = ((rank_x + 1) * cpd) / grid_z;
+        // rank_x = coords[0] ranges over dims[0] = size_x (= num_ranks/NumZRanks = MPI_size_x).
+        // was: slab_z_start = (rank_x * cpd) / grid_z;
+        slab_z_start = (rank_x * cpd) / size_x;
+        slab_z_end   = ((rank_x + 1) * cpd) / size_x;
 
         zslab_fp.resize(slab_z_end - slab_z_start, NULL);
         zslab_dens_fp.resize(slab_z_end - slab_z_start, NULL);
@@ -1767,8 +1758,7 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
 #endif
 
     if (zd_comm_2d != MPI_COMM_NULL) {
-        MPI_Comm_free(&zd_comm_2d);
-        zd_comm_2d = MPI_COMM_NULL;
+        zd_topology_cleanup();
     }
 
     if (rank == 0) {

@@ -1015,15 +1015,16 @@ int main(int argc, char **argv)
     
     // V14: Verify grid decomposition (show both core and padded with periodic BC)
     // Calculate grid factors first (needed for get_extended_grid_bounds)
-    int grid_x_verify, grid_z_verify;
-    calculate_grid_factors(num_ranks, &grid_x_verify, &grid_z_verify);
+    // was: int grid_x_verify, grid_z_verify;
+    int size_x_verify, size_z_verify;
+    calculate_grid_factors(num_ranks, &size_x_verify, &size_z_verify);
     
     // Validate Abacus compatibility (if enabled)
 #if ENABLE_ABACUS_VALIDATION
     if (rank == 0) {
-        if (!validate_abacus_compatibility(N, num_ranks, grid_x_verify, grid_z_verify)) {
+        if (!validate_abacus_compatibility(N, num_ranks, size_x_verify, size_z_verify)) {
             fprintf(stderr, "[WARNING] Domain decomposition may not be Abacus-compatible\n");
-            fprintf(stderr, "          Abacus requires: N divisible by grid_x and grid_z (exact division)\n");
+            fprintf(stderr, "          Abacus requires: N divisible by size_x and size_z (exact division)\n");
         }
     }
 #endif
@@ -1032,7 +1033,7 @@ int main(int argc, char **argv)
         printf("\n[V14-DEBUG] Grid decomposition verification (PERIODIC BOUNDARIES):\n");
         int num_to_print = (num_ranks < 4) ? num_ranks : 4;
         for (int dest = 0; dest < num_to_print; dest++) {
-            ExtendedGridBounds ext_b = get_extended_grid_bounds(dest, N, num_ranks, grid_x_verify, grid_z_verify);
+            ExtendedGridBounds ext_b = get_extended_grid_bounds(dest, N, num_ranks, size_x_verify, size_z_verify);
             printf("  Rank %d:\n", dest);
             printf("    Core:   X=[%d,%d), Z=[%d,%d), Pencils=%d\n",
                    ext_b.core.x_start, ext_b.core.x_end, 
@@ -1075,20 +1076,21 @@ int main(int argc, char **argv)
     // ========================================================================
     
     // V13: Need to calculate grid factors first to call get_extended_grid_bounds
-    int grid_x, grid_z;
-    calculate_grid_factors(num_ranks, &grid_x, &grid_z);
+    // was: int grid_x, grid_z;
+    int size_x, size_z;
+    calculate_grid_factors(num_ranks, &size_x, &size_z);
     
     // Validate Abacus compatibility (if enabled)
 #if ENABLE_ABACUS_VALIDATION
-    if (rank == 0 && !validate_abacus_compatibility(N, num_ranks, grid_x, grid_z)) {
+    if (rank == 0 && !validate_abacus_compatibility(N, num_ranks, size_x, size_z)) {
         fprintf(stderr, "[WARNING] Domain decomposition may not be Abacus-compatible\n");
-        fprintf(stderr, "          Abacus requires: N divisible by grid_x and grid_z (exact division)\n");
+        fprintf(stderr, "          Abacus requires: N divisible by size_x and size_z (exact division)\n");
     }
 #endif
     
     if (!is_idle_rank) {
         // V13: Get extended bounds with X-padding for Abacus compatibility
-        my_extended_bounds = get_extended_grid_bounds(rank, N, num_ranks, grid_x, grid_z);
+        my_extended_bounds = get_extended_grid_bounds(rank, N, num_ranks, size_x, size_z);
         
         // Use appropriate pencil count (padded if enabled, core otherwise)
 #if USE_X_PADDING

@@ -1,5 +1,6 @@
 #pragma once // include this header at most once per file
 
+#include <mpi.h>
 #include <stddef.h>
 
 #ifdef __cplusplus
@@ -9,8 +10,9 @@ extern "C" {
 /**
  * Embedded IC stage API for Abacus (include only from multistep.cpp).
  * @param from_abacus_host Non-zero when MPI is owned by Abacus (skip FFTW teardown in IC driver).
+ * @param abacus_comm_2d Abacus 2D cart comm when embedded; MPI_COMM_NULL for standalone.
  */
-void IC_InitStage(int from_abacus_host);
+void IC_InitStage(int from_abacus_host, MPI_Comm abacus_comm_2d);
 
 /**
  * Rank-0 FFTW wisdom preflight (standalone CLI): reads param_file on rank 0.

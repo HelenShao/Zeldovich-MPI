@@ -11,33 +11,35 @@ extern "C" {
 #endif
 
 // ====================================================================================
-// Calculate grid factors (grid_x * grid_z = num_ranks)
+// Calculate grid factors (size_x * size_z = num_ranks)
+// was: grid_x * grid_z
 // ====================================================================================
 
-void calculate_grid_factors(int num_ranks, int *grid_x_out, int *grid_z_out)
+void calculate_grid_factors(int num_ranks, int *size_x_out, int *size_z_out)
 {
-    int grid_x, grid_z;
+    // was: int grid_x, grid_z;
+    int size_x, size_z;
     
     // AbacusAurora: 81^2 = 6561 nodes
     if (num_ranks == 6561) {
-        grid_x = 81; grid_z = 81;
+        size_x = 81; size_z = 81;
     } else if (num_ranks == 8) {
-        grid_x = 2; grid_z = 4;
+        size_x = 2; size_z = 4;
     } else if (num_ranks == 16) {
-        grid_x = 4; grid_z = 4;
+        size_x = 4; size_z = 4;
     } else if (num_ranks == 4) {
-        grid_x = 2; grid_z = 2;
+        size_x = 2; size_z = 2;
     } else if (num_ranks == 2) {
-        grid_x = 1; grid_z = 2;
+        size_x = 1; size_z = 2;
     } else {
         // Default: try to make square-ish
-        grid_x = (int)sqrt_t((double)num_ranks);
-        while (num_ranks % grid_x != 0) grid_x--;
-        grid_z = num_ranks / grid_x;
+        size_x = (int)sqrt_t((double)num_ranks);
+        while (num_ranks % size_x != 0) size_x--;
+        size_z = num_ranks / size_x;
     }
     
-    *grid_x_out = grid_x;
-    *grid_z_out = grid_z;
+    *size_x_out = size_x;
+    *size_z_out = size_z;
 }
 
 // ====================================================================================
@@ -47,19 +49,18 @@ void calculate_grid_factors(int num_ranks, int *grid_x_out, int *grid_z_out)
 // ====================================================================================
 
 void calculate_grid_factors_cpd_aligned(int num_ranks, int N, int cpd,
-                                        int *grid_x_out, int *grid_z_out)
+                                        int *size_x_out, int *size_z_out)
 {
     (void)N;
-    int grid_x = 1, grid_z = num_ranks;
+    // was: int grid_x = 1, grid_z = num_ranks;
+    int size_x = 1, size_z = num_ranks;
 
     if (cpd <= 0) {
-        calculate_grid_factors(num_ranks, grid_x_out, grid_z_out);
+        calculate_grid_factors(num_ranks, size_x_out, size_z_out);
         return;
     }
 
-    // Find factor pair (gx, gz) of num_ranks such that gx divides cpd and gz divides cpd.
-    // Prefer square-ish (gx close to sqrt(num_ranks)).
-    int best_gx = 0, best_gz = 0;
+    int best_sx = 0, best_sz = 0;
     int trial_x = (int)sqrt_t((double)num_ranks);
     while (trial_x >= 1) {
         if (num_ranks % trial_x != 0) {
@@ -68,22 +69,21 @@ void calculate_grid_factors_cpd_aligned(int num_ranks, int N, int cpd,
         }
         int trial_z = num_ranks / trial_x;
         if (cpd % trial_x == 0 && cpd % trial_z == 0) {
-            best_gx = trial_x;
-            best_gz = trial_z;
+            best_sx = trial_x;
+            best_sz = trial_z;
             break;
         }
         trial_x--;
     }
-    if (best_gx != 0) {
-        grid_x = best_gx;
-        grid_z = best_gz;
+    if (best_sx != 0) {
+        size_x = best_sx;
+        size_z = best_sz;
     } else {
-        // No CPD-aligned factor pair: use default and caller may warn
-        calculate_grid_factors(num_ranks, &grid_x, &grid_z);
+        calculate_grid_factors(num_ranks, &size_x, &size_z);
     }
 
-    *grid_x_out = grid_x;
-    *grid_z_out = grid_z;
+    *size_x_out = size_x;
+    *size_z_out = size_z;
 }
 
 // ====================================================================================
@@ -91,7 +91,7 @@ void calculate_grid_factors_cpd_aligned(int num_ranks, int N, int cpd,
 // ====================================================================================
 
 GridBounds get_grid_bounds_CPD_aligned(int dest, int N, int num_ranks,
-                                     int grid_x, int grid_z, int cpd)
+                                     int size_x, int size_z, int cpd)
 {
     GridBounds bounds;
 
@@ -107,15 +107,25 @@ GridBounds get_grid_bounds_CPD_aligned(int dest, int N, int num_ranks,
     // new code:
     // Match MPI cart (dims={grid_z, grid_x}, row-major): dest = rank_x*grid_x + rank_z
     // Zeldovich-x (x_block) = Abacus z-dir (rank_z); Zeldovich-z (z_block) = Abacus slab (rank_x)
-    int x_block = dest % grid_x;   // = rank_z, range [0, grid_x)
-    int z_block = dest / grid_x;   // = rank_x, range [0, grid_z)
 
-    // CPD-aligned: slab indices [s_x_start, s_x_end) exclusive
-    int s_x_start = (x_block * cpd) / grid_x;
-    int s_x_end   = ((x_block + 1) * cpd) / grid_x;
+    // --- Phase 7: superseded active (grid_x/grid_z) ---
+    // int x_block = dest % grid_x;   // = rank_z, range [0, grid_x)
+    // int z_block = dest / grid_x;   // = rank_x, range [0, grid_z)
+    // int s_x_start = (x_block * cpd) / grid_x;
+    // int s_x_end   = ((x_block + 1) * cpd) / grid_x;
+    // int s_z_start = (z_block * cpd) / grid_z;
+    // int s_z_end   = ((z_block + 1) * cpd) / grid_z;
 
-    int s_z_start = (z_block * cpd) / grid_z;
-    int s_z_end   = ((z_block + 1) * cpd) / grid_z;
+    // --- Phase 7: Abacus-aligned cart naming (size_x/size_z) ---
+    // dest = rank_x * size_z + rank_z  (dims={size_x, size_z})
+    int x_block = dest % size_z;   // = rank_z
+    int z_block = dest / size_z;   // = rank_x
+
+    int s_x_start = (x_block * cpd) / size_z;
+    int s_x_end   = ((x_block + 1) * cpd) / size_z;
+
+    int s_z_start = (z_block * cpd) / size_x;
+    int s_z_end   = ((z_block + 1) * cpd) / size_x;
 
     // Slab s covers x in [ (s*N+cpd-1)/cpd, ((s+1)*N+cpd-1)/cpd )
     bounds.x_start = (s_x_start * N + cpd - 1) / cpd;
@@ -130,10 +140,11 @@ GridBounds get_grid_bounds_CPD_aligned(int dest, int N, int num_ranks,
 // Inverse: given CPD slab index s (x-direction), which rx owns it?
 // ====================================================================================
 
-int slab_to_rx(int slab, int cpd, int grid_x)
+int slab_to_rx(int slab, int cpd, int size_z)
 {
-    if (cpd <= 0 || grid_x <= 0) return 0;
-    return ((slab + 1) * grid_x - 1) / cpd;
+    // was: slab_to_rx(..., grid_x)
+    if (cpd <= 0 || size_z <= 0) return 0;
+    return ((slab + 1) * size_z - 1) / cpd;
 }
 
 // ====================================================================================
@@ -153,18 +164,20 @@ GridBounds get_grid_bounds(int dest, int N, int num_pencil_ranks)
     // GridBounds object to store [xstart, xend], [zstart, zend] boundaries
     GridBounds bounds;
     
-    // Compute 2D grid decomposition (grid_x * grid_z = num_pencil_ranks)
-    int grid_x, grid_z;
-    calculate_grid_factors(num_pencil_ranks, &grid_x, &grid_z);
+    // Compute 2D grid decomposition (size_x * size_z = num_pencil_ranks)
+    // was: grid_x, grid_z
+    int size_x, size_z;
+    calculate_grid_factors(num_pencil_ranks, &size_x, &size_z);
     
     // Locate the block in the 2D grid for rank 'dest'
-    // dest = x_block * grid_z + z_block (row-major order)
-    int x_block = dest / grid_z;  // Row 
-    int z_block = dest % grid_z;  // Column 
+    // was: dest = x_block * grid_z + z_block (row-major order)
+    // Phase 7: dest = rank_x * size_z + rank_z
+    int x_block = dest / size_z;  // Row 
+    int z_block = dest % size_z;  // Column 
     
     // X-range: Divide NxN slice into chunks with remainder handling
-    int base_x = N / grid_x;
-    int remainder_x = N % grid_x;
+    int base_x = N / size_x;
+    int remainder_x = N % size_x;
     if (x_block < remainder_x) {
         // First 'remainder_x' blocks get an extra element
         bounds.x_start = x_block * (base_x + 1);
@@ -177,8 +190,8 @@ GridBounds get_grid_bounds(int dest, int N, int num_pencil_ranks)
     }
     
     // Z-range: Divide NxN slice into chunks with remainder handling
-    int base_z = N / grid_z;
-    int remainder_z = N % grid_z;
+    int base_z = N / size_z;
+    int remainder_z = N % size_z;
     if (z_block < remainder_z) {
         // First 'remainder_z' blocks get an extra element
         bounds.z_start = z_block * (base_z + 1);
@@ -192,13 +205,12 @@ GridBounds get_grid_bounds(int dest, int N, int num_pencil_ranks)
     return bounds;
 }
 
-ExtendedGridBounds get_extended_grid_bounds(int rank, int N, int num_ranks, int grid_x, int grid_z)
+ExtendedGridBounds get_extended_grid_bounds(int rank, int N, int num_ranks, int size_x, int size_z)
 {
     ExtendedGridBounds ext_bounds;
     
-    // Suppress unused parameter warnings (grid_x/grid_z kept for compatibility)
-    (void)grid_x;
-    (void)grid_z;
+    (void)size_x;
+    (void)size_z;
     
     // Step 1: Get core (non-overlapping) bounds using original logic
     GridBounds core = get_grid_bounds(rank, N, num_ranks);
@@ -232,12 +244,26 @@ ExtendedGridBounds get_extended_grid_bounds(int rank, int N, int num_ranks, int 
     return ext_bounds;
 }
 
+/* 
+We corrected the use of grid_x and grid_z (now size_x and size_z), 
+so the arguments to get_extended_grid_bounds_CPD_aligned are consistent
+// OLD driver
+grid_x = NumZRanks;
+grid_z = num_ranks / grid_x;
+get_extended_grid_bounds_CPD_aligned(rank, N, num_ranks, grid_x, grid_z, cpd);
+//                                      passed: (NumZRanks, num_ranks/NumZRanks)
+// NEW driver
+size_x = num_ranks / size_z;
+size_z = NumZRanks;
+get_extended_grid_bounds_CPD_aligned(rank, N, num_ranks, size_x, size_z, cpd);
+//  
+// */
 ExtendedGridBounds get_extended_grid_bounds_CPD_aligned(int rank, int N, int num_ranks,
-                                                      int grid_x, int grid_z, int cpd)
+                                                      int size_x, int size_z, int cpd)
 {
     ExtendedGridBounds ext_bounds;
 
-    GridBounds core = get_grid_bounds_CPD_aligned(rank, N, num_ranks, grid_x, grid_z, cpd);
+    GridBounds core = get_grid_bounds_CPD_aligned(rank, N, num_ranks, size_x, size_z, cpd);
     ext_bounds.core = core;
 
 #if USE_X_PADDING
@@ -261,11 +287,11 @@ ExtendedGridBounds get_extended_grid_bounds_CPD_aligned(int rank, int N, int num
 GridBounds get_padded_bounds_simple(int dest, int N, int num_ranks)
 {
     // Calculate grid factors using centralized function
-    int grid_x, grid_z;
-    calculate_grid_factors(num_ranks, &grid_x, &grid_z);
+    // was: grid_x, grid_z
+    int size_x, size_z;
+    calculate_grid_factors(num_ranks, &size_x, &size_z);
     
-    // Get extended bounds and return chunk
-    ExtendedGridBounds ext = get_extended_grid_bounds(dest, N, num_ranks, grid_x, grid_z);
+    ExtendedGridBounds ext = get_extended_grid_bounds(dest, N, num_ranks, size_x, size_z);
 #if USE_X_PADDING
     return ext.padded;  // Return padded chunk
 #else

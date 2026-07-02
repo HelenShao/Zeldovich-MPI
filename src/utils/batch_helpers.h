@@ -31,12 +31,13 @@ void get_rank_batch_y_values(int target_rank, int batch_idx, int N, int num_rank
 // Allocates new arrays (caller must free them)
 // Uses int64_t to avoid overflow: dest_region_size * my_batch_slice_count * narray can exceed INT_MAX for large N
 // Note: recv displacements (rdispls) are computed in main.cpp using persistent recv_buffer cursors
-// grid_x/grid_z are used for CPD-aligned dest bounds so send counts match main's decomposition.
+// size_x/size_z are cart dims for CPD-aligned dest bounds (was grid_x/grid_z).
 
+// was: grid_x, grid_z
 void calculate_batch_send_recv_counts(
     int rank, int num_ranks, int N, int narray, int batch_idx,
     int my_batch_slice_count, int my_pencils,
-    int grid_x, int grid_z, int cpd,
+    int size_x, int size_z, int cpd,
     int64_t **out_sendcounts, int64_t **out_sdispls,
     int64_t **out_recvcounts,
     int64_t *out_total_send, int64_t *out_total_recv);

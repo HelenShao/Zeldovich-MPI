@@ -107,7 +107,7 @@ void get_rank_batch_y_values(int target_rank, int batch_idx, int N, int num_rank
 void calculate_batch_send_recv_counts(
     int rank, int num_ranks, int N, int narray, int batch_idx,
     int my_batch_slice_count, int my_pencils,
-    int grid_x, int grid_z, int cpd,
+    int size_x, int size_z, int cpd,
     int64_t **out_sendcounts, int64_t **out_sdispls,
     int64_t **out_recvcounts,
     int64_t *out_total_send, int64_t *out_total_recv)
@@ -123,7 +123,7 @@ void calculate_batch_send_recv_counts(
     // Use same grid and CPD alignment as main so that sendcounts[R][D] == recvcounts[D][R] (Alltoallv).
     int64_t total_send = 0;
     for (int dest = 0; dest < num_ranks; dest++) {
-        ExtendedGridBounds ext = get_extended_grid_bounds_CPD_aligned(dest, N, num_ranks, grid_x, grid_z, cpd);
+        ExtendedGridBounds ext = get_extended_grid_bounds_CPD_aligned(dest, N, num_ranks, size_x, size_z, cpd);
 #if USE_X_PADDING
         GridBounds dest_bounds = ext.padded;
 #else
