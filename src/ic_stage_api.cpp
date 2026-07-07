@@ -5,7 +5,6 @@
 #include <mpi.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string>
 
 #include "fft/wisdom_rank0.h"
 #include "fft/fft_wisdom.h"
@@ -59,7 +58,6 @@ static int wisdom_narray_from_params(ParametersHandle params, int *narray_out)
 static int wisdom_preflight_from_param_buffer(
     const char *bytes,
     size_t len,
-    const char *param_path,
     const char *wisdom_save_dir
 )
 {
@@ -70,17 +68,16 @@ static int wisdom_preflight_from_param_buffer(
     zd_wisdom_set_preflight_broadcast_done(false);
 
     if (world_rank == 0) {
-        if (bytes == NULL || len < 2 || param_path == NULL || param_path[0] == '\0') {
-            fprintf(stderr, "wisdom_preflight_from_param_buffer: invalid header or param_path\n");
+        if (bytes == NULL || len < 2) {
+            fprintf(stderr, "wisdom_preflight_from_param_buffer: invalid header bytes\n");
             MPI_Barrier(MPI_COMM_WORLD);
             return 1;
         }
 
-        ParametersHandle params = zd_params_from_buffer(bytes, len, param_path);
+        ParametersHandle params = zd_params_from_buffer(bytes, len);
         if (!params) {
             fprintf(stderr,
-                    "wisdom_preflight_from_param_buffer: failed to parse parameters from %s\n",
-                    param_path);
+                    "wisdom_preflight_from_param_buffer: failed to parse embedded parameters\n");
             MPI_Barrier(MPI_COMM_WORLD);
             return 1;
         }
@@ -113,9 +110,8 @@ static int wisdom_preflight_from_param_buffer(
 
         if (ppd64 <= 0 || ppd64 > (int64_t)INT_MAX) {
             fprintf(stderr,
-                    "wisdom_preflight_from_param_buffer: invalid ppd=%lld from %s\n",
-                    (long long)ppd64,
-                    param_path);
+                    "wisdom_preflight_from_param_buffer: invalid ppd=%lld\n",
+                    (long long)ppd64);
             MPI_Barrier(MPI_COMM_WORLD);
             return 1;
         }
@@ -215,27 +211,23 @@ int IC_Rank0Wisdom(const char *param_file)
     return rc == 0 ? 0 : 1;
 }
 
-int IC_ParamBuffer(const char *bytes, size_t len, const char *param_path, const char *wisdom_save_dir)
+int IC_ParamBuffer(const char *bytes, size_t len, const char *wisdom_save_dir)
 {
-    if (bytes == NULL || len < 2 || param_path == NULL || param_path[0] == '\0') {
-        fprintf(stderr, "IC_ParamBuffer: invalid header bytes or param_path\n");
+    if (bytes == NULL || len < 2) {
+        fprintf(stderr, "IC_ParamBuffer: invalid header bytes\n");
         return 1;
     }
 
     zd_ic_wisdom_save_dir = wisdom_save_dir;
 
-    const int wis_rc = wisdom_preflight_from_param_buffer(bytes, len, param_path, wisdom_save_dir);
+    const int wis_rc = wisdom_preflight_from_param_buffer(bytes, len, wisdom_save_dir);
     if (wis_rc != 0) {
         return wis_rc;
     }
 
-    char prog[] = "Zeldovich_MPI";
-    std::string path_copy(param_path);
-    char *argv[] = {prog, path_copy.data(), NULL};
-
     zeldovich_embed_param_header.bytes = bytes;
     zeldovich_embed_param_header.len = len;
-    const int driver_rc = zeldovich_mpi_driver_run(2, argv);
+    const int driver_rc = zeldovich_mpi_driver_run(0, NULL);
     zeldovich_embed_param_header.bytes = NULL;
     zeldovich_embed_param_header.len = 0;
     return driver_rc;

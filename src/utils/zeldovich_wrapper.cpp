@@ -23,16 +23,14 @@ ParametersHandle zeldovich_params_create(const char* param_file) {
     }
 }
 
-ParametersHandle zd_params_from_buffer(
-    const char* header_bytes,
-    size_t header_len,
-    const char* source_name
-) {
-    if (header_bytes == NULL || header_len == 0 || source_name == NULL) {
+ParametersHandle zd_params_from_buffer(const char* header_bytes, size_t header_len)
+{
+    if (header_bytes == NULL || header_len == 0) {
         return NULL;
     }
     try {
-        ZeldovichParameters* params = new ZeldovichParameters(header_bytes, header_len, fs::path(source_name));
+        ZeldovichParameters* params =
+            new ZeldovichParameters(header_bytes, header_len, fs::path());
         return static_cast<ParametersHandle>(params);
     } catch (...) {
         return NULL;

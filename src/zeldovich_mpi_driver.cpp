@@ -241,31 +241,31 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
     // Stage 1: Parse arguments (before topology so we can load params for CPD/PPD)
     // ========================================================================
     int N = 64;
-    const char* param_file = NULL;
+    const bool embedded_header = (zeldovich_embed_param_header.bytes != NULL);
+    const char *param_file = NULL;
 
-    if (argc < 2) {
-        if (world_rank == 0) {
-            fprintf(stderr, "Usage: %s param_file.par\n", argv[0]);
-            fprintf(stderr, "  param_file.par: zeldovich-PLT parameter file (required)\n");
+    if (!embedded_header) {
+        if (argc < 2) {
+            if (world_rank == 0) {
+                fprintf(stderr, "Usage: %s param_file.par\n", argv[0]);
+                fprintf(stderr, "  param_file.par: zeldovich-PLT parameter file (required)\n");
+            }
+            if (!zeldovich_ic_embedded) {
+                MPI_Finalize();
+            }
+            return 1;
         }
-        if (!zeldovich_ic_embedded) {
-            MPI_Finalize();
-        }
-        return 1;
-    }
-
-    if (argc >= 2) {
         param_file = argv[1];
-    }
-    if (param_file == NULL) {
-        if (world_rank == 0) {
-            fprintf(stderr, "Error: Parameter file required \n");
-            fprintf(stderr, "Usage: %s param_file.par\n", argv[0]);
+        if (param_file == NULL || param_file[0] == '\0') {
+            if (world_rank == 0) {
+                fprintf(stderr, "Error: Parameter file required \n");
+                fprintf(stderr, "Usage: %s param_file.par\n", argv[0]);
+            }
+            if (!zeldovich_ic_embedded) {
+                MPI_Finalize();
+            }
+            return 1;
         }
-        if (!zeldovich_ic_embedded) {
-            MPI_Finalize();
-        }
-        return 1;
     }
 
     // ========================================================================
@@ -292,12 +292,15 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
 
     params = zd_params_from_buffer(
         param_header_bytes.data(),
-        param_header_bytes.size(),
-        param_file
+        param_header_bytes.size()
     );
     if (!params) {
         if (world_rank == 0) {
-            fprintf(stderr, "Failed to load param file: %s\n", param_file);
+            if (embedded_header) {
+                fprintf(stderr, "Failed to load parameters from embedded header\n");
+            } else {
+                fprintf(stderr, "Failed to load param file: %s\n", param_file);
+            }
         }
         MPI_Abort(MPI_COMM_WORLD, 1);
     }
@@ -447,7 +450,6 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
         }
     }
     
-    int num_my_slices = 0;
     fftw_complex_t *local_y_slices = NULL;
     fftw_complex_t *fft_stage_2d = NULL;
     fftw_complex_t *local_z_slab = NULL;
@@ -455,7 +457,6 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
     int my_pencils = 0;
 
     if (is_idle_rank) {
-        num_my_slices = 0;
         my_extended_bounds.core.x_start = my_extended_bounds.core.x_end = 0;
         my_extended_bounds.core.z_start = my_extended_bounds.core.z_end = 0;
         my_extended_bounds.padded.x_start = my_extended_bounds.padded.x_end = 0;
@@ -469,13 +470,6 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
 
     // Params already loaded earlier for CPD-aligned grid
     if (params != NULL) {
-        if (rank == 0) {
-            printf("[INIT] Using zeldovich-PLT parameters from: %s (cpd=%d)\n", param_file, cpd);
-            printf("[INIT] InitialConditionsDirectory: %s\n",
-                   static_cast<ZeldovichParameters*>(params)->output_dir.string().c_str());
-            fflush(stdout);
-        }
-
         uint64_t seed = (uint64_t)zeldovich_params_get_seed(params);
         initialize_global_pcg(N, N, N, seed);
 

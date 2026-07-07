@@ -25,11 +25,7 @@ ParametersHandle zeldovich_params_create(const char* param_file);
 // Create Parameters object from in-memory header bytes
 // Buffer must include the ParseHeader expected trailing "\0\0".
 // Returns NULL on error.
-ParametersHandle zd_params_from_buffer(
-    const char* header_bytes,
-    size_t header_len,
-    const char* source_name
-);
+ParametersHandle zd_params_from_buffer(const char* header_bytes, size_t header_len);
 
 // Destroy Parameters object
 void zeldovich_params_destroy(ParametersHandle params);

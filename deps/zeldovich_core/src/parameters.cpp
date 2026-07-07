@@ -6,6 +6,7 @@
 
 #include "parameters.h"
 #include "zeldovich.h"
+#include "zeldovich_log.h"
 
 // Write a suitable header into the output file
 ZeldovichParameters::ZeldovichParameters(const fs::path &inputfile) {
@@ -145,20 +146,11 @@ int ZeldovichParameters::setup() {
     }
 
     ppd = (int64_t) round(cbrt(np));
-    fmt::print(stderr, "Generating ICs for ppd = {:d}\n", ppd);
+    ZD_ERR("Generating ICs for ppd = {:d}\n", ppd);
     assert(ppd * ppd * ppd == np);
     assert(ppd <= MAX_PPD);
 
-    if (version == 2) {
-        if (numblock > 0) {
-            fmt::print(
-               stderr,
-               "Note: ZD_NumBlock={:d} is ignored for ZD_Version = 2 "
-               "(legacy zeldovich-PLT v1 tuning; not used by zeldovich-MPI).\n",
-               numblock
-            );
-        }
-    } else {
+    if (version == 1) {
         // NumBlock is only used in version 1
         if (numblock <= 0) {
             fmt::print(stderr,
@@ -187,7 +179,7 @@ int ZeldovichParameters::setup() {
     assert(!(Pk_norm < 0.0));
 
     if ((bool) (Pk_sigma > 0) == (bool) (Pk_sigma_ratio > 0)) {
-        fmt::print(stderr, "Must specify exactly one of Pk_sigma or Pk_sigma_ratio!\n");
+        ZD_ERR("Must specify exactly one of Pk_sigma or Pk_sigma_ratio!\n");
         exit(1);
     }
 
@@ -212,13 +204,10 @@ int ZeldovichParameters::setup() {
     fundamental = 2.0 * M_PI / boxsize;  // The k spacing
 
     if (qonemode)
-        fmt::print(
-           stderr, "one_mode: {:d}, {:d}, {:d}\n", one_mode[0], one_mode[1], one_mode[2]
-        );
+        ZD_ERR("one_mode: {:d}, {:d}, {:d}\n", one_mode[0], one_mode[1], one_mode[2]);
 
     if (f_NL != 0.) {
-        fmt::print(
-           stderr,
+        ZD_ERR(
            "Generating local primordial non-Gaussianity, with parameters:\n"
            " - ZD_f_NL = {:g}\n"
            " - ZD_n_s = {:g}\n"

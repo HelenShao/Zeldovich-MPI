@@ -1,5 +1,6 @@
 # Paths are relative to this directory unless prefixed with ../
 # Source list follows Makefile groups, sorted per Meson style guide.
+# eigmodes128: use build/subprojects/zeldovich-PLT/eigmodes128 (Abacus + legacy zeldovich).
 # =============================================================================
 # Zeldovich_MPI — C sources built as C++ (they include C++ headers)
 # =============================================================================
@@ -24,6 +25,7 @@ _zd_mpi_core_sources = files(
   'fft/fft_wisdom.c',
   'fft/wisdom_rank0.c',
   'ic_stage_api.cpp',
+  'zd_log.c',
   'mpi_topology.cpp',
   'output/output_new.cpp',
   'streaming/z_streaming.c',

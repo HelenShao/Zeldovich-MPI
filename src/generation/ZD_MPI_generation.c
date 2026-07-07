@@ -199,9 +199,11 @@ void generate_zd_mpi_slice_pair_local(
 {
     (void)thread_rng_buffers; // currently unused, kept for API
 
+#if DEBUG_PRINTS
     // ========== DIAGNOSTIC TIMING: Function-level ==========
     double t_func_start = omp_get_wtime();
     double t_setup_end, t_zloop_end, t_verify_end, t_fft_end;
+#endif
     
     // Debug: Log entry for seg fault error
     // #if DEBUG_PRINTS
@@ -292,7 +294,9 @@ void generate_zd_mpi_slice_pair_local(
         nskip = 0;  // Will be accumulated during loops
     }
     
+#if DEBUG_PRINTS
     t_setup_end = omp_get_wtime();
+#endif
     
     // ========== Unified z-loop: handles both conjugate-pair and self-conjugate ==========
 #if PARALLELIZE_Z_LOOP
@@ -677,7 +681,9 @@ void generate_zd_mpi_slice_pair_local(
     }
     pt_mirror.Stop(0);
     
+#if DEBUG_PRINTS
     t_zloop_end = omp_get_wtime();
+#endif
     
     // Verify Hermitian symmetry BEFORE 2D FFT
     // STAGE 7: Updated to check all arrays independently
@@ -689,7 +695,9 @@ void generate_zd_mpi_slice_pair_local(
     }
     #endif
     
+#if DEBUG_PRINTS
     t_verify_end = omp_get_wtime();
+#endif
     
     // 2D FFT: staged copy — plan_dft_2d on stage_2d, loop over narray
     for (int a = 0; a < narray; a++) {
@@ -728,7 +736,9 @@ void generate_zd_mpi_slice_pair_local(
         }
     }
     
+#if DEBUG_PRINTS
     t_fft_end = omp_get_wtime();
+#endif
     
     #if DEBUG_PRINTS
     // ========== DIAGNOSTIC: Print per-Y timing breakdown ==========
