@@ -134,6 +134,10 @@ zd_mpi_common_dep = declare_dependency(
 # Tests
 # =============================================================================
 # No root-level tests; add e.g. subdir('tests') when defined.
+# PLT eigenmodes staged next to the subproject build dir (same pattern as zeldovich-PLT).
+fs = import('fs')
+fs.copyfile('eigmodes128')
+
 # =============================================================================
 # Subdirectories (executables in src/meson.build)
 # =============================================================================
