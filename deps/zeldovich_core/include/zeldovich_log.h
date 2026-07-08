@@ -1,6 +1,8 @@
 #pragma once
 
+#ifdef __cplusplus
 #include <fmt/core.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -13,9 +15,11 @@ bool zd_log_on_this_rank(void);
 }
 #endif
 
+#ifdef __cplusplus
 #define ZD_ERR(...) \
     do { \
         if (zd_log_on_this_rank()) { \
             fmt::print(stderr, __VA_ARGS__); \
         } \
     } while (0)
+#endif

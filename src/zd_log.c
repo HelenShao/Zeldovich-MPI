@@ -1,5 +1,3 @@
-#include "zeldovich_log.h"
-
 #include <mpi.h>
 #include <stdbool.h>
 
