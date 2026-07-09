@@ -95,6 +95,7 @@ static int fft_wisdom_import_string_on_all_ranks(
     int wisdom_from_fftw_alloc
 )
 {
+    (void)wisdom_len;
     FFTW_FORGET_WISDOM();
     const int imported = FFTW_IMPORT_WISDOM_FROM_STRING(wisdom_str);
     if (!imported) {

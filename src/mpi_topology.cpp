@@ -23,7 +23,6 @@ static int zd_topology_query_cart(void)
         return 1;
     }
 
-    int ndims = 0;
     int dims[2] = {0, 0};
     int periodic[2] = {0, 0};
     int coords_unused[2] = {0, 0};
