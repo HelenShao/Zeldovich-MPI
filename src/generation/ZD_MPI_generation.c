@@ -651,11 +651,11 @@ void generate_zd_mpi_slice_pair_local(
                     // Normal operation and Mode 1: Hermitian symmetry for purely real result
                     // Copy conj(D)+i*conj(F) from conjugate_slices to primary_slices
                     if (x == 0 && z == 0) {
-                        #if defined(VERIFY_HERMITIAN_SYMMETRY) && VERIFY_HERMITIAN_SYMMETRY == 1
+#if defined(VERIFY_HERMITIAN_SYMMETRY) && VERIFY_HERMITIAN_SYMMETRY == 1
                         fprintf(stderr, "[MIRROR-DEBUG] Y=%d: Mode 1 branch executing (VERIFY_HERMITIAN_SYMMETRY=1)\n", global_y);
-                        #else
+#elif DEBUG_PRINTS
                         fprintf(stderr, "[MIRROR-DEBUG] Y=%d: Normal operation branch executing (VERIFY_HERMITIAN_SYMMETRY not defined or != 1,2)\n", global_y);
-                        #endif
+#endif
                         fflush(stderr);
                     }
                     for (int a = 0; a < narray; a++) {

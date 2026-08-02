@@ -325,8 +325,10 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
     const int size_x = num_ranks / size_z;  // cart dim 0 = Abacus MPI_size_x
     const int particle_output_mode = (size_z > 1) ? 4 : 3;
     if (world_rank == 0) {
+#if DEBUG_PRINTS
         printf("[INIT] particle_output_mode=%d (NumZRanks=size_z=%d)\n",
                particle_output_mode, size_z);
+#endif
     }
 
     // When integrated in abacus, InitParallelTopology() in multistep will
@@ -762,9 +764,11 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
         
         memset(recv_buffer, 0, recv_bytes);
         if (rank == 0) {
+#if DEBUG_PRINTS
             fprintf(stdout, "[MPI-DIAG] recv_buffer: %zu elems, %.3f GB allocated (%.3f GB rounded)\n",
                     (size_t)recv_total_elems, recv_bytes / 1.0e9, recv_alloc / 1.0e9);
             fflush(stdout);
+#endif
         }
     }
     
@@ -854,6 +858,7 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
     // ========================================================================
     // GENERATION + COMMUNICATION + ACCUMULATION
     if (rank == 0) {
+#if DEBUG_PRINTS
         printf("\n[MULTI-BATCH] Starting batch processing...\n");
         printf("              Ranks will process %d pairs each (approx)\n",
                is_idle_rank ? 0 : my_num_pairs);
@@ -861,6 +866,7 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
                sizeof(MPI_Aint), sizeof(MPI_Aint) == 8 ? "int64" : (sizeof(MPI_Aint) == 4 ? "int32" : "other"),
                sizeof(MPI_Count));
         fflush(stdout);
+#endif
     }
 
     STimer t_gen, t_comm;
@@ -1037,6 +1043,7 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
         #endif
         
         if (batch_idx == 0 && rank == 0) {
+#if DEBUG_PRINTS
             long long max_send = 0, max_recv = 0;
             for (int i = 0; i < num_ranks; i++) {
                 if ((long long)sendcounts_batch[i] > max_send) max_send = (long long)sendcounts_batch[i];
@@ -1047,6 +1054,7 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
                     max_send * sizeof(fftw_complex_t) / 1.0e9,
                     max_recv * sizeof(fftw_complex_t) / 1.0e9);
             fflush(stdout);
+#endif
         }
 
         t_comm.Start();

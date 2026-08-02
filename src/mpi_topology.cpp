@@ -6,6 +6,7 @@
 #include <stdlib.h>
 
 #include "ic_embed_flags.h"
+#include "config.h"
 
 MPI_Comm zd_comm_2d = MPI_COMM_NULL; // 2D ZD cart
 int zd_cart_size_x = 0; // Cart dimensions — Abacus naming: dim 0 = x-split count, dim 1 = NumZRanks
@@ -96,6 +97,7 @@ int zd_topology_init_embedded(MPI_Comm abacus_comm_2d, int expected_size_z)
         return 1;
     }
 
+#if DEBUG_PRINTS
     if (zd_cart_rank == 0) {
         printf("========================================================================\n");
         printf("MPI Cartesian Topology (embedded Abacus comm_2d dup)\n");
@@ -112,6 +114,7 @@ int zd_topology_init_embedded(MPI_Comm abacus_comm_2d, int expected_size_z)
            zd_cart_rank,
            zd_cart_rank_x,
            zd_cart_rank_z);
+#endif
 
     return 0;
 }
@@ -160,6 +163,7 @@ int zd_topology_init_standalone(int num_ranks, int num_z_ranks)
         return 1;
     }
 
+#if DEBUG_PRINTS
     if (zd_cart_rank == 0) {
         printf("========================================================================\n");
         printf("MPI Cartesian Topology Initialized (standalone, parameter-driven)\n");
@@ -179,6 +183,7 @@ int zd_topology_init_standalone(int num_ranks, int num_z_ranks)
            zd_cart_rank,
            zd_cart_rank_x,
            zd_cart_rank_z);
+#endif
 
     return 0;
 }

@@ -35,8 +35,10 @@ void setup_fftw_plans_full(int N, int narray, fftw_complex_t *plan_buffer,
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
         if (rank == 0) {
+#if DEBUG_PRINTS
             printf("[FFTW-THREADING] %s precision: FFTW threads init (per-plan counts: 2D=OMP_MAX, 1D=1)\n",
                    PRECISION_NAME);
+#endif
         }
         fftw_threads_initialized = 1;
     }
@@ -63,9 +65,11 @@ void setup_fftw_plans_full(int N, int narray, fftw_complex_t *plan_buffer,
         int fft_threads_2d = omp_get_max_threads();
         FFTW_PLAN_WITH_NTHREADS(fft_threads_2d);
         if (rank == 0) {
+#if DEBUG_PRINTS
             printf("[FFTW-THREADING] 2D single-plane plan (staged): FFTW_PLAN_WITH_NTHREADS(%d)\n",
                    fft_threads_2d);
             fflush(stdout);
+#endif
         }
     }
 
@@ -76,8 +80,10 @@ void setup_fftw_plans_full(int N, int narray, fftw_complex_t *plan_buffer,
     // 1D Y FFT: single FFTW thread (OpenMP parallelizes across pencils; staged buffers in z_streaming)
     FFTW_PLAN_WITH_NTHREADS(1);
     if (rank == 0) {
+#if DEBUG_PRINTS
         printf("[FFTW-THREADING] 1D Y plan: FFTW_PLAN_WITH_NTHREADS(1)\n");
         fflush(stdout);
+#endif
     }
     
     // Create 1D FFT plan (planner flags: FFTW_PLANNER_FLAGS in config.h)

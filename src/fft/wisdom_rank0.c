@@ -74,9 +74,11 @@ int wisdom_rank0_plans(int N, int narray, fftw_complex_t *plan_buffer, fftw_plan
                     PRECISION_NAME);
             return -1;
         }
+#if DEBUG_PRINTS
         printf("[wisdom_rank0] %s precision: FFTW threads init (2D=OMP_MAX, 1D=1; match fft_setup.c)\n",
                PRECISION_NAME);
         fflush(stdout);
+#endif
         fftw_threads_initialized = 1;
     }
 
@@ -84,15 +86,19 @@ int wisdom_rank0_plans(int N, int narray, fftw_complex_t *plan_buffer, fftw_plan
 
     (void)narray;
     FFTW_PLAN_WITH_NTHREADS(omp_get_max_threads());
+#if DEBUG_PRINTS
     printf("[wisdom_rank0] 2D single-plane plan: FFTW_PLAN_WITH_NTHREADS(%d)\n", omp_get_max_threads());
     fflush(stdout);
+#endif
 
     *plan_2d_out =
         FFTW_PLAN_DFT_2D(N, N, plan_buffer, plan_buffer, FFT_SIGN, FFTW_PLANNER_FLAGS);
 
     FFTW_PLAN_WITH_NTHREADS(1);
+#if DEBUG_PRINTS
     printf("[wisdom_rank0] 1D Y plan: FFTW_PLAN_WITH_NTHREADS(1)\n");
     fflush(stdout);
+#endif
 
     if (posix_memalign((void **)&dummy_1d, ALIGN_BYTES, sizeof(fftw_complex_t) * (size_t)N) != 0) {
         fprintf(stderr, "[wisdom_rank0] posix_memalign failed for 1D dummy\n");
