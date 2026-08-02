@@ -547,9 +547,10 @@ void generate_zd_mpi_slice_pair_local(
             #endif  // VERIFY_HERMITIAN_SYMMETRY
             }  // End of else block for !just_density && k2 != 0
 
-            #ifdef DEBUG_RNG_CONSISTENCY
+            #if DEBUG_RNG_CONSISTENCY
             // Per-rank log file to avoid MPI interleaving (incomplete records)
             // Match zeldovich-PLT debug output to compare D, F, G, H
+            // Use #if (not #ifdef): meson always defines the macro as 0 or 1.
             {
             int ppdhalf = N / 2;
             int boundary_coord = ppdhalf - 1;
