@@ -1,0 +1,34 @@
+# Zeldovich-MPI parameter file -- N = 256 external-white-noise validation
+# Build with -DLOAD_EXTERNAL_NOISE=1 -DDUMP_D_SLABS=1 and run from the run directory, which
+# must contain external_noise/output_k_space_slab_y.{0..128}. D slabs go to ./D_slabs/.
+# Usage: mpiexec ... Zeldovich_MPI param_N256_extnoise.par   (N is taken from NP)
+
+BoxSize = 673.2                      # Mpc/h, same box as the monofonIC run
+NP = 16777216                        # 256^3
+CPD = 125                            # Abacus cells per dimension (odd); irrelevant for the D test
+NumZRanks = 1                        # 1D decomposition -> flat ic_* output (mode 3)
+ICFormat = "RVZel"
+InitialConditionsDirectory = "./zmpi_out"
+InitialRedshift = 31.0               # must match the redshift of the P(k) file below
+
+ZD_Version = 2
+ZD_Seed = 1                          # unused when LOAD_EXTERNAL_NOISE = 1
+
+# P(k): columns k [h/Mpc], P(k) [(Mpc/h)^3] at InitialRedshift, used exactly as given.
+# ZD_Pk_norm = 0 disables the sigma_R renormalisation, so p->power(k) = P_file(k) / BoxSize^3
+# and the same file can be passed to validate_external_noise.py --pk.
+# (The code insists on exactly one of ZD_Pk_sigma / ZD_Pk_sigma_ratio even when unused.)
+ZD_Pk_filename = "REPLACE_WITH/pk_cb_z31.txt"
+ZD_Pk_scale = 1.0
+ZD_Pk_norm = 0
+ZD_Pk_sigma_ratio = 1.0
+ZD_Pk_smooth = 0.0
+
+ZD_qPk_fix_to_mean = 0               # amplitudes come from the file (KK1025 already fixed there)
+ZD_k_cutoff = 1.0
+ZD_CornerModes = 1                   # keep corner modes, like monofonIC
+ZD_f_NL = 0
+ZD_qdensity = 1
+ZD_f_cluster = 1.0                   # velocity factor; revisit for neutrinos (NEUTRINOS_NOTES.md §4)
+
+ZD_qPLT = 0                          # plain Zel'dovich for the validation run
