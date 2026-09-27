@@ -181,7 +181,7 @@ static inline void store_prim_conj(
 #if LOAD_EXTERNAL_NOISE
 // Read the k_y = global_y slab of external unit white noise into w_re/w_im[z*N + x].
 // The file holds an N0 x N0 grid in [x][z] order (z fastest); modes are taken by signed
-// wavenumber, so N0 > N crops in k-space. Target Nyquist entries are read but masked later.
+// k, so N0 > N crops in k-space. Target Nyquist entries are read but masked later.
 static void load_external_noise_slab(int global_y, int N, double *w_re, double *w_im)
 {
 #if EXTERNAL_NOISE_FLOAT
@@ -373,6 +373,7 @@ void generate_zd_mpi_slice_pair_local(
     load_external_noise_slab(global_y, N, ext_noise_re, ext_noise_im);
 #endif
 
+// validate that amplitude rescaling of D is correct (pk, normalization, etc.)
 #if DUMP_D_SLABS
     double *dump_D = (double *)calloc((size_t)2 * (size_t)N * (size_t)N, sizeof(double));
     if (dump_D == NULL) {
