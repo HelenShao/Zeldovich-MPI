@@ -6,7 +6,6 @@
 
 #include "parameters.h"
 #include "zeldovich.h"
-#include "zeldovich_log.h"
 
 // Write a suitable header into the output file
 ZeldovichParameters::ZeldovichParameters(const fs::path &inputfile) {
@@ -36,6 +35,11 @@ void ZeldovichParameters::set_defaults(void) {
     qPk_fix_to_mean = 0;       // Legal default
     seed            = 0;       // Legal default
     Pk_filename = "";   // Must specify Pk file or power law
+    // Default filename for the primordial P(k) file used by our added primordial
+    // power spectrum feature. Unlike Pk_filename, there's no "or a power law"
+    // alternative here, so a sensible non-empty default is used directly (rather
+    // than defaulting to "" and requiring it to always be set).
+    Pk_primordial_filename = "class_pk_primordial_dimensional.dat";
     Pk_powerlaw_index = 1000;  // Must specify Pk file or power law
     density_filename = "density{:d}";  // Legal default
     local_wisdom_dir = "/dev/shm/Abacus_wisdom";
@@ -98,6 +102,10 @@ void ZeldovichParameters::register_vars(void) {
     installscalar("ZD_Pk_smooth", Pk_smooth, MUST_DEFINE);
     installscalar("ZD_qPk_fix_to_mean", qPk_fix_to_mean, DONT_CARE);
     installscalar("ZD_Pk_filename", Pk_filename, DONT_CARE);
+    // Optional: path to the primordial P(k) file used by our added primordial power
+    // spectrum feature. If not set in the .par file, keeps the default from
+    // set_defaults() above.
+    installscalar("ZD_Pk_primordial_filename", Pk_primordial_filename, DONT_CARE);
     installscalar("ZD_Pk_powerlaw_index", Pk_powerlaw_index, DONT_CARE);
     installscalar("InitialConditionsDirectory", output_dir, MUST_DEFINE);
     installscalar("ZD_local_wisdom_dir", local_wisdom_dir, DONT_CARE);
@@ -146,11 +154,20 @@ int ZeldovichParameters::setup() {
     }
 
     ppd = (int64_t) round(cbrt(np));
-    ZD_ERR("Generating ICs for ppd = {:d}\n", ppd);
+    fmt::print(stderr, "Generating ICs for ppd = {:d}\n", ppd);
     assert(ppd * ppd * ppd == np);
     assert(ppd <= MAX_PPD);
 
-    if (version == 1) {
+    if (version == 2) {
+        if (numblock > 0) {
+            fmt::print(
+               stderr,
+               "Note: ZD_NumBlock={:d} is ignored for ZD_Version = 2 "
+               "(legacy zeldovich-PLT v1 tuning; not used by zeldovich-MPI).\n",
+               numblock
+            );
+        }
+    } else {
         // NumBlock is only used in version 1
         if (numblock <= 0) {
             fmt::print(stderr,
@@ -179,7 +196,7 @@ int ZeldovichParameters::setup() {
     assert(!(Pk_norm < 0.0));
 
     if ((bool) (Pk_sigma > 0) == (bool) (Pk_sigma_ratio > 0)) {
-        ZD_ERR("Must specify exactly one of Pk_sigma or Pk_sigma_ratio!\n");
+        fmt::print(stderr, "Must specify exactly one of Pk_sigma or Pk_sigma_ratio!\n");
         exit(1);
     }
 
@@ -204,10 +221,13 @@ int ZeldovichParameters::setup() {
     fundamental = 2.0 * M_PI / boxsize;  // The k spacing
 
     if (qonemode)
-        ZD_ERR("one_mode: {:d}, {:d}, {:d}\n", one_mode[0], one_mode[1], one_mode[2]);
-
+        fmt::print(
+           stderr, "one_mode: {:d}, {:d}, {:d}\n", one_mode[0], one_mode[1], one_mode[2]
+        );
+//Charlie: this is not used in our current version of the code
     if (f_NL != 0.) {
-        ZD_ERR(
+        fmt::print(
+           stderr,
            "Generating local primordial non-Gaussianity, with parameters:\n"
            " - ZD_f_NL = {:g}\n"
            " - ZD_n_s = {:g}\n"

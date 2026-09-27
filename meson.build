@@ -38,6 +38,7 @@ if get_option('production_mode')
 endif
 proj_defs += '-DSKIP_FILE_WRITE=@0@'.format(get_option('skip_file_write'))
 proj_defs += '-DPARALLELIZE_Z_LOOP=@0@'.format(get_option('parallelize_z_loop'))
+proj_defs += '-DPARTICLE_OUTPUT_MODE=@0@'.format(get_option('particle_output_mode'))
 if get_option('debug_prints')
   proj_defs += '-DDEBUG_PRINTS=1'
 else

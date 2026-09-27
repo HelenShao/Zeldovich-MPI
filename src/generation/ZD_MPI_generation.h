@@ -53,6 +53,7 @@ void generate_zd_mpi_slice_pair_local(
     int rank,                         // MPI rank (for debug output)
     PowerSpectrumHandle ps_handle,   // zeldovich-PLT PowerSpectrum handle
     ParametersHandle params_handle,  // zeldovich-PLT Parameters handle
+    PowerSpectrumHandle ps_handle_primordial_dimensional, // primordial P(k) handle (NULL if unavailable)
     void** thread_rng_buffers);       // Pre-allocated RNG buffers [nthreads] (NULL = use malloc)
 
 // Print accumulated PTimerWall breakdown for Stage 1 sub-phases

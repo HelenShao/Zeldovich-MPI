@@ -5,7 +5,6 @@
 
 #include "parameters.h"
 #include "power_spectrum.h"
-#include "zeldovich_log.h"
 
 int ReadPkTextFileIntoVectors(const fs::path &filename, ZeldovichParameters &param,
     std::vector<double> &k_out, std::vector<double> &p_out)
@@ -186,7 +185,7 @@ int PowerSpectrum::InitFromRawPk(const double *k_arr, const double *p_arr, size_
 }
 
 int PowerSpectrum::InitFromFile(const fs::path &filename, ZeldovichParameters &param) {
-    ZD_ERR("Loading power spectrum from file \"{}\"\n", filename);
+    fmt::print(stderr, "Loading power spectrum from file \"{}\"\n", filename);
     std::vector<double> ks, Ps;
     if (ReadPkTextFileIntoVectors(filename, param, ks, Ps) != 0) {
         return -1;
@@ -198,7 +197,9 @@ int PowerSpectrum::InitFromPowerLaw(double _powerlaw_index, ZeldovichParameters 
     assert(_powerlaw_index != 1000);
     powerlaw_index = _powerlaw_index;
     is_powerlaw    = 1;
-    ZD_ERR("Initializing power spectrum with power law index {:g}\n", powerlaw_index);
+    fmt::print(
+       stderr, "Initializing power spectrum with power law index {:g}\n", powerlaw_index
+    );
     kmin = 1e-4;  // Arbitrary; used by f_NL
 
     Normalize(param);
@@ -211,7 +212,9 @@ void PowerSpectrum::Normalize(ZeldovichParameters &param) {
 
     // Might still have to normalize things!
     if (param.Pk_norm > 0.0) {  // Do a normalization
-        ZD_ERR("Input sigma({:f}) = {:.6g}\n", param.Pk_norm, sigmaR(param.Pk_norm));
+        fmt::print(
+           stderr, "Input sigma({:f}) = {:.6g}\n", param.Pk_norm, sigmaR(param.Pk_norm)
+        );
 
         if (param.Pk_sigma > 0) {
             normalization = param.Pk_sigma / sigmaR(param.Pk_norm);
@@ -224,7 +227,9 @@ void PowerSpectrum::Normalize(ZeldovichParameters &param) {
             );  // Illegal state! We checked this in the params
         }
 
-        ZD_ERR("Final sigma({:f}) = {:.6g}\n", param.Pk_norm, sigmaR(param.Pk_norm));
+        fmt::print(
+           stderr, "Final sigma({:f}) = {:.6g}\n", param.Pk_norm, sigmaR(param.Pk_norm)
+        );
     }
     // Might need to normalize to the box volume.  This is appropriate
     // if the iFFT is like FFTW, i.e., not dividing by N.
@@ -234,7 +239,7 @@ void PowerSpectrum::Normalize(ZeldovichParameters &param) {
     Pk_smooth2 = param.Pk_smooth * param.Pk_smooth;
 
     fixed_power = param.qPk_fix_to_mean;
-    if (fixed_power) ZD_ERR("Fixing density mode amplitudes to sqrt(P(k))\n");
+    if (fixed_power) fmt::print(stderr, "Fixing density mode amplitudes to sqrt(P(k))\n");
 
     primordial_norm = 1.;
     primordial_norm = this->power(this->kmin) / this->primordial_power(this->kmin);
@@ -274,6 +279,7 @@ it) to get rid of this warning.
                   this->val(log(wavenumber))
                   - wavenumber * wavenumber * this->Pk_smooth2
                )
+
                * normalization;
     }
 }
@@ -379,6 +385,19 @@ Complx PowerSpectrum::cgauss<2>(double wavenumber, int64_t rng) {
 
     return Complx(g1, g2);
 }
+
+//Charlie:adding this
+Complx PowerSpectrum::inputted_ic(double wavenumber, double real, double imag) {
+
+    double Pk    = this->power(wavenumber);
+    double sqrtPk     = sqrt(Pk);
+
+    double g1 = sqrtPk * real;
+    double g2 = sqrtPk * imag;
+
+    return Complx(g1, g2);
+}
+
 
 pcg64 PowerSpectrum::get_rng_copy(int64_t rng_index) const {
     // Return a copy of the RNG for thread-local use (hermitian OpenMP z-loop).

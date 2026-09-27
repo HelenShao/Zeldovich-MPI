@@ -45,6 +45,7 @@ public:
     int qPk_fix_to_mean;    // Don't draw the mode amplitude from a Gaussian; use
                             // sqrt(P(k)) instead.
     fs::path Pk_filename;  // The file name for the P(k) input
+    fs::path Pk_primordial_filename;  // The file name for the primordial P(k) input (for f_NL)
     double Pk_powerlaw_index;  // The power law index n for a pure power law P(k) ~ k^n
     fs::path output_dir;     // The file name for the Output
     fs::path local_wisdom_dir;  // Per-rank local FFTW wisdom directory (e.g. /dev/shm/Abacus_wisdom)

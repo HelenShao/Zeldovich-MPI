@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include <math.h>
 #include <omp.h>
+#include <filesystem>
 
 // Fine-grained PTimerWall accumulators for Stage 1 sub-phases.
 // These accumulate wall-clock time across all Y-slice calls.
@@ -20,6 +21,13 @@ static PTimerWall pt_mirror(1);      // Self-conjugate mirroring post-processing
 static PTimerWall pt_fft_copy_in(1); // 2D staged copy primary/conjugate -> stage
 static PTimerWall pt_fft_execute(1); // 2D FFTW_EXECUTE_DFT on stage (plan_dft_2d)
 static PTimerWall pt_fft_copy_out(1);// 2D staged copy stage -> primary/conjugate
+
+// Primordial power spectrum (class_pk_primordial_dimensional.dat) is now loaded ONCE
+// in zeldovich_mpi_driver.cpp -- the same way the main P(k) file is (rank-0 read +
+// MPI broadcast, spline built once) -- and passed in as the
+// ps_handle_primordial_dimensional parameter below, exactly like ps_handle. This
+// replaces what used to be a static/lazily-initialized handle built inside this file
+// on first call.
 
 #define COPY_CACHE_SIZE_CHUNK 8
 
@@ -79,12 +87,12 @@ static inline int compute_plt_eigenmode(
     int kx, int ky, int kz, int N, double k2,
     eigenmode *e, int rank, int x, int z)
 {
-    int ikx = (kx < 0) ? N + kx : kx;
-    int iky = (ky < 0) ? N + ky : ky;
+    int ikx = (kx < 0) ? N + kx : kx; //Charlie: this creates the index for the eigenmode lookup, since the eigenmodes are stored in a 0 to N-1 grid, we need to map negative kx, ky, kz to their positive counterparts
+    int iky = (ky < 0) ? N + ky : ky; //Charlie: if ky is negative, we map it to its positive counterpart by adding N, e.g. ky=-4 N=500, then iky=496, which is the index for ky=-4 in the eigenmode lookup table
     int ikz = (kz < 0) ? N + kz : kz;
-    if (ikz > N / 2) ikz = N - ikz;
+    if (ikz > N / 2) ikz = N - ikz; //Charlie: they only need half the data for z, since we have Hermitian symmetry, so we can just use the positive half of the z-axis 
 
-    if (plt_get_eigenmode(ikx, iky, ikz, (int64_t)N, e) != 0) {
+    if (plt_get_eigenmode(ikx, iky, ikz, (int64_t)N, e) != 0) { //Charlie: this actually calls the value of the eigenmode from the file
         if (rank == 0 && x == 0 && z == 0) {
             fprintf(stderr, "[WARNING] Failed to get PLT eigenmode for (kx=%d, ky=%d, kz=%d), using normal computation\n",
                     kx, ky, kz);
@@ -92,24 +100,24 @@ static inline int compute_plt_eigenmode(
         return 0;
     }
 
-    // Set sign of z component (real FFT only gives +kz half-space)
+    // Set sign of z component (real FFT only gives +kz half-space) 
     // see zeldovich.cpp line 255: ehat.vec[2] *= copysign(1, kz);
     if (kz < 0) {
-        e->vec[2] = -e->vec[2];
+        e->vec[2] = -e->vec[2]; //Charlie: if kz is negative, it just gives the negative of the +kz e_z component of the eigenvalue
     }
 
     // Normalize eigenvector (interpolation might not preserve |e| = 1)
     // see zeldovich.cpp lines 257-263
-    double e_mag = sqrt(e->vec[0] * e->vec[0] + e->vec[1] * e->vec[1] + e->vec[2] * e->vec[2]);
+    double e_mag = sqrt(e->vec[0] * e->vec[0] + e->vec[1] * e->vec[1] + e->vec[2] * e->vec[2]); //Charlie: calculates the magniutde of the eigenvector
     if (e_mag > 0.0) {
-        e->vec[0] /= e_mag;
-        e->vec[1] /= e_mag;
+        e->vec[0] /= e_mag; //Charlie: normalizes the eigenvector by dividing each component by the magnitude
+        e->vec[1] /= e_mag; //e_x[k_x,k_y,k_z]\hat{e_x}
         e->vec[2] /= e_mag;
     }
 
     // norm = k2 / (k * e) upweights each mode by 1/(khat*ehat), see zeldovich.cpp line 266
-    double k_dot_e = kx * e->vec[0] + ky * e->vec[1] + kz * e->vec[2];
-    double norm = (k2 > 0.0 && k_dot_e != 0.0) ? k2 / k_dot_e : 0.0;
+    double k_dot_e = kx * e->vec[0] + ky * e->vec[1] + kz * e->vec[2]; //Charlie: this is \vec{k} \cdot \vec{e}, the dot product of the momentum and the eigenvector
+    double norm = (k2 > 0.0 && k_dot_e != 0.0) ? k2 / k_dot_e : 0.0; //Charlie: this is the scaling factor for the eigenvector, which is k^2 / (k \cdot e), which is used to scale the eigenvector to get the correct amplitude for the mode
     if (!isfinite(norm)) norm = 0.0;
 
     // Scale eigenvector by norm (see zeldovich.cpp lines 268-270)
@@ -125,30 +133,30 @@ static inline int compute_plt_eigenmode(
 // Primary:   D + i*F,  G + i*H,   i*F*f,  (G + i*H)*f
 // Conjugate: conj(D) + i*conj(F), conj(G) + i*conj(H), i*conj(F*f), ...
 // ====================================================================================
-static inline void store_prim_conj(
+static inline void store_prim_conj( //Charlie: this function enforces Hermitian symmetry in fourier space
     fftw_complex_t *prim, fftw_complex_t *conj_buf,
     int N, int x, int z, int x_mirror, int z_mirror,
     const double *D, const double *F, const double *G, const double *H,
     double f_vel, int narray, int just_density)
 {
-    #define _SP(a, xx, zz) prim[(int64_t)(xx) + (N) * ((zz) + (N) * (a))]
-    #define _SC(a, xx, zz) conj_buf[(int64_t)(xx) + (N) * ((zz) + (N) * (a))]
+    #define _SP(a, xx, zz) prim[(int64_t)(xx) + (N) * ((zz) + (N) * (a))] //Charlie: this formula flattens the x, z, and "a" coordinates into one index. "a" counts which xz plane you are on and "xx" and "zz" are the x and z coordinates you are at on that specific plane. N is the individual size of one plane. (The maximum value for "xx" and "zz" is N-1)
+    #define _SC(a, xx, zz) conj_buf[(int64_t)(xx) + (N) * ((zz) + (N) * (a))] //Charlie: "a" tracks which of the quantities (density or displacement) you are storing. Also we're storing it in the prim and conj_buf arrays, which are the primary and conjugate slices in fourier space
 
-    if (just_density) {
-        _SP(0, x, z)[0] = D[0];
+    if (just_density) { //Charlie: if this flag is on, you're just computing the density filed (no displacements)
+        _SP(0, x, z)[0] = D[0]; //Charlie: this stores the real part of the density field into the primary slice at x, z coordinates at plane a=0 (that are inputs into the function)
         _SP(0, x, z)[1] = D[1];
 
-        _SC(0, x_mirror, z_mirror)[0] =  D[0];
+        _SC(0, x_mirror, z_mirror)[0] =  D[0]; //Charlie: this stores the conjugate of the density field into the conjugate slice at x_mirror, z_mirror coordinates at plane a=0 (that are inputs into the function)
         _SC(0, x_mirror, z_mirror)[1] = -D[1];
     } else {
-        // Array 0: D + i*F = (D_re - F_im) + i*(D_im + F_re)
+        // Array 0: D + i*F = (D_re - F_im) + i*(D_im + F_re) //Charlie: This handles the Hermitian Symmetry
         _SP(0, x, z)[0] = D[0] - F[1];
         _SP(0, x, z)[1] = D[1] + F[0];
         // Array 1: G + i*H = (G_re - H_im) + i*(G_im + H_re)
         _SP(1, x, z)[0] = G[0] - H[1];
         _SP(1, x, z)[1] = G[1] + H[0];
 
-        // conj(D) + i*conj(F) = (D_re + F_im) + i*(F_re - D_im)
+        // conj(D) + i*conj(F) = (D_re + F_im) + i*(F_re - D_im) //Charlie: This handles the Hermitian Symmetry
         _SC(0, x_mirror, z_mirror)[0] = D[0] + F[1];
         _SC(0, x_mirror, z_mirror)[1] = F[0] - D[1];
         // conj(G) + i*conj(H) = (G_re + H_im) + i*(H_re - G_im)
@@ -195,15 +203,14 @@ void generate_zd_mpi_slice_pair_local(
     int rank,
     PowerSpectrumHandle ps_handle,   // zeldovich-PLT PowerSpectrum handle
     ParametersHandle params_handle,  // zeldovich-PLT Parameters handle
+    PowerSpectrumHandle ps_handle_primordial_dimensional, // primordial P(k), loaded/normalized once in the driver (NULL if unavailable)
     void** thread_rng_buffers)        // Pre-allocated RNG buffers [nthreads] (NULL = use malloc)
 {
     (void)thread_rng_buffers; // currently unused, kept for API
 
-#if DEBUG_PRINTS
     // ========== DIAGNOSTIC TIMING: Function-level ==========
     double t_func_start = omp_get_wtime();
     double t_setup_end, t_zloop_end, t_verify_end, t_fft_end;
-#endif
     
     // Debug: Log entry for seg fault error
     // #if DEBUG_PRINTS
@@ -294,10 +301,113 @@ void generate_zd_mpi_slice_pair_local(
         nskip = 0;  // Will be accumulated during loops
     }
     
-#if DEBUG_PRINTS
     t_setup_end = omp_get_wtime();
+
+    //Charlie: adding a file 
+
+#if (!!DUMP_GAUSSIAN_D + !!LOAD_D_FROM_FILE + !!LOAD_WHITE_NOISE_FROM_FILE) > 1
+#error "Only one of DUMP_GAUSSIAN_D, LOAD_D_FROM_FILE, LOAD_WHITE_NOISE_FROM_FILE may be enabled at a time"
 #endif
-    
+
+
+#if DUMP_GAUSSIAN_D
+FILE *dump_fp = NULL;
+char dump_filename[128];
+sprintf(dump_filename, "Phi_gaussian_rank%d_y%d.bin", rank, global_y);
+dump_fp = fopen(dump_filename, "wb");
+if (dump_fp == NULL) {
+    fprintf(stderr, "ERROR: Could not open dump file %s\n", dump_filename);
+}
+#endif
+
+#if LOAD_D_FROM_FILE
+
+    // Charlie: dump the primordial-power-divided phi values to their own output
+    // folder, one file per (rank, y) slice — same rank/y naming convention as
+    // the DUMP_GAUSSIAN_D dump above, just written to a dedicated subfolder.
+    FILE *phi_divided_fp = NULL;
+    {
+        const char *phi_divided_dir = "phi_divided_output";
+        std::error_code phi_dir_ec;
+        std::filesystem::create_directories(phi_divided_dir, phi_dir_ec); // no-op (and no error) if it already exists;
+                                                                           // phi_dir_ec is set on a real failure (e.g. no permissions)
+        if (phi_dir_ec) {
+            fprintf(stderr, "ERROR: Could not create directory %s: %s\n", phi_divided_dir, phi_dir_ec.message().c_str());
+        }
+        char phi_divided_filename[160];
+        sprintf(phi_divided_filename, "%s/phi_divided_rank%d_y%d.bin", phi_divided_dir, rank, global_y);
+        phi_divided_fp = fopen(phi_divided_filename, "wb");
+        if (phi_divided_fp == NULL) {
+            fprintf(stderr, "ERROR: Could not open %s for writing divided phi\n", phi_divided_filename);
+        }
+        fflush(stderr);
+    }
+
+    double *loaded_kernel_real = (double*)malloc((size_t)N * (size_t)N * sizeof(double));
+    double *loaded_kernel_imag = (double*)malloc((size_t)N * (size_t)N * sizeof(double));
+    {
+        char load_filename[128];
+        sprintf(load_filename, "bin_files_output/phi_output_rank%d_y%d.bin", rank, global_y);
+        FILE *load_fp = fopen(load_filename, "rb");
+        if (load_fp == NULL) {
+            fprintf(stderr, "ERROR: Could not open %s for reading phi", load_filename);
+        } else {
+            int32_t rec_x, rec_y, rec_z;
+            double rec_kernel_real, rec_kernel_imag;
+            for (int64_t i = 0; i < (int64_t)N * (int64_t)N; i++) {
+                size_t nread = 0;
+                nread += fread(&rec_x, sizeof(int32_t), 1, load_fp);
+                nread += fread(&rec_y, sizeof(int32_t), 1, load_fp);
+                nread += fread(&rec_z, sizeof(int32_t), 1, load_fp);
+                nread += fread(&rec_kernel_real, sizeof(double), 1, load_fp);
+                nread += fread(&rec_kernel_imag, sizeof(double), 1, load_fp);
+                if (nread != 5) {
+                    fprintf(stderr, "ERROR: short read in %s at record %ld (got %zu/5 fields)\n",
+                            load_filename, (long)i, nread);
+                    break;
+                }
+                loaded_kernel_real[(int64_t)rec_z * N + rec_x] = rec_kernel_real;
+                loaded_kernel_imag[(int64_t)rec_z * N + rec_x] = rec_kernel_imag;
+            }
+            fclose(load_fp);
+        }
+    }
+#endif
+
+#if LOAD_WHITE_NOISE_FROM_FILE
+
+    double *loaded_noise_real = (double*)malloc((size_t)N * (size_t)N * sizeof(double));
+    double *loaded_noise_imag = (double*)malloc((size_t)N * (size_t)N * sizeof(double));
+    {
+        char load_filename[128];
+        sprintf(load_filename, "phi_divided_output/phi_divided_rank%d_y%d.bin", rank, global_y); 
+        FILE *load_fp = fopen(load_filename, "rb");
+        if (load_fp == NULL) {
+            fprintf(stderr, "ERROR: Could not open %s for reading phi", load_filename);
+        } else {
+            int32_t rec_x, rec_y, rec_z;
+            double rec_noise_real, rec_noise_imag;
+            for (int64_t i = 0; i < (int64_t)N * (int64_t)N; i++) {
+                size_t nread = 0;
+                nread += fread(&rec_x, sizeof(int32_t), 1, load_fp);
+                nread += fread(&rec_y, sizeof(int32_t), 1, load_fp);
+                nread += fread(&rec_z, sizeof(int32_t), 1, load_fp);
+                nread += fread(&rec_noise_real, sizeof(double), 1, load_fp);
+                nread += fread(&rec_noise_imag, sizeof(double), 1, load_fp);
+                if (nread != 5) {
+                    fprintf(stderr, "ERROR: short read in %s at record %ld (got %zu/5 fields)\n",
+                            load_filename, (long)i, nread);
+                    break;
+                }
+                loaded_noise_real[(int64_t)rec_z * N + rec_x] = rec_noise_real;
+                loaded_noise_imag[(int64_t)rec_z * N + rec_x] = rec_noise_imag;
+            }
+            fclose(load_fp);
+        }
+    }
+#endif
+
+
     // ========== Unified z-loop: handles both conjugate-pair and self-conjugate ==========
 #if PARALLELIZE_Z_LOOP
     {
@@ -367,7 +477,7 @@ void generate_zd_mpi_slice_pair_local(
         int abs_kz = (kz < 0) ? -kz : kz;
         
         for (int x = 0; x < N; x++) {
-            int x_mirror = (x == 0) ? 0 : N - x;
+            int x_mirror = (x == 0) ? 0 : N - x; //Charlie: x=0 case for mirroring
             int z_mirror = (z == 0) ? 0 : N - z;
             
             // ========== STEP 1: Calculate k-vector components ==========
@@ -399,51 +509,215 @@ void generate_zd_mpi_slice_pair_local(
             int is_nyquist = (abs_kx == Nhalf || abs_ky == Nhalf || abs_kz == Nhalf);
             
             fftw_complex D;
-            if ((k2 == 0.0)
-                 || (is_nyquist)
-                 || (!CornerModes && (double)k2_int >= k2_cutoff)) {
-                D[0] = D[1] = 0.0;
-                nskip++;
-                #if DEBUG_RNG_SKIP
-                int log_skip = (x <= MAX_DEBUG_COORD && global_y <= MAX_DEBUG_COORD && z <= MAX_DEBUG_COORD) ||
-                               (x == Nhalf - 1 && global_y == Nhalf - 1 && z == Nhalf - 1);
-                if (log_skip) {
-                    if (k2 == 0.0) {
-                        fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d (x,z)=(%d,%d): D=0 (DC mode), ACCUMULATE nskip++ (total=%lld)\n",
-                                N, global_y, x, z, (long long)nskip);
-                    } else if (is_nyquist) {
-                        fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d (x,z)=(%d,%d): D=0 (Nyquist: kx=%d ky=%d kz=%d), ACCUMULATE nskip++ (total=%lld)\n",
-                                N, global_y, x, z, kx, ky, kz, (long long)nskip);
-                    } else {
-                        fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d (x,z)=(%d,%d): D=0 (k_cutoff: k2=%d >= %.1f), ACCUMULATE nskip++ (total=%lld)\n",
-                                N, global_y, x, z, k2_int, k2_cutoff, (long long)nskip);
+            fftw_complex phi_G;
+                if ((k2 == 0.0) //Charlie:handles skipping DC mode (k=0) and Nyquist modes (k=kmax) for all three axes (and does it to keep the random number generator in sync with the serial version)
+                    || (is_nyquist)
+                    || (!CornerModes && (double)k2_int >= k2_cutoff)) {
+                    D[0] = D[1] = 0.0;
+                    phi_G[0] = phi_G[1] = 0.0;
+                    nskip++;
+                    #if DEBUG_RNG_SKIP
+                    int log_skip = (x <= MAX_DEBUG_COORD && global_y <= MAX_DEBUG_COORD && z <= MAX_DEBUG_COORD) ||
+                                (x == Nhalf - 1 && global_y == Nhalf - 1 && z == Nhalf - 1);
+                    if (log_skip) {
+                        if (k2 == 0.0) {
+                            fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d (x,z)=(%d,%d): D=0 (DC mode), ACCUMULATE nskip++ (total=%lld)\n",
+                                    N, global_y, x, z, (long long)nskip);
+                        } else if (is_nyquist) {
+                            fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d (x,z)=(%d,%d): D=0 (Nyquist: kx=%d ky=%d kz=%d), ACCUMULATE nskip++ (total=%lld)\n",
+                                    N, global_y, x, z, kx, ky, kz, (long long)nskip);
+                        } else {
+                            fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d (x,z)=(%d,%d): D=0 (k_cutoff: k2=%d >= %.1f), ACCUMULATE nskip++ (total=%lld)\n",
+                                    N, global_y, x, z, k2_int, k2_cutoff, (long long)nskip);
+                        }
+                        fflush(stderr);
                     }
+                    #endif
+                } 
+                else if (ps_handle != NULL && params_handle != NULL) {
+                    double k2_phys = k2 * fundamental * fundamental;
+                    double kmag = sqrt(k2_phys);
+                    int64_t rng_index = global_y;
+                    
+                    double D_real, D_imag;
+                    #if VERIFY_RNG_CALLS
+                    if (nskip > 0 && local_rng_buf == NULL) {
+                        #pragma omp atomic
+                        total_rng_skips += nskip;
+                    }
+                    #endif
+                    get_cgauss(ps_handle, params_handle, rng_index, kmag, &nskip, local_rng_buf, &D_real, &D_imag); //cgauss here returns D_real and D_imag
+
+                    #if VERIFY_RNG_CALLS
+                    #pragma omp atomic
+                    total_rng_calls++;
+                    #endif
+                    
+                    D[0] = (real_t)D_real; //Charlie: This is the Gaussian density field we want to export. I need to check if Hermitian symmetry has been handled yet
+                    D[1] = (real_t)D_imag;
+
+                    phi_G[0] = D[0];
+                    phi_G[1] = D[1];
+                    {
+                        double k2_phys = k2 * fundamental * fundamental;
+                        double kmag = sqrt(k2_phys);
+                        if (kmag > 0.0) {
+                            double P_density    = zeldovich_ps_power(ps_handle, kmag); //Charlie: calculates the power spectrum
+
+                            // CHANGED: P_primordial now comes from its own independently-
+                            // loaded file/spline/handle (class_pk_primordial_dimensional.dat),
+                            // evaluated with the same zeldovich_ps_power() call used for
+                            // P_density above -- not inferred from ps_handle's shape.
+                            double P_primordial = 0.0;
+                            if (ps_handle_primordial_dimensional != NULL) {
+                                P_primordial = zeldovich_ps_power(ps_handle_primordial_dimensional, kmag);
+                            }
+
+                            if (P_density > 0.0) {
+                                double ratio = sqrt(P_primordial/P_density);
+                                phi_G[0] = (real_t)((double)D[0] *ratio *(2.0/3.0)); 
+                                phi_G[1] = (real_t)((double)D[1] *ratio *(2.0/3.0)); 
+                            }
+                        }
+                    }
+                }
+                else { //charlie: I added this 
+                    fprintf(stderr, "ERROR: ps_handle or params_handle is NULL for a mode "
+                                    "that requires random generation (x=%d, y=%d, z=%d, k2=%g). "
+                                    "This should never happen — check caller setup.\n",
+                                    x, global_y, z, k2);
+                    D[0] = D[1] = 0.0;   // still initialize, so we fail loudly rather than crash from UB
+                    phi_G[0] = phi_G[1] = 0.0;
                     fflush(stderr);
                 }
-                #endif
-            } 
-            else if (ps_handle != NULL && params_handle != NULL) {
-                double k2_phys = k2 * fundamental * fundamental;
-                double kmag = sqrt(k2_phys);
-                int64_t rng_index = global_y;
-                
-                double D_real, D_imag;
-                #if VERIFY_RNG_CALLS
-                if (nskip > 0 && local_rng_buf == NULL) {
-                    #pragma omp atomic
-                    total_rng_skips += nskip;
-                }
-                #endif
-                get_cgauss(ps_handle, params_handle, rng_index, kmag, &nskip, local_rng_buf, &D_real, &D_imag);
 
-                #if VERIFY_RNG_CALLS
-                #pragma omp atomic
-                total_rng_calls++;
+
+                //Charlie: My code insertion to dump the density field D to a file
+                 #if DUMP_GAUSSIAN_D
+                //Transform D into Phi (D itself is left untouched for downstream use)
+                // Write Phi mode to file
+                fwrite(&x, sizeof(int), 1, dump_fp);
+                fwrite(&global_y, sizeof(int), 1, dump_fp);
+                fwrite(&z, sizeof(int), 1, dump_fp);
+                fwrite(phi_G, sizeof(fftw_complex), 1, dump_fp);
+ 
+                // Charlie: debug print — check a handful of modes as they're dumped
+                if (rank == 0 && global_y == 0 && x < 3 && z < 3) {
+                    fprintf(stderr, "[DUMP] (x=%d, y=%d, z=%d): D_real=%.15e, D_imag=%.15e\n",
+                        x, global_y, z, (double)D[0], (double)D[1]);
+                    fflush(stderr);
+                    }
+                if (rank == 0 && global_y == Nhalf - 1 && x < 3 && z < 3) {
+                        fprintf(stderr, "[DUMP] (x=%d, y=%d, z=%d): D_real=%.15e, D_imag=%.15e\n",
+                            x, global_y, z, (double)D[0], (double)D[1]);
+                        fflush(stderr);
+                    }  
                 #endif
-                D[0] = (real_t)D_real;
-                D[1] = (real_t)D_imag;
-            }
-            
+
+            fftw_complex kernel;
+            fftw_complex phi_NG;
+            fftw_complex NG_rand; //charlie: variable for the "random" numbers produced by the non-gaussian phi(k)
+            double f_NL; //charlie: need to add f_NL in the parameters file
+            #if LOAD_D_FROM_FILE
+                f_NL = 100.0; //charlie: placeholder
+                kernel[0] = (real_t)loaded_kernel_real[(int64_t)x + z * N]; //Charlie: this is inside x and z loops
+                kernel[1] = (real_t)loaded_kernel_imag[(int64_t)x + z * N];
+                phi_NG[0] = phi_G[0]+ f_NL*kernel[0]; 
+                phi_NG[1] = phi_G[1]+f_NL*kernel[1]; 
+
+                // Charlie: divide loaded D by sqrt(P_primordial(k)), where P_primordial(k)
+                // is read from class_pk_primordial_dimensional.dat via
+                // ps_handle_primordial_dimensional (same file/spline used in the main
+                // P_density/P_primordial ratio above -- not the analytic k^n_s inference).
+                // Uses the same k2_phys/kmag convention as the cgauss branch below
+                // (k2 * fundamental^2), so kmag is in the same physical units.
+                // k=0 (DC mode) is left untouched (P_primordial stays 0.0 there,
+                // which would otherwise divide by zero).
+                NG_rand[0] = NG_rand[1] = 0.0;
+                if (ps_handle != NULL) {
+                    double k2_phys = k2 * fundamental * fundamental;
+                    double kmag = sqrt(k2_phys);
+                    double P_primordial = 0.0;
+                    if (ps_handle_primordial_dimensional != NULL) {
+                        P_primordial = zeldovich_ps_power(ps_handle_primordial_dimensional, kmag);
+                    }
+                    if (P_primordial > 0.0) {
+                        double sqrt_P_primordial = sqrt(P_primordial);
+                        NG_rand[0] = (real_t)(double)phi_NG[0]*((3.0/2.0)/ sqrt_P_primordial); //This is turning phi_non-Gaussian back into random numbers
+                        NG_rand[1] = (real_t)(double)phi_NG[1]*((3.0/2.0)/ sqrt_P_primordial);
+                    }
+                }
+
+                // Charlie: write this mode's divided phi to file (x, y, z, phi_real, phi_imag), Idk if I need to do this anymore
+                // matching the same record layout used when reading loaded_kernel_real/imag above.
+                if (phi_divided_fp != NULL) {
+                    int32_t out_x = (int32_t)x;
+                    int32_t out_y = (int32_t)global_y;
+                    int32_t out_z = (int32_t)z;
+                    double out_rand_real = (double)NG_rand[0];
+                    double out_rand_imag = (double)NG_rand[1];
+                    fwrite(&out_x, sizeof(int32_t), 1, phi_divided_fp);
+                    fwrite(&out_y, sizeof(int32_t), 1, phi_divided_fp);
+                    fwrite(&out_z, sizeof(int32_t), 1, phi_divided_fp);
+                    fwrite(&out_rand_real, sizeof(double), 1, phi_divided_fp);
+                    fwrite(&out_rand_imag, sizeof(double), 1, phi_divided_fp);
+                }
+
+                //Charlie: Creating D from our random numbers (from phi)
+                double D_real, D_imag;
+                if (ps_handle != NULL) {
+                    double k2_phys = k2 * fundamental * fundamental;
+                    double kmag = sqrt(k2_phys);
+                    zeldovich_ps_inputted_ic(ps_handle, kmag, NG_rand[0], NG_rand[1], &D_real, &D_imag);
+                    D[0] = (real_t)D_real; 
+                    D[1] = (real_t)D_imag;
+                    }
+                
+
+                    // Charlie: debug print — check the same handful of modes as they're loaded
+                if (rank == 0 && global_y == 0 && x < 3 && z < 3) {
+                    fprintf(stderr, "[LOAD] (x=%d, y=%d, z=%d): D_real=%.15e, D_imag=%.15e\n",
+                            x, global_y, z, (double)D[0], (double)D[1]);
+                    //fprintf(stderr, "[KERNEL] (x=%d, y=%d, z=%d): kernel_real=%.15e, kernel_imag=%.15e\n",
+                    //        x, global_y, z, (double)kernel[0], (double)kernel[1]);        
+                    fflush(stderr);
+                }
+                if (rank == 0 && global_y == Nhalf - 1 && x < 3 && z < 3) {
+                        fprintf(stderr, "[LOAD] (x=%d, y=%d, z=%d): D_real=%.15e, D_imag=%.15e\n",
+                            x, global_y, z, (double)D[0], (double)D[1]);
+                        fflush(stderr);
+                    }
+            #else    
+            #endif
+
+            fftw_complex noise;
+            #if LOAD_WHITE_NOISE_FROM_FILE
+                noise[0] = (real_t)loaded_noise_real[(int64_t)x + z * N];
+                noise[1] = (real_t)loaded_noise_imag[(int64_t)x + z * N];
+
+
+                //Charlie: Creating D from our random numbers (from phi)
+                double D_real, D_imag;
+                if (ps_handle != NULL) {
+                    double k2_phys = k2 * fundamental * fundamental;
+                    double kmag = sqrt(k2_phys);
+                    zeldovich_ps_inputted_ic(ps_handle, kmag, noise[0], noise[1], &D_real, &D_imag);
+                    D[0] = (real_t)D_real; 
+                    D[1] = (real_t)D_imag;
+                    }
+                
+
+                    // Charlie: debug print — check the same handful of modes as they're loaded
+                if (rank == 0 && global_y == 0 && x < 3 && z < 3) {
+                    fprintf(stderr, "[LOAD_WHITE_NOISE] (x=%d, y=%d, z=%d): D_real=%.15e, D_imag=%.15e\n",
+                            x, global_y, z, (double)D[0], (double)D[1]);
+                    //fprintf(stderr, "[KERNEL] (x=%d, y=%d, z=%d): kernel_real=%.15e, kernel_imag=%.15e\n",
+                    //        x, global_y, z, (double)kernel[0], (double)kernel[1]);        
+                    fflush(stderr);
+                }
+            #else    
+            #endif
+
             // ========== STEP 3: Compute F, G, H from D ==========
             fftw_complex F, G, H;
             int use_plt = 0; 
@@ -626,13 +900,20 @@ void generate_zd_mpi_slice_pair_local(
     pt_zloop.Stop(0);
 #endif
 
+//Charlie: added to close the file pointer for dumping the Gaussian density field D
+#if DUMP_GAUSSIAN_D
+if (dump_fp != NULL) {
+    fclose(dump_fp);
+}
+#endif
+
     // ========== Self-conjugate post-processing ==========
     // Mirror first half to second half (match zeldovich.cpp lines 555-573)
     // Only applies to self-conjugate slices (Y=0 or Y=N/2)
     pt_mirror.Start(0);
     if (y_mirror == global_y) {
         if (global_y == 0 || global_y == Nhalf) {
-            for (int z = 0; z < Nhalf; z++) {
+            for (int z = 0; z < Nhalf; z++) { //Charlie: for loop for z and x 
                 int z_mirror = (z == 0) ? 0 : N - z;
                 // Match zeldovich.cpp: xmax = ppdhalf for z=0, ppd for z>0
                 int x_max = (z == 0 ? Nhalf : N);
@@ -682,9 +963,7 @@ void generate_zd_mpi_slice_pair_local(
     }
     pt_mirror.Stop(0);
     
-#if DEBUG_PRINTS
     t_zloop_end = omp_get_wtime();
-#endif
     
     // Verify Hermitian symmetry BEFORE 2D FFT
     // STAGE 7: Updated to check all arrays independently
@@ -696,9 +975,7 @@ void generate_zd_mpi_slice_pair_local(
     }
     #endif
     
-#if DEBUG_PRINTS
     t_verify_end = omp_get_wtime();
-#endif
     
     // 2D FFT: staged copy — plan_dft_2d on stage_2d, loop over narray
     for (int a = 0; a < narray; a++) {
@@ -737,9 +1014,7 @@ void generate_zd_mpi_slice_pair_local(
         }
     }
     
-#if DEBUG_PRINTS
     t_fft_end = omp_get_wtime();
-#endif
     
     #if DEBUG_PRINTS
     // ========== DIAGNOSTIC: Print per-Y timing breakdown ==========
@@ -804,6 +1079,20 @@ void generate_zd_mpi_slice_pair_local(
     // #endif
     
     // Clean up local macros
+    #if LOAD_D_FROM_FILE
+        free(loaded_kernel_real);
+        free(loaded_kernel_imag);
+        if (phi_divided_fp != NULL) {
+            fclose(phi_divided_fp);
+        }
+
+    #endif
+
+    #if LOAD_WHITE_NOISE_FROM_FILE
+        free(loaded_noise_real);
+        free(loaded_noise_imag);
+    #endif
+
     #undef PRIM_SLICE
     #undef CONJ_SLICE
 }

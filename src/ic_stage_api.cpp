@@ -74,7 +74,7 @@ static int wisdom_preflight_from_param_buffer(
             return 1;
         }
 
-        ParametersHandle params = zd_params_from_buffer(bytes, len);
+        ParametersHandle params = zeldovich_params_create_from_buffer(bytes, len, "embedded_param_buffer");
         if (!params) {
             fprintf(stderr,
                     "wisdom_preflight_from_param_buffer: failed to parse embedded parameters\n");

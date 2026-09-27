@@ -66,6 +66,7 @@ public:
     double power(double wavenumber);
     double primordial_power(double wavenumber);
     double infer_Tk(double wavenumber);
+    Complx inputted_ic(double wavenumber, double real, double imag);
 
     template <int Ver>
     double one_rand(int64_t i);

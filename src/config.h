@@ -4,6 +4,14 @@
 // Modify flags or override them at compile time using -D flags.
 // Ex. make CFLAGS="-DUSE_DOUBLE_PRECISION -DDEBUG_PRINTS=0"
 
+//Charlie: My insertion to dump the gaussian density field D to a file. Set DUMP_GAUSSIAN_D=1 to enable dumping, 0 to disable
+#define DUMP_GAUSSIAN_D 1
+#define LOAD_D_FROM_FILE 0
+#define LOAD_WHITE_NOISE_FROM_FILE 0
+
+
+
+
 // Use X-direction padding with periodic boundary conditions
 // 1 = Enable X-padding with periodic wrap-around
 #ifndef USE_X_PADDING
@@ -11,8 +19,7 @@
 #endif
 
 // Enable Abacus domain decomposition validation
-// 1 = Validate that N is divisible by size_x and size_z (exact division required)
-// was: grid_x and grid_z
+// 1 = Validate that N is divisible by grid_x and grid_z (exact division required)
 #ifndef ENABLE_ABACUS_VALIDATION
 #define ENABLE_ABACUS_VALIDATION 0
 #endif

@@ -25,7 +25,11 @@ ParametersHandle zeldovich_params_create(const char* param_file);
 // Create Parameters object from in-memory header bytes
 // Buffer must include the ParseHeader expected trailing "\0\0".
 // Returns NULL on error.
-ParametersHandle zd_params_from_buffer(const char* header_bytes, size_t header_len);
+ParametersHandle zeldovich_params_create_from_buffer(
+    const char* header_bytes,
+    size_t header_len,
+    const char* source_name
+);
 
 // Destroy Parameters object
 void zeldovich_params_destroy(ParametersHandle params);
@@ -60,6 +64,11 @@ double zeldovich_params_get_Pk_powerlaw_index(ParametersHandle params);
 // Get Pk_filename (tabular P(k) input). NULL if empty — use power law in that case.
 // Valid only while Parameters object exists.
 const char* zeldovich_params_get_Pk_filename(ParametersHandle params);
+
+// Get Pk_primordial_filename (ZD_Pk_primordial_filename in the .par file). Defaults
+// to "class_pk_primordial_dimensional.dat" if not set. NULL only if the Parameters
+// object itself is NULL. Valid only while Parameters object exists.
+const char* zeldovich_params_get_Pk_primordial_filename(ParametersHandle params);
 
 // Get fundamental wavenumber (2pi/BoxSize)
 double zeldovich_params_get_fundamental(ParametersHandle params);
@@ -101,6 +110,16 @@ int zeldovich_params_get_qdensity(ParametersHandle params);
 // Returns: k_cutoff value (default 1.0, corresponds to k_Nyquist)
 double zeldovich_params_get_k_cutoff(ParametersHandle params);
 
+// Get/set Pk_norm (radius, Mpc/h, at which sigmaR is evaluated for sigma8-style
+// normalization; if <= 0, that normalization branch is skipped entirely in
+// Normalize()). The setter exists so a secondary PowerSpectrum can be loaded
+// with this normalization temporarily disabled -- e.g. when its own shape makes
+// the Romberg integration in sigmaR() expensive/slow to converge, and its
+// normalization will be overwritten afterward anyway via
+// zeldovich_ps_set_normalization(). Restore the original value after use.
+double zeldovich_params_get_Pk_norm(ParametersHandle params);
+void zeldovich_params_set_Pk_norm(ParametersHandle params, double val);
+
 // Get CornerModes (corner mode handling flag)
 // Returns: 0 = zero modes with k^2 >= k2_cutoff (default), non-zero = keep corner modes
 int zeldovich_params_get_CornerModes(ParametersHandle params);
@@ -131,6 +150,12 @@ double zeldovich_ps_power(PowerSpectrumHandle ps, double wavenumber);
 // Generate random number using zeldovich-PLT's v2rng
 double zeldovich_ps_one_rand(PowerSpectrumHandle ps, int64_t rng_index);
 
+//Charlie: added so we can calculate primordial power spectrum
+double zeldovich_ps_primordial_power(PowerSpectrumHandle ps, double wavenumber);
+
+//Charlie: added to calculate from a random number "file"
+void zeldovich_ps_inputted_ic(PowerSpectrumHandle ps, double wavenumber, double real, double imag, double* Dreal, double* Dimag);
+
 // Generate complex Gaussian random number with power spectrum variance
 void zeldovich_ps_cgauss(PowerSpectrumHandle ps, double wavenumber, int64_t rng_index, double* real, double* imag);
 
@@ -158,6 +183,18 @@ double zeldovich_ps_get_Pk_smooth2(PowerSpectrumHandle ps);
 
 // Get fixed_power flag
 int zeldovich_ps_get_fixed_power(PowerSpectrumHandle ps);
+
+// Force-set normalization (bypasses the sigma8/Pk_norm self-rescaling done in
+// Normalize()). Use this to make a secondary PowerSpectrum (e.g. loaded from a
+// different tabulated file) carry the SAME multiplicative normalization
+// constant as another already-initialized PowerSpectrum -- e.g.
+//   zeldovich_ps_set_normalization(ps_secondary, zeldovich_ps_get_normalization(ps_main));
+// This matters whenever the main P(k) file has been sigma8-renormalized: that
+// renormalization is self-referential (computed from that file's own shape),
+// so a second file loaded independently would otherwise get a DIFFERENT,
+// physically-inconsistent rescaling based on its own shape, which would
+// corrupt any ratio computed between the two spectra (e.g. sqrt(P2/P1)).
+void zeldovich_ps_set_normalization(PowerSpectrumHandle ps, double normalization);
 
 #ifdef __cplusplus
 }

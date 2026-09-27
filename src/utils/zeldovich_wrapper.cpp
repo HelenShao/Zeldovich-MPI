@@ -23,14 +23,16 @@ ParametersHandle zeldovich_params_create(const char* param_file) {
     }
 }
 
-ParametersHandle zd_params_from_buffer(const char* header_bytes, size_t header_len)
-{
-    if (header_bytes == NULL || header_len == 0) {
+ParametersHandle zeldovich_params_create_from_buffer(
+    const char* header_bytes,
+    size_t header_len,
+    const char* source_name
+) {
+    if (header_bytes == NULL || header_len == 0 || source_name == NULL) {
         return NULL;
     }
     try {
-        ZeldovichParameters* params =
-            new ZeldovichParameters(header_bytes, header_len, fs::path());
+        ZeldovichParameters* params = new ZeldovichParameters(header_bytes, header_len, fs::path(source_name));
         return static_cast<ParametersHandle>(params);
     } catch (...) {
         return NULL;
@@ -106,6 +108,13 @@ const char* zeldovich_params_get_Pk_filename(ParametersHandle params) {
     return p->Pk_filename.c_str();
 }
 
+const char* zeldovich_params_get_Pk_primordial_filename(ParametersHandle params) {
+    if (!params) return NULL;
+    ZeldovichParameters* p = static_cast<ZeldovichParameters*>(params);
+    if (p->Pk_primordial_filename.empty()) return NULL;
+    return p->Pk_primordial_filename.c_str();
+}
+
 double zeldovich_params_get_f_cluster(ParametersHandle params) {
     if (!params) return 0.0;
     ZeldovichParameters* p = static_cast<ZeldovichParameters*>(params);
@@ -166,6 +175,18 @@ double zeldovich_params_get_k_cutoff(ParametersHandle params) {
     if (!params) return 1.0;
     ZeldovichParameters* p = static_cast<ZeldovichParameters*>(params);
     return p->k_cutoff;
+}
+
+double zeldovich_params_get_Pk_norm(ParametersHandle params) {
+    if (!params) return 0.0;
+    ZeldovichParameters* p = static_cast<ZeldovichParameters*>(params);
+    return p->Pk_norm;
+}
+
+void zeldovich_params_set_Pk_norm(ParametersHandle params, double val) {
+    if (!params) return;
+    ZeldovichParameters* p = static_cast<ZeldovichParameters*>(params);
+    p->Pk_norm = val;
 }
 
 int zeldovich_params_get_CornerModes(ParametersHandle params) {
@@ -255,7 +276,14 @@ double zeldovich_ps_one_rand(PowerSpectrumHandle ps, int64_t rng_index) {
     return p->one_rand<2>(rng_index);
 }
 
-void zeldovich_ps_cgauss(PowerSpectrumHandle ps, double wavenumber, int64_t rng_index, double* real, double* imag) {
+//Charlie: adding this so we can calculate the primordial power spectrum. We end up not using this method because it is less accurate than using a primordial power spectrum uploaded directly from a CLASS file
+double zeldovich_ps_primordial_power(PowerSpectrumHandle ps, double wavenumber) {
+    if (!ps) return 0.0;
+    PowerSpectrum* p = static_cast<PowerSpectrum*>(ps);
+    return p->primordial_power(wavenumber);
+}
+
+void zeldovich_ps_cgauss(PowerSpectrumHandle ps, double wavenumber, int64_t rng_index, double* real, double* imag) { //Charlie:cgauss
     if (!ps || !real || !imag) return;
     PowerSpectrum* p = static_cast<PowerSpectrum*>(ps);
     Complx result = p->cgauss<2>(wavenumber, rng_index);
@@ -263,7 +291,16 @@ void zeldovich_ps_cgauss(PowerSpectrumHandle ps, double wavenumber, int64_t rng_
     *imag = result.imag();
 }
 
-void zeldovich_ps_advance_rng(PowerSpectrumHandle ps, ParametersHandle params, int64_t rng_index, int64_t nskip) {
+//Charlie: added for inputted IC from file
+void zeldovich_ps_inputted_ic(PowerSpectrumHandle ps, double wavenumber, double real, double imag, double* Dreal, double* Dimag) { 
+    if (!ps || !Dreal || !Dimag) return;
+    PowerSpectrum* p = static_cast<PowerSpectrum*>(ps);
+    Complx result = p->inputted_ic(wavenumber, real, imag);
+    *Dreal = result.real();
+    *Dimag = result.imag();
+}
+
+void zeldovich_ps_advance_rng(PowerSpectrumHandle ps, ParametersHandle params, int64_t rng_index, int64_t nskip) { //Charlie: what is this code?
     if (!ps || !params || nskip <= 0) return;
     PowerSpectrum* p = static_cast<PowerSpectrum*>(ps);
     ZeldovichParameters* param = static_cast<ZeldovichParameters*>(params);
@@ -273,6 +310,7 @@ void zeldovich_ps_advance_rng(PowerSpectrumHandle ps, ParametersHandle params, i
         p->v2rng[rng_index].advance(advance_amount);
     }
 }
+
 
 // All threads read from the same v2rng[global_y] and write into their own buffers.
 void zeldovich_ps_get_rng_copy(PowerSpectrumHandle ps, int64_t rng_index, void* out_rng) {
@@ -339,6 +377,16 @@ int zeldovich_ps_get_fixed_power(PowerSpectrumHandle ps) {
     PowerSpectrum* p = static_cast<PowerSpectrum*>(ps);
     return p->fixed_power;
 }
+
+// // Charlie: added so a secondary PowerSpectrum (e.g. the primordial-dimensional
+// // file) can be forced to carry the SAME normalization constant as the main
+// // P(k) file, rather than the self-referential sigma8 rescaling that
+// // Normalize() would otherwise compute from its own (different) shape.
+// void zeldovich_ps_set_normalization(PowerSpectrumHandle ps, double normalization) {
+//     if (!ps) return;
+//     PowerSpectrum* p = static_cast<PowerSpectrum*>(ps);
+//     p->normalization = normalization;
+// }
 
 } 
 
