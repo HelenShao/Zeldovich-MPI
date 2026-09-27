@@ -321,6 +321,39 @@ FFTW planner flags for all DFT plans (2D X–Z and 1D Y in fft_setup.c / wisdom_
 #endif
 
 // ====================================================================================
+// EXTERNAL WHITE NOISE (e.g. monofonIC/Panphasia branch output_k_space_slabs)
+// ====================================================================================
+// 1 = replace the Gaussian draw with unit white noise w read from
+//     EXTERNAL_NOISE_DIR/EXTERNAL_NOISE_PREFIX<y> for y = 0..N/2 and set D = sqrt(P(k)) * w.
+//     File layout: raw (re, im) pairs, [x][z] with z fastest, no header; grid N0 >= N
+//     (N0 is inferred from the file size; modes are cropped in k-space when N0 > N).
+//     Masked modes (DC, Nyquist, k_cutoff sphere if CornerModes = 0) stay zero.
+//     Independent of the PNG flags (DUMP_GAUSSIAN_D, LOAD_D_FROM_FILE, LOAD_WHITE_NOISE_FROM_FILE).
+#ifndef LOAD_EXTERNAL_NOISE
+#define LOAD_EXTERNAL_NOISE 0
+#endif
+#ifndef EXTERNAL_NOISE_DIR
+#define EXTERNAL_NOISE_DIR "external_noise"
+#endif
+#ifndef EXTERNAL_NOISE_PREFIX
+#define EXTERNAL_NOISE_PREFIX "output_k_space_slab_y."
+#endif
+// 1 = file values are float (monofonIC CODE_PRECISION=FLOAT), 0 = double (monofonIC default)
+#ifndef EXTERNAL_NOISE_FLOAT
+#define EXTERNAL_NOISE_FLOAT 0
+#endif
+
+// 1 = write the input density D of each primary y-slice (after loading/colouring and masking,
+//     before displacement computation and Hermitian mirroring) to DUMP_D_DIR/D_slab_y.<y>,
+//     as complex doubles in [x][z] order (z fastest), the layout used by validate_external_noise.py.
+#ifndef DUMP_D_SLABS
+#define DUMP_D_SLABS 0
+#endif
+#ifndef DUMP_D_DIR
+#define DUMP_D_DIR "D_slabs"
+#endif
+
+// ====================================================================================
 // CONFIGURATION SUMMARY
 // ====================================================================================
 

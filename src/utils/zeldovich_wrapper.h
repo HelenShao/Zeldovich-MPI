@@ -146,6 +146,9 @@ size_t zeldovich_ps_rng_buffer_size(void);
 void zeldovich_ps_advance_rng_buffer(void* rng_buf, int64_t nskip);
 // cgauss using RNG in buffer; needs ps for P(k) and fixed_power
 void zeldovich_ps_cgauss_from_buffer(void* rng_buf, PowerSpectrumHandle ps, double wavenumber, double* real, double* imag);
+// Colour externally supplied unit white noise w (<|w|^2> = 1): (real, imag) = sqrt(P(k)) * w.
+// Same P(k) as zeldovich_ps_cgauss_from_buffer; ignores fixed_power (amplitudes come from w).
+void zeldovich_ps_scaling(PowerSpectrumHandle ps, double wavenumber, double w_real, double w_imag, double* real, double* imag);
 
 // Get normalization
 double zeldovich_ps_get_normalization(PowerSpectrumHandle ps);
