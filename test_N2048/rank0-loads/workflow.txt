@@ -1,0 +1,37 @@
+N=2048, CPD=225 — based on 1D-staged OMP sweep layout, but isolated for
+rank0-parameter-broadcast validation runs.
+
+Layout
+  metadata/param_N2048_CPD_225.par
+  runs/omp-<T>/N2048_CPD225_MPI32_OMP<T>.pbs
+  runs/omp-<T>/param_runtime_OMP<T>.par    (generated at job runtime)
+  scripts/plot_omp_stage_scaling.py
+  results/                                 (analysis output)
+
+Thread sweep
+  T in {1,2,4,8,16,24,32,51}
+
+Submit from this directory:
+  cd /home/helenshao/InitialConditions/hermitian_3d_matrix_production/test_N2048/MPI-32-nodes/rank0-loads
+  qsub runs/omp-1/N2048_CPD225_MPI32_OMP1.pbs
+  qsub runs/omp-2/N2048_CPD225_MPI32_OMP2.pbs
+  qsub runs/omp-4/N2048_CPD225_MPI32_OMP4.pbs
+  qsub runs/omp-8/N2048_CPD225_MPI32_OMP8.pbs
+  qsub runs/omp-16/N2048_CPD225_MPI32_OMP16.pbs
+  qsub runs/omp-24/N2048_CPD225_MPI32_OMP24.pbs
+  qsub runs/omp-32/N2048_CPD225_MPI32_OMP32.pbs
+  qsub runs/omp-51/N2048_CPD225_MPI32_OMP51.pbs
+
+Inside each PBS:
+  - module load frameworks
+  - module load fftw/3.3.10
+  - module load hwloc
+  - build Zeldovich_MPI and wisdom_rank0
+  - run wisdom_rank0 preflight
+  - launch mpiexec with -ppn 2 and OMP_NUM_THREADS=<T>
+
+Lustre IC root per run:
+  /lus/flare/projects/AbacusAurora/hshao/zeldovich-MPI/PPD_2048_cosm_000/z_24/rank0-loads/omp-<T>/
+
+Analyze results:
+./omp_sweep.sh analyze --dir rank0-loads

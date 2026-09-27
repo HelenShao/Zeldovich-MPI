@@ -22,6 +22,15 @@ typedef void* ParametersHandle;
 // Returns NULL on error
 ParametersHandle zeldovich_params_create(const char* param_file);
 
+// Create Parameters object from in-memory header bytes
+// Buffer must include the ParseHeader expected trailing "\0\0".
+// Returns NULL on error.
+ParametersHandle zeldovich_params_create_from_buffer(
+    const char* header_bytes,
+    size_t header_len,
+    const char* source_name
+);
+
 // Destroy Parameters object
 void zeldovich_params_destroy(ParametersHandle params);
 
@@ -40,8 +49,11 @@ int64_t zeldovich_params_get_ppd(ParametersHandle params);
 // Get cpd (coarse particle decomposition; number of slabs for output alignment)
 int zeldovich_params_get_cpd(ParametersHandle params);
 
-// Get user-specified number of ranks along z
+// Get user-specified number of ranks along z (ZD_NumZRanks)
 int zeldovich_params_get_NumZRanks(ParametersHandle params);
+
+// Get Abacus NumZRanks (no ZD_ prefix): z-dimension ranks in Abacus 2D decomposition
+int abacus_params_get_NumZRanks(ParametersHandle params);
 
 // Get seed
 int zeldovich_params_get_seed(ParametersHandle params);
@@ -52,6 +64,11 @@ double zeldovich_params_get_Pk_powerlaw_index(ParametersHandle params);
 // Get Pk_filename (tabular P(k) input). NULL if empty — use power law in that case.
 // Valid only while Parameters object exists.
 const char* zeldovich_params_get_Pk_filename(ParametersHandle params);
+
+// Get Pk_primordial_filename (ZD_Pk_primordial_filename in the .par file). Defaults
+// to "class_pk_primordial_dimensional.dat" if not set. NULL only if the Parameters
+// object itself is NULL. Valid only while Parameters object exists.
+const char* zeldovich_params_get_Pk_primordial_filename(ParametersHandle params);
 
 // Get fundamental wavenumber (2pi/BoxSize)
 double zeldovich_params_get_fundamental(ParametersHandle params);
@@ -81,6 +98,10 @@ double zeldovich_params_get_PLT_target_z(ParametersHandle params);
 // Note: The string is valid only while Parameters object exists.
 const char* zeldovich_params_get_ICFormat(ParametersHandle params);
 
+// Get per-rank local FFTW wisdom directory (e.g. /dev/shm/Abacus_wisdom)
+// Returns: C string (caller should not free). Returns NULL if empty.
+const char* zeldovich_params_get_local_wisdom_dir(ParametersHandle params);
+
 // Get qdensity (density output mode)
 // Returns: 0 = normal mode, 1 = normal + density file, 2 = density only (no displacements)
 int zeldovich_params_get_qdensity(ParametersHandle params);
@@ -88,6 +109,16 @@ int zeldovich_params_get_qdensity(ParametersHandle params);
 // Get k_cutoff (wavenumber cutoff factor)
 // Returns: k_cutoff value (default 1.0, corresponds to k_Nyquist)
 double zeldovich_params_get_k_cutoff(ParametersHandle params);
+
+// Get/set Pk_norm (radius, Mpc/h, at which sigmaR is evaluated for sigma8-style
+// normalization; if <= 0, that normalization branch is skipped entirely in
+// Normalize()). The setter exists so a secondary PowerSpectrum can be loaded
+// with this normalization temporarily disabled -- e.g. when its own shape makes
+// the Romberg integration in sigmaR() expensive/slow to converge, and its
+// normalization will be overwritten afterward anyway via
+// zeldovich_ps_set_normalization(). Restore the original value after use.
+double zeldovich_params_get_Pk_norm(ParametersHandle params);
+void zeldovich_params_set_Pk_norm(ParametersHandle params, double val);
 
 // Get CornerModes (corner mode handling flag)
 // Returns: 0 = zero modes with k^2 >= k2_cutoff (default), non-zero = keep corner modes
@@ -104,18 +135,26 @@ PowerSpectrumHandle zeldovich_ps_create(int n, ParametersHandle params);
 void zeldovich_ps_destroy(PowerSpectrumHandle ps);
 
 // Initialize from power law
-// Returns 0 on success, non-zero on error
 int zeldovich_ps_init_powerlaw(PowerSpectrumHandle ps, double powerlaw_index, ParametersHandle params);
 
 // Initialize from file
-// Returns 0 on success, non-zero on error
 int zeldovich_ps_init_file(PowerSpectrumHandle ps, const char* filename, ParametersHandle params);
+
+// Initialize from raw tabulated k,P - use after MPI bcast
+int zeldovich_ps_init_from_raw_pk(PowerSpectrumHandle ps, const double* k, const double* p,
+    size_t n, ParametersHandle params);
 
 // Evaluate power spectrum at given wavenumber
 double zeldovich_ps_power(PowerSpectrumHandle ps, double wavenumber);
 
 // Generate random number using zeldovich-PLT's v2rng
 double zeldovich_ps_one_rand(PowerSpectrumHandle ps, int64_t rng_index);
+
+//Charlie: added so we can calculate primordial power spectrum
+double zeldovich_ps_primordial_power(PowerSpectrumHandle ps, double wavenumber);
+
+//Charlie: added to calculate from a random number "file"
+void zeldovich_ps_inputted_ic(PowerSpectrumHandle ps, double wavenumber, double real, double imag, double* Dreal, double* Dimag);
 
 // Generate complex Gaussian random number with power spectrum variance
 void zeldovich_ps_cgauss(PowerSpectrumHandle ps, double wavenumber, int64_t rng_index, double* real, double* imag);
@@ -145,8 +184,27 @@ double zeldovich_ps_get_Pk_smooth2(PowerSpectrumHandle ps);
 // Get fixed_power flag
 int zeldovich_ps_get_fixed_power(PowerSpectrumHandle ps);
 
+// Force-set normalization (bypasses the sigma8/Pk_norm self-rescaling done in
+// Normalize()). Use this to make a secondary PowerSpectrum (e.g. loaded from a
+// different tabulated file) carry the SAME multiplicative normalization
+// constant as another already-initialized PowerSpectrum -- e.g.
+//   zeldovich_ps_set_normalization(ps_secondary, zeldovich_ps_get_normalization(ps_main));
+// This matters whenever the main P(k) file has been sigma8-renormalized: that
+// renormalization is self-referential (computed from that file's own shape),
+// so a second file loaded independently would otherwise get a DIFFERENT,
+// physically-inconsistent rescaling based on its own shape, which would
+// corrupt any ratio computed between the two spectra (e.g. sqrt(P2/P1)).
+void zeldovich_ps_set_normalization(PowerSpectrumHandle ps, double normalization);
+
 #ifdef __cplusplus
 }
+
+#include <vector>
+
+// Rank 0 only (MPI): read P(k) text file into vectors for broadcasting (Pk_scale applied)
+int zeldovich_pk_load_text_file_vectors(const char* filename, ParametersHandle params,
+    std::vector<double>& k_out, std::vector<double>& p_out);
+
 #endif
 
 #endif

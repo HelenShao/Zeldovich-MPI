@@ -1,12 +1,14 @@
 #pragma once
 
+#include <cstddef>
 #include <filesystem>
 
 #include "ParseHeader.hh"
 
 namespace fs = std::filesystem;
 
-class Parameters : public ParseHeader {
+// Distinct from Abacus::Parameters (src/include/Parameters.cpp) when IC-embed links both.
+class ZeldovichParameters : public ParseHeader {
     // This is where we're going to stick all of the control parameters.
     // It is responsible for being able to load from an input param file
     // and to write an output header.
@@ -17,10 +19,12 @@ public:
     int64_t ppd;  // The size of the simulation grid to generate
     int cpd;
     int grid_x;       // Computed MPI grid in x
-    int num_z_ranks;  // User-specified number of ranks along z
+    int num_z_ranks;  // ZD_NumZRanks: Zeldovich MPI grid along z
+    int abacus_num_z_ranks;  // Abacus NumZRanks (no ZD_ prefix): z-dimension ranks in Abacus 2D decomposition
     long long int np;
-    int numblock;  // The number of blocks to divide this into.
-    // This must be an even divisor!
+    // Legacy zeldovich-PLT v1 tuning (ZD_NumBlock). Optional in param files;
+    // ignored when ZD_Version = 2 (all zeldovich-MPI / hermitian runs).
+    int numblock;
     double separation;   // boxsize/ppd
     double fundamental;  // 2*PI/boxsize
     double nyquist;      // PI/separation
@@ -41,8 +45,10 @@ public:
     int qPk_fix_to_mean;    // Don't draw the mode amplitude from a Gaussian; use
                             // sqrt(P(k)) instead.
     fs::path Pk_filename;  // The file name for the P(k) input
+    fs::path Pk_primordial_filename;  // The file name for the primordial P(k) input (for f_NL)
     double Pk_powerlaw_index;  // The power law index n for a pure power law P(k) ~ k^n
     fs::path output_dir;     // The file name for the Output
+    fs::path local_wisdom_dir;  // Per-rank local FFTW wisdom directory (e.g. /dev/shm/Abacus_wisdom)
     fs::path density_filename;  // The file name for a density file output
     double z_initial;
     HeaderStream *inputstream;  // Header stream from which the parameters were read.
@@ -69,8 +75,7 @@ public:
     // Version of the algorithm for getting modes from RNG
     // This directly impacts the phases you get out.
     // Use version = 2 unless you need backwards compatibility with old ICs,
-    // in which case use version = 1 (but beware the phases will depend
-    // on ZD_NumBlock)
+    // in which case use version = 1 (requires ZD_NumBlock; phases depend on it)
     int version;
 
     int CornerModes;  // fill modes k > k_Ny. Default: 0.
@@ -81,8 +86,13 @@ public:
     void print(FILE *fp);
     // Write a suitable header into the output file
     //
-    Parameters(const fs::path &inputfile);
-    ~Parameters();
+    ZeldovichParameters(const fs::path &inputfile);
+    ZeldovichParameters(const char *header_bytes, size_t header_len, const fs::path &source_name);
+    ~ZeldovichParameters();
 
     void register_vars(void);
+
+private:
+    void set_defaults(void);
+    void initialize_from_stream(HeaderStream *stream);
 };

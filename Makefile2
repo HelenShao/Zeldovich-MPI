@@ -164,14 +164,14 @@ ZELDOVICH_CORE_SRC = \
 ZELDOVICH_WRAPPER_SRC = src/utils/zeldovich_wrapper.cpp
 MODULE_SRC = src/fft/fft_setup.c \
              src/fft/fft_wisdom.c \
-             src/generation/hermitian_generation.c \
+             src/generation/zd_mpi_generation.c \
              src/communication/mpi_exchange.c \
              src/streaming/z_streaming.c
 OUTPUT_SRC = src/output/output_new.cpp
 REASSEMBLY_SRC = src/write_particles_from_reassembled_mpi.cpp
 
 # Output binaries
-TARGET = hermitian_3d_matrix
+TARGET = Zeldovich_MPI
 REASSEMBLY_TARGET = write_particles_from_reassembled_mpi
 TOY_TARGET = toy_zloop_omp_scaling
 
@@ -223,7 +223,7 @@ clean:
 
 help:
 	@echo ""
-	@echo "  make              - Build main executable (hermitian_3d_matrix)"
+	@echo "  make              - Build main executable (Zeldovich_MPI)"
 	@echo "  make reassembly   - Build reassembly tool (write_particles_from_reassembled_mpi)"
 	@echo "  make toy-zloop    - Build toy z-loop OMP scaling test"
 	@echo "  make check-omp    - Show CXX, OPENMP_FLAGS, and compiler version"

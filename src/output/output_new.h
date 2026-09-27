@@ -30,7 +30,7 @@ void WriteParticlesSlab_range(
    Complx *slab_data,      // Data in [array][x_local][y] layout (ZSLAB format)
    int N,                  // Grid size (ppd)
    int narray,             // Number of arrays (typically 4)
-   Parameters &param
+   ZeldovichParameters &param
 );
 
 // Overload 2: [y][x] layout (JK format) - for backward compatibility
@@ -44,7 +44,7 @@ void WriteParticlesSlab_range(
    Complx *slab2,          // Array 1 in [y][x] layout
    Complx *slab3,          // Array 2 in [y][x] layout
    Complx *slab4,          // Array 3 in [y][x] layout
-   Parameters &param
+   ZeldovichParameters &param
 );
 
 // WriteParticlesSlab_range_from_zslab - Legacy function (now equivalent to WriteParticlesSlab_range)
@@ -58,7 +58,7 @@ void WriteParticlesSlab_range_from_zslab(
    Complx *slab_data,      // Data in [array][x_local][y] layout (ZSLAB format)
    int N,                  // Grid size (ppd)
    int narray,             // Number of arrays (typically 4)
-   Parameters &param
+   ZeldovichParameters &param
 );
 
 // Write full-range particle ICs (all X, all Y) for one i-slab
@@ -70,12 +70,12 @@ void WriteParticlesSlab_new(
    Complx *slab2,          // Array 1 in [y][x] layout
    Complx *slab3,          // Array 2 in [y][x] layout
    Complx *slab4,          // Array 3 in [y][x] layout
-   Parameters &param
+   ZeldovichParameters &param
 );
 
 // Setup and teardown functions
-void SetupOutputDir(Parameters &param);
-double InitOutputBuffers(Parameters &param);
+void SetupOutputDir(ZeldovichParameters &param);
+double InitOutputBuffers(ZeldovichParameters &param);
 void TeardownOutput();
 
 // ====================================================================================
@@ -84,7 +84,7 @@ void TeardownOutput();
 //
 // CPD-aligned; layout must match Abacus RVZel_2D reader.
 // Each file contains [z0 segment][z1 segment]... for one x-slab (sequential, no offset).
-// Indices: i, j, k are all global (same convention as grid_x==1 / zeldovich).
+// Indices: i, j, k are all global (same convention as size_z==1 / zeldovich).
 
 // Write one x-slab segment for one z to that slab's file.
 void AppendSlabZSegment(
@@ -98,14 +98,14 @@ void AppendSlabZSegment(
     fftw_complex_t *slab_data,
     int N,
     int narray,
-    Parameters &param
+    ZeldovichParameters &param
 );
 
 // ====================================================================================
-// MODE 3 (grid_x==1): One file per z-group, matching zeldovich output format
+// MODE 3 (size_z==1): One file per z-group, matching zeldovich output format
 // ====================================================================================
 //
-// When grid_x==1 each rank owns all N x-values.  Each call writes one full
+// When size_z==1 each rank owns all N x-values.  Each call writes one full
 // N×N z-plane to the z-group file.  Indices are all global (i=z, j=y, k=x).
 // Particle ordering: y-outer, x-inner (matching zeldovich WriteParticlesSlab).
 
@@ -113,16 +113,23 @@ void AppendZSlabFull(
     FILE *fp,                 // z-group file (caller owns, opened for append)
     FILE *fp_dens,            // density file, or NULL
     int z,                    // global z index
-    int k_start_global,       // == 0 when grid_x==1
-    int k_extent,             // == N when grid_x==1
+   /*  Before:
+   int k_start_global,       // == 0 when 
+    grid_x==1
+    int k_extent,             // == N when 
+    grid_x==1
+   */
+    int k_start_global,       // == 0 when size_z==1
+    int k_extent,             // == N when size_z==1
     fftw_complex_t *slab_data,
     int N,
     int narray,
-    Parameters &param
+    ZeldovichParameters &param
 );
 
 // ====================================================================================
-// MODE 4: One file per z-slab, in per-rank_x subdirs (dual of Mode 3 grid_x>1)
+// Before: // MODE 4: One file per z-slab, in per-rank_x subdirs (dual of Mode 3 grid_x>1)
+// MODE 4: One file per z-slab, in per-rank_z subdirs (dual of Mode 3 size_z>1)
 // ====================================================================================
 //
 // CPD-aligned slabs along Z (instead of X). On-disk layout: ic/z%03d/ic_%04d_z%03d (z_ matches readers).
@@ -139,7 +146,7 @@ void AppendZSlabSegment_M4(
     fftw_complex_t *slab_data,
     int N,
     int narray,
-    Parameters &param
+    ZeldovichParameters &param
 );
 
 #endif 

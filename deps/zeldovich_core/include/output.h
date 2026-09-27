@@ -57,11 +57,11 @@ void WriteParticlesSlab(
    Complx *slab3,
    Complx *slab4,
    BlockArray &array,
-   Parameters &param
+   ZeldovichParameters &param
 );
 
-void SetupOutputDir(Parameters &param);
+void SetupOutputDir(ZeldovichParameters &param);
 
 // Returns GiB size of allocated buffer
-double InitOutputBuffers(Parameters &param);
+double InitOutputBuffers(ZeldovichParameters &param);
 void TeardownOutput();

@@ -1,9 +1,38 @@
 #include <stdint.h>
+#include <stdio.h>
+
+#include <vector>
 
 #include "parameters.h"
 #include "power_spectrum.h"
 
-PowerSpectrum::PowerSpectrum(int n, Parameters &param) : SplineFunction(n) {
+int ReadPkTextFileIntoVectors(const fs::path &filename, ZeldovichParameters &param,
+    std::vector<double> &k_out, std::vector<double> &p_out)
+{
+    char line[200];
+    FILE *fp;
+    double k, P;
+    fp = fopen(filename.c_str(), "r");
+    if (fp == NULL) {
+        fmt::print(stderr, "Power spectrum file \"{}\" not found.\n", filename);
+        return -1;
+    }
+    k_out.clear();
+    p_out.clear();
+    while (fgets(line, 200, fp) != NULL) {
+        if (line[0] == '#') continue;
+        if (sscanf(line, "%lf %lf", &k, &P) < 2) continue;
+        if (k < 0.0) continue;
+        if (P < 0.0) continue;
+        k *= param.Pk_scale;
+        k_out.push_back(k);
+        p_out.push_back(P);
+    }
+    fclose(fp);
+    return 0;
+}
+
+PowerSpectrum::PowerSpectrum(int n, ZeldovichParameters &param) : SplineFunction(n) {
     is_powerlaw    = 0;
     powerlaw_index = 1000;
     kmin           = std::numeric_limits<double>::max();
@@ -12,29 +41,32 @@ PowerSpectrum::PowerSpectrum(int n, Parameters &param) : SplineFunction(n) {
     // Set up multiple RNGs to support parallelism and over-/down-sampling
     // seed the rng. a seed of zero uses the current time
     unsigned long int longseed = param.seed;
-    block                      = param.ppd / param.numblock;
-    n_s                        = param.n_s;
+    block       = 0;
+    v2rng_count = 0;
+    n_s         = param.n_s;
 
 #ifdef HAVE_GSL
     v1rng = NULL;
+    v2rng = NULL;
 
     if (param.version == 1) {
+        block = param.ppd / param.numblock;
         v1rng = new gsl_rng *[block];
 
         for (int i = 0; i < block; i++) {
             v1rng[i] = gsl_rng_alloc(gsl_rng_mt19937);
             gsl_rng_set(v1rng[i], longseed + i);
         }
-        v2rng = NULL;
     } else
 #endif
     {
         // We'll make ppd/2 independent y-planes
         // But we do so by fast-forwarding the base RNG,
         // so logically this is just a single output stream from the RNG
-        v2rng    = new pcg64[param.ppd / 2];
+        v2rng_count = param.ppd / 2;
+        v2rng       = new pcg64[v2rng_count];
         v2rng[0] = pcg64(longseed);
-        for (int i = 1; i < param.ppd / 2; i++) {
+        for (int i = 1; i < v2rng_count; i++) {
             v2rng[i] = v2rng[i - 1];
             // Each plane is ppd^2 complexes
             v2rng[i].advance(2 * MAX_PPD * MAX_PPD);
@@ -134,30 +166,11 @@ double PowerSpectrum::Romberg(
     return TT[jj][jj];
 }
 
-int PowerSpectrum::InitFromFile(const fs::path &filename, Parameters &param) {
-    // Read the file and load/compile the spline function
-    // Return 0 if ok
-    // Read the file
-    // Rescale the given wavenumbers to match to simulation units
-    // Renormalize the power spectrum
-    // Divide the power spectrum by the box volume, so that the
-    //    inverse FFT is normalized properly.
-    char line[200];
-    FILE *fp;
-    double k, P;
-    fmt::print(stderr, "Loading power spectrum from file \"{}\"\n", filename);
-    fp = fopen(filename.c_str(), "r");
-    if (fp == NULL) {
-        fmt::print(stderr, "Power spectrum file \"{}\" not found; exiting.\n", filename);
-        exit(1);
-    }
-
-    while (fgets(line, 200, fp) != NULL) {
-        if (line[0] == '#') continue;
-        sscanf(line, "%lf %lf", &k, &P);
-        if (k < 0.0) continue;
-        if (P < 0.0) continue;
-        k *= param.Pk_scale;
+int PowerSpectrum::InitFromRawPk(const double *k_arr, const double *p_arr, size_t n, ZeldovichParameters &param) {
+    if (n == 0 || k_arr == NULL || p_arr == NULL) return -1;
+    for (size_t i = 0; i < n; i++) {
+        double k = k_arr[i];
+        double P = p_arr[i];
         if (k > 0.0) {
             this->load(log(k), log(P));
             kmin = std::min(k, kmin);
@@ -167,12 +180,20 @@ int PowerSpectrum::InitFromFile(const fs::path &filename, Parameters &param) {
         kmax = std::max(k, kmax);
     }
     this->spline();
-
     Normalize(param);
     return 0;
 }
 
-int PowerSpectrum::InitFromPowerLaw(double _powerlaw_index, Parameters &param) {
+int PowerSpectrum::InitFromFile(const fs::path &filename, ZeldovichParameters &param) {
+    fmt::print(stderr, "Loading power spectrum from file \"{}\"\n", filename);
+    std::vector<double> ks, Ps;
+    if (ReadPkTextFileIntoVectors(filename, param, ks, Ps) != 0) {
+        return -1;
+    }
+    return InitFromRawPk(ks.data(), Ps.data(), ks.size(), param);
+}
+
+int PowerSpectrum::InitFromPowerLaw(double _powerlaw_index, ZeldovichParameters &param) {
     assert(_powerlaw_index != 1000);
     powerlaw_index = _powerlaw_index;
     is_powerlaw    = 1;
@@ -185,7 +206,7 @@ int PowerSpectrum::InitFromPowerLaw(double _powerlaw_index, Parameters &param) {
     return 0;
 }
 
-void PowerSpectrum::Normalize(Parameters &param) {
+void PowerSpectrum::Normalize(ZeldovichParameters &param) {
     Pk_smooth2    = 0.0;
     normalization = 1.0;
 
@@ -258,6 +279,7 @@ it) to get rid of this warning.
                   this->val(log(wavenumber))
                   - wavenumber * wavenumber * this->Pk_smooth2
                )
+
                * normalization;
     }
 }
@@ -364,12 +386,36 @@ Complx PowerSpectrum::cgauss<2>(double wavenumber, int64_t rng) {
     return Complx(g1, g2);
 }
 
+//Charlie:adding this
+Complx PowerSpectrum::inputted_ic(double wavenumber, double real, double imag) {
+
+    double Pk    = this->power(wavenumber);
+    double sqrtPk     = sqrt(Pk);
+
+    double g1 = sqrtPk * real;
+    double g2 = sqrtPk * imag;
+
+    return Complx(g1, g2);
+}
+
+
 pcg64 PowerSpectrum::get_rng_copy(int64_t rng_index) const {
-    // Return a copy of the RNG for thread-local use
-    // Bounds check to ensure valid index
-    if (v2rng && rng_index >= 0 && rng_index < block) {
+    // Return a copy of the RNG for thread-local use (hermitian OpenMP z-loop).
+    // ZD_Version 2: index is global Y in [0, ppd/2); v2rng has v2rng_count entries.
+    // Do NOT use `block` (ppd/numblock) here — that is the v1 slab height only.
+    if (v2rng && rng_index >= 0 && rng_index < v2rng_count) {
         return v2rng[rng_index];  // PCG64 copy constructor
     }
-    // Return default-constructed PCG if invalid
+    if (v2rng) {
+        static int warned = 0;
+        if (!warned) {
+            fprintf(stderr,
+                    "[RNG-WARNING] get_rng_copy: Y=%lld out of range [0, %d) "
+                    "(v2rng_count=ppd/2). "
+                    "Returning pcg64(0).\n",
+                    (long long)rng_index, v2rng_count);
+            warned = 1;
+        }
+    }
     return pcg64(0);
 }

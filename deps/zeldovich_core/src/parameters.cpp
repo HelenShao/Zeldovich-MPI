@@ -8,14 +8,22 @@
 #include "zeldovich.h"
 
 // Write a suitable header into the output file
-Parameters::Parameters(const fs::path &inputfile) {
-    // Set default values first
+ZeldovichParameters::ZeldovichParameters(const fs::path &inputfile) {
+    initialize_from_stream(new HeaderStream(inputfile));
+}
+
+ZeldovichParameters::ZeldovichParameters(const char *header_bytes, size_t header_len, const fs::path &source_name) {
+    initialize_from_stream(new HeaderStream(header_bytes, header_len, source_name));
+}
+
+void ZeldovichParameters::set_defaults(void) {
     ppd             = 0;       // Illegal
-    numblock        = 2;       // Ok, but you might not want this!
+    numblock        = 0;       // unset; required only for ZD_Version = 1
     boxsize         = 0;       // Illegal
     Pk_scale        = 1;       // Legal default
-    grid_x          = 0;       // Computed at runtime from MPI size and num_z_ranks
-    num_z_ranks     = 0;       // Must be specified for MPI-Zeldovich writer
+    grid_x          = 0;       // Computed at runtime from MPI size and NumZRanks
+    num_z_ranks     = 0;       // Legacy ZD_NumZRanks; optional, unused by zeldovich-MPI grid
+    abacus_num_z_ranks = 0;    // Abacus NumZRanks (MUST_DEFINE in combined par files)
     qdensity        = 0;       // Legal default
     qascii          = 0;       // Legal default
     qoneslab        = -1;      // Legal default
@@ -27,8 +35,14 @@ Parameters::Parameters(const fs::path &inputfile) {
     qPk_fix_to_mean = 0;       // Legal default
     seed            = 0;       // Legal default
     Pk_filename = "";   // Must specify Pk file or power law
+    // Default filename for the primordial P(k) file used by our added primordial
+    // power spectrum feature. Unlike Pk_filename, there's no "or a power law"
+    // alternative here, so a sensible non-empty default is used directly (rather
+    // than defaulting to "" and requiring it to always be set).
+    Pk_primordial_filename = "class_pk_primordial_dimensional.dat";
     Pk_powerlaw_index = 1000;  // Must specify Pk file or power law
     density_filename = "density{:d}";  // Legal default
+    local_wisdom_dir = "/dev/shm/Abacus_wisdom";
     qonemode = 0;                           // Legal default
     one_mode = {0, 0, 0};   // Legal default
     qPLT = 0;                               // Legal default
@@ -44,10 +58,17 @@ Parameters::Parameters(const fs::path &inputfile) {
     CornerModes = 0;     // Legal default (no corner modes)
     n_s         = 1;     // Legal default (only used for f_NL)
     Omega_M     = 1.0;   // Legal default (only used for f_NL)
+}
 
-    // Read the paramater file values
+void ZeldovichParameters::initialize_from_stream(HeaderStream *stream) {
+    assert(stream != nullptr);
+
+    // Set default values first
+    set_defaults();
+
+    // Read the parameter file values
     register_vars();
-    inputstream = new HeaderStream(inputfile);
+    inputstream = stream;
     ReadHeader(*inputstream);
 
     // Check the validity and compute derived quantities
@@ -58,15 +79,19 @@ Parameters::Parameters(const fs::path &inputfile) {
     }
 }
 
-Parameters::~Parameters() { inputstream->Close(); delete inputstream;}
+ZeldovichParameters::~ZeldovichParameters() { inputstream->Close(); delete inputstream;}
 
-void Parameters::register_vars(void) {
+void ZeldovichParameters::register_vars(void) {
     installscalar("BoxSize", boxsize, MUST_DEFINE);
     installscalar("ZD_Pk_scale", Pk_scale, MUST_DEFINE);
     installscalar("NP", np, MUST_DEFINE);
-    installscalar("ZD_NumBlock", numblock, MUST_DEFINE);
+    // Legacy zeldovich-PLT v1 only. Optional: old par files may still set it;
+    // zeldovich-MPI (ZD_Version = 2) ignores the value.
+    installscalar("ZD_NumBlock", numblock, DONT_CARE);
     installscalar("CPD", cpd, MUST_DEFINE);
-    installscalar("ZD_NumZRanks", num_z_ranks, MUST_DEFINE);
+    // Legacy name; grid topology uses NumZRanks (abacus_num_z_ranks). Old par files may still set it.
+    installscalar("ZD_NumZRanks", num_z_ranks, DONT_CARE);
+    installscalar("NumZRanks", abacus_num_z_ranks, MUST_DEFINE);
     installscalar("ZD_qdensity", qdensity, DONT_CARE);
     installscalar("ZD_qoneslab", qoneslab, DONT_CARE);
     installscalar("ZD_Seed", seed, MUST_DEFINE);
@@ -77,8 +102,13 @@ void Parameters::register_vars(void) {
     installscalar("ZD_Pk_smooth", Pk_smooth, MUST_DEFINE);
     installscalar("ZD_qPk_fix_to_mean", qPk_fix_to_mean, DONT_CARE);
     installscalar("ZD_Pk_filename", Pk_filename, DONT_CARE);
+    // Optional: path to the primordial P(k) file used by our added primordial power
+    // spectrum feature. If not set in the .par file, keeps the default from
+    // set_defaults() above.
+    installscalar("ZD_Pk_primordial_filename", Pk_primordial_filename, DONT_CARE);
     installscalar("ZD_Pk_powerlaw_index", Pk_powerlaw_index, DONT_CARE);
     installscalar("InitialConditionsDirectory", output_dir, MUST_DEFINE);
+    installscalar("ZD_local_wisdom_dir", local_wisdom_dir, DONT_CARE);
     installscalar("ZD_density_filename", density_filename, DONT_CARE);
     installscalar("InitialRedshift", z_initial, MUST_DEFINE);
     installscalar("ZD_qonemode", qonemode, DONT_CARE);
@@ -97,7 +127,7 @@ void Parameters::register_vars(void) {
     installscalar("ZD_CornerModes", CornerModes, DONT_CARE);
 }
 
-int Parameters::setup() {
+int ZeldovichParameters::setup() {
     // Compute any derived quantities.  Look for errors.
     // Return 0 if all is well, 1 if this failed.
 
@@ -128,10 +158,25 @@ int Parameters::setup() {
     assert(ppd * ppd * ppd == np);
     assert(ppd <= MAX_PPD);
 
-    // NumBlock is only modified in version 1
-    if (version == 1) {
-        // This is critical for random number synchronization among different ppd
+    if (version == 2) {
+        if (numblock > 0) {
+            fmt::print(
+               stderr,
+               "Note: ZD_NumBlock={:d} is ignored for ZD_Version = 2 "
+               "(legacy zeldovich-PLT v1 tuning; not used by zeldovich-MPI).\n",
+               numblock
+            );
+        }
+    } else {
+        // NumBlock is only used in version 1
+        if (numblock <= 0) {
+            fmt::print(stderr,
+                       "*** ERROR: ZD_Version = 1 requires ZD_NumBlock "
+                       "(legacy zeldovich-PLT slab tuning).\n");
+            exit(1);
+        }
         if (k_cutoff != 1.) {
+            // Critical for random number synchronization among different ppd
             int numblock_old = numblock;
             numblock         = numblock * k_cutoff + .5;  // Ensure rounding
             fmt::print(
@@ -147,7 +192,6 @@ int Parameters::setup() {
     // Check for illegal values
     assert(!(boxsize <= 0.0));
     assert(!(ppd <= 0));
-    assert(!(numblock <= 0));
     assert(!(Pk_scale <= 0.0));
     assert(!(Pk_norm < 0.0));
 
@@ -180,7 +224,7 @@ int Parameters::setup() {
         fmt::print(
            stderr, "one_mode: {:d}, {:d}, {:d}\n", one_mode[0], one_mode[1], one_mode[2]
         );
-
+//Charlie: this is not used in our current version of the code
     if (f_NL != 0.) {
         fmt::print(
            stderr,
@@ -199,7 +243,7 @@ int Parameters::setup() {
     return 0;
 }
 
-void Parameters::print(FILE *fp) {
+void ZeldovichParameters::print(FILE *fp) {
     // Print the results
     time_t t = time(0);
     tm *now  = localtime(&t);
