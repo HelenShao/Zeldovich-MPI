@@ -22,13 +22,10 @@ static PTimerWall pt_fft_copy_in(1); // 2D staged copy primary/conjugate -> stag
 static PTimerWall pt_fft_execute(1); // 2D FFTW_EXECUTE_DFT on stage (plan_dft_2d)
 static PTimerWall pt_fft_copy_out(1);// 2D staged copy stage -> primary/conjugate
 
-// Primordial power spectrum (class_pk_primordial_dimensional.dat) is now loaded ONCE
+// Primordial power spectrum (class_pk_primordial_dimensional.dat) is loaded once
 // in zeldovich_mpi_driver.cpp -- the same way the main P(k) file is (rank-0 read +
 // MPI broadcast, spline built once) -- and passed in as the
-// ps_handle_primordial_dimensional parameter below, exactly like ps_handle. This
-// replaces what used to be a static/lazily-initialized handle built inside this file
-// on first call.
-
+// ps_handle_primordial_dimensional parameter below, exactly like ps_handle. 
 #define COPY_CACHE_SIZE_CHUNK 8
 
 static void copy_plane_chunked(fftw_complex_t *dst, const fftw_complex_t *src, int N)

@@ -172,14 +172,16 @@ def kernel(G,H): #inputs G(k_1) and H(k_1) then returns your Q(k), which must th
     
     #Now do the y fourier transformations xz segment by xz segment   
     Gphi_x = pyfftw.empty_aligned((2*N, 2*N, 2*N), dtype='complex128') #now we're up to 5 arrays
-    fft_y.update_arrays(Gphi_k, Gphi_x)   
-    fft_y()   
+    fft_y.update_arrays(Gphi_k, Gphi_k)   
+    fft_y()
+    Gphi_x[:]= Gphi_k[:]   
     #In C, free Gphi_k 
     #back to 4 arrays
 
     Hphi_x = pyfftw.empty_aligned((2*N, 2*N, 2*N), dtype='complex128') #now we're up to 5 arrays
-    fft_y.update_arrays(Hphi_k, Hphi_x)  
+    fft_y.update_arrays(Hphi_k, Hphi_k)  
     fft_y()
+    Hphi_x[:]= Hphi_k[:]
     #In C, free Hphi_k  
     #4 arrays: (phi_k_pad, k_arr, Gphi_x, Hphi_x) 
 
@@ -215,8 +217,9 @@ def kernel(G,H): #inputs G(k_1) and H(k_1) then returns your Q(k), which must th
     #Here we do another AlltoAllv to separate ranks by y-slice again
     #do xz fourier transformation y-slice by y-slice
     Q_k_pad = pyfftw.empty_aligned((2*N, 2*N, 2*N), dtype='complex128') #4 arrays
-    fft_Q_xz.update_arrays(Q_x_pad, Q_k_pad)
+    fft_Q_xz.update_arrays(Q_x_pad, Q_x_pad)
     fft_Q_xz()
+    Q_k_pad[:]=Q_x_pad[:]
     #In C, free Q_x_pad
     #3 arrays: (phi_k_pad, k_arr, Q_k_pad)
 
