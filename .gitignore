@@ -19,6 +19,9 @@ obj/
 rank_*/
 *.bin
 *.dat
+!1rank-run-cosm500/data/class_pk_z0.dat
+!1rank-run-cosm500/data/class_pk_primordial_dimensional.dat
+!1rank-run-cosm500/data/camb_planck15.dat
 *_reassembled.bin
 *slab*.bin
 
@@ -103,3 +106,17 @@ abacus/
 # Documentation files (temporary notes)
 AXIS_NOTATION_MAPPING.md
 overview.md.DS_Store
+subprojects/fmt-11.2.0/
+subprojects/packagecache/
+subprojects/.wraplock
+
+subprojects/fmt-11.2.0/
+subprojects/packagecache/
+subprojects/.wraplock
+1rank-run-cosm500/bin_files/
+1rank-run-cosm500/build/
+1rank-run-cosm500/output/
+1rank-run-cosm500/rng_logs/
+1rank-run-cosm500/.runtime/
+1rank-run-cosm500/*.log
+1rank-run-cosm500/data/output/
