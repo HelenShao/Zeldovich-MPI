@@ -9,8 +9,9 @@
 #PBS -j oe
 
 # FLAMINGO-phase-matched neutrino production run (PRODUCTION_NEUTRINO_ICS.md): 1800^3 abacus_cosmNNN
-# from z = 31 to 0 with embedded Zeldovich-MPI reading the FLAMINGO Panphasia noise.
-#   qsub -v COSM=202 -o .../production/flamingo_c202.pbs.log pbs_flamingo_nu.sh
+# from z = 99 to 0 (standard CLASS_power, ZD_Pk_norm = 8) with embedded Zeldovich-MPI reading the
+# FLAMINGO Panphasia noise. The z = 31 runs are in /flare/Abacus/helenshao/*_N1800_z31start.
+#   qsub -v COSM=202 -o .../production/flamingo_c202_z99.pbs.log pbs_flamingo_nu.sh
 # Resubmitting the same COSM resumes from the last checkpoint (abacus.run without --clean).
 # Optional: -v COSM=202,EXTRA="ZD_CornerModes=1" forwards KEY=VAL overrides to abacus.run.
 

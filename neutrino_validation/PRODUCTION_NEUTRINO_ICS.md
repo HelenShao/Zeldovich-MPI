@@ -88,8 +88,9 @@ h is each cosmology's grid value (decided 2026-09-30). FLAMINGO's own h = 0.6732
 
 | Choice | Decision | Notes |
 |---|---|---|
-| Start redshift | z_init = 31 | FLAMINGO's start; matches the validated `pk/cosm202_z31.*`. |
-| P(k) normalisation | `ZD_Pk_norm = 0` | The z = 31 file is used as-is. With `ZD_Pk_file_redshift = InitialRedshift = 31`, Abacus sets `ZD_Pk_sigma_ratio` = D(31)/D(31) = 1, so even `Pk_norm = 8` would give factor 1 (`power_spectrum.cpp`, lines 210-233); setting 0 removes the dependence on that coincidence. |
+| Start redshift and P(k) (current) | z_init = 99, standard `CLASS_power`, `ZD_Pk_norm = 8` | Decided 2026-10-03: the par2s include `Cosmologies/abacus_cosm20N/cosm.def` (CLASS P_cb at z = 1, `ZD_Pk_file_redshift = 1`), and Abacus scales it by `ZD_Pk_sigma_ratio` = D(99)/D(1), as in the emulators. The z = 31 rows below describe the superseded first runs (par2s kept as `FLAMINGO_nu_c20N.par2.z31.bak`; outputs in `/flare/Abacus/helenshao/AbacusAurora_FLAMINGO_nu_c20N_N1800_z31start`). |
+| Start redshift (z = 31 runs) | z_init = 31 | FLAMINGO's start; matches the validated `pk/cosm202_z31.*`. |
+| P(k) normalisation (z = 31 runs) | `ZD_Pk_norm = 0` | The z = 31 file is used as-is. With `ZD_Pk_file_redshift = InitialRedshift = 31`, Abacus sets `ZD_Pk_sigma_ratio` = D(31)/D(31) = 1, so even `Pk_norm = 8` would give factor 1 (`power_spectrum.cpp`, lines 210-233); setting 0 removes the dependence on that coincidence. |
 | P_cb(z_init) | CLASS P_cb at z = 31 | FLAMINGO's monofonIC used zwindstroom: z = 0 spectra back-scaled with scale-dependent 3-fluid growth, in N-body gauge. Open: the two differ at large scales (gauge, radiation, neutrino clustering; about 0.4 % variation of the growth between k_min and k = 0.1 at z = 31). This matters if the z = 0 amplitudes must match FLAMINGO to better than a percent. |
 | LPT order | Abacus 2LPT (`LagrangianPTOrder = 2`) | FLAMINGO used 3LPT. Abacus's 3LPT asserts `Omega_Smooth == 0` (`lpt.cpp`), so it is unavailable for neutrino cosmologies. The 3LPT term scales as D^3 and is small at z = 31; the difference shows up as small early transients. |
 | PLT | `ZD_qPLT = 1`, `ZD_qPLT_rescale = 1`, `ZD_PLT_target_z = 12` | The Abacus standard, as in the emulators (decided 2026-09-30). It changes only modes near Nyquist: eigenvector direction, per-mode growth rate f = (sqrt(1 + 24 e.val f_cluster) - 1)/4, and the rescale (a_12/a_31)^(f_fluid - f_PLT). Low-k modes stay exactly sqrt(P) w, so the phase match holds. Near Nyquist (k_Nyq ≈ 8.4 h/Mpc) our ICs differ from FLAMINGO's by design. |
@@ -116,7 +117,8 @@ h is each cosmology's grid value (decided 2026-09-30). FLAMINGO's own h = 0.6732
 | Cosmology | Job | Result |
 |-----------|-----|--------|
 | cosm202 | 8882965 | z = 31 -> 0 in 890 steps, 6.9 h, one invocation; `[external noise] reading .../flamingo_panphasia_N2048/noise/` confirmed; `ZD_CornerModes = 1`, 2LPT; output 368 GB (312 GB checkpoint) |
-| cosm203-206 | 8883893-8883896 | submitted 2026-10-01 |
+| cosm203-206 | 8883893-8883896 | z = 31 runs: cosm203 and cosm204 completed (rc 0); cosm205 and cosm206 killed at steps 763/754 (signal 9), then cancelled |
+| cosm202-206 (z = 99) | 8901936-8901940 | submitted 2026-10-03 with standard `CLASS_power`, z_init = 99, `ZD_Pk_norm = 8`; PBS logs `production/flamingo_c20N_z99.pbs.log` |
 
 ## 6. Deferred: emulator-box runs (1215 Mpc/h, 4480^3)
 
