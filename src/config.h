@@ -329,6 +329,7 @@ FFTW planner flags for all DFT plans (2D X–Z and 1D Y in fft_setup.c / wisdom_
 //     (N0 is inferred from the file size; modes are cropped in k-space when N0 > N).
 //     Masked modes (DC, Nyquist, k_cutoff sphere if CornerModes = 0) stay zero.
 //     Independent of the PNG flags (DUMP_GAUSSIAN_D, LOAD_D_FROM_FILE, LOAD_WHITE_NOISE_FROM_FILE).
+//     The environment variable ZD_EXTERNAL_NOISE_DIR, if set and non-empty, overrides EXTERNAL_NOISE_DIR.
 #ifndef LOAD_EXTERNAL_NOISE
 #define LOAD_EXTERNAL_NOISE 0
 #endif
@@ -351,6 +352,19 @@ FFTW planner flags for all DFT plans (2D X–Z and 1D Y in fft_setup.c / wisdom_
 #endif
 #ifndef DUMP_D_DIR
 #define DUMP_D_DIR "D_slabs"
+#endif
+
+// 1 = write the unit white noise w = D / sqrt(P(k)) of each primary y-slice to
+//     DUMP_NOISE_DIR/EXTERNAL_NOISE_PREFIX<y> in the LOAD_EXTERNAL_NOISE input format
+//     (complex doubles, [x][z] with z fastest, N0 = N, masked modes 0). Computed from the
+//     double-precision D before any cast; the RNG stream is untouched, so a seed run with this
+//     flag produces the same ICs as without it, and a LOAD_EXTERNAL_NOISE rerun on the dumped
+//     files reproduces them (round-trip test).
+#ifndef DUMP_NOISE_SLABS
+#define DUMP_NOISE_SLABS 0
+#endif
+#ifndef DUMP_NOISE_DIR
+#define DUMP_NOISE_DIR "noise_slabs"
 #endif
 
 // ====================================================================================
