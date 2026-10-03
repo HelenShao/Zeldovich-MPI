@@ -1,0 +1,21 @@
+Stage 5: embedded (custom multistep, FLAMINGO_nu_c202.par2) vs standalone, 300^3 (Thu Oct  1 04:38:49 AM UTC 2026)
+
+[log] embedded: [external noise] reading /flare/Abacus/helenshao/ICs/flamingo_panphasia_N2048/noise/output_k_space_slab_y.<y>
+[log] -> PASS
+
+[par] ZD_* / IC keys, hand-written standalone par vs Abacus's abacus.par:
+  ZD_PLT_filename: /home/helenshao/abacus-store/9575f04_zmpi-neutrinos/env/../build/subprojects/zeldovich_mpi/eigmodes128 (same content as standalone)
+  22 common keys, 0 differ -> PASS
+
+round-trip comparison, N = 300
+[IC] 250 ic_ files (0 matched by particle index), 0 dens files, particle index mismatches: 0
+  dx: n=27000000 identical=0.2143231 max|diff|=2.384e-07 rms=2.311e-01 max|diff|/rms=1.032e-06 max_ulp=9223372036854775807
+  dy: n=27000000 identical=0.2172946 max|diff|=2.384e-07 rms=2.311e-01 max|diff|/rms=1.032e-06 max_ulp=9223372036854775807
+  dz: n=27000000 identical=0.2566350 max|diff|=2.384e-07 rms=2.312e-01 max|diff|/rms=1.031e-06 max_ulp=9223372036854775807
+  vx: n=27000000 identical=0.2144401 max|diff|=2.384e-07 rms=2.294e-01 max|diff|/rms=1.039e-06 max_ulp=9223372036854775807
+  vy: n=27000000 identical=0.2175870 max|diff|=2.384e-07 rms=2.294e-01 max|diff|/rms=1.039e-06 max_ulp=9223372036854775807
+  vz: n=27000000 identical=0.2655864 max|diff|=2.384e-07 rms=2.294e-01 max|diff|/rms=1.039e-06 max_ulp=9223372036854775807
+  all floats bitwise identical: 0.2309777
+[IC] (FFT roundoff, max|diff| <= 1e-05 rms) -> PASS
+OVERALL: PASS
+compare rc=0

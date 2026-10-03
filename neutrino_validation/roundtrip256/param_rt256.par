@@ -1,0 +1,27 @@
+# Zeldovich-MPI round-trip test at N = 256 with the production IC settings of
+# AbacusAurora_rockV2_c000_ph390_n800 (qPLT, Pk_norm = 8, 2D decomposition), only NP and CPD reduced.
+# Used unchanged by all three builds (plain, seed + dumps, load dumped noise); run from the run directory.
+
+BoxSize = 217
+NP = 16777216                        # 256^3
+CPD = 125
+NumZRanks = 2
+ICFormat = "RVZel_2D"
+InitialConditionsDirectory = "./ic"
+InitialRedshift = 99.0
+Omega_M = 0.315192
+
+ZD_Version = 2
+ZD_Seed = 12507
+ZD_Pk_filename = "/home/eisenste/AbacusAurora/Cosmologies/abacus_cosm000/CLASS_power"
+ZD_Pk_scale = 1.0
+ZD_Pk_norm = 8.0
+ZD_Pk_sigma_ratio = 0.021139501553941786
+ZD_Pk_smooth = 0.0
+ZD_f_cluster = 0.9954948095129318
+ZD_k_cutoff = 1.0
+ZD_qdensity = 1
+ZD_qPLT = 1
+ZD_qPLT_rescale = 1
+ZD_PLT_target_z = 12.0
+ZD_PLT_filename = "/home/eisenste/abacus-store/9575f04bdaf2f7c88c2b160ac0d60b428a80b4d3/build/subprojects/zeldovich_mpi/eigmodes128"

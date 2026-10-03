@@ -1,0 +1,29 @@
+# Standalone Zeldovich-MPI with the exact IC settings of AbacusAurora_rockV2_c000_ph390_n800
+# (values copied from its finished abacus.par). Built with DUMP_NOISE_SLABS: dumps the seed white noise
+# w for the embedded load test, and its ICs are compared with the embedded production ICs.
+# ZD_qdensity is left at the parser default, as in the production run. Run from the run directory.
+
+BoxSize = 217
+NP = 512000000                       # 800^3
+CPD = 175
+NumZRanks = 2
+ICFormat = "RVZel_2D"
+InitialConditionsDirectory = "./ic"
+InitialRedshift = 99.0
+Omega_M = 0.315192
+
+ZD_Version = 2
+ZD_Seed = 12507
+ZD_NumBlock = 2
+ZD_Pk_filename = "/home/eisenste/AbacusAurora/Cosmologies/abacus_cosm000/CLASS_power"
+ZD_Pk_file_redshift = 1.0
+ZD_Pk_scale = 1.0
+ZD_Pk_norm = 8.0
+ZD_Pk_sigma_ratio = 0.021139501553941786
+ZD_Pk_smooth = 0.0
+ZD_f_cluster = 0.9954948095129318
+ZD_k_cutoff = 1.0
+ZD_qPLT = 1
+ZD_qPLT_rescale = 1
+ZD_PLT_target_z = 12.0
+ZD_PLT_filename = "/home/eisenste/abacus-store/9575f04bdaf2f7c88c2b160ac0d60b428a80b4d3/env/../build/subprojects/zeldovich_mpi/eigmodes128"

@@ -18,7 +18,10 @@ Background, derivations and the Q&A behind every choice below: `NEUTRINOS_NOTES.
 | `build_zmpi_extnoise.sh` | Meson build of this repo with `-DLOAD_EXTERNAL_NOISE=1 -DDUMP_D_SLABS=1` |
 | `param_N256_extnoise.par` | Zeldovich-MPI parameters for the validation run |
 | `run_N256_validation.sh` | Runs monofonIC → Zeldovich-MPI → validation, all output to log files |
-| `validate_external_noise.py` | Tests 1–3, numbers written to `validation_results.txt` |
+| `validate_external_noise.py` | Tests 1–4, numbers written to `validation_results.txt` (test 4, particle ICs, needs `--ic-dir zmpi_out`) |
+| `pbs_N256_validation.sh` | PBS job: builds monofonIC and Zeldovich-MPI, then runs `run_N256_validation.sh` on a compute node |
+| `pk/` | CLASS P_cb at z = 31 for `abacus_cosm202` (`cosm202_z31.ini`), the P(k) file used by the run |
+| `ABACUS_SMOKE_TEST.md` | Staged plan for running Abacus from the N = 256 ICs |
 
 ## What the code does (branch `neutrinos`)
 
@@ -49,8 +52,7 @@ python3 -c "import numpy, h5py"            # needed by the validation script
 module load <cmake mpi fftw gsl hdf5 fortran modules>
 MONO_DIR=$HOME/monofonic bash neutrino_validation/build_monofonic.sh > build_monofonic.log 2>&1
 ```
-Needs FFTW3 double with MPI + OpenMP, GSL, HDF5, a Fortran compiler. Register for the Panphasia licence
-(<http://icc.dur.ac.uk/Panphasia.php>) before using these ICs in anything published.
+Needs FFTW3 double with MPI + OpenMP, GSL, HDF5, a Fortran compiler. 
 
 ### 2. Build Zeldovich-MPI with the external-noise flags
 ```bash
@@ -94,6 +96,7 @@ Outputs in `run256/`:
 | 1. White noise (slabs only) | \(\langle\|w\|^2\rangle \approx 1\) in every shell; \(\|w\| = 1\) exactly for \(k^2 \le 1025\); Nyquist = 0 |
 | 2. \(P_{\rm ours}/P_{\rm input}\) (D slabs + P file) | ratio ≈ 1 in all shells, scatter shrinking with \(k\) |
 | 3. vs monofonIC δ (D slabs + HDF5) | \(r(k) \approx 1\); best-fit translation ≈ (0,0,0) cells; small residual phase |
+| 4. particle ICs (`zmpi_out/` + D slabs) | full lattice, vel = c·displ, displ[c] along lattice axis c, curl ≈ 0, FFT(dens) = −i k·ψ = \(N^3 D\) per mode to float precision |
 
 ### 6. If something fails
 

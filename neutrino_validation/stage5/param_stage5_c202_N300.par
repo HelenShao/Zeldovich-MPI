@@ -1,0 +1,30 @@
+# Stage 5 standalone reference: the ZD values we intend FLAMINGO_nu_c202.par2 to produce, written by hand
+# (not copied from Abacus's output), at reduced NP / CPD. The embedded run uses the real par2 with only
+# NP, CPD and the IC-step controls overridden, so agreement tests Abacus's parameter plumbing
+# (setup_zeldovich_params: sigma_ratio = D(31)/D(31) = 1, f_cluster = 1 - Omega_Smooth/Omega_M).
+# Noise: FLAMINGO Panphasia N0 = 2048 via ZD_EXTERNAL_NOISE_DIR. Run from the run directory.
+
+BoxSize = 673.0
+NP = 27000000                        # 300^3
+CPD = 125
+NumZRanks = 2
+ICFormat = "RVZel_2D"
+InitialConditionsDirectory = "./ic"
+InitialRedshift = 31.0
+Omega_M = 0.315986
+
+ZD_Version = 2
+ZD_Seed = 0
+ZD_NumBlock = 2
+ZD_Pk_filename = "/home/helenshao/InitialConditions/AbacusAurora/Cosmologies/FLAMINGO_cosm/abacus_cosm202/abacus_cosm202_z31.z1_pk_cb.dat"
+ZD_Pk_file_redshift = 31.0
+ZD_Pk_scale = 1.0
+ZD_Pk_norm = 0
+ZD_Pk_sigma_ratio = 1.0
+ZD_Pk_smooth = 0.0
+ZD_f_cluster = 0.9954998006240783    # 1 - 0.001422/0.315986
+ZD_k_cutoff = 1.0
+ZD_qPLT = 1
+ZD_qPLT_rescale = 1
+ZD_PLT_target_z = 12.0
+ZD_PLT_filename = "/home/eisenste/abacus-store/9575f04bdaf2f7c88c2b160ac0d60b428a80b4d3/env/../build/subprojects/zeldovich_mpi/eigmodes128"

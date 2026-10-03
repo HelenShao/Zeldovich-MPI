@@ -60,5 +60,6 @@ python3 "$HERE/validate_external_noise.py" \
     --ours-slabs D_slabs --N "$N" \
     --box "$BOX" --pk "$PK_FILE" \
     --mono-hdf5 mono/mono_N256_delta.hdf5 \
+    --ic-dir zmpi_out \
     --out validation_results.txt > validate.log 2>&1
 cat validation_results.txt

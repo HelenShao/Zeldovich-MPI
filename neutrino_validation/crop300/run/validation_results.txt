@@ -1,0 +1,151 @@
+External white-noise validation
+command: /home/helenshao/InitialConditions/abacus/subprojects/zeldovich_mpi/neutrino_validation/validate_external_noise.py --slab-dir external_noise --N0 512 --ours-slabs D_slabs --N 300 --box 673.2 --pk /home/helenshao/InitialConditions/abacus/subprojects/zeldovich_mpi/neutrino_validation/pk/cosm202_z31.z1_pk_cb.dat --mono-hdf5 mono/mono_N300_delta.hdf5 --ic-dir zmpi_out --out validation_results.txt
+========================================================================
+TEST 1: white-noise statistics (N0 = 512, KK limit = 1025)
+  modes: free = 133295286, fixed = 137544, Nyquist = 784897
+  <|w|^2> (free modes)          = 0.991603   (expect 1)
+  var(Re w), var(Im w) (free)   = 0.495759, 0.495844   (expect 0.5, 0.5)
+  <Re w>, <Im w> (free)         = -4.387e-05, -2.729e-20   (expect ~0)
+  max ||w|-1| (fixed modes)     = 3.331e-16   (expect ~0)
+  max |w| on Nyquist planes     = 0.000e+00   (expect 0)
+  |w(k=0)|                      = 4.136e-01
+    k [int]    <|w|^2>   N_modes   (a drop near Nyquist would show the mode_weightings effect)
+      24.45    1.01713      5520
+      40.42    1.00387    332208
+      56.39    0.99835    641756
+      72.36    1.00059   1055796
+      88.33    0.99957   1569888
+     104.30    1.00085   2186580
+     120.27    1.00100   2906708
+     136.23    0.99971   3728724
+     152.20    1.00107   4653648
+     168.17    1.00013   5678364
+     184.14    1.00107   6809004
+     200.11    1.00047   8040848
+     216.08    0.99982   9371604
+     232.05    0.99997  10809636
+     248.02    0.99928  12346386
+  max Hermitian violation, y=0  = 4.965e-16   (expect ~0)
+========================================================================
+TEST 1b: crop mapping, D(k) vs w_N0(k) at the same signed k (N0 = 512 -> N = 300)
+  retained modes: 26730898
+  max |arg(D / w_N0)|           = 5.874e-08 rad   (expect ~1e-7: D is float32)
+  fraction with |arg| < 1e-6    = 1.0000000   (expect 1)
+  max |D| on our Nyquist planes = 0.000e+00   (expect 0)
+  |D / w_N0|^2 * norm / P_in:   median 1.000000, max |x-1| 1.103e-03   (expect 1; deviations = spline vs log-linear interpolation of P)
+  same phase test with the naive w[:N,:N,:N] crop: fraction 0.1275   (1 when N0 = N; ~1/8 when N0 > N, only all-positive k match)
+========================================================================
+TEST 2: P_ours(k) / P_input(k)
+  fixed modes (k^2 <= 1025): mean ratio = 1.000001, max |ratio-1| = 6.890e-05   (expect 1, ~0)
+    k [int]   k [h/Mpc]   <P/P_in>   N_modes
+       5.17     0.04827    1.00002      3910
+      14.52     0.13548    0.99999     25512
+      23.86     0.22269    1.00000     68098
+      33.20     0.30990    1.00204    130390
+      42.55     0.39710    1.00468    213504
+      51.89     0.48431    0.99502    316774
+      61.23     0.57152    0.99980    440538
+      70.58     0.65873    1.00283    586720
+      79.92     0.74594    0.99982    750766
+      89.27     0.83314    0.99911    935226
+      98.61     0.92035    1.00023   1143976
+     107.95     1.00756    1.00117   1368486
+     117.30     1.09477    0.99969   1616386
+     126.64     1.18198    1.00093   1884556
+     135.98     1.26918    1.00001   2172018
+     145.33     1.35639    1.00197   2480026
+monofonIC field multiplied by --mono-sign = -1
+========================================================================
+TEST 3: cross-correlation with monofonIC delta
+    k [int]   k [h/Mpc]      r(k)   N_modes
+       5.17     0.04827   0.99996      3910
+      14.52     0.13548   0.99998     25512
+      23.86     0.22269   1.00000     68098
+      33.20     0.30990   1.00000    130390
+      42.55     0.39710   1.00000    213504
+      51.89     0.48431   1.00000    316774
+      61.23     0.57152   1.00000    440538
+      70.58     0.65873   1.00000    586720
+      79.92     0.74594   1.00000    750766
+      89.27     0.83314   1.00000    935226
+      98.61     0.92035   1.00000   1143976
+     107.95     1.00756   1.00000   1368486
+     117.30     1.09477   1.00000   1616386
+     126.64     1.18198   1.00000   1884556
+     135.98     1.26918   1.00000   2172018
+     145.33     1.35639   1.00000   2480026
+  best-fit translation of mono relative to ours, |k| <= 8: (+0.0000, +0.0000, -0.0000) grid cells   (expect ~0)
+  rms residual phase = 1.208e-08 rad
+========================================================================
+TEST 4: particle ICs in zmpi_out (RVZel, 32 bytes/particle)
+  files = 125, particles = 27000000 (expect 27000000), lattice sites missing = 0, duplicated = 0   (expect 0, 0)
+  non-zero padding words = 0   (expect 0)
+  vel = c * displ: fitted c = 1.0000000, max |vel - c displ| = 0.000e+00   (c = (sqrt(1+24 f_cluster)-1)/4, = 1 for f_cluster = 1)
+  rms displacement per component = 2.3046e-01 (file units)
+  -- (a) particle frame: axes = stored (i, j, k), which Abacus maps to (x, y, z)
+  corr(psi_c, i k_a delta / k^2), rows c = displ[0..2], columns a = axis i, j, k (expect diagonal +-1):
+    displ[0]  +1.000000  -0.000031  -0.000031
+    displ[1]  -0.000031  +1.000000  -0.000175
+    displ[2]  -0.000031  -0.000175  +1.000000
+  irrotational: sqrt(sum |k x psi|^2 / sum |k . psi|^2) = 6.505e-07   (expect ~float32 noise)
+  -i k.psi = b * FFT(dens): b = +1.0000000 -3.92e-18i   (expect +1 if displ is in Mpc/h and dens = -div psi)
+  -i k.psi vs b FFT(dens): max per-mode relative residual = 4.354e-03 (all non-DC, non-Nyquist modes, incl. corners)
+    k [int]     rms rel   N_modes
+       5.17   3.491e-07      3910
+      14.52   2.282e-07     25512
+      23.86   2.116e-07     68098
+      33.20   6.603e-07    130390
+      42.55   7.694e-07    213504
+      51.89   9.459e-07    316774
+      61.23   1.721e-06    440538
+      70.58   2.082e-06    586720
+      79.92   1.283e-06    750766
+      89.27   1.284e-06    935226
+      98.61   1.917e-06   1143976
+     107.95   1.763e-06   1368486
+     117.30   3.204e-06   1616386
+     126.64   2.345e-06   1884556
+     135.98   2.344e-06   2172018
+     145.33   2.875e-06   2480026
+  -- (b) tie to the dumped D (frame [x, y, z] of the D slabs)
+  best match: particle axes (i, j, k) = D axes (z, y, x), D, r = +1.00000000
+  FFT(dens) = A * D: A / N^3 = +1.0000000 -1.13e-16i   (expect +1: dens = unnormalized backward FFT of D)
+  FFT(dens) vs A D: max per-mode relative residual = 1.362e-03 (all non-DC, non-Nyquist modes, incl. corners)
+    k [int]     rms rel   f32 floor   N_modes
+       5.17   3.495e-07   2.123e-09      3910
+      14.52   2.286e-07   3.642e-09     25512
+      23.86   2.100e-07   5.297e-09     68098
+      33.20   6.299e-07   2.915e-08    130390
+      42.55   6.995e-07   3.335e-08    213504
+      51.89   8.060e-07   4.007e-08    316774
+      61.23   1.498e-06   4.900e-08    440538
+      70.58   2.721e-06   1.877e-07    586720
+      79.92   1.001e-06   6.176e-08    750766
+      89.27   9.201e-07   7.063e-08    935226
+      98.61   1.099e-06   9.299e-08   1143976
+     107.95   1.011e-06   9.765e-08   1368486
+     117.30   1.457e-06   1.122e-07   1616386
+     126.64   1.472e-06   1.249e-07   1884556
+     135.98   1.291e-06   1.199e-07   2172018
+     145.33   1.609e-06   1.420e-07   2480026
+  -i k.psi = A' * D: A' / N^3 = +1.0000000 -1.11e-16i
+  -i k.psi vs A' D: max per-mode relative residual = 3.835e-03 (all non-DC, non-Nyquist modes, incl. corners)
+    k [int]     rms rel   N_modes
+       5.17   3.872e-08      3910
+      14.52   4.831e-08     25512
+      23.86   6.524e-08     68098
+      33.20   1.957e-07    130390
+      42.55   3.689e-07    213504
+      51.89   4.325e-07    316774
+      61.23   1.802e-06    440538
+      70.58   2.934e-06    586720
+      79.92   8.353e-07    750766
+      89.27   1.007e-06    935226
+      98.61   1.406e-06   1143976
+     107.95   1.368e-06   1368486
+     117.30   3.013e-06   1616386
+     126.64   2.272e-06   1884556
+     135.98   2.073e-06   2172018
+     145.33   2.582e-06   2480026
+========================================================================
+results written to /home/helenshao/InitialConditions/abacus/subprojects/zeldovich_mpi/neutrino_validation/crop300/run/validation_results.txt

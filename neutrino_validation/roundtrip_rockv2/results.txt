@@ -1,0 +1,31 @@
+rockV2_n800 embedded round trip (Wed Sep 30 09:40:39 PM UTC 2026)
+
+[log] external-noise lines (test must read /flare/Abacus/helenshao/roundtrip_rockv2/seed_standalone/noise_slabs; ref must have none):
+  ref: <none>
+  test: [external noise] reading /flare/Abacus/helenshao/roundtrip_rockv2/seed_standalone/noise_slabs/output_k_space_slab_y.<y> (from ZD_EXTERNAL_NOISE_DIR)
+
+[par] ZD_* / IC keys of the ref run vs the finished production abacus.par:
+  differs: ZD_Pk_filename: prod="/home/eisenste/AbacusAurora/Cosmologies/abacus_cosm000/CLASS_power" ref="/home/helenshao/InitialConditions/AbacusAurora/Cosmologies/abacus_cosm000/CLASS_power"
+  24 keys compared, 1 differ (paths may differ by store only)
+round-trip comparison, N = 800
+[noise] 401 slabs (expect 401), nonzero modes 134290095, <|w|^2> = 0.999905 (tolerance 4.3e-04) -> PASS
+[IC] 350 ic_ files (0 matched by particle index), 0 dens files, particle index mismatches: 0
+  dx: n=512000000 identical=0.7404511 max|diff|=5.960e-08 rms=6.319e-02 max|diff|/rms=9.432e-07 max_ulp=9223372036854775807
+  dy: n=512000000 identical=0.7360451 max|diff|=5.960e-08 rms=6.413e-02 max|diff|/rms=9.294e-07 max_ulp=9223372036854775807
+  dz: n=512000000 identical=0.7394996 max|diff|=5.960e-08 rms=6.408e-02 max|diff|/rms=9.301e-07 max_ulp=9223372036854775807
+  vx: n=512000000 identical=0.7404485 max|diff|=5.960e-08 rms=6.299e-02 max|diff|/rms=9.462e-07 max_ulp=9223372036854775807
+  vy: n=512000000 identical=0.7360628 max|diff|=5.960e-08 rms=6.393e-02 max|diff|/rms=9.324e-07 max_ulp=9223372036854775807
+  vz: n=512000000 identical=0.7635868 max|diff|=5.960e-08 rms=6.388e-02 max|diff|/rms=9.331e-07 max_ulp=9223372036854775807
+  all floats bitwise identical: 0.7426823
+[IC] (FFT roundoff, max|diff| <= 1e-05 rms) -> PASS
+[standalone seed vs embedded production] 350 ic_ files (0 matched by particle index), 0 dens files, particle index mismatches: 0
+  dx: n=512000000 identical=0.2042610 max|diff|=8.941e-08 rms=6.319e-02 max|diff|/rms=1.415e-06 max_ulp=9223372036854775807
+  dy: n=512000000 identical=0.2096573 max|diff|=7.451e-08 rms=6.413e-02 max|diff|/rms=1.162e-06 max_ulp=9223372036854775807
+  dz: n=512000000 identical=0.2047877 max|diff|=8.941e-08 rms=6.408e-02 max|diff|/rms=1.395e-06 max_ulp=9223372036854775807
+  vx: n=512000000 identical=0.2042728 max|diff|=8.941e-08 rms=6.299e-02 max|diff|/rms=1.419e-06 max_ulp=9223372036854775807
+  vy: n=512000000 identical=0.2096939 max|diff|=8.941e-08 rms=6.393e-02 max|diff|/rms=1.399e-06 max_ulp=9223372036854775807
+  vz: n=512000000 identical=0.2525854 max|diff|=8.941e-08 rms=6.388e-02 max|diff|/rms=1.400e-06 max_ulp=9223372036854775807
+  all floats bitwise identical: 0.2142097
+[standalone seed vs embedded production] (FFT roundoff, max|diff| <= 1e-05 rms) -> PASS
+OVERALL: PASS
+compare rc=0

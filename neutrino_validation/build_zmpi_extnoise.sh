@@ -30,6 +30,7 @@ if [[ -f "$BUILD_DIR/meson-private/coredata.dat" ]]; then
 else
   meson setup "$BUILD_DIR" "${SETUP[@]}"
 fi
-meson compile -C "$BUILD_DIR"
+# only the IC generator: the standalone wisdom_rank0 helper does not link (fft_wisdom.c missing from its sources)
+meson compile -C "$BUILD_DIR" Zeldovich_MPI
 
 ls -l "$BUILD_DIR/src/Zeldovich_MPI"

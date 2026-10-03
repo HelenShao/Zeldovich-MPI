@@ -1,0 +1,31 @@
+crop test (b): N = 1800 from N0 = 2048, box 673.2
+[noise] 1025 slabs of N0 = 2048: per-plane <|w|^2> in [0.9653, 1.0006] (planes 0..1023), mean 0.99135, y = 1024: 0; Hermitian violation y=0: 1.43e-15 -> PASS
+[low k] N0 = 2048 slabs vs the same descriptor at N0 = 512 (/home/helenshao/InitialConditions/abacus/subprojects/zeldovich_mpi/neutrino_validation/crop300/run/external_noise)
+    k [int]   N_modes   Re r(k)   Im r(k)   <|w|^2> ratio
+          1        13   1.00000  +6.9e-17   1.00000
+          2        37   1.00000  -5.0e-16   1.00000
+          3        57   1.00000  +5.4e-16   1.00000
+          4       121   1.00000  -9.3e-16   1.00000
+          6       245   1.00000  +1.4e-14   1.00000
+          8       405   1.00000  -7.9e-15   1.00000
+         12       941   1.00000  +2.4e-12   1.00000
+         16      1725   1.00000  +1.9e-12   1.00000
+         24      3637   1.00000  +6.9e-11   1.00000
+         32      6397   1.00000  -2.7e-10   1.00000
+         48     14685   1.00000  +1.3e-09   1.00000   (informational)
+         64     25997   1.00000  +8.5e-10   1.00000   (informational)
+         96     58245   1.00000  +3.4e-08   1.00000   (informational)
+        128     50413   1.00000  +2.4e-06   1.00000   (informational)
+  r > 0.99 for k <= 32 -> PASS
+[k-space] D / w_N0 per plane, expect the real constant L^-1.5 = 5.725110e-05
+  y=   0: modes  3236400  max|D/(w L^-1.5) - 1| = 5.93e-08  max|D| on Nyquist = 0.0e+00  -> PASS
+  y=   1: modes  3236401  max|D/(w L^-1.5) - 1| = 5.93e-08  max|D| on Nyquist = 0.0e+00  -> PASS
+  y=   2: modes  3236401  max|D/(w L^-1.5) - 1| = 5.94e-08  max|D| on Nyquist = 0.0e+00  -> PASS
+  y= 449: modes  3236401  max|D/(w L^-1.5) - 1| = 5.95e-08  max|D| on Nyquist = 0.0e+00  -> PASS
+  y= 450: modes  3236401  max|D/(w L^-1.5) - 1| = 5.95e-08  max|D| on Nyquist = 0.0e+00  -> PASS
+  y= 451: modes  3236401  max|D/(w L^-1.5) - 1| = 5.95e-08  max|D| on Nyquist = 0.0e+00  -> PASS
+  y= 898: modes  3236401  max|D/(w L^-1.5) - 1| = 5.95e-08  max|D| on Nyquist = 0.0e+00  -> PASS
+  y= 899: modes  3236401  max|D/(w L^-1.5) - 1| = 5.94e-08  max|D| on Nyquist = 0.0e+00  -> PASS
+  y= 900: modes        0  max|D/(w L^-1.5) - 1| = 0.00e+00  max|D| on Nyquist = 0.0e+00  -> PASS
+[real space] skipped: /flare/Abacus/helenshao/ICs/flamingo_panphasia_N2048/mono_N1800_white_noise.hdf5 not found
+OVERALL: PASS

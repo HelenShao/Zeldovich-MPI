@@ -1,0 +1,15 @@
+round-trip comparison, N = 256
+[noise] 129 slabs (expect 129), nonzero modes 4417103, <|w|^2> = 0.999808 (tolerance 2.4e-03) -> PASS
+[plain vs seed+dump ICs] 501 files, 0 differ -> PASS
+[D] 129 slabs: n=16908288 identical=1.0000000 max|diff|=0.000e+00 rms=7.204e-06 max|diff|/rms=0.000e+00 max_ulp=0 max_rel=0.000e+00 -> PASS
+[IC] 250 ic_ files (0 matched by particle index), 250 dens files, particle index mismatches: 0
+  dx: n=16777216 identical=1.0000000 max|diff|=0.000e+00 rms=6.338e-02 max|diff|/rms=0.000e+00 max_ulp=0
+  dy: n=16777216 identical=1.0000000 max|diff|=0.000e+00 rms=6.420e-02 max|diff|/rms=0.000e+00 max_ulp=0
+  dz: n=16777216 identical=1.0000000 max|diff|=0.000e+00 rms=6.416e-02 max|diff|/rms=0.000e+00 max_ulp=0
+  vx: n=16777216 identical=1.0000000 max|diff|=0.000e+00 rms=6.306e-02 max|diff|/rms=0.000e+00 max_ulp=0
+  vy: n=16777216 identical=1.0000000 max|diff|=0.000e+00 rms=6.388e-02 max|diff|/rms=0.000e+00 max_ulp=0
+  vz: n=16777216 identical=1.0000000 max|diff|=0.000e+00 rms=6.384e-02 max|diff|/rms=0.000e+00 max_ulp=0
+  dens: n=16777216 identical=1.0000000 max|diff|=0.000e+00 rms=4.149e-02 max|diff|/rms=0.000e+00 max_ulp=0
+  all floats bitwise identical: 1.0000000
+[IC] (bitwise) -> PASS
+OVERALL: PASS
