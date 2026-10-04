@@ -316,6 +316,14 @@ void zeldovich_ps_cgauss_from_buffer(void* rng_buf, PowerSpectrumHandle ps, doub
     *imag = R * sin(theta);
 }
 
+void zeldovich_ps_scaling(PowerSpectrumHandle ps, double wavenumber, double w_real, double w_imag, double* real, double* imag) {
+    if (!ps || !real || !imag) return;
+    PowerSpectrum* p = static_cast<PowerSpectrum*>(ps);
+    const double A = sqrt(p->power(wavenumber));
+    *real = A * w_real;
+    *imag = A * w_imag;
+}
+
 double zeldovich_ps_get_normalization(PowerSpectrumHandle ps) {
     if (!ps) return 0.0;
     PowerSpectrum* p = static_cast<PowerSpectrum*>(ps);

@@ -11,6 +11,8 @@
 #include <stdint.h>
 #include <math.h>
 #include <omp.h>
+#include <mpi.h>
+#include <filesystem>
 
 // Fine-grained PTimerWall accumulators for Stage 1 sub-phases.
 // These accumulate wall-clock time across all Y-slice calls.
@@ -55,7 +57,7 @@ static inline int64_t compute_virtual_position(int z, int x, int N, int Nhalf) {
 // Choose which RNG to use based on local_rng_buf
 // local_rng_buf == NULL: use shared RNG (zeldovich_ps_advance_rng, zeldovich_ps_cgauss)
 // local_rng_buf != NULL: use buffer RNG (zeldovich_ps_advance_rng_buffer, zeldovich_ps_cgauss_from_buffer)
-static inline void get_cgauss(PowerSpectrumHandle ps_handle, ParametersHandle params_handle,
+[[maybe_unused]] static inline void get_cgauss(PowerSpectrumHandle ps_handle, ParametersHandle params_handle,
     int64_t rng_index, double kmag, int64_t* nskip, void* local_rng_buf,
     double* D_real, double* D_imag) {
     if (*nskip > 0) {
@@ -175,6 +177,77 @@ static inline void store_prim_conj(
     #undef _SP
     #undef _SC
 }
+
+#if LOAD_EXTERNAL_NOISE
+// Read the k_y = global_y slab of external unit white noise into w_re/w_im[z*N + x].
+// The file holds an N0 x N0 grid in [x][z] order (z fastest); modes are taken by signed
+// k, so N0 > N crops in k-space. Target Nyquist entries are read but masked later.
+static void load_external_noise_slab(int global_y, int N, double *w_re, double *w_im)
+{
+#if EXTERNAL_NOISE_FLOAT
+    typedef float ext_real_t;
+#else
+    typedef double ext_real_t;
+#endif
+    const char *env_dir = getenv("ZD_EXTERNAL_NOISE_DIR");
+    const char *noise_dir = (env_dir != NULL && env_dir[0] != '\0') ? env_dir : EXTERNAL_NOISE_DIR;
+    if (global_y == 0) {
+        fprintf(stderr, "[external noise] reading %s/%s<y>%s\n", noise_dir, EXTERNAL_NOISE_PREFIX,
+                (env_dir != NULL && env_dir[0] != '\0') ? " (from ZD_EXTERNAL_NOISE_DIR)" : "");
+    }
+    char fname[1024];
+    snprintf(fname, sizeof(fname), "%s/%s%d", noise_dir, EXTERNAL_NOISE_PREFIX, global_y);
+
+    if (global_y < 0 || global_y > N / 2) {
+        fprintf(stderr, "ERROR: external noise requested for y=%d outside [0, N/2=%d]\n", global_y, N / 2);
+        MPI_Abort(MPI_COMM_WORLD, 1);
+    }
+
+    FILE *fp = fopen(fname, "rb");
+    if (fp == NULL) {
+        fprintf(stderr, "ERROR: cannot open external noise slab %s\n", fname);
+        MPI_Abort(MPI_COMM_WORLD, 1);
+    }
+    fseek(fp, 0, SEEK_END);
+    const long nbytes = ftell(fp);
+    rewind(fp);
+
+    const int64_t ncomplex = (int64_t)nbytes / (int64_t)(2 * sizeof(ext_real_t));
+    const int64_t N0 = (int64_t)llround(sqrt((double)ncomplex));
+    if (N0 * N0 != ncomplex || N0 * N0 * 2 * (int64_t)sizeof(ext_real_t) != (int64_t)nbytes
+        || N0 < N || (N0 % 2) != 0) {
+        fprintf(stderr, "ERROR: %s has %ld bytes: not an even N0 x N0 grid of %s pairs with N0 >= N=%d\n",
+                fname, nbytes, EXTERNAL_NOISE_FLOAT ? "float" : "double", N);
+        MPI_Abort(MPI_COMM_WORLD, 1);
+    }
+
+    ext_real_t *buf = (ext_real_t *)malloc((size_t)nbytes);
+    if (buf == NULL) {
+        fprintf(stderr, "ERROR: cannot allocate %ld bytes for %s\n", nbytes, fname);
+        MPI_Abort(MPI_COMM_WORLD, 1);
+    }
+    if (fread(buf, 1, (size_t)nbytes, fp) != (size_t)nbytes) {
+        fprintf(stderr, "ERROR: short read in %s\n", fname);
+        MPI_Abort(MPI_COMM_WORLD, 1);
+    }
+    fclose(fp);
+
+    // crop the noise slab to the size of the grid: |k_x| < N/2 and |k_z| < N/2
+    // The k_y crop is just which file is opened (slab_y.<global_y> with global_y ≤ N/2).
+    for (int z = 0; z < N; z++) {
+        const int kz = (z <= N / 2) ? z : z - N;
+        const int64_t sz = (kz >= 0) ? kz : kz + N0;
+        for (int x = 0; x < N; x++) {
+            const int kx = (x <= N / 2) ? x : x - N;
+            const int64_t sx = (kx >= 0) ? kx : kx + N0;
+            const int64_t s = 2 * (sx * N0 + sz);
+            w_re[(int64_t)z * N + x] = (double)buf[s];
+            w_im[(int64_t)z * N + x] = (double)buf[s + 1];
+        }
+    }
+    free(buf);
+}
+#endif
 
 // ====================================================================================
 // Generates one pair of conjugate Y-slices (primary + mirror) in Fourier space
@@ -296,6 +369,33 @@ void generate_zd_mpi_slice_pair_local(
     
 #if DEBUG_PRINTS
     t_setup_end = omp_get_wtime();
+#endif
+
+#if LOAD_EXTERNAL_NOISE
+    double *ext_noise_re = (double *)malloc((size_t)N * (size_t)N * sizeof(double));
+    double *ext_noise_im = (double *)malloc((size_t)N * (size_t)N * sizeof(double));
+    if (ext_noise_re == NULL || ext_noise_im == NULL) {
+        fprintf(stderr, "ERROR: cannot allocate external noise buffers (N=%d)\n", N);
+        MPI_Abort(MPI_COMM_WORLD, 1);
+    }
+    load_external_noise_slab(global_y, N, ext_noise_re, ext_noise_im);
+#endif
+
+// validate that amplitude rescaling of D is correct (pk, normalization, etc.)
+#if DUMP_D_SLABS
+    double *dump_D = (double *)calloc((size_t)2 * (size_t)N * (size_t)N, sizeof(double));
+    if (dump_D == NULL) {
+        fprintf(stderr, "ERROR: cannot allocate D dump buffer (N=%d)\n", N);
+        MPI_Abort(MPI_COMM_WORLD, 1);
+    }
+#endif
+
+#if DUMP_NOISE_SLABS
+    double *dump_w = (double *)calloc((size_t)2 * (size_t)N * (size_t)N, sizeof(double));
+    if (dump_w == NULL) {
+        fprintf(stderr, "ERROR: cannot allocate noise dump buffer (N=%d)\n", N);
+        MPI_Abort(MPI_COMM_WORLD, 1);
+    }
 #endif
     
     // ========== Unified z-loop: handles both conjugate-pair and self-conjugate ==========
@@ -425,9 +525,14 @@ void generate_zd_mpi_slice_pair_local(
             else if (ps_handle != NULL && params_handle != NULL) {
                 double k2_phys = k2 * fundamental * fundamental;
                 double kmag = sqrt(k2_phys);
-                int64_t rng_index = global_y;
                 
                 double D_real, D_imag;
+                #if LOAD_EXTERNAL_NOISE
+                const int64_t ext_idx = (int64_t)z * N + x;
+                zeldovich_ps_scaling(ps_handle, kmag, ext_noise_re[ext_idx], ext_noise_im[ext_idx],
+                                     &D_real, &D_imag);
+                #else
+                int64_t rng_index = global_y;
                 #if VERIFY_RNG_CALLS
                 if (nskip > 0 && local_rng_buf == NULL) {
                     #pragma omp atomic
@@ -440,9 +545,24 @@ void generate_zd_mpi_slice_pair_local(
                 #pragma omp atomic
                 total_rng_calls++;
                 #endif
+                #endif // LOAD_EXTERNAL_NOISE
+                #if DUMP_NOISE_SLABS
+                {
+                    const double A = sqrt(zeldovich_ps_power(ps_handle, kmag));
+                    if (A > 0.0) {
+                        dump_w[2 * ((int64_t)x * N + z)]     = D_real / A;
+                        dump_w[2 * ((int64_t)x * N + z) + 1] = D_imag / A;
+                    }
+                }
+                #endif
                 D[0] = (real_t)D_real;
                 D[1] = (real_t)D_imag;
             }
+
+            #if DUMP_D_SLABS
+            dump_D[2 * ((int64_t)x * N + z)]     = (double)D[0];
+            dump_D[2 * ((int64_t)x * N + z) + 1] = (double)D[1];
+            #endif
             
             // ========== STEP 3: Compute F, G, H from D ==========
             fftw_complex F, G, H;
@@ -803,6 +923,53 @@ void generate_zd_mpi_slice_pair_local(
     // }
     // #endif
     
+    #if LOAD_EXTERNAL_NOISE
+        free(ext_noise_re);
+        free(ext_noise_im);
+    #endif
+
+    #if DUMP_D_SLABS
+    {
+        std::error_code dump_dir_ec;
+        std::filesystem::create_directories(DUMP_D_DIR, dump_dir_ec);
+        char dump_fname[1024];
+        snprintf(dump_fname, sizeof(dump_fname), "%s/D_slab_y.%d", DUMP_D_DIR, global_y);
+        FILE *dump_fp = fopen(dump_fname, "wb");
+        if (dump_fp == NULL) {
+            fprintf(stderr, "ERROR: cannot open %s for writing\n", dump_fname);
+            MPI_Abort(MPI_COMM_WORLD, 1);
+        }
+        const size_t n_dump = (size_t)2 * (size_t)N * (size_t)N;
+        if (fwrite(dump_D, sizeof(double), n_dump, dump_fp) != n_dump) {
+            fprintf(stderr, "ERROR: short write to %s\n", dump_fname);
+            MPI_Abort(MPI_COMM_WORLD, 1);
+        }
+        fclose(dump_fp);
+        free(dump_D);
+    }
+    #endif
+
+    #if DUMP_NOISE_SLABS
+    {
+        std::error_code dump_dir_ec;
+        std::filesystem::create_directories(DUMP_NOISE_DIR, dump_dir_ec);
+        char dump_fname[1024];
+        snprintf(dump_fname, sizeof(dump_fname), "%s/%s%d", DUMP_NOISE_DIR, EXTERNAL_NOISE_PREFIX, global_y);
+        FILE *dump_fp = fopen(dump_fname, "wb");
+        if (dump_fp == NULL) {
+            fprintf(stderr, "ERROR: cannot open %s for writing\n", dump_fname);
+            MPI_Abort(MPI_COMM_WORLD, 1);
+        }
+        const size_t n_dump = (size_t)2 * (size_t)N * (size_t)N;
+        if (fwrite(dump_w, sizeof(double), n_dump, dump_fp) != n_dump) {
+            fprintf(stderr, "ERROR: short write to %s\n", dump_fname);
+            MPI_Abort(MPI_COMM_WORLD, 1);
+        }
+        fclose(dump_fp);
+        free(dump_w);
+    }
+    #endif
+
     // Clean up local macros
     #undef PRIM_SLICE
     #undef CONJ_SLICE
