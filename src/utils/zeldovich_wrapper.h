@@ -79,6 +79,9 @@ double zeldovich_params_get_f_cluster(ParametersHandle params);
 // Get z_initial (initial redshift)
 double zeldovich_params_get_z_initial(ParametersHandle params);
 
+// Get Omega_M (Omega_M at z=0; only used for f_NL)
+double zeldovich_params_get_Omega_M(ParametersHandle params);
+
 // Get qPLT (PLT flag: non-zero if using Particle Linear Theory modes)
 int zeldovich_params_get_qPLT(ParametersHandle params);
 
@@ -109,6 +112,10 @@ int zeldovich_params_get_qdensity(ParametersHandle params);
 // Get k_cutoff (wavenumber cutoff factor)
 // Returns: k_cutoff value (default 1.0, corresponds to k_Nyquist)
 double zeldovich_params_get_k_cutoff(ParametersHandle params);
+
+// Get f_NL (ZD_f_NL in the .par file; primordial non-Gaussianity amplitude)
+// Returns: f_NL value (default 0.0, i.e. Gaussian)
+double zeldovich_params_get_f_NL(ParametersHandle params);
 
 // Get/set Pk_norm (radius, Mpc/h, at which sigmaR is evaluated for sigma8-style
 // normalization; if <= 0, that normalization branch is skipped entirely in

@@ -5,8 +5,8 @@
 // Ex. make CFLAGS="-DUSE_DOUBLE_PRECISION -DDEBUG_PRINTS=0"
 
 //Charlie: My insertion to dump the gaussian density field D to a file. Set DUMP_GAUSSIAN_D=1 to enable dumping, 0 to disable
-#define DUMP_GAUSSIAN_D 1
-#define LOAD_D_FROM_FILE 0
+#define DUMP_GAUSSIAN_D 0
+#define LOAD_D_FROM_FILE 1
 #define LOAD_WHITE_NOISE_FROM_FILE 0
 
 

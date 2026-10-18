@@ -1,6 +1,8 @@
 import numpy as np
 import pyfftw
 import os
+import time
+t_start = time.perf_counter()
 
 # Steps for MPI (from zeldovich_mpi_driver.cpp) 
 # * 7. MULTI-BATCH LOOP (for each batch) 
@@ -13,14 +15,11 @@ import os
 # Tell pyfftw to use the same number of threads as your system
 pyfftw.interfaces.cache.enable()
 
-#define dtype
-record_dtype=np.dtype([
-    ('x', np.int32),
-    ('y', np.int32),
-    ('z', np.int32),
-    ('D_real', np.float64),
-    ('D_imag', np.float64)
-])
+# File format for every y-slice file (no x,y,z indices stored): N*N complex values, each stored as
+# interleaved float64 (real, imag), with x the fastest index and then z. So element (x, z) is at
+# position z*N + x, and a slice reshapes to (N, N) as [z, x].
+file_dtype = np.dtype(np.complex128)
+ 
 
 #parse parameter file for values
 def parse_par2(path):
@@ -46,8 +45,11 @@ def parse_par2(path):
     return params
 
 #Obtain the PPD from data
-sample_records = np.frombuffer(open("bin_files/Phi_gaussian_rank0_y0.bin", 'rb').read(), dtype=record_dtype)
-N = int(round(np.sqrt(sample_records.shape[0]))) 
+sample_slice = np.fromfile("bin_files/Phi_gaussian_rank0_y0.bin", dtype=file_dtype)
+N = int(round(np.sqrt(sample_slice.shape[0])))
+assert N * N == sample_slice.shape[0], "Phi_gaussian_rank0_y0.bin does not hold N*N complex values" 
+print("N", N)
+
 
 # Create aligned arrays for phi_gaussian(k) and |k|
 phi_k = pyfftw.empty_aligned((N, N, N), dtype='complex128')
@@ -63,11 +65,12 @@ L = par2_params["BoxSize"] ##think about units
 #upload data from the dumped files into phi_k
 for y in range(N//2 +1):
     filename = f"bin_files/Phi_gaussian_rank0_y{y}.bin"
-    records = np.frombuffer(open(filename, 'rb').read(), dtype=record_dtype)
-    phi_k[records['x'], records['y'], records['z']] = (records['D_real'] + 1j*records['D_imag']) 
-    kfreq_1d = np.fft.fftfreq(N) * N          # [0, 1, ..., N/2-1, -N/2, ..., -1]
-    KX, KY, KZ = np.meshgrid(kfreq_1d, kfreq_1d, kfreq_1d, indexing='ij')
-    k_arr = ((2*np.pi) / L) * np.sqrt(KX**2 + KY**2 + KZ**2) 
+    slice_zx = np.fromfile(filename, dtype=file_dtype)
+    assert slice_zx.shape[0] == N*N, f"{filename}: expected {N*N} values, got {slice_zx.shape[0]}"
+    phi_k[:, y, :] = slice_zx.reshape(N, N).T   # file is [z][x] (x fastest); phi_k is [x][y][z]
+kfreq_1d = np.fft.fftfreq(N) * N          # [0, 1, ..., N/2-1, -N/2, ..., -1]
+KX, KY, KZ = np.meshgrid(kfreq_1d, kfreq_1d, kfreq_1d, indexing='ij')
+k_arr = ((2*np.pi) / L) * np.sqrt(KX**2 + KY**2 + KZ**2) 
 
 
 ##Handling Hermitian Symmetry##
@@ -117,6 +120,67 @@ phi_k_pad[:]=phi_k_pad_data #save padded phi_k into the pyfftw aligned empty arr
 #In C, free phi_k_pad_data (not used again)
 
 
+# ============================================================================
+# Serial emulation of the repo's design (pack in mpi_exchange.c, unpack in
+# z_streaming.c) applied to the kernel
+# "Ranks" are just list entries; every "send/recv" is a copy.
+# ============================================================================
+M = 2*N                       # stands in for 2N (padded size)
+size_x, size_z = 4, 4        # rank grid; the same ranks hold y-slices AND pencils in different stages
+                            #here, size_x and size_z are arbitrary. In c version they should correspond to the number of ranks we're actually running, and the y-slices will be labeled per rank, so we'll want to input that as well
+num_ranks = size_x * size_z
+PACK_GH = True               # repo's "D + i*F" trick: carry G*phi and H*phi in ONE complex array
+
+# ---------------- decomposition helpers (mirror decomposition.c / batch_helpers.c) -------------
+def split(n, parts, i): #tells you the start and end values of the i-th piece of #n items split into #parts
+    base, rem = divmod(n, parts)
+    start = i * (base + 1) if i < rem else (rem * (base + 1)) + ((i - rem) * base)
+    return start, start + (base + 1 if i < rem else base)
+
+def grid_bounds(dest):                 #converts the rank # into it's x bounds and z bounds      # dest = rank_x*size_z + rank_z #has z as the fastest changing index
+    rx, rz = divmod(dest, size_z)
+    return (*split(M, size_x, rx), *split(M, size_z, rz))   # x0, x1, z0, z1
+
+total_pairs = N + 1
+def rank_pairs(r):                           # returns the y_primary values owned by rank "r" (one pair of y-values per batch)
+    per, rem = divmod(total_pairs, num_ranks)
+    num_pairs = per + 1 if r < rem else per
+    start = r * (per + 1) if r < rem else rem * (per + 1) + (r - rem) * per
+    return list(range(start, start + num_pairs)) 
+
+def batch_y(r, b):                           # returns the y values rank "r" processes in batch b (one pair of y-values per batch)
+    p = rank_pairs(r) #list of y_primary values owned by rank "r"
+    if b >= len(p): #if the batch number is greater than the number of y_primary values owned by rank "r", return an empty list
+        return []
+    yp = p[b] #return the y_primary value for the batch number b
+    ym = yp if yp in (0, N) else M - yp #y_mirror value for the y_primary value yp, if yp is not 0 or M/2, return M - yp
+    return [yp] if yp == ym else [yp, ym]
+
+num_batches = max(len(rank_pairs(r)) for r in range(num_ranks)) #number of batches is the maximum number of y_primary values owned by any rank
+
+# ---------------- FFTW PLANNING: small STAGING buffers, planned once, kept for the whole run ----
+stage2d = pyfftw.empty_aligned((M, M), dtype='complex128')   # one x-z slice
+buf1d = pyfftw.empty_aligned(M, dtype='complex128')          # one y pencil (one per OMP thread in C)
+fl = ('FFTW_MEASURE',)
+plan2d_bwd = pyfftw.FFTW(stage2d, stage2d, axes=(0, 1), direction='FFTW_BACKWARD', flags=fl)
+plan2d_fwd = pyfftw.FFTW(stage2d, stage2d, axes=(0, 1), direction='FFTW_FORWARD',  flags=fl)
+plan1d_bwd = pyfftw.FFTW(buf1d, buf1d, axes=(0,), direction='FFTW_BACKWARD', flags=fl)
+plan1d_fwd = pyfftw.FFTW(buf1d, buf1d, axes=(0,), direction='FFTW_FORWARD',  flags=fl)
+
+# NOTE: normalise_idft=False goes on BACKWARD calls only. On a FORWARD plan, pyfftw (see
+# pyfftw.pyx ~line 1854) treats normalise_idft=False as "scale the forward by 1/N" -- so never pass it there.
+def run2d(plan, arr2d, backward):    # staged: copy in -> execute on the planned buffer -> copy out
+    stage2d[:] = arr2d
+    plan(normalise_idft=False) if backward else plan()
+    arr2d[:] = stage2d
+
+def run1d(plan, line, backward):
+    buf1d[:] = line
+    plan(normalise_idft=False) if backward else plan()
+    line[:] = buf1d
+
+
+
 ##define function for convolution
 #before using kernel function: use pyfftw empty for G, H and define G, H for your specific kernel
 def kernel(G,H): #inputs G(k_1) and H(k_1) then returns your Q(k), which must then be multiplied by J(k) to get the final kernel 
@@ -140,92 +204,113 @@ def kernel(G,H): #inputs G(k_1) and H(k_1) then returns your Q(k), which must th
 
     Hphi_k = pyfftw.empty_aligned((2*N, 2*N, 2*N), dtype='complex128')
     Hphi_k=np.multiply(phi_k_pad, H_pad) #Multiply phi(k_2)*H(k_2)
+
+    inputs = [Gphi_k + 1j * Hphi_k] if PACK_GH else [Gphi_k, Hphi_k] 
+    narray = len(inputs)         # 1 if packed, else 2
     #In C, free H_pad
+
+    # ======================= STAGE A: y-slices -> 2D bwd FFT -> pack -> Alltoallv, per batch ===========
+    # recv_chunks[dest][src] = list over batches of 1D arrays (what src sends to dest in that batch) (each batch gives a 1D array)
+    recv_chunks = [[[] for _ in range(num_ranks)] for _ in range(num_ranks)] #creates empty list of lists thats (x_size) x (y_size)
+    #runs the 2D FFT on each y-slice for each rank, batch by batch, and packs the data into the recv_chunks list for later unpacking
+    for b in range(num_batches):
+        for src in range(num_ranks):
+            ys = batch_y(src, b) #y-values that rank "src" processes in batch "b"
+            ns = len(ys) #number of y-slices in this batch for this rank (1 or 2)
+            # local_y_slices layout: [slice][array][x][z]   (Y_SLICE macro) #array is 0 if packed, else it's 0 Or 1 for G or H
+            local = np.zeros((ns, narray, M, M), dtype=complex)
+            for s, y in enumerate(ys):
+                for a in range(narray):
+                    local[s, a] = inputs[a][:, y, :] #fills local[s,a] with the y-slice of the input array (G or H) for the given y-value
+                    run2d(plan2d_bwd, local[s, a], True) #runs the 2D FFT on the y-slice (taking it to real space)
+            for dest in range(num_ranks):                       # pack_slices_to_send_buffer
+                x0, x1, z0, z1 = grid_bounds(dest)
+                chunk = local[:, :, x0:x1, z0:z1]               # [slice][array][x][z]
+                packed = np.ascontiguousarray(chunk.transpose(1, 0, 2, 3)).ravel()   # [array][slice][lx][lz]  #copies the array into a contiguous block of memory and flattens it into a 1D array
+                recv_chunks[dest][src].append(packed)           # "Alltoallv": src's segment lands at dest #puts the packed data into the recv_chunks list, labeled by the destination rank and the source rank, for later unpacking
+                                                                #Here, send and recv are the same, because we're just copying data around in memory
+
+    src_batch_slice_counts = [[len(batch_y(s, b)) for b in range(num_batches)] for s in range(num_ranks)]
+    y_owner_src = np.zeros(M, int); y_batch_idx = np.zeros(M, int); y_slice_idx = np.zeros(M, int)
+    for s in range(num_ranks):
+        for b in range(num_batches):
+            for j, y in enumerate(batch_y(s, b)):
+                y_owner_src[y], y_batch_idx[y], y_slice_idx[y] = s, b, j #creates a mapping of each y-value to its source rank, batch index, and slice index #slice index tells you if the y-slice is y_primary or y_mirror (0 or 1)
+    assert sorted(y for r in range(num_ranks) for b in range(num_batches) for y in batch_y(r, b)) == list(range(M))   # checks that every y covered once
+
+    # recv_buffer[dest] = [src][batch][array][slice][pencil], plus displacement per source rank (saved in recv_displs_src for unpacking)
+    #packs all the data for each destination rank into a single 1D array
+    recv_buffer, recv_displs_src = [], []
+    for dest in range(num_ranks):
+        parts = [np.concatenate(recv_chunks[dest][s]) if recv_chunks[dest][s] else np.empty(0, complex) #strings all chunks for a given destination rank into a single array
+                for s in range(num_ranks)]
+        displs = np.cumsum([0] + [len(p) for p in parts[:-1]]) #gives the start position of each source rank's data in the concatenated buffer
+        recv_buffer.append(np.concatenate(parts)) #strings all the parts for a destination into a single 1D array, then appends that to the array for ALL destination ranks 
+                                                  #recv_buffer is a list with one entry per destination rank
+        recv_displs_src.append(displs) #saves the displacements for each source rank's data in the concatenated buffer for the destination rank
+   
+
+   
+    # ======================= STAGE B: per z-slab unpack -> bwd 1D -> multiply -> fwd 1D ================
+    q_pencils = []                                              # [dest] -> (pencil_count, M)  y contiguous
+    for dest in range(num_ranks):
+        x0, x1, z0, z1 = grid_bounds(dest)
+        x_count, z_count = x1 - x0, z1 - z0
+        pencil_count = x_count * z_count
+        qp = np.zeros((pencil_count, M), dtype=complex)
+        for z_global in range(z0, z1):                          # z_streaming_unpack, one z at a time, gathering all pencils for that z-slab 
+            z_idx = z_global - z0
+            zslab = np.zeros((narray, x_count, M), dtype=complex)       # ZSLAB [array][x][y], y fastest
+            #get the correct index for data, then fill in the zslab with the data from the recv_buffer for the destination rank
+            for a in range(narray):
+                for x_idx in range(x_count):
+                    for y in range(M):
+                        src, batch, sl = y_owner_src[y], y_batch_idx[y], y_slice_idx[y] #calling the source rank, batch, and slice index for the y-value (from the mapping created earlier)
+                        pencil_idx = x_idx * z_count + z_idx
+                        batch_offset = sum(src_batch_slice_counts[src][bb] * pencil_count * narray
+                                        for bb in range(batch))  ##gives the offset for the current batch in the recv_buffer for the source rank
+                        num_sl = src_batch_slice_counts[src][batch]
+                        off = (recv_displs_src[dest][src] + batch_offset #recv_displs_src[dest][src] gets us the starting index of the data for the source rank in the recv_buffer for the destination rank, batch_offset gets us to the start of the current batch
+                            + a * num_sl * pencil_count + sl * pencil_count + pencil_idx) #then a * num_sl * pencil_count (gets you to the correct array value), sl * pencil_count (gets you to the correct slice), and pencil_idx (gets you to the correct pencil within that slice)
+                        zslab[a, x_idx, y] = recv_buffer[dest][off] ##fills in the data for this specific index in zslab with the correct data. Loops until z slab is filled for all arrays, x indices, and y values
+            for a in range(narray):                             # backward 1D FFT, staged per line (taking us to real space)
+                #doing the 1D transform for each x_index
+                for x_idx in range(x_count):
+                    run1d(plan1d_bwd, zslab[a, x_idx], True)
+            #multiply Gphi(x)*Hphi(x)=Q(x), (now narray, a, is irrelevant because we've combined g and h into Q)
+            if PACK_GH:                                         # z = g + i h with g,h real  =>  g*h = Im(z^2)/2
+                Qx = ((zslab[0] ** 2).imag / 2 / M**3).astype(complex)
+            else:
+                Qx = zslab[0] * zslab[1] / M**3                  # multiply + the single 1/M^3 (local, no MPI)
+            # forward 1D FFT, staged per line (taking us to frequency space)
+            for x_idx in range(x_count):                        
+                run1d(plan1d_fwd, Qx[x_idx], False)
+            for x_idx in range(x_count):
+                qp[x_idx * z_count + z_idx, :] = Qx[x_idx] #by the end of the loops, qp will contain all the pencils (number: x_count x z_count) for the destination rank (with each pencil being a 1D array of length M (the y-dimension))
+        q_pencils.append(qp) ##q_pencils[dest][pencil_idx, ky], qp_pencils is a list of arrays, one for each destination rank, where each array is 2D with shape (pencil_count, M) 
+
+    # ======================= RETURN TRIP: pencils -> y-slices -> 2D fwd FFT ===========================
     
-    #ffts of Gphi_k, and Hphi_k
-    dummy = pyfftw.empty_aligned((2*N, 2*N, 2*N), dtype='complex128') #this takes us up to 5 arrays (phi_k_pad, k_arr, Gphi_k, Hphi_k, dummy)
-    fft_xz = pyfftw.FFTW(dummy, dummy, 
-                                axes=(2, 0), ##check with Helen's code which axis should go first
-                                direction='FFTW_BACKWARD',
-                                flags=('FFTW_MEASURE',))
-    
-    fft_y = pyfftw.FFTW(dummy, dummy, 
-                        axes=(1,), 
-                        direction='FFTW_BACKWARD',
-                        flags=('FFTW_MEASURE',))
+    #rebuild y-slices from pencils, then run 2D FFT on each y-slice, then slot into the correct y-slice in Qk
+    yslices_of = [[y for b in range(num_batches) for y in batch_y(r, b)] for r in range(num_ranks)] 
+    Qk = np.zeros((M, M, M), dtype=complex)                     # reassembled [x][y][z] for checking
+    for r in range(num_ranks): #each rank r will receive the pencils from all other ranks and then control a group of y-slices
+        out = np.zeros((len(yslices_of[r]), M, M), dtype=complex)    # [slice][x][z]
+        for d in range(num_ranks):                              # pack at d, "send" to r, unpack at r
+            x0, x1, z0, z1 = grid_bounds(d)
+            blk = q_pencils[d][:, yslices_of[r]]                     # (pencils, nslices) #from pencils owned destination rank d, (using every pencil in d) it picks out the y-values (of the y-slices) owned by rank r
+            blk = np.ascontiguousarray(blk.T).reshape(len(yslices_of[r]), x1 - x0, z1 - z0)   # [slice][lx][lz] #.T makes the y-slices the first dimension, then reshapes it to have the correct x and z dimensions
+            out[:, x0:x1, z0:z1] = blk #selects the rectangle rank d owns, then slots the data from blk into the correct position. fills in the x0-x1 x z0-z1 rectangle of each y-slice (in rank r, with the data obtained from rank d's pencils)
+                                    #out gets rewritten every r loop. After all d loops, out will contain all the y-slices (with full xz planes) for rank r      
+        #2D FFT on each y-slice in rank r, then slot into the correct y-slice in Qk
+        for s, y in enumerate(yslices_of[r]):
+            run2d(plan2d_fwd, out[s], False) #runs the 2D FFT on each y-slice in rank r, taking it back to frequency space
+            Qk[:, y, :] = out[s] #slots the  transformed y-slice into the correct y-slice in Qk
+            #Qk is the final (padded) output array that contains all of the data from all ranks
 
-    #For multiple ranks, compute the xz fourier transformations in individual y-slices (individual y-slices are assigned to a given rank)
-    fft_xz.update_arrays(Gphi_k, Gphi_k)   
-    fft_xz()
-
-    fft_xz.update_arrays(Hphi_k, Hphi_k)   
-    fft_xz()
-    #free dummy array
-    #4 arrays: (phi_k_pad, k_arr, Gphi_k, Hphi_k)
-
-    #here we will do AlltoAllv transformation to now divide up the xz segments into ranks 
-    #I should also change it so here is where we enforce Hermitian symmetry on y-axis
-    # This will take 2x the memory to transfer (currently at 4 total arrays, but only Gphi and Hphi would need to be transferred)
-    #questions: what happends to phi_k_pad and k_arr during this transfer? Is it best to do this AlltoAllv transformation during every single kernel run? 
-    # Or would it be best to format all the different Gphi and Hphi arrays for all the kernels (using much more memory) and then do the AlltoAllv transformation once?
-    #If that is the best method, I would need to restructure the code a lot 
-    
-    #Now do the y fourier transformations xz segment by xz segment   
-    Gphi_x = pyfftw.empty_aligned((2*N, 2*N, 2*N), dtype='complex128') #now we're up to 5 arrays
-    fft_y.update_arrays(Gphi_k, Gphi_k)   
-    fft_y()
-    Gphi_x[:]= Gphi_k[:]   
-    #In C, free Gphi_k 
-    #back to 4 arrays
-
-    Hphi_x = pyfftw.empty_aligned((2*N, 2*N, 2*N), dtype='complex128') #now we're up to 5 arrays
-    fft_y.update_arrays(Hphi_k, Hphi_k)  
-    fft_y()
-    Hphi_x[:]= Hphi_k[:]
-    #In C, free Hphi_k  
-    #4 arrays: (phi_k_pad, k_arr, Gphi_x, Hphi_x) 
-
-
-    #Q(x)=Gphi(x)*Hphi(x)
-    Q_x_pad = pyfftw.empty_aligned((2*N, 2*N, 2*N), dtype='complex128') #5 arrays
-    Q_x_pad=np.multiply(Gphi_x, Hphi_x)
-    #In C, free Gphi_x and Hphi_x
-    #3 arrays (phi_k_pad, k_arr, Q_x_pad)
-    Q_x_pad *= (2*N)**3   # cancel the 1/Ntot_pad from pyfftw's normalized inverse transforms
-
-
-    #fft of Q(x)
-    dummy = pyfftw.empty_aligned((2*N, 2*N, 2*N), dtype='complex128') #this takes us up to 5 arrays (phi_k_pad, k_arr, Gphi_k, Hphi_k, dummy)
-    fft_Q_y = pyfftw.FFTW(dummy, dummy, 
-                axes=(1,), ##check with Helen's code which axis should go first
-                direction='FFTW_FORWARD',
-                flags=('FFTW_MEASURE',))
-
-    #Here we will do another AlltoAllv to separate ranks by y-slice again
-    
-    fft_Q_xz = pyfftw.FFTW(dummy, dummy, 
-                    axes=(2, 0), ##check with Helen's code which axis should go first
-                    direction='FFTW_FORWARD',
-                    flags=('FFTW_MEASURE',))
-
-    
-    #again, do the y fourier transformations xz segment by xz segment
-    fft_Q_y.update_arrays(Q_x_pad, Q_x_pad)
-    #clear dummy array from memory (not used again)
-    fft_Q_y()
-
-    #Here we do another AlltoAllv to separate ranks by y-slice again
-    #do xz fourier transformation y-slice by y-slice
-    Q_k_pad = pyfftw.empty_aligned((2*N, 2*N, 2*N), dtype='complex128') #4 arrays
-    fft_Q_xz.update_arrays(Q_x_pad, Q_x_pad)
-    fft_Q_xz()
-    Q_k_pad[:]=Q_x_pad[:]
-    #In C, free Q_x_pad
-    #3 arrays: (phi_k_pad, k_arr, Q_k_pad)
-
-    Q_k_pad[0][0][0]=0 ##Set DC mode as zero
-    Q_k_data=crop_kspace(np.asarray(Q_k_pad),N,2*N)
-    #In C, free Q_k_pad
+    Qk[0][0][0] = 0   ##Set DC mode as zero
+    Q_k_data=crop_kspace(np.asarray(Qk),N,2*N)
+    #In C, free Qk
     Q_k= pyfftw.empty_aligned((N, N, N), dtype='complex128')
     Q_k[:]=Q_k_data[:]
     #In C, free Q_k_data
@@ -240,6 +325,7 @@ def kernel(G,H): #inputs G(k_1) and H(k_1) then returns your Q(k), which must th
 local = par2_params["ZD_f_NL_local"] 
 equil = par2_params["ZD_f_NL_equil"]
 orthoCMB = par2_params["ZD_f_NL_orthoCMB"]
+orthoLSS = par2_params["ZD_f_NL_orthoLSS"]
 
 
 #f_NL local
@@ -271,6 +357,11 @@ if(equil!=0 or orthoCMB!=0):
     J_A1[:]=1
     K_A1=np.multiply(Q_A1,J_A1)
     #In C, free Q_A1, J_A1
+    if(equil!=0):
+        kernel_equil=-3*K_A1
+    if(orthoCMB!=0):
+        kernel_orthoCMB=-9*K_A1
+    #In C, free K_A1
 
 
     #Kernel K_C^I
@@ -287,6 +378,13 @@ if(equil!=0 or orthoCMB!=0):
     k_arr[0][0][0]=0 #set k_arr back to zero for DC mode
     K_C1=np.multiply(Q_C1,J_C1)
     #In C, free Q_C1, J_C1
+    if(equil!=0):
+        kernel_equil+=-6*K_C1
+    if(orthoCMB!=0):
+        kernel_orthoCMB+=-24*K_A1
+    #In C, free K_C1
+
+
 
 
     #Only one placement of the k weight is computed for K_B^I and K_B^II. Swapping G and H gives the same
@@ -308,27 +406,15 @@ if(equil!=0 or orthoCMB!=0):
     k_arr[0][0][0]=0
     K_B1_first=np.multiply(Q_B1_first,J_B1)
     #In C, free Q_B1_first, J_B1
-
-    # ##second kernel
-    # G_B1_second=pyfftw.empty_aligned((N,N,N), dtype='complex128')
-    # H_B1_second=pyfftw.empty_aligned((N,N,N), dtype='complex128')
-    # G_B1_second[:]=1
-    # H_B1_second[:]=k_arr
-    # Q_B1_second=kernel(G_B1_second,H_B1_second)
-    # J_B1=pyfftw.empty_aligned((N,N,N), dtype='complex128')
-    # k_arr[0][0][0]=1
-    # J_B1[:]=1/k_arr
-    # J_B1[0][0][0]=0
-    # k_arr[0][0][0]=0
-    # K_B1_second=np.multiply(Q_B1_second,J_B1)
-    # #In C, free Q_B1_second, J_B1
-
-    # K_B1=K_B1_first+K_B1_second
-
-    #Kernel K_B^II is also a sum of two different kernels
-    ##first kernel
+    if(equil!=0):
+        kernel_equil+=4*K_B1_first
+    if(orthoCMB!=0):
+        kernel_orthoCMB+=10*K_B1_first
+    #In C, free K_B1_first
 
 
+
+    #Kernel K_B^II is also a sum of two different kernels, but they give the same result, so we just multiply these kernel's coefficients by 2
     ##K_B^II (single placement: k_1^2/k_3^2)
     G_B2_first=pyfftw.empty_aligned((N,N,N), dtype='complex128')
     H_B2_first=pyfftw.empty_aligned((N,N,N), dtype='complex128')
@@ -343,71 +429,178 @@ if(equil!=0 or orthoCMB!=0):
     k_arr[0][0][0]=0
     K_B2_first=np.multiply(Q_B2_first,J_B2)
     #In C, free Q_B2_first, J_B2
-
-    # ##second kernel
-    # G_B2_second=pyfftw.empty_aligned((N,N,N), dtype='complex128')
-    # H_B2_second=pyfftw.empty_aligned((N,N,N), dtype='complex128')
-    # G_B2_second[:]=1
-    # H_B2_second[:]=np.multiply(k_arr,k_arr)
-    # Q_B2_second=kernel(G_B2_second,H_B2_second)
-
-    # J_B2=pyfftw.empty_aligned((N,N,N), dtype='complex128')
-    # k_arr[0][0][0]=1
-    # J_B2[:]=1/np.multiply(k_arr, k_arr)
-    # J_B2[0][0][0]=0
-    # k_arr[0][0][0]=0
-    # K_B2_second=np.multiply(Q_B2_second,J_B2)
-    # #In C, free Q_B2_second, J_B2
-
-    # K_B2=K_B2_first+K_B2_second
+    if(equil!=0):
+        kernel_equil+=2*K_B2_first
+    if(orthoCMB!=0):
+        kernel_orthoCMB+=8*K_B2_first
+    #In C, free K_B2_first
 
     #calculating phi_{NG}(k) for f_NL^{equil}
     if(equil!=0):
         # kernel_equil = -3*K_A1 - 6*K_C1 + 4*K_B1 + 2*K_B2
-        kernel_equil = -3*K_A1 - 6*K_C1 + 4*K_B1_first + 2*K_B2_first
         kernel_output = kernel_equil
-        #free K_A1, K_C1, K_B1_first, K_B2_first
+        #free kernel_equil
 
     
     #calculating phi_{NG}(k) for f_NL^{orthoCMB}
     if(orthoCMB!=0):
         # kernel_orthoCMB = -9*K_A1 - 24*K_C1 + 10*K_B1 + 8*K_B2
-        kernel_orthoCMB = -9*K_A1 - 24*K_C1 + 10*K_B1_first + 8*K_B2_first
         kernel_output = kernel_orthoCMB
-        #free K_A1, K_C1, K_B1_first, K_B2_first
+        #free kernel_orthoCMB
+
+##Derived assuming a scale invariant spectrum (n2=1)!!!
+if(orthoLSS!=0):
+    p=27/(-21 + (743)/(7*(20*np.pi**2-193)))
+    t=(2+(60*p)/27)/(6*(1+(15*p)/27))
+
+    #Kernel K_A^I
+    G_A1=pyfftw.empty_aligned((N,N,N), dtype='complex128')
+    H_A1=pyfftw.empty_aligned((N,N,N), dtype='complex128')
+    G_A1[:]=1
+    H_A1[:]=1
+    Q_A1=kernel(G_A1, H_A1)
+    J_A1=pyfftw.empty_aligned((N,N,N), dtype='complex128')
+    J_A1[:]=1
+    K_A1=np.multiply(Q_A1,J_A1)
+    #In C, free Q_A1, J_A1
+    kernel_orthoLSS=-(1+(9*p)/27)*K_A1
+    #In C, free K_A1
+
+
+    #Kernel K_C^I
+    G_C1=pyfftw.empty_aligned((N,N,N), dtype='complex128')
+    H_C1=pyfftw.empty_aligned((N,N,N), dtype='complex128')
+    G_C1[:]=k_arr
+    H_C1[:]=k_arr
+    Q_C1=kernel(G_C1, H_C1)
+    k_arr[0][0][0]=1 #momentarily modify the k_arr to avoid dividing by zero, which won't matter because we will set [0][0][0]=0 for the DC mode anyway
+    J_C1=pyfftw.empty_aligned((N,N,N), dtype='complex128')
+    J_C1=(1/3)*(1/np.multiply(k_arr,k_arr))
+    J_C1[0][0][0]=0 #set DC mode to zero
+    k_arr[0][0][0]=0 #set k_arr back to zero for DC mode
+    K_C1=np.multiply(Q_C1,J_C1)
+    #In C, free Q_C1, J_C1
+    kernel_orthoLSS+=-(2+(60*p)/27)*K_C1
+    #In C, free K_C1
+
+    ##K_B^I (single placement: k_1/k_3)
+    #Here, I'm assuming the similar x2 coefficient as in equil and ortho, but this would have to be checked
+    G_B1_first=pyfftw.empty_aligned((N,N,N), dtype='complex128')
+    H_B1_first=pyfftw.empty_aligned((N,N,N), dtype='complex128')
+    G_B1_first[:]=k_arr
+    H_B1_first[:]=1
+    Q_B1_first=kernel(G_B1_first,H_B1_first)
+
+    J_B1=pyfftw.empty_aligned((N,N,N), dtype='complex128')
+    k_arr[0][0][0]=1
+    J_B1[:]=1/k_arr
+    J_B1[0][0][0]=0
+    k_arr[0][0][0]=0
+    K_B1_first=np.multiply(Q_B1_first,J_B1)
+    #In C, free Q_B1_first, J_B1
+    kernel_orthoLSS+=(1+(15*p)/27)*(1-t)*K_B1_first
+    #In C, free K_B1_first
+
+
+    #Kernel K_B^II is also a sum of two different kernels, but they give the same result, so we just multiply these kernel's coefficients by 2
+    ##K_B^II (single placement: k_1^2/k_3^2)
+    G_B2_first=pyfftw.empty_aligned((N,N,N), dtype='complex128')
+    H_B2_first=pyfftw.empty_aligned((N,N,N), dtype='complex128')
+    G_B2_first[:]=np.multiply(k_arr,k_arr)
+    H_B2_first[:]=1
+    Q_B2_first=kernel(G_B2_first,H_B2_first)
+
+    J_B2=pyfftw.empty_aligned((N,N,N), dtype='complex128')
+    k_arr[0][0][0]=1
+    J_B2[:]=1/np.multiply(k_arr, k_arr)
+    J_B2[0][0][0]=0
+    k_arr[0][0][0]=0
+    K_B2_first=np.multiply(Q_B2_first,J_B2)
+    #In C, free Q_B2_first, J_B2
+    kernel_orthoLSS+=(1+(15*p)/27)*t*K_B2_first
+    #In C, free K_B2_first
+
+    #Kernel K_D^I
+    G_D1=pyfftw.empty_aligned((N,N,N), dtype='complex128')
+    H_D1=pyfftw.empty_aligned((N,N,N), dtype='complex128')
+    k_arr[0][0][0]=1
+    G_D1[:]=1/k_arr
+    G_D1[0][0][0]=0
+    k_arr[0][0][0]=0
+    H_D1[:]=G_D1[:]
+    Q_D1=kernel(G_D1, H_D1) 
+    J_D1=pyfftw.empty_aligned((N,N,N), dtype='complex128')
+    J_D1[:]=np.multiply(k_arr,k_arr)
+    K_D1=np.multiply(Q_D1,J_D1)
+    #In C, free Q_D1, J_D1
+    kernel_orthoLSS+=(p/27)*K_D1
+    #In C, free K_D1
+
+    #Kernel K_E^II #sum of two identical kernels, assume the coefficeint is x2
+    G_E2=pyfftw.empty_aligned((N,N,N), dtype='complex128')
+    H_E2=pyfftw.empty_aligned((N,N,N), dtype='complex128')
+    G_E2[:]=np.multiply(k_arr,k_arr)
+    k_arr[0][0][0]=1
+    H_E2[:]=1/k_arr
+    H_E2[0][0][0]=0
+    k_arr[0][0][0]=0
+    Q_E2=kernel(G_E2, H_E2) 
+    J_E2=pyfftw.empty_aligned((N,N,N), dtype='complex128')
+    k_arr[0][0][0]=1
+    J_E2[:]=(1/2)*(1/k_arr)
+    J_E2[0][0][0]=0
+    k_arr[0][0][0]=0
+    K_E2=np.multiply(Q_E2,J_E2)
+    #In C, free Q_E2, J_E2
+    kernel_orthoLSS+= -(20*p)/27*K_E2
+    #In C, free K_E2
+
+    #Kernel K_F^I,sum of two identical kernels, assuming coefficient is 2x
+    G_F1=pyfftw.empty_aligned((N,N,N), dtype='complex128')
+    H_F1=pyfftw.empty_aligned((N,N,N), dtype='complex128')
+    k_arr[0][0][0]=1
+    G_F1[:]=1/k_arr 
+    G_F1[0][0][0]=0
+    k_arr[0][0][0]=0
+    H_F1[:]=1
+    Q_F1=kernel(G_F1, H_F1) 
+    J_F1=pyfftw.empty_aligned((N,N,N), dtype='complex128')
+    J_F1[:]=k_arr
+    K_F1=np.multiply(Q_F1,J_F1)
+    #In C, free Q_F1, J_F1
+    kernel_orthoLSS+=(6*p/27)*K_F1
+    #In C, free K_F1
+
+    #Kernel K_G^I,sum of two identical kernels, assuming coefficient is 2x
+    G_G1=pyfftw.empty_aligned((N,N,N), dtype='complex128')
+    H_G1=pyfftw.empty_aligned((N,N,N), dtype='complex128')
+    k_arr[0][0][0]=1
+    G_G1[:]=1/k_arr 
+    G_G1[0][0][0]=0
+    k_arr[0][0][0]=0
+    H_G1[:]=k_arr
+    Q_G1=kernel(G_G1, H_G1) 
+    #J_G1 is 1, so we don't need to write it explicitly 
+    K_G1=Q_G1
+    #In C, free Q_G1
+    kernel_orthoLSS+=(15*p/27)*K_G1
+    #In C, free K_G1
+
+    kernel_output=kernel_orthoLSS
+    
 
 
 os.makedirs("bin_files", exist_ok=True)
 os.makedirs("bin_files/bin_files_output", exist_ok=True)
  
-x_all = np.arange(N)
-z_all = np.arange(N)
-# indexing='ij' with (z_all, x_all) gives arrays of shape (N, N) where axis 0
-# is z and axis 1 is x; a C-order ravel() of these varies x fastest and z
-# slowest, i.e. z=0 with all x-values, then z=1 with all x-values, etc.
-zz, xx = np.meshgrid(z_all, x_all, indexing='ij')
-#free x_all and z_all
-xx_flat = xx.ravel()
-zz_flat = zz.ravel()
-#free xx and zz 
-
 ##upload final phi_non-gaussian(k) to files in y slices
+# Each file is the (N, N) y-slice in [z][x] order (x fastest, then z), as interleaved float64 (real, imag),
+# with no index columns.
 for y in range(N//2 + 1):
-    plane = kernel_output[:, y, :]              # shape (N, N), indexed [x, z]
-    plane_zx = plane.T                          # reindex to [z, x] so ravel() matches xx_flat/zz_flat ordering
-    kernel_real = plane_zx.real.ravel().astype(np.float64)
-    kernel_imag = plane_zx.imag.ravel().astype(np.float64)
-    yy_flat = np.full(xx_flat.shape, y, dtype=np.int32)
- 
-    out_records = np.zeros(xx_flat.shape[0], dtype=record_dtype)
-    out_records['x'] = xx_flat.astype(np.int32)
-    out_records['y'] = yy_flat
-    out_records['z'] = zz_flat.astype(np.int32)
-    out_records['D_real'] = kernel_real
-    out_records['D_imag'] = kernel_imag
- 
+    plane_zx = np.ascontiguousarray(kernel_output[:, y, :].T, dtype=file_dtype)   # [x, z] -> [z, x], C-contiguous
     filename = f"bin_files/bin_files_output/phi_output_rank0_y{y}.bin"
-    with open(filename, 'wb') as f:
-        f.write(out_records.tobytes())
-#free all remaining variables (phi_k_pad, k_arr, kernel_output, xx_flat, zz_flat, yy_flat, out_records, kernel_real, kernel_imag)
+    plane_zx.tofile(filename)
+#free all remaining variables (phi_k_pad, k_arr, kernel_output, plane_zx)
+print(f"Total run time: {time.perf_counter() - t_start:.2f} s")
+
 

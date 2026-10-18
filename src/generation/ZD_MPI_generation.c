@@ -265,6 +265,12 @@ void generate_zd_mpi_slice_pair_local(
         k_cutoff = zeldovich_params_get_k_cutoff(params_handle);
         CornerModes = zeldovich_params_get_CornerModes(params_handle);
     }
+
+    // f_NL amplitude, read from ZD_f_NL in the .par file (default 0.0 = Gaussian)
+    double f_NL = 0.0;
+    if (params_handle != NULL) {
+        f_NL = zeldovich_params_get_f_NL(params_handle);
+    }
     
     // Calculate k2_cutoff: k2_cutoff = (N/2)^2 / (k_cutoff^2)
     // Ex. N=16, k_cutoff=1.0: k2_cutoff = 8^2 / 1.0^2 = 64
@@ -315,6 +321,15 @@ dump_fp = fopen(dump_filename, "wb");
 if (dump_fp == NULL) {
     fprintf(stderr, "ERROR: Could not open dump file %s\n", dump_filename);
 }
+// File layout (no x,y,z indices stored): N*N complex values as interleaved doubles
+// (real, imag), x fastest, then z. Element (x,z) lives at index z*N + x.
+// Filled inside the (possibly OpenMP-parallel) z-loop, then written once after the loop,
+// so the on-disk order does not depend on thread scheduling.
+double *dump_buf = (double*)malloc((size_t)N * (size_t)N * 2 * sizeof(double));
+if (dump_buf == NULL) {
+    fprintf(stderr, "ERROR: Could not allocate dump buffer\n");
+}
+
 #endif
 
 #if LOAD_D_FROM_FILE
@@ -339,37 +354,43 @@ if (dump_fp == NULL) {
         }
         fflush(stderr);
     }
+    // Same layout as the Phi_gaussian dump: interleaved (real, imag), x fastest, then z.
+    double *divided_buf = (double*)malloc((size_t)N * (size_t)N * 2 * sizeof(double));
+    if (divided_buf == NULL) {
+        fprintf(stderr, "ERROR: Could not allocate phi_divided buffer\n");
+    }
+
 
     double *loaded_kernel_real = (double*)malloc((size_t)N * (size_t)N * sizeof(double));
     double *loaded_kernel_imag = (double*)malloc((size_t)N * (size_t)N * sizeof(double));
-    {
+        {
         char load_filename[128];
         sprintf(load_filename, "bin_files_output/phi_output_rank%d_y%d.bin", rank, global_y);
         FILE *load_fp = fopen(load_filename, "rb");
         if (load_fp == NULL) {
             fprintf(stderr, "ERROR: Could not open %s for reading phi", load_filename);
         } else {
-            int32_t rec_x, rec_y, rec_z;
-            double rec_kernel_real, rec_kernel_imag;
-            for (int64_t i = 0; i < (int64_t)N * (int64_t)N; i++) {
-                size_t nread = 0;
-                nread += fread(&rec_x, sizeof(int32_t), 1, load_fp);
-                nread += fread(&rec_y, sizeof(int32_t), 1, load_fp);
-                nread += fread(&rec_z, sizeof(int32_t), 1, load_fp);
-                nread += fread(&rec_kernel_real, sizeof(double), 1, load_fp);
-                nread += fread(&rec_kernel_imag, sizeof(double), 1, load_fp);
-                if (nread != 5) {
-                    fprintf(stderr, "ERROR: short read in %s at record %ld (got %zu/5 fields)\n",
-                            load_filename, (long)i, nread);
-                    break;
+            // File holds N*N interleaved (real, imag) doubles, x fastest then z,
+            // so element i is already at index z*N + x.
+            size_t nvals = (size_t)N * (size_t)N;
+            double *tmp = (double*)malloc(nvals * 2 * sizeof(double));
+            size_t nread = (tmp != NULL) ? fread(tmp, 2 * sizeof(double), nvals, load_fp) : 0;
+            if (nread != nvals) {
+                fprintf(stderr, "ERROR: short read in %s (got %zu/%zu complex values)\n",
+                        load_filename, nread, nvals);
+            }
+            if (tmp != NULL) {
+                for (size_t i = 0; i < nread; i++) {
+                    loaded_kernel_real[i] = tmp[2*i];
+                    loaded_kernel_imag[i] = tmp[2*i + 1];
                 }
-                loaded_kernel_real[(int64_t)rec_z * N + rec_x] = rec_kernel_real;
-                loaded_kernel_imag[(int64_t)rec_z * N + rec_x] = rec_kernel_imag;
+                free(tmp);
             }
             fclose(load_fp);
         }
     }
 #endif
+
 
 #if LOAD_WHITE_NOISE_FROM_FILE
 
@@ -382,27 +403,27 @@ if (dump_fp == NULL) {
         if (load_fp == NULL) {
             fprintf(stderr, "ERROR: Could not open %s for reading phi", load_filename);
         } else {
-            int32_t rec_x, rec_y, rec_z;
-            double rec_noise_real, rec_noise_imag;
-            for (int64_t i = 0; i < (int64_t)N * (int64_t)N; i++) {
-                size_t nread = 0;
-                nread += fread(&rec_x, sizeof(int32_t), 1, load_fp);
-                nread += fread(&rec_y, sizeof(int32_t), 1, load_fp);
-                nread += fread(&rec_z, sizeof(int32_t), 1, load_fp);
-                nread += fread(&rec_noise_real, sizeof(double), 1, load_fp);
-                nread += fread(&rec_noise_imag, sizeof(double), 1, load_fp);
-                if (nread != 5) {
-                    fprintf(stderr, "ERROR: short read in %s at record %ld (got %zu/5 fields)\n",
-                            load_filename, (long)i, nread);
-                    break;
+            // File holds N*N interleaved (real, imag) doubles, x fastest then z,
+            // so element i is already at index z*N + x.
+            size_t nvals = (size_t)N * (size_t)N;
+            double *tmp = (double*)malloc(nvals * 2 * sizeof(double));
+            size_t nread = (tmp != NULL) ? fread(tmp, 2 * sizeof(double), nvals, load_fp) : 0;
+            if (nread != nvals) {
+                fprintf(stderr, "ERROR: short read in %s (got %zu/%zu complex values)\n",
+                        load_filename, nread, nvals);
+            }
+            if (tmp != NULL) {
+                for (size_t i = 0; i < nread; i++) {
+                    loaded_noise_real[i] = tmp[2*i];
+                    loaded_noise_imag[i] = tmp[2*i + 1];
                 }
-                loaded_noise_real[(int64_t)rec_z * N + rec_x] = rec_noise_real;
-                loaded_noise_imag[(int64_t)rec_z * N + rec_x] = rec_noise_imag;
+                free(tmp);
             }
             fclose(load_fp);
         }
     }
 #endif
+
 
 
     // ========== Unified z-loop: handles both conjugate-pair and self-conjugate ==========
@@ -505,11 +526,12 @@ if (dump_fp == NULL) {
             int abs_kx = (kx < 0) ? -kx : kx;
             int is_nyquist = (abs_kx == Nhalf || abs_ky == Nhalf || abs_kz == Nhalf);
             
+            // Charlie: DC, Nyquist, and k_cutoff (corner) modes; also reused to mask the non-Gaussian field below
+            int zeroed_mode = (k2 == 0.0) || is_nyquist || (!CornerModes && (double)k2_int >= k2_cutoff);
+
             fftw_complex D;
             fftw_complex phi_G;
-                if ((k2 == 0.0) //Charlie:handles skipping DC mode (k=0) and Nyquist modes (k=kmax) for all three axes (and does it to keep the random number generator in sync with the serial version)
-                    || (is_nyquist)
-                    || (!CornerModes && (double)k2_int >= k2_cutoff)) {
+                if (zeroed_mode) { //Charlie:handles skipping DC mode (k=0) and Nyquist modes (k=kmax) for all three axes (and does it to keep the random number generator in sync with the serial version)
                     D[0] = D[1] = 0.0;
                     phi_G[0] = phi_G[1] = 0.0;
                     nskip++;
@@ -572,8 +594,8 @@ if (dump_fp == NULL) {
 
                             if (P_density > 0.0) {
                                 double ratio = sqrt(P_primordial/P_density);
-                                phi_G[0] = (real_t)((double)D[0] *ratio *(2.0/3.0)); 
-                                phi_G[1] = (real_t)((double)D[1] *ratio *(2.0/3.0)); 
+                                phi_G[0] = (real_t)((double)D[0] *ratio *(3.0/5.0)); 
+                                phi_G[1] = (real_t)((double)D[1] *ratio *(3.0/5.0)); 
                             }
                         }
                     }
@@ -592,11 +614,11 @@ if (dump_fp == NULL) {
                 //Charlie: My code insertion to dump the density field D to a file
                  #if DUMP_GAUSSIAN_D
                 //Transform D into Phi (D itself is left untouched for downstream use)
-                // Write Phi mode to file
-                fwrite(&x, sizeof(int), 1, dump_fp);
-                fwrite(&global_y, sizeof(int), 1, dump_fp);
-                fwrite(&z, sizeof(int), 1, dump_fp);
-                fwrite(phi_G, sizeof(fftw_complex), 1, dump_fp);
+                // Store into the slice buffer at [z*N + x]; written to disk after the z-loop.
+                if (dump_buf != NULL) {
+                    dump_buf[2 * ((size_t)z * (size_t)N + (size_t)x)]     = (double)phi_G[0];
+                    dump_buf[2 * ((size_t)z * (size_t)N + (size_t)x) + 1] = (double)phi_G[1];
+                }
  
                 // Charlie: debug print — check a handful of modes as they're dumped
                 if (rank == 0 && global_y == 0 && x < 3 && z < 3) {
@@ -614,13 +636,14 @@ if (dump_fp == NULL) {
             fftw_complex kernel;
             fftw_complex phi_NG;
             fftw_complex NG_rand; //charlie: variable for the "random" numbers produced by the non-gaussian phi(k)
-            double f_NL; //charlie: need to add f_NL in the parameters file
             #if LOAD_D_FROM_FILE
-                f_NL = 100.0; //charlie: placeholder
                 kernel[0] = (real_t)loaded_kernel_real[(int64_t)x + z * N]; //Charlie: this is inside x and z loops
                 kernel[1] = (real_t)loaded_kernel_imag[(int64_t)x + z * N];
                 phi_NG[0] = phi_G[0]+ f_NL*kernel[0]; 
                 phi_NG[1] = phi_G[1]+f_NL*kernel[1]; 
+                if (zeroed_mode) { // Charlie: apply the same DC/Nyquist/k_cutoff mask to the non-Gaussian phi (phi^2 has power outside the sphere)
+                    phi_NG[0] = phi_NG[1] = 0.0;
+                }
 
                 // Charlie: divide loaded D by sqrt(P_primordial(k)), where P_primordial(k)
                 // is read from class_pk_primordial_dimensional.dat via
@@ -640,25 +663,18 @@ if (dump_fp == NULL) {
                     }
                     if (P_primordial > 0.0) {
                         double sqrt_P_primordial = sqrt(P_primordial);
-                        NG_rand[0] = (real_t)(double)phi_NG[0]*((3.0/2.0)/ sqrt_P_primordial); //This is turning phi_non-Gaussian back into random numbers
-                        NG_rand[1] = (real_t)(double)phi_NG[1]*((3.0/2.0)/ sqrt_P_primordial);
+                        NG_rand[0] = (real_t)(double)phi_NG[0]*((5.0/3.0)/ sqrt_P_primordial); //This is turning phi_non-Gaussian back into random numbers
+                        NG_rand[1] = (real_t)(double)phi_NG[1]*((5.0/3.0)/ sqrt_P_primordial);
                     }
                 }
 
-                // Charlie: write this mode's divided phi to file (x, y, z, phi_real, phi_imag), Idk if I need to do this anymore
-                // matching the same record layout used when reading loaded_kernel_real/imag above.
-                if (phi_divided_fp != NULL) {
-                    int32_t out_x = (int32_t)x;
-                    int32_t out_y = (int32_t)global_y;
-                    int32_t out_z = (int32_t)z;
-                    double out_rand_real = (double)NG_rand[0];
-                    double out_rand_imag = (double)NG_rand[1];
-                    fwrite(&out_x, sizeof(int32_t), 1, phi_divided_fp);
-                    fwrite(&out_y, sizeof(int32_t), 1, phi_divided_fp);
-                    fwrite(&out_z, sizeof(int32_t), 1, phi_divided_fp);
-                    fwrite(&out_rand_real, sizeof(double), 1, phi_divided_fp);
-                    fwrite(&out_rand_imag, sizeof(double), 1, phi_divided_fp);
+                // Charlie: store this mode's divided phi (phi_real, phi_imag) in the slice buffer at
+                // [z*N + x]; the whole slice is written to file after the z-loop (no indices stored).
+                if (divided_buf != NULL) {
+                    divided_buf[2 * ((size_t)z * (size_t)N + (size_t)x)]     = (double)NG_rand[0];
+                    divided_buf[2 * ((size_t)z * (size_t)N + (size_t)x) + 1] = (double)NG_rand[1];
                 }
+
 
                 //Charlie: Creating D from our random numbers (from phi)
                 double D_real, D_imag;
@@ -691,6 +707,9 @@ if (dump_fp == NULL) {
             #if LOAD_WHITE_NOISE_FROM_FILE
                 noise[0] = (real_t)loaded_noise_real[(int64_t)x + z * N];
                 noise[1] = (real_t)loaded_noise_imag[(int64_t)x + z * N];
+                if (zeroed_mode) { // Charlie: same DC/Nyquist/k_cutoff mask as the Gaussian field
+                    noise[0] = noise[1] = 0.0;
+                }
 
 
                 //Charlie: Creating D from our random numbers (from phi)
@@ -898,11 +917,35 @@ if (dump_fp == NULL) {
 #endif
 
 //Charlie: added to close the file pointer for dumping the Gaussian density field D
+//Charlie: added to close the file pointer for dumping the Gaussian density field D
 #if DUMP_GAUSSIAN_D
 if (dump_fp != NULL) {
+    if (dump_buf != NULL) {
+        size_t nvals = (size_t)N * (size_t)N;
+        size_t nwritten = fwrite(dump_buf, 2 * sizeof(double), nvals, dump_fp);
+        if (nwritten != nvals) {
+            fprintf(stderr, "ERROR: short write to %s (wrote %zu/%zu complex values)\n",
+                    dump_filename, nwritten, nvals);
+        }
+    }
     fclose(dump_fp);
 }
+free(dump_buf);
 #endif
+
+#if LOAD_D_FROM_FILE
+if (phi_divided_fp != NULL && divided_buf != NULL) {
+    size_t nvals = (size_t)N * (size_t)N;
+    size_t nwritten = fwrite(divided_buf, 2 * sizeof(double), nvals, phi_divided_fp);
+    if (nwritten != nvals) {
+        fprintf(stderr, "ERROR: short write to phi_divided file (wrote %zu/%zu complex values)\n",
+                nwritten, nvals);
+    }
+}
+free(divided_buf);
+#endif
+
+
 
     // ========== Self-conjugate post-processing ==========
     // Mirror first half to second half (match zeldovich.cpp lines 555-573)

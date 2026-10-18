@@ -127,6 +127,12 @@ double zeldovich_params_get_z_initial(ParametersHandle params) {
     return p->z_initial;
 }
 
+double zeldovich_params_get_Omega_M(ParametersHandle params) {
+    if (!params) return 0.0;
+    ZeldovichParameters* p = static_cast<ZeldovichParameters*>(params);
+    return p->Omega_M;
+}
+
 int zeldovich_params_get_qPLT(ParametersHandle params) {
     if (!params) return 0;
     ZeldovichParameters* p = static_cast<ZeldovichParameters*>(params);
@@ -175,6 +181,12 @@ double zeldovich_params_get_k_cutoff(ParametersHandle params) {
     if (!params) return 1.0;
     ZeldovichParameters* p = static_cast<ZeldovichParameters*>(params);
     return p->k_cutoff;
+}
+
+double zeldovich_params_get_f_NL(ParametersHandle params) {
+    if (!params) return 0.0;
+    ZeldovichParameters* p = static_cast<ZeldovichParameters*>(params);
+    return p->f_NL;
 }
 
 double zeldovich_params_get_Pk_norm(ParametersHandle params) {
