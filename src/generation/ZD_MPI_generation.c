@@ -133,8 +133,8 @@ static inline void store_prim_conj(
     const double *D, const double *F, const double *G, const double *H,
     double f_vel, int narray, int just_density)
 {
-    #define _SP(a, xx, zz) prim[(int64_t)(xx) + (N) * ((zz) + (N) * (a))]
-    #define _SC(a, xx, zz) conj_buf[(int64_t)(xx) + (N) * ((zz) + (N) * (a))]
+    #define _SP(a, xx, zz) prim[(int64_t)(xx) + (int64_t)(N) * ((zz) + (int64_t)(N) * (a))]
+    #define _SC(a, xx, zz) conj_buf[(int64_t)(xx) + (int64_t)(N) * ((zz) + (int64_t)(N) * (a))]
 
     if (just_density) {
         _SP(0, x, z)[0] = D[0];
@@ -348,10 +348,10 @@ void generate_zd_mpi_slice_pair_local(
 
     // Access primary and conj slices
     #define PRIM_SLICE(array_idx, x, z) \
-        primary_slices[(int64_t)(x) + (N) * ((z) + (N) * (array_idx))]
+        primary_slices[(int64_t)(x) + (int64_t)(N) * ((z) + (int64_t)(N) * (array_idx))]
      
     #define CONJ_SLICE(array_idx, x, z) \
-        conjugate_slices[(int64_t)(x) + (N) * ((z) + (N) * (array_idx))]
+        conjugate_slices[(int64_t)(x) + (int64_t)(N) * ((z) + (int64_t)(N) * (array_idx))]
     
     // RNG verification: Track total RNG calls and skips
     #if VERIFY_RNG_CALLS
