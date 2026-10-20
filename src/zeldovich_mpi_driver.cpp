@@ -932,8 +932,7 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
             &total_send_batch, &total_recv_batch
         );
         
-        // 4096 = safe upper bound for # ranks
-        int64_t rdispls_elem[4096];
+        std::vector<int64_t> rdispls_elem(num_ranks);
         for (int src = 0; src < num_ranks; src++) {
             int64_t new_displ = recv_displs_src[src] + src_write_cursor[src];
             if (new_displ < 0) {
@@ -1059,8 +1058,8 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
 
         t_comm.Start();
         {
-            MPI_Count sendcounts_c[4096], recvcounts_c[4096];
-            MPI_Aint sdispls_c[4096], rdispls_c[4096];
+            std::vector<MPI_Count> sendcounts_c(num_ranks), recvcounts_c(num_ranks);
+            std::vector<MPI_Aint> sdispls_c(num_ranks), rdispls_c(num_ranks);
             /* sdispls/rdispls are in element units (MPI multiplies by extent internally), NOT bytes */
             for (int i = 0; i < num_ranks; i++) {
                 sendcounts_c[i] = (MPI_Count)sendcounts_batch[i];
@@ -1069,8 +1068,8 @@ extern "C" int zeldovich_mpi_driver_run(int argc, char **argv)
                 rdispls_c[i] = (MPI_Aint)rdispls_elem[i];
             }
             int mpi_err = MPI_Alltoallv_c(
-                send_buffer_batch, sendcounts_c, sdispls_c, MPI_COMPLEX_TYPE,
-                recv_buffer, recvcounts_c, rdispls_c, MPI_COMPLEX_TYPE,
+                send_buffer_batch, sendcounts_c.data(), sdispls_c.data(), MPI_COMPLEX_TYPE,
+                recv_buffer, recvcounts_c.data(), rdispls_c.data(), MPI_COMPLEX_TYPE,
                 zd_comm_2d
             );
             if (mpi_err != MPI_SUCCESS) {
