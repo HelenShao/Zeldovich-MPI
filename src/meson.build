@@ -71,6 +71,40 @@ if not get_option('abacus_embed')
     install: true,
   )
 
+  # Kernel_MPI (f_NL kernels, C port of 1rank-run-cosm500/kernel_MPI.py): double precision only.
+  # Build with tests/kernel_regression/build_kernel.sh (meson setup ... -Ddouble_precision=true).
+  if _double_prec
+    kernel_mpi_exe = executable(
+      'Kernel_MPI',
+      files(
+        'kernel/kernel_grid.c',
+        'kernel/kernel_io.c',
+        'kernel/kernel_main.c',
+        'kernel/kernel_pass.c',
+        'kernel/kernel_terms.c',
+      ),
+      include_directories: include_directories('kernel'),
+      link_with: zeldovich_ic_lib,
+      dependencies: zd_mpi_common_dep,
+      link_language: 'cpp',
+      install: true,
+    )
+    # Regression vs 1rank-run-cosm500/kernel_MPI.py (exit 77 = skipped if pyfftw/mpiexec missing)
+    test(
+      'kernel_regression_quick',
+      find_program('python3'),
+      args: [
+        meson.project_source_root() / 'tests' / 'kernel_regression' / 'run_regression.py',
+        '--tier', 'quick',
+        '--kernel-exe', kernel_mpi_exe.full_path(),
+        '--work-dir', meson.project_build_root() / 'kernel_regression_work',
+      ],
+      depends: kernel_mpi_exe,
+      is_parallel: false,
+      timeout: 1800,
+    )
+  endif
+
   wisdom_inc = include_directories('.', 'fft')
   executable(
     'wisdom_rank0',

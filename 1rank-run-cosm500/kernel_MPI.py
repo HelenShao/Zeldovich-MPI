@@ -1,6 +1,8 @@
 import numpy as np
 import pyfftw
 import os
+import re
+import glob
 import time
 t_start = time.perf_counter()
 
@@ -44,30 +46,59 @@ def parse_par2(path):
             params[key] = val
     return params
 
-#Obtain the PPD from data
-sample_slice = np.fromfile("bin_files/Phi_gaussian_rank0_y0.bin", dtype=file_dtype)
+# ---------------- y-pair ownership (same formula as zeldovich_mpi_driver.cpp / batch_helpers.c) ----
+def rank_pair_range(r, total_pairs, num_ranks): #returns the y_primary values owned by rank "r" when total_pairs pairs are split over num_ranks ranks
+    per, rem = divmod(total_pairs, num_ranks)
+    num_pairs = per + 1 if r < rem else per
+    start = r * (per + 1) if r < rem else rem * (per + 1) + (r - rem) * per
+    return list(range(start, start + num_pairs))
+
+#Get the BoxSize (L) and NumZRanks from the parameter file
+# These are read from the same param.par2 that run.sh feeds to Zeldovich_MPI,
+# so they always match the run that produced the Phi_gaussian_*.bin files.
+PARAM_FILE = os.environ.get("PARAM_FILE", ".runtime/param.par2")
+par2_params = parse_par2(PARAM_FILE)
+L = par2_params["BoxSize"] ##think about units
+num_z_ranks = int(par2_params["NumZRanks"])   # Abacus NumZRanks = size_z of the rank grid (ZD_NumZRanks is unused)
+
+# Directory the C code dumped into (run.sh runs Zeldovich_MPI with cwd = bin_files)
+BIN_DIR = os.environ.get("BIN_DIR", "bin_files")
+
+#Number of MPI ranks the C run used. The par file doesn't record it (it comes from mpiexec -n),
+#so take it from NUM_RANKS if set, otherwise from the highest rank number among the dumped files.
+#If old dumps from a run with more ranks are still in BIN_DIR, set NUM_RANKS (or delete them).
+dumped_ranks = {int(m.group(1)) for f in glob.glob(f"{BIN_DIR}/Phi_gaussian_rank*_y*.bin")
+                if (m := re.search(r"Phi_gaussian_rank(\d+)_y\d+\.bin$", f))}
+assert dumped_ranks, f"no Phi_gaussian_rank*_y*.bin files found in {BIN_DIR}"
+num_ranks = int(os.environ.get("NUM_RANKS", max(dumped_ranks) + 1))
+assert num_ranks % num_z_ranks == 0, f"num_ranks={num_ranks} is not divisible by NumZRanks={num_z_ranks}"
+
+#Obtain the PPD from data (y=0 always belongs to rank 0)
+sample_slice = np.fromfile(f"{BIN_DIR}/Phi_gaussian_rank0_y0.bin", dtype=file_dtype)
 N = int(round(np.sqrt(sample_slice.shape[0])))
-assert N * N == sample_slice.shape[0], "Phi_gaussian_rank0_y0.bin does not hold N*N complex values" 
+assert N * N == sample_slice.shape[0], "Phi_gaussian_rank0_y0.bin does not hold N*N complex values"
 print("N", N)
+
+#Which y_primary slices each rank generated (and will read back): N/2+1 pairs over num_ranks ranks
+assert num_ranks <= N//2 + 1, f"num_ranks={num_ranks} > N/2+1={N//2 + 1}: the C code rejects this"
+yprim_of_rank = [rank_pair_range(r, N//2 + 1, num_ranks) for r in range(num_ranks)]
+print(f"num_ranks {num_ranks} (grid size_x={num_ranks // num_z_ranks} x size_z={num_z_ranks})")
+for r in range(num_ranks):
+    print(f"  rank {r}: y_primary {yprim_of_rank[r][0]}..{yprim_of_rank[r][-1]}")
 
 
 # Create aligned arrays for phi_gaussian(k) and |k|
 phi_k = pyfftw.empty_aligned((N, N, N), dtype='complex128')
-k_arr=pyfftw.empty_aligned((N,N,N), dtype='float64') 
+k_arr=pyfftw.empty_aligned((N,N,N), dtype='float64')
 
-#Get the BoxSize (L) from the parameter file in order to appropriately scale the |k| array
-# BoxSize is read from the same param.par2 that run.sh feeds to Zeldovich_MPI,
-# so this always matches the run that produced the Phi_gaussian_*.bin files.
-PARAM_FILE = os.environ.get("PARAM_FILE", ".runtime/param.par2")
-par2_params = parse_par2(PARAM_FILE)
-L = par2_params["BoxSize"] ##think about units
-
-#upload data from the dumped files into phi_k
-for y in range(N//2 +1):
-    filename = f"bin_files/Phi_gaussian_rank0_y{y}.bin"
-    slice_zx = np.fromfile(filename, dtype=file_dtype)
-    assert slice_zx.shape[0] == N*N, f"{filename}: expected {N*N} values, got {slice_zx.shape[0]}"
-    phi_k[:, y, :] = slice_zx.reshape(N, N).T   # file is [z][x] (x fastest); phi_k is [x][y][z]
+#upload data from each rank's dumped files into phi_k
+for r in range(num_ranks):
+    for y in yprim_of_rank[r]:
+        filename = f"{BIN_DIR}/Phi_gaussian_rank{r}_y{y}.bin"
+        assert os.path.exists(filename), f"{filename} missing: was the C run done with {num_ranks} ranks?"
+        slice_zx = np.fromfile(filename, dtype=file_dtype)
+        assert slice_zx.shape[0] == N*N, f"{filename}: expected {N*N} values, got {slice_zx.shape[0]}"
+        phi_k[:, y, :] = slice_zx.reshape(N, N).T   # file is [z][x] (x fastest); phi_k is [x][y][z]
 kfreq_1d = np.fft.fftfreq(N) * N          # [0, 1, ..., N/2-1, -N/2, ..., -1]
 KX, KY, KZ = np.meshgrid(kfreq_1d, kfreq_1d, kfreq_1d, indexing='ij')
 k_arr = ((2*np.pi) / L) * np.sqrt(KX**2 + KY**2 + KZ**2) 
@@ -126,9 +157,10 @@ phi_k_pad[:]=phi_k_pad_data #save padded phi_k into the pyfftw aligned empty arr
 # "Ranks" are just list entries; every "send/recv" is a copy.
 # ============================================================================
 M = 2*N                       # stands in for 2N (padded size)
-size_x, size_z = 4, 4        # rank grid; the same ranks hold y-slices AND pencils in different stages
-                            #here, size_x and size_z are arbitrary. In c version they should correspond to the number of ranks we're actually running, and the y-slices will be labeled per rank, so we'll want to input that as well
-num_ranks = size_x * size_z
+# rank grid = the grid of the C run (zeldovich_mpi_driver.cpp: dims = {num_ranks/NumZRanks, NumZRanks});
+# the same ranks hold y-slices AND pencils in different stages
+size_z = num_z_ranks
+size_x = num_ranks // size_z
 PACK_GH = True               # repo's "D + i*F" trick: carry G*phi and H*phi in ONE complex array
 
 # ---------------- decomposition helpers (mirror decomposition.c / batch_helpers.c) -------------
@@ -141,12 +173,9 @@ def grid_bounds(dest):                 #converts the rank # into it's x bounds a
     rx, rz = divmod(dest, size_z)
     return (*split(M, size_x, rx), *split(M, size_z, rz))   # x0, x1, z0, z1
 
-total_pairs = N + 1
-def rank_pairs(r):                           # returns the y_primary values owned by rank "r" (one pair of y-values per batch)
-    per, rem = divmod(total_pairs, num_ranks)
-    num_pairs = per + 1 if r < rem else per
-    start = r * (per + 1) if r < rem else rem * (per + 1) + (r - rem) * per
-    return list(range(start, start + num_pairs)) 
+total_pairs = N + 1                          # M/2 + 1 pairs on the padded grid
+def rank_pairs(r):                           # returns the padded-grid y_primary values owned by rank "r" (one pair of y-values per batch)
+    return rank_pair_range(r, total_pairs, num_ranks)
 
 def batch_y(r, b):                           # returns the y values rank "r" processes in batch b (one pair of y-values per batch)
     p = rank_pairs(r) #list of y_primary values owned by rank "r"
@@ -381,7 +410,7 @@ if(equil!=0 or orthoCMB!=0):
     if(equil!=0):
         kernel_equil+=-6*K_C1
     if(orthoCMB!=0):
-        kernel_orthoCMB+=-24*K_A1
+        kernel_orthoCMB+=-24*K_C1
     #In C, free K_C1
 
 
@@ -590,16 +619,18 @@ if(orthoLSS!=0):
     
 
 
-os.makedirs("bin_files", exist_ok=True)
-os.makedirs("bin_files/bin_files_output", exist_ok=True)
- 
-##upload final phi_non-gaussian(k) to files in y slices
-# Each file is the (N, N) y-slice in [z][x] order (x fastest, then z), as interleaved float64 (real, imag),
-# with no index columns.
-for y in range(N//2 + 1):
-    plane_zx = np.ascontiguousarray(kernel_output[:, y, :].T, dtype=file_dtype)   # [x, z] -> [z, x], C-contiguous
-    filename = f"bin_files/bin_files_output/phi_output_rank0_y{y}.bin"
-    plane_zx.tofile(filename)
+OUT_DIR = f"{BIN_DIR}/bin_files_output"   # the C LOAD_D_FROM_FILE path reads bin_files_output/ relative to its cwd (bin_files)
+os.makedirs(OUT_DIR, exist_ok=True)
+
+##upload final phi_non-gaussian(k) to files in y slices, one set per rank
+# Each rank gets back exactly the y_primary slices it generated, so the LOAD_D_FROM_FILE run must use the
+# same number of ranks and NumZRanks. Each file is the (N, N) y-slice in [z][x] order (x fastest, then z),
+# as interleaved float64 (real, imag), with no index columns.
+for r in range(num_ranks):
+    for y in yprim_of_rank[r]:
+        plane_zx = np.ascontiguousarray(kernel_output[:, y, :].T, dtype=file_dtype)   # [x, z] -> [z, x], C-contiguous
+        filename = f"{OUT_DIR}/phi_py_output_rank{r}_y{y}.bin"
+        plane_zx.tofile(filename)
 #free all remaining variables (phi_k_pad, k_arr, kernel_output, plane_zx)
 print(f"Total run time: {time.perf_counter() - t_start:.2f} s")
 

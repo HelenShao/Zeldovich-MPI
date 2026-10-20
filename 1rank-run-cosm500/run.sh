@@ -83,7 +83,7 @@ if [[ ! -x "${ZMPI_EXE}" || ! -x "${WISDOM_EXE}" ]]; then
 fi
 
 # N from NP in par2 (500 for this case)
-N=500
+N=128
 
 if [[ -n "${PBS_NODEFILE:-}" && -f "${PBS_NODEFILE}" ]]; then
   NTOTRANKS="$(wc -l < "${PBS_NODEFILE}")"
