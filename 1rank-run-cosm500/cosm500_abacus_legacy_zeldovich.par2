@@ -15,6 +15,7 @@ ICFormat = "RVZel"
 ZD_NumBlock = 4
 ZD_Pk_filename = "./data/class_pk_z0.dat"
 ZD_Pk_primordial_filename = "./data/class_pk_primordial_dimensional.dat"
+ZD_PNG_DIR = "./png_slices"
 ZD_Seed = 12345.
 ZD_qPLT = 1
 ZD_PLT_filename = "./data/eigmodes128"

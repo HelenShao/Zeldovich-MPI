@@ -40,6 +40,7 @@ void ZeldovichParameters::set_defaults(void) {
     // alternative here, so a sensible non-empty default is used directly (rather
     // than defaulting to "" and requiring it to always be set).
     Pk_primordial_filename = "class_pk_primordial_dimensional.dat";
+    png_dir = "png_slices";
     Pk_powerlaw_index = 1000;  // Must specify Pk file or power law
     density_filename = "density{:d}";  // Legal default
     local_wisdom_dir = "/dev/shm/Abacus_wisdom";
@@ -106,6 +107,7 @@ void ZeldovichParameters::register_vars(void) {
     // spectrum feature. If not set in the .par file, keeps the default from
     // set_defaults() above.
     installscalar("ZD_Pk_primordial_filename", Pk_primordial_filename, DONT_CARE);
+    installscalar("ZD_PNG_DIR", png_dir, DONT_CARE);
     installscalar("ZD_Pk_powerlaw_index", Pk_powerlaw_index, DONT_CARE);
     installscalar("InitialConditionsDirectory", output_dir, MUST_DEFINE);
     installscalar("ZD_local_wisdom_dir", local_wisdom_dir, DONT_CARE);

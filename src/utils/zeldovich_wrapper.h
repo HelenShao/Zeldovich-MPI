@@ -70,6 +70,10 @@ const char* zeldovich_params_get_Pk_filename(ParametersHandle params);
 // object itself is NULL. Valid only while Parameters object exists.
 const char* zeldovich_params_get_Pk_primordial_filename(ParametersHandle params);
 
+// Directory for Phi_gaussian_y.<y> and kernel_y.<y> (ZD_PNG_DIR). Default "png_slices".
+// Valid only while the Parameters object exists.
+const char* zeldovich_params_get_png_dir(ParametersHandle params);
+
 // Get fundamental wavenumber (2pi/BoxSize)
 double zeldovich_params_get_fundamental(ParametersHandle params);
 

@@ -1,8 +1,6 @@
 import numpy as np
 import pyfftw
 import os
-import re
-import glob
 import time
 t_start = time.perf_counter()
 
@@ -53,52 +51,39 @@ def rank_pair_range(r, total_pairs, num_ranks): #returns the y_primary values ow
     start = r * (per + 1) if r < rem else rem * (per + 1) + (r - rem) * per
     return list(range(start, start + num_pairs))
 
-#Get the BoxSize (L) and NumZRanks from the parameter file
-# These are read from the same param.par2 that run.sh feeds to Zeldovich_MPI,
-# so they always match the run that produced the Phi_gaussian_*.bin files.
+#Get the BoxSize (L), NumZRanks, and the shared slice directory from the same param.par2
+#that run.sh feeds to Zeldovich_MPI.
 PARAM_FILE = os.environ.get("PARAM_FILE", ".runtime/param.par2")
 par2_params = parse_par2(PARAM_FILE)
 L = par2_params["BoxSize"] ##think about units
-num_z_ranks = int(par2_params["NumZRanks"])   # Abacus NumZRanks = size_z of the rank grid (ZD_NumZRanks is unused)
+PNG_DIR = par2_params.get("ZD_PNG_DIR", "png_slices")
+num_z_ranks = int(par2_params["NumZRanks"])   # Abacus NumZRanks = size_z of the rank grid
 
-# Directory the C code dumped into (run.sh runs Zeldovich_MPI with cwd = bin_files)
-BIN_DIR = os.environ.get("BIN_DIR", "bin_files")
-
-#Number of MPI ranks the C run used. The par file doesn't record it (it comes from mpiexec -n),
-#so take it from NUM_RANKS if set, otherwise from the highest rank number among the dumped files.
-#If old dumps from a run with more ranks are still in BIN_DIR, set NUM_RANKS (or delete them).
-dumped_ranks = {int(m.group(1)) for f in glob.glob(f"{BIN_DIR}/Phi_gaussian_rank*_y*.bin")
-                if (m := re.search(r"Phi_gaussian_rank(\d+)_y\d+\.bin$", f))}
-assert dumped_ranks, f"no Phi_gaussian_rank*_y*.bin files found in {BIN_DIR}"
-num_ranks = int(os.environ.get("NUM_RANKS", max(dumped_ranks) + 1))
+# kernel() below is a serial emulation of the MPI pencil exchange. num_ranks only
+# sets that fake grid. Slice files are keyed by y, not by rank
+# (ZD_PNG_DIR/Phi_gaussian_y.{y} and kernel_y.{y}), so a later C load can use a
+# different rank count. Default the emulation to NumZRanks (one x-column).
+num_ranks = int(os.environ.get("NUM_RANKS", num_z_ranks))
 assert num_ranks % num_z_ranks == 0, f"num_ranks={num_ranks} is not divisible by NumZRanks={num_z_ranks}"
 
-#Obtain the PPD from data (y=0 always belongs to rank 0)
-sample_slice = np.fromfile(f"{BIN_DIR}/Phi_gaussian_rank0_y0.bin", dtype=file_dtype)
+#Obtain the PPD from data. Planes are keyed by y only: png_slices/Phi_gaussian_y.<y>
+sample_slice = np.fromfile(os.path.join(PNG_DIR, "Phi_gaussian_y.0"), dtype=file_dtype)
 N = int(round(np.sqrt(sample_slice.shape[0])))
-assert N * N == sample_slice.shape[0], "Phi_gaussian_rank0_y0.bin does not hold N*N complex values"
+assert N * N == sample_slice.shape[0], "Phi_gaussian_y.0 does not hold N*N complex values"
 print("N", N)
-
-#Which y_primary slices each rank generated (and will read back): N/2+1 pairs over num_ranks ranks
-assert num_ranks <= N//2 + 1, f"num_ranks={num_ranks} > N/2+1={N//2 + 1}: the C code rejects this"
-yprim_of_rank = [rank_pair_range(r, N//2 + 1, num_ranks) for r in range(num_ranks)]
-print(f"num_ranks {num_ranks} (grid size_x={num_ranks // num_z_ranks} x size_z={num_z_ranks})")
-for r in range(num_ranks):
-    print(f"  rank {r}: y_primary {yprim_of_rank[r][0]}..{yprim_of_rank[r][-1]}")
+print(f"kernel emulation ranks {num_ranks} (size_x={num_ranks // num_z_ranks} x size_z={num_z_ranks})")
 
 
 # Create aligned arrays for phi_gaussian(k) and |k|
 phi_k = pyfftw.empty_aligned((N, N, N), dtype='complex128')
 k_arr=pyfftw.empty_aligned((N,N,N), dtype='float64')
 
-#upload data from each rank's dumped files into phi_k
-for r in range(num_ranks):
-    for y in yprim_of_rank[r]:
-        filename = f"{BIN_DIR}/Phi_gaussian_rank{r}_y{y}.bin"
-        assert os.path.exists(filename), f"{filename} missing: was the C run done with {num_ranks} ranks?"
-        slice_zx = np.fromfile(filename, dtype=file_dtype)
-        assert slice_zx.shape[0] == N*N, f"{filename}: expected {N*N} values, got {slice_zx.shape[0]}"
-        phi_k[:, y, :] = slice_zx.reshape(N, N).T   # file is [z][x] (x fastest); phi_k is [x][y][z]
+#upload data from the dumped files into phi_k
+for y in range(N//2 +1):
+    filename = os.path.join(PNG_DIR, f"Phi_gaussian_y.{y}")
+    slice_zx = np.fromfile(filename, dtype=file_dtype)
+    assert slice_zx.shape[0] == N*N, f"{filename}: expected {N*N} values, got {slice_zx.shape[0]}"
+    phi_k[:, y, :] = slice_zx.reshape(N, N).T   # file is [z][x] (x fastest); phi_k is [x][y][z]
 kfreq_1d = np.fft.fftfreq(N) * N          # [0, 1, ..., N/2-1, -N/2, ..., -1]
 KX, KY, KZ = np.meshgrid(kfreq_1d, kfreq_1d, kfreq_1d, indexing='ij')
 k_arr = ((2*np.pi) / L) * np.sqrt(KX**2 + KY**2 + KZ**2) 
@@ -619,18 +604,15 @@ if(orthoLSS!=0):
     
 
 
-OUT_DIR = f"{BIN_DIR}/bin_files_output"   # the C LOAD_D_FROM_FILE path reads bin_files_output/ relative to its cwd (bin_files)
-os.makedirs(OUT_DIR, exist_ok=True)
+os.makedirs(PNG_DIR, exist_ok=True)
 
-##upload final phi_non-gaussian(k) to files in y slices, one set per rank
-# Each rank gets back exactly the y_primary slices it generated, so the LOAD_D_FROM_FILE run must use the
-# same number of ranks and NumZRanks. Each file is the (N, N) y-slice in [z][x] order (x fastest, then z),
-# as interleaved float64 (real, imag), with no index columns.
-for r in range(num_ranks):
-    for y in yprim_of_rank[r]:
-        plane_zx = np.ascontiguousarray(kernel_output[:, y, :].T, dtype=file_dtype)   # [x, z] -> [z, x], C-contiguous
-        filename = f"{OUT_DIR}/phi_py_output_rank{r}_y{y}.bin"
-        plane_zx.tofile(filename)
+##upload the kernel K (not Phi_NG) as y slices. The C load reads kernel_y.<y> from ZD_PNG_DIR.
+# Each file is the (N, N) y-slice in [z][x] order (x fastest, then z), as interleaved float64 (real, imag),
+# with no index columns.
+for y in range(N//2 + 1):
+    plane_zx = np.ascontiguousarray(kernel_output[:, y, :].T, dtype=file_dtype)   # [x, z] -> [z, x], C-contiguous
+    filename = os.path.join(PNG_DIR, f"kernel_y.{y}")
+    plane_zx.tofile(filename)
 #free all remaining variables (phi_k_pad, k_arr, kernel_output, plane_zx)
 print(f"Total run time: {time.perf_counter() - t_start:.2f} s")
 

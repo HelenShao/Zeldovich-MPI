@@ -313,10 +313,23 @@ void generate_zd_mpi_slice_pair_local(
 #endif
 
 
+    const char *png_dir = "png_slices";
+    if (params_handle != NULL) {
+        const char *parsed_png_dir = zeldovich_params_get_png_dir(params_handle);
+        if (parsed_png_dir != NULL && parsed_png_dir[0] != '\0') png_dir = parsed_png_dir;
+    }
+    {
+        std::error_code png_dir_ec;
+        std::filesystem::create_directories(png_dir, png_dir_ec);
+        if (png_dir_ec) {
+            fprintf(stderr, "ERROR: Could not create directory %s: %s\n", png_dir, png_dir_ec.message().c_str());
+        }
+    }
+
 #if DUMP_GAUSSIAN_D
 FILE *dump_fp = NULL;
-char dump_filename[128];
-sprintf(dump_filename, "Phi_gaussian_rank%d_y%d.bin", rank, global_y);
+char dump_filename[1024];
+snprintf(dump_filename, sizeof(dump_filename), "%s/Phi_gaussian_y.%d", png_dir, global_y);
 dump_fp = fopen(dump_filename, "wb");
 if (dump_fp == NULL) {
     fprintf(stderr, "ERROR: Could not open dump file %s\n", dump_filename);
@@ -334,20 +347,11 @@ if (dump_buf == NULL) {
 
 #if LOAD_D_FROM_FILE
 
-    // Charlie: dump the primordial-power-divided phi values to their own output
-    // folder, one file per (rank, y) slice — same rank/y naming convention as
-    // the DUMP_GAUSSIAN_D dump above, just written to a dedicated subfolder.
+    // Whitened w_NG for this y, same directory as the kernel. Keyed by y only.
     FILE *phi_divided_fp = NULL;
     {
-        const char *phi_divided_dir = "phi_divided_output";
-        std::error_code phi_dir_ec;
-        std::filesystem::create_directories(phi_divided_dir, phi_dir_ec); // no-op (and no error) if it already exists;
-                                                                           // phi_dir_ec is set on a real failure (e.g. no permissions)
-        if (phi_dir_ec) {
-            fprintf(stderr, "ERROR: Could not create directory %s: %s\n", phi_divided_dir, phi_dir_ec.message().c_str());
-        }
-        char phi_divided_filename[160];
-        sprintf(phi_divided_filename, "%s/phi_divided_rank%d_y%d.bin", phi_divided_dir, rank, global_y);
+        char phi_divided_filename[1024];
+        snprintf(phi_divided_filename, sizeof(phi_divided_filename), "%s/phi_divided_y.%d", png_dir, global_y);
         phi_divided_fp = fopen(phi_divided_filename, "wb");
         if (phi_divided_fp == NULL) {
             fprintf(stderr, "ERROR: Could not open %s for writing divided phi\n", phi_divided_filename);
@@ -364,8 +368,8 @@ if (dump_buf == NULL) {
     double *loaded_kernel_real = (double*)malloc((size_t)N * (size_t)N * sizeof(double));
     double *loaded_kernel_imag = (double*)malloc((size_t)N * (size_t)N * sizeof(double));
         {
-        char load_filename[128];
-        sprintf(load_filename, "bin_files_output/phi_output_rank%d_y%d.bin", rank, global_y);
+        char load_filename[1024];
+        snprintf(load_filename, sizeof(load_filename), "%s/kernel_y.%d", png_dir, global_y);
         FILE *load_fp = fopen(load_filename, "rb");
         if (load_fp == NULL) {
             fprintf(stderr, "ERROR: Could not open %s for reading phi", load_filename);
@@ -397,8 +401,8 @@ if (dump_buf == NULL) {
     double *loaded_noise_real = (double*)malloc((size_t)N * (size_t)N * sizeof(double));
     double *loaded_noise_imag = (double*)malloc((size_t)N * (size_t)N * sizeof(double));
     {
-        char load_filename[128];
-        sprintf(load_filename, "phi_divided_output/phi_divided_rank%d_y%d.bin", rank, global_y); 
+        char load_filename[1024];
+        snprintf(load_filename, sizeof(load_filename), "%s/phi_divided_y.%d", png_dir, global_y); 
         FILE *load_fp = fopen(load_filename, "rb");
         if (load_fp == NULL) {
             fprintf(stderr, "ERROR: Could not open %s for reading phi", load_filename);

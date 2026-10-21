@@ -115,6 +115,13 @@ const char* zeldovich_params_get_Pk_primordial_filename(ParametersHandle params)
     return p->Pk_primordial_filename.c_str();
 }
 
+const char* zeldovich_params_get_png_dir(ParametersHandle params) {
+    if (!params) return NULL;
+    ZeldovichParameters* p = static_cast<ZeldovichParameters*>(params);
+    if (p->png_dir.empty()) return NULL;
+    return p->png_dir.c_str();
+}
+
 double zeldovich_params_get_f_cluster(ParametersHandle params) {
     if (!params) return 0.0;
     ZeldovichParameters* p = static_cast<ZeldovichParameters*>(params);

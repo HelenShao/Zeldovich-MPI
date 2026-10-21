@@ -46,6 +46,7 @@ public:
                             // sqrt(P(k)) instead.
     fs::path Pk_filename;  // The file name for the P(k) input
     fs::path Pk_primordial_filename;  // The file name for the primordial P(k) input (for f_NL)
+    fs::path png_dir;  // Shared directory for Phi_gaussian_y.* and kernel_y.* (ZD_PNG_DIR)
     double Pk_powerlaw_index;  // The power law index n for a pure power law P(k) ~ k^n
     fs::path output_dir;     // The file name for the Output
     fs::path local_wisdom_dir;  // Per-rank local FFTW wisdom directory (e.g. /dev/shm/Abacus_wisdom)

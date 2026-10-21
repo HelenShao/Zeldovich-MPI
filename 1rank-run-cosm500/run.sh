@@ -42,6 +42,7 @@ source "${BUNDLE_DIR}/env.sh"
 # warning, rather than aborting) -- so default it here rather than requiring
 # env.sh to always set it, and don't hard-fail if it's absent.
 PRIMORDIAL_PK_FILE="${PRIMORDIAL_PK_FILE:-${DATA_DIR}/class_pk_primordial_dimensional.dat}"
+PNG_DIR="${PNG_DIR:-${BUNDLE_DIR}/png_slices}"
 
 if [[ ! -f "${PK_FILE}" ]]; then
   echo "ERROR: PK file not found: ${PK_FILE}" >&2
@@ -59,7 +60,7 @@ if [[ ! -f "${PRIMORDIAL_PK_FILE}" ]]; then
   echo "  Set PRIMORDIAL_PK_FILE or place class_pk_primordial_dimensional.dat under ${DATA_DIR}/" >&2
 fi
 
-mkdir -p "${RUNTIME_DIR}" "${IC_OUTPUT_DIR}" "${BIN_DIR}" "${RNG_LOG_DIR}"
+mkdir -p "${RUNTIME_DIR}" "${IC_OUTPUT_DIR}" "${BIN_DIR}" "${RNG_LOG_DIR}" "${PNG_DIR}"
 
 # Write runtime par2 with resolved absolute paths
 sed \
@@ -67,6 +68,7 @@ sed \
   -e "s|^ZD_Pk_filename = .*|ZD_Pk_filename = \"${PK_FILE}\"|" \
   -e "s|^ZD_PLT_filename = .*|ZD_PLT_filename = \"${PLT_FILE}\"|" \
   -e "s|^ZD_Pk_primordial_filename = .*|ZD_Pk_primordial_filename = \"${PRIMORDIAL_PK_FILE}\"|" \
+  -e "s|^ZD_PNG_DIR = .*|ZD_PNG_DIR = \"${PNG_DIR}\"|" \
   "${TEMPLATE_PAR2}" > "${PARAM_FILE}"
 
 if (( DO_BUILD )); then
