@@ -85,7 +85,7 @@ static void WriteParticlesSlab_unified(
    Complx *slab2,
    Complx *slab3,
    Complx *slab4,
-   Parameters &param,
+   ZeldovichParameters &param,
    bool is_full_range,     // true: full range (ppd x ppd), false: local range
    bool use_global_buffers, // true: use global buffers, false: allocate local
    int rank,               // MPI rank (-1 for full-range mode)
@@ -402,7 +402,7 @@ void WriteParticlesSlab_new(
    Complx *slab2,
    Complx *slab3,
    Complx *slab4,
-   Parameters &param
+   ZeldovichParameters &param
 ) {
     // Call unified function with full-range parameters
     // NOTE: Data passed to WriteParticlesSlab_new is in [Y][X] format from reassembled .bin files
@@ -465,7 +465,7 @@ void WriteParticlesSlab_range(
    Complx *slab_data,      // Data in [array][x_local][y] layout (ZSLAB format)
    int N,                  // Grid size (ppd)
    int narray,             // Number of arrays (typically 4)
-   Parameters &param
+   ZeldovichParameters &param
 ) {
     // Extract pointers to each array's data (each array is [x][y] layout)
     Complx *slab1 = &slab_data[0 * k_extent * N];
@@ -496,7 +496,7 @@ void WriteParticlesSlab_range(
    Complx *slab2,
    Complx *slab3,
    Complx *slab4,
-   Parameters &param
+   ZeldovichParameters &param
 ) {
     // Call unified function with [y][x] layout
     // For JK format, use param.ppd as grid size (Y dimension)
@@ -541,7 +541,7 @@ void WriteParticlesSlab_range_from_zslab(
    Complx *slab_data,      // Data in [array][k_local][j] layout (ZSLAB format: [array][x_local][y])
    int N,                  // Grid size (ppd)
    int narray,             // Number of arrays (typically 4)
-   Parameters &param
+   ZeldovichParameters &param
 ) {
     STimer thisouttimer;
     thisouttimer.Start();
@@ -824,7 +824,7 @@ void WriteParticlesSlab_range_from_zslab(
     return;
 }
 
-void SetupOutputDir(Parameters &param) {
+void SetupOutputDir(ZeldovichParameters &param) {
     // remove files named ic_* and zeldovich.* from param.output_dir
     if (fs::exists(param.output_dir)) {
         for (const auto& entry : fs::directory_iterator(param.output_dir)) {
@@ -842,13 +842,13 @@ void SetupOutputDir(Parameters &param) {
 }
 
 // Returns GiB size of allocated buffer
-double InitOutputBuffers(Parameters &param) {
+double InitOutputBuffers(ZeldovichParameters &param) {
     if (param.qdensity != 2) {
         if (param.ICFormat == "RVdoubleZel") {
             param_icformat    = OUTPUT_RVDOUBLEZEL;
             output_tmp        = new RVdoubleZelParticle[param.ppd * param.ppd];
             sizeof_outputtype = sizeof(RVdoubleZelParticle);
-        } else if (param.ICFormat == "RVZel") {
+        } else if (param.ICFormat == "RVZel" || param.ICFormat == "RVZel_2D") {
             param_icformat    = OUTPUT_RVZEL;
             output_tmp        = new RVZelParticle[param.ppd * param.ppd];
             sizeof_outputtype = sizeof(RVZelParticle);
@@ -910,13 +910,13 @@ void TeardownOutput() {
         fclose(densfp);
     }
 
-    fmt::print(
-       stderr,
-       "WriteParticlesSlab took {:.3g} sec to write {:.3g} MB ==> {:.3g} MB/sec\n",
-       outtimer.Elapsed(),
-       output_bytes_written / 1e6,
-       output_bytes_written / 1e6 / outtimer.Elapsed()
-    );
+    // fmt::print(
+    //    stderr,
+    //    "WriteParticlesSlab took {:.3g} sec to write {:.3g} MB ==> {:.3g} MB/sec\n",
+    //    outtimer.Elapsed(),
+    //    output_bytes_written / 1e6,
+    //    output_bytes_written / 1e6 / outtimer.Elapsed()
+    // );
 }
 
 // ====================================================================================
@@ -937,7 +937,7 @@ void AppendSlabZSegment(
     fftw_complex_t *slab_data,
     int N,
     int narray,
-    Parameters &param
+    ZeldovichParameters &param
 ) {
     int64_t array_stride = (int64_t)k_extent * N;
     fftw_complex_t *slab1 = &slab_data[0 * array_stride];
@@ -1024,7 +1024,8 @@ void AppendSlabZSegment(
 }
 
 // ====================================================================================
-// MODE 3 (grid_x==1): AppendZSlabFull — write one full N×N z-plane
+// Before: // MODE 3 (grid_x==1): AppendZSlabFull — write one full N×N z-plane
+// MODE 3 (size_z==1): AppendZSlabFull — write one full N×N z-plane
 // ====================================================================================
 //
 // Matches zeldovich WriteParticlesSlab output format:
@@ -1042,7 +1043,7 @@ void AppendZSlabFull(
     fftw_complex_t *slab_data,
     int N,
     int narray,
-    Parameters &param
+    ZeldovichParameters &param
 ) {
     int64_t array_stride = (int64_t)k_extent * N;
     fftw_complex_t *slab1 = &slab_data[0 * array_stride];
@@ -1133,7 +1134,7 @@ void AppendZSlabSegment_M4(
     fftw_complex_t *slab_data,
     int N,
     int narray,
-    Parameters &param
+    ZeldovichParameters &param
 ) {
     int64_t array_stride = (int64_t)k_extent * N;
     fftw_complex_t *slab1 = &slab_data[0 * array_stride];

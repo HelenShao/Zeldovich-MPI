@@ -1,4 +1,4 @@
-#include "hermitian_generation.h"
+#include "ZD_MPI_generation.h"
 #include "../utils/verification.h"
 #include "../utils/zeldovich_wrapper.h" 
 #include "../utils/plt_eigenmodes.h" 
@@ -11,13 +11,37 @@
 #include <stdint.h>
 #include <math.h>
 #include <omp.h>
+#include <filesystem>
 
 // Fine-grained PTimerWall accumulators for Stage 1 sub-phases.
 // These accumulate wall-clock time across all Y-slice calls.
 static PTimerWall pt_rng_setup(1);   // RNG buffer alloc + copy + advance to z-start
 static PTimerWall pt_zloop(1);       // Z-loop computation (RNG calls + coefficient math + stores)
 static PTimerWall pt_mirror(1);      // Self-conjugate mirroring post-processing
-static PTimerWall pt_fft(1);         // 2D FFT (plan_many_dft execution)
+static PTimerWall pt_fft_copy_in(1); // 2D staged copy primary/conjugate -> stage
+static PTimerWall pt_fft_execute(1); // 2D FFTW_EXECUTE_DFT on stage (plan_dft_2d)
+static PTimerWall pt_fft_copy_out(1);// 2D staged copy stage -> primary/conjugate
+
+// Primordial power spectrum (class_pk_primordial_dimensional.dat) is loaded once
+// in zeldovich_mpi_driver.cpp -- the same way the main P(k) file is (rank-0 read +
+// MPI broadcast, spline built once) -- and passed in as the
+// ps_handle_primordial_dimensional parameter below, exactly like ps_handle. 
+#define COPY_CACHE_SIZE_CHUNK 8
+
+static void copy_plane_chunked(fftw_complex_t *dst, const fftw_complex_t *src, int N)
+{
+    #pragma omp parallel for schedule(static)
+    for (int y = 0; y < N; ++y) {
+        fftw_complex_t *dst_row = dst + (size_t)y * (size_t)N;
+        const fftw_complex_t *src_row = src + (size_t)y * (size_t)N;
+        for (int x = 0; x < N; x += COPY_CACHE_SIZE_CHUNK) {
+            const int len = (x + COPY_CACHE_SIZE_CHUNK <= N)
+                ? COPY_CACHE_SIZE_CHUNK
+                : (N - x); // copy remaining elements
+            memcpy(dst_row + x, src_row + x, (size_t)len * sizeof(fftw_complex_t));
+        }
+    }
+}
 
 // ====================================================================================
 // Thread-local RNG helpers for parallel z-loop
@@ -60,12 +84,12 @@ static inline int compute_plt_eigenmode(
     int kx, int ky, int kz, int N, double k2,
     eigenmode *e, int rank, int x, int z)
 {
-    int ikx = (kx < 0) ? N + kx : kx;
-    int iky = (ky < 0) ? N + ky : ky;
+    int ikx = (kx < 0) ? N + kx : kx; //Charlie: this creates the index for the eigenmode lookup, since the eigenmodes are stored in a 0 to N-1 grid, we need to map negative kx, ky, kz to their positive counterparts
+    int iky = (ky < 0) ? N + ky : ky; //Charlie: if ky is negative, we map it to its positive counterpart by adding N, e.g. ky=-4 N=500, then iky=496, which is the index for ky=-4 in the eigenmode lookup table
     int ikz = (kz < 0) ? N + kz : kz;
-    if (ikz > N / 2) ikz = N - ikz;
+    if (ikz > N / 2) ikz = N - ikz; //Charlie: they only need half the data for z, since we have Hermitian symmetry, so we can just use the positive half of the z-axis 
 
-    if (plt_get_eigenmode(ikx, iky, ikz, (int64_t)N, e) != 0) {
+    if (plt_get_eigenmode(ikx, iky, ikz, (int64_t)N, e) != 0) { //Charlie: this actually calls the value of the eigenmode from the file
         if (rank == 0 && x == 0 && z == 0) {
             fprintf(stderr, "[WARNING] Failed to get PLT eigenmode for (kx=%d, ky=%d, kz=%d), using normal computation\n",
                     kx, ky, kz);
@@ -73,24 +97,24 @@ static inline int compute_plt_eigenmode(
         return 0;
     }
 
-    // Set sign of z component (real FFT only gives +kz half-space)
+    // Set sign of z component (real FFT only gives +kz half-space) 
     // see zeldovich.cpp line 255: ehat.vec[2] *= copysign(1, kz);
     if (kz < 0) {
-        e->vec[2] = -e->vec[2];
+        e->vec[2] = -e->vec[2]; //Charlie: if kz is negative, it just gives the negative of the +kz e_z component of the eigenvalue
     }
 
     // Normalize eigenvector (interpolation might not preserve |e| = 1)
     // see zeldovich.cpp lines 257-263
-    double e_mag = sqrt(e->vec[0] * e->vec[0] + e->vec[1] * e->vec[1] + e->vec[2] * e->vec[2]);
+    double e_mag = sqrt(e->vec[0] * e->vec[0] + e->vec[1] * e->vec[1] + e->vec[2] * e->vec[2]); //Charlie: calculates the magniutde of the eigenvector
     if (e_mag > 0.0) {
-        e->vec[0] /= e_mag;
-        e->vec[1] /= e_mag;
+        e->vec[0] /= e_mag; //Charlie: normalizes the eigenvector by dividing each component by the magnitude
+        e->vec[1] /= e_mag; //e_x[k_x,k_y,k_z]\hat{e_x}
         e->vec[2] /= e_mag;
     }
 
     // norm = k2 / (k * e) upweights each mode by 1/(khat*ehat), see zeldovich.cpp line 266
-    double k_dot_e = kx * e->vec[0] + ky * e->vec[1] + kz * e->vec[2];
-    double norm = (k2 > 0.0 && k_dot_e != 0.0) ? k2 / k_dot_e : 0.0;
+    double k_dot_e = kx * e->vec[0] + ky * e->vec[1] + kz * e->vec[2]; //Charlie: this is \vec{k} \cdot \vec{e}, the dot product of the momentum and the eigenvector
+    double norm = (k2 > 0.0 && k_dot_e != 0.0) ? k2 / k_dot_e : 0.0; //Charlie: this is the scaling factor for the eigenvector, which is k^2 / (k \cdot e), which is used to scale the eigenvector to get the correct amplitude for the mode
     if (!isfinite(norm)) norm = 0.0;
 
     // Scale eigenvector by norm (see zeldovich.cpp lines 268-270)
@@ -106,30 +130,30 @@ static inline int compute_plt_eigenmode(
 // Primary:   D + i*F,  G + i*H,   i*F*f,  (G + i*H)*f
 // Conjugate: conj(D) + i*conj(F), conj(G) + i*conj(H), i*conj(F*f), ...
 // ====================================================================================
-static inline void store_prim_conj(
+static inline void store_prim_conj( //Charlie: this function enforces Hermitian symmetry in fourier space
     fftw_complex_t *prim, fftw_complex_t *conj_buf,
     int N, int x, int z, int x_mirror, int z_mirror,
     const double *D, const double *F, const double *G, const double *H,
     double f_vel, int narray, int just_density)
 {
-    #define _SP(a, xx, zz) prim[(int64_t)(xx) + (N) * ((zz) + (N) * (a))]
-    #define _SC(a, xx, zz) conj_buf[(int64_t)(xx) + (N) * ((zz) + (N) * (a))]
+    #define _SP(a, xx, zz) prim[(int64_t)(xx) + (N) * ((zz) + (N) * (a))] //Charlie: this formula flattens the x, z, and "a" coordinates into one index. "a" counts which xz plane you are on and "xx" and "zz" are the x and z coordinates you are at on that specific plane. N is the individual size of one plane. (The maximum value for "xx" and "zz" is N-1)
+    #define _SC(a, xx, zz) conj_buf[(int64_t)(xx) + (N) * ((zz) + (N) * (a))] //Charlie: "a" tracks which of the quantities (density or displacement) you are storing. Also we're storing it in the prim and conj_buf arrays, which are the primary and conjugate slices in fourier space
 
-    if (just_density) {
-        _SP(0, x, z)[0] = D[0];
+    if (just_density) { //Charlie: if this flag is on, you're just computing the density filed (no displacements)
+        _SP(0, x, z)[0] = D[0]; //Charlie: this stores the real part of the density field into the primary slice at x, z coordinates at plane a=0 (that are inputs into the function)
         _SP(0, x, z)[1] = D[1];
 
-        _SC(0, x_mirror, z_mirror)[0] =  D[0];
+        _SC(0, x_mirror, z_mirror)[0] =  D[0]; //Charlie: this stores the conjugate of the density field into the conjugate slice at x_mirror, z_mirror coordinates at plane a=0 (that are inputs into the function)
         _SC(0, x_mirror, z_mirror)[1] = -D[1];
     } else {
-        // Array 0: D + i*F = (D_re - F_im) + i*(D_im + F_re)
+        // Array 0: D + i*F = (D_re - F_im) + i*(D_im + F_re) //Charlie: This handles the Hermitian Symmetry
         _SP(0, x, z)[0] = D[0] - F[1];
         _SP(0, x, z)[1] = D[1] + F[0];
         // Array 1: G + i*H = (G_re - H_im) + i*(G_im + H_re)
         _SP(1, x, z)[0] = G[0] - H[1];
         _SP(1, x, z)[1] = G[1] + H[0];
 
-        // conj(D) + i*conj(F) = (D_re + F_im) + i*(F_re - D_im)
+        // conj(D) + i*conj(F) = (D_re + F_im) + i*(F_re - D_im) //Charlie: This handles the Hermitian Symmetry
         _SC(0, x_mirror, z_mirror)[0] = D[0] + F[1];
         _SC(0, x_mirror, z_mirror)[1] = F[0] - D[1];
         // conj(G) + i*conj(H) = (G_re + H_im) + i*(H_re - G_im)
@@ -158,13 +182,13 @@ static inline void store_prim_conj(
 }
 
 // ====================================================================================
-// Generates one pair of Hermitian Y-slices (primary + conjugate) in Fourier space
+// Generates one pair of conjugate Y-slices (primary + mirror) in Fourier space
 // Gaussian w/ power spectrum weighting (w/ zeldovich-PLT ps_handle & params_handle)
 // 2D FFT: Fourier --> real space (X,Z)
 // Handles RNG nskip tracking
 // ====================================================================================
 
-void generate_hermitian_slice_pair_local(
+void generate_zd_mpi_slice_pair_local(
     int N,
     int global_y,
     int y_mirror,
@@ -172,9 +196,11 @@ void generate_hermitian_slice_pair_local(
     fftw_complex_t *conjugate_slices, 
     int narray,                       // 4 arrays per slice, 7 C numbers
     fftw_plan_t plan_2d,
+    fftw_complex_t *stage_2d,         // PPD^2 staging buffer (aligned)
     int rank,
     PowerSpectrumHandle ps_handle,   // zeldovich-PLT PowerSpectrum handle
     ParametersHandle params_handle,  // zeldovich-PLT Parameters handle
+    PowerSpectrumHandle ps_handle_primordial_dimensional, // primordial P(k), loaded/normalized once in the driver (NULL if unavailable)
     void** thread_rng_buffers)        // Pre-allocated RNG buffers [nthreads] (NULL = use malloc)
 {
     (void)thread_rng_buffers; // currently unused, kept for API
@@ -186,7 +212,7 @@ void generate_hermitian_slice_pair_local(
     // Debug: Log entry for seg fault error
     // #if DEBUG_PRINTS
     // fprintf(stderr,
-    //         "[Rank %d] ENTER generate_hermitian_slice_pair_local: "
+    //         "[Rank %d] ENTER generate_zd_mpi_slice_pair_local: "
     //         "Y_primary=%d, Y_mirror=%d, ps_handle=%p, params_handle=%p\n",
     //         rank, global_y, y_mirror, (void*)ps_handle, (void*)params_handle);
     // fflush(stderr);
@@ -239,6 +265,12 @@ void generate_hermitian_slice_pair_local(
         k_cutoff = zeldovich_params_get_k_cutoff(params_handle);
         CornerModes = zeldovich_params_get_CornerModes(params_handle);
     }
+
+    // f_NL amplitude, read from ZD_f_NL in the .par file (default 0.0 = Gaussian)
+    double f_NL = 0.0;
+    if (params_handle != NULL) {
+        f_NL = zeldovich_params_get_f_NL(params_handle);
+    }
     
     // Calculate k2_cutoff: k2_cutoff = (N/2)^2 / (k_cutoff^2)
     // Ex. N=16, k_cutoff=1.0: k2_cutoff = 8^2 / 1.0^2 = 64
@@ -273,7 +305,131 @@ void generate_hermitian_slice_pair_local(
     }
     
     t_setup_end = omp_get_wtime();
-    
+
+    //Charlie: adding a file 
+
+#if (!!DUMP_GAUSSIAN_D + !!LOAD_D_FROM_FILE + !!LOAD_WHITE_NOISE_FROM_FILE) > 1
+#error "Only one of DUMP_GAUSSIAN_D, LOAD_D_FROM_FILE, LOAD_WHITE_NOISE_FROM_FILE may be enabled at a time"
+#endif
+
+
+    const char *png_dir = "png_slices";
+    if (params_handle != NULL) {
+        const char *parsed_png_dir = zeldovich_params_get_png_dir(params_handle);
+        if (parsed_png_dir != NULL && parsed_png_dir[0] != '\0') png_dir = parsed_png_dir;
+    }
+    {
+        std::error_code png_dir_ec;
+        std::filesystem::create_directories(png_dir, png_dir_ec);
+        if (png_dir_ec) {
+            fprintf(stderr, "ERROR: Could not create directory %s: %s\n", png_dir, png_dir_ec.message().c_str());
+        }
+    }
+
+#if DUMP_GAUSSIAN_D
+FILE *dump_fp = NULL;
+char dump_filename[1024];
+snprintf(dump_filename, sizeof(dump_filename), "%s/Phi_gaussian_y.%d", png_dir, global_y);
+dump_fp = fopen(dump_filename, "wb");
+if (dump_fp == NULL) {
+    fprintf(stderr, "ERROR: Could not open dump file %s\n", dump_filename);
+}
+// File layout (no x,y,z indices stored): N*N complex values as interleaved doubles
+// (real, imag), x fastest, then z. Element (x,z) lives at index z*N + x.
+// Filled inside the (possibly OpenMP-parallel) z-loop, then written once after the loop,
+// so the on-disk order does not depend on thread scheduling.
+double *dump_buf = (double*)malloc((size_t)N * (size_t)N * 2 * sizeof(double));
+if (dump_buf == NULL) {
+    fprintf(stderr, "ERROR: Could not allocate dump buffer\n");
+}
+
+#endif
+
+#if LOAD_D_FROM_FILE
+
+    // Whitened w_NG for this y, same directory as the kernel. Keyed by y only.
+    FILE *phi_divided_fp = NULL;
+    {
+        char phi_divided_filename[1024];
+        snprintf(phi_divided_filename, sizeof(phi_divided_filename), "%s/phi_divided_y.%d", png_dir, global_y);
+        phi_divided_fp = fopen(phi_divided_filename, "wb");
+        if (phi_divided_fp == NULL) {
+            fprintf(stderr, "ERROR: Could not open %s for writing divided phi\n", phi_divided_filename);
+        }
+        fflush(stderr);
+    }
+    // Same layout as the Phi_gaussian dump: interleaved (real, imag), x fastest, then z.
+    double *divided_buf = (double*)malloc((size_t)N * (size_t)N * 2 * sizeof(double));
+    if (divided_buf == NULL) {
+        fprintf(stderr, "ERROR: Could not allocate phi_divided buffer\n");
+    }
+
+
+    double *loaded_kernel_real = (double*)malloc((size_t)N * (size_t)N * sizeof(double));
+    double *loaded_kernel_imag = (double*)malloc((size_t)N * (size_t)N * sizeof(double));
+        {
+        char load_filename[1024];
+        snprintf(load_filename, sizeof(load_filename), "%s/kernel_y.%d", png_dir, global_y);
+        FILE *load_fp = fopen(load_filename, "rb");
+        if (load_fp == NULL) {
+            fprintf(stderr, "ERROR: Could not open %s for reading phi", load_filename);
+        } else {
+            // File holds N*N interleaved (real, imag) doubles, x fastest then z,
+            // so element i is already at index z*N + x.
+            size_t nvals = (size_t)N * (size_t)N;
+            double *tmp = (double*)malloc(nvals * 2 * sizeof(double));
+            size_t nread = (tmp != NULL) ? fread(tmp, 2 * sizeof(double), nvals, load_fp) : 0;
+            if (nread != nvals) {
+                fprintf(stderr, "ERROR: short read in %s (got %zu/%zu complex values)\n",
+                        load_filename, nread, nvals);
+            }
+            if (tmp != NULL) {
+                for (size_t i = 0; i < nread; i++) {
+                    loaded_kernel_real[i] = tmp[2*i];
+                    loaded_kernel_imag[i] = tmp[2*i + 1];
+                }
+                free(tmp);
+            }
+            fclose(load_fp);
+        }
+    }
+#endif
+
+
+#if LOAD_WHITE_NOISE_FROM_FILE
+
+    double *loaded_noise_real = (double*)malloc((size_t)N * (size_t)N * sizeof(double));
+    double *loaded_noise_imag = (double*)malloc((size_t)N * (size_t)N * sizeof(double));
+    {
+        char load_filename[1024];
+        snprintf(load_filename, sizeof(load_filename), "%s/phi_divided_y.%d", png_dir, global_y); 
+        FILE *load_fp = fopen(load_filename, "rb");
+        if (load_fp == NULL) {
+            fprintf(stderr, "ERROR: Could not open %s for reading phi", load_filename);
+        } else {
+            // File holds N*N interleaved (real, imag) doubles, x fastest then z,
+            // so element i is already at index z*N + x.
+            size_t nvals = (size_t)N * (size_t)N;
+            double *tmp = (double*)malloc(nvals * 2 * sizeof(double));
+            size_t nread = (tmp != NULL) ? fread(tmp, 2 * sizeof(double), nvals, load_fp) : 0;
+            if (nread != nvals) {
+                fprintf(stderr, "ERROR: short read in %s (got %zu/%zu complex values)\n",
+                        load_filename, nread, nvals);
+            }
+            if (tmp != NULL) {
+                for (size_t i = 0; i < nread; i++) {
+                    loaded_noise_real[i] = tmp[2*i];
+                    loaded_noise_imag[i] = tmp[2*i + 1];
+                }
+                free(tmp);
+            }
+            fclose(load_fp);
+        }
+    }
+#endif
+
+
+
     // ========== Unified z-loop: handles both conjugate-pair and self-conjugate ==========
 #if PARALLELIZE_Z_LOOP
     {
@@ -291,10 +447,16 @@ void generate_hermitian_slice_pair_local(
             int _tid = omp_get_thread_num();
             local_rng_buf = malloc(_rng_size);
             _rng_bufs[_tid] = local_rng_buf;
-            zeldovich_ps_get_rng_copy(ps_handle, global_y, local_rng_buf);
-            int64_t vstart = compute_virtual_position(z, 0, N, Nhalf) / 2;
-            if (vstart > 0)
-                zeldovich_ps_advance_rng_buffer(local_rng_buf, vstart);
+            // Serial zeldovich never uses v2rng[N/2]; that Y plane is zeroed post-FFT.
+            // Here every mode has abs(ky)==N/2, so the z-loop only accumulates nskip (no cgauss).
+            if (global_y != Nhalf) {
+                zeldovich_ps_get_rng_copy(ps_handle, global_y, local_rng_buf);
+                int64_t vstart = compute_virtual_position(z, 0, N, Nhalf) / 2;
+                if (vstart > 0)
+                    zeldovich_ps_advance_rng_buffer(local_rng_buf, vstart);
+            } else {
+                memset(local_rng_buf, 0, _rng_size);
+            }
             _rng_ready = 1;
 
             int prev_value;
@@ -337,7 +499,7 @@ void generate_hermitian_slice_pair_local(
         int abs_kz = (kz < 0) ? -kz : kz;
         
         for (int x = 0; x < N; x++) {
-            int x_mirror = (x == 0) ? 0 : N - x;
+            int x_mirror = (x == 0) ? 0 : N - x; //Charlie: x=0 case for mirroring
             int z_mirror = (z == 0) ? 0 : N - z;
             
             // ========== STEP 1: Calculate k-vector components ==========
@@ -368,52 +530,214 @@ void generate_hermitian_slice_pair_local(
             int abs_kx = (kx < 0) ? -kx : kx;
             int is_nyquist = (abs_kx == Nhalf || abs_ky == Nhalf || abs_kz == Nhalf);
             
+            // Charlie: DC, Nyquist, and k_cutoff (corner) modes; also reused to mask the non-Gaussian field below
+            int zeroed_mode = (k2 == 0.0) || is_nyquist || (!CornerModes && (double)k2_int >= k2_cutoff);
+
             fftw_complex D;
-            if ((k2 == 0.0)
-                 || (is_nyquist)
-                 || (!CornerModes && (double)k2_int >= k2_cutoff)) {
-                D[0] = D[1] = 0.0;
-                nskip++;
-                #if DEBUG_RNG_SKIP
-                int log_skip = (x <= MAX_DEBUG_COORD && global_y <= MAX_DEBUG_COORD && z <= MAX_DEBUG_COORD) ||
-                               (x == Nhalf - 1 && global_y == Nhalf - 1 && z == Nhalf - 1);
-                if (log_skip) {
-                    if (k2 == 0.0) {
-                        fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d (x,z)=(%d,%d): D=0 (DC mode), ACCUMULATE nskip++ (total=%lld)\n",
-                                N, global_y, x, z, (long long)nskip);
-                    } else if (is_nyquist) {
-                        fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d (x,z)=(%d,%d): D=0 (Nyquist: kx=%d ky=%d kz=%d), ACCUMULATE nskip++ (total=%lld)\n",
-                                N, global_y, x, z, kx, ky, kz, (long long)nskip);
-                    } else {
-                        fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d (x,z)=(%d,%d): D=0 (k_cutoff: k2=%d >= %.1f), ACCUMULATE nskip++ (total=%lld)\n",
-                                N, global_y, x, z, k2_int, k2_cutoff, (long long)nskip);
+            fftw_complex phi_G;
+                if (zeroed_mode) { //Charlie:handles skipping DC mode (k=0) and Nyquist modes (k=kmax) for all three axes (and does it to keep the random number generator in sync with the serial version)
+                    D[0] = D[1] = 0.0;
+                    phi_G[0] = phi_G[1] = 0.0;
+                    nskip++;
+                    #if DEBUG_RNG_SKIP
+                    int log_skip = (x <= MAX_DEBUG_COORD && global_y <= MAX_DEBUG_COORD && z <= MAX_DEBUG_COORD) ||
+                                (x == Nhalf - 1 && global_y == Nhalf - 1 && z == Nhalf - 1);
+                    if (log_skip) {
+                        if (k2 == 0.0) {
+                            fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d (x,z)=(%d,%d): D=0 (DC mode), ACCUMULATE nskip++ (total=%lld)\n",
+                                    N, global_y, x, z, (long long)nskip);
+                        } else if (is_nyquist) {
+                            fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d (x,z)=(%d,%d): D=0 (Nyquist: kx=%d ky=%d kz=%d), ACCUMULATE nskip++ (total=%lld)\n",
+                                    N, global_y, x, z, kx, ky, kz, (long long)nskip);
+                        } else {
+                            fprintf(stderr, "[SKIP-DEBUG] N=%d Y=%d (x,z)=(%d,%d): D=0 (k_cutoff: k2=%d >= %.1f), ACCUMULATE nskip++ (total=%lld)\n",
+                                    N, global_y, x, z, k2_int, k2_cutoff, (long long)nskip);
+                        }
+                        fflush(stderr);
                     }
+                    #endif
+                } 
+                else if (ps_handle != NULL && params_handle != NULL) {
+                    double k2_phys = k2 * fundamental * fundamental;
+                    double kmag = sqrt(k2_phys);
+                    int64_t rng_index = global_y;
+                    
+                    double D_real, D_imag;
+                    #if VERIFY_RNG_CALLS
+                    if (nskip > 0 && local_rng_buf == NULL) {
+                        #pragma omp atomic
+                        total_rng_skips += nskip;
+                    }
+                    #endif
+                    get_cgauss(ps_handle, params_handle, rng_index, kmag, &nskip, local_rng_buf, &D_real, &D_imag); //cgauss here returns D_real and D_imag
+
+                    #if VERIFY_RNG_CALLS
+                    #pragma omp atomic
+                    total_rng_calls++;
+                    #endif
+                    
+                    D[0] = (real_t)D_real; //Charlie: This is the Gaussian density field we want to export. I need to check if Hermitian symmetry has been handled yet
+                    D[1] = (real_t)D_imag;
+
+                    phi_G[0] = D[0];
+                    phi_G[1] = D[1];
+                    {
+                        double k2_phys = k2 * fundamental * fundamental;
+                        double kmag = sqrt(k2_phys);
+                        if (kmag > 0.0) {
+                            double P_density    = zeldovich_ps_power(ps_handle, kmag); //Charlie: calculates the power spectrum
+
+                            // CHANGED: P_primordial now comes from its own independently-
+                            // loaded file/spline/handle (class_pk_primordial_dimensional.dat),
+                            // evaluated with the same zeldovich_ps_power() call used for
+                            // P_density above -- not inferred from ps_handle's shape.
+                            double P_primordial = 0.0;
+                            if (ps_handle_primordial_dimensional != NULL) {
+                                P_primordial = zeldovich_ps_power(ps_handle_primordial_dimensional, kmag);
+                            }
+
+                            if (P_density > 0.0) {
+                                double ratio = sqrt(P_primordial/P_density);
+                                phi_G[0] = (real_t)((double)D[0] *ratio *(3.0/5.0)); 
+                                phi_G[1] = (real_t)((double)D[1] *ratio *(3.0/5.0)); 
+                            }
+                        }
+                    }
+                }
+                else { //charlie: I added this 
+                    fprintf(stderr, "ERROR: ps_handle or params_handle is NULL for a mode "
+                                    "that requires random generation (x=%d, y=%d, z=%d, k2=%g). "
+                                    "This should never happen — check caller setup.\n",
+                                    x, global_y, z, k2);
+                    D[0] = D[1] = 0.0;   // still initialize, so we fail loudly rather than crash from UB
+                    phi_G[0] = phi_G[1] = 0.0;
                     fflush(stderr);
                 }
-                #endif
-            } 
-            else if (ps_handle != NULL && params_handle != NULL) {
-                double k2_phys = k2 * fundamental * fundamental;
-                double kmag = sqrt(k2_phys);
-                int64_t rng_index = global_y;
-                
-                double D_real, D_imag;
-                #if VERIFY_RNG_CALLS
-                if (nskip > 0 && local_rng_buf == NULL) {
-                    #pragma omp atomic
-                    total_rng_skips += nskip;
-                }
-                #endif
-                get_cgauss(ps_handle, params_handle, rng_index, kmag, &nskip, local_rng_buf, &D_real, &D_imag);
 
-                #if VERIFY_RNG_CALLS
-                #pragma omp atomic
-                total_rng_calls++;
+
+                //Charlie: My code insertion to dump the density field D to a file
+                 #if DUMP_GAUSSIAN_D
+                //Transform D into Phi (D itself is left untouched for downstream use)
+                // Store into the slice buffer at [z*N + x]; written to disk after the z-loop.
+                if (dump_buf != NULL) {
+                    dump_buf[2 * ((size_t)z * (size_t)N + (size_t)x)]     = (double)phi_G[0];
+                    dump_buf[2 * ((size_t)z * (size_t)N + (size_t)x) + 1] = (double)phi_G[1];
+                }
+ 
+                // Charlie: debug print — check a handful of modes as they're dumped
+                if (rank == 0 && global_y == 0 && x < 3 && z < 3) {
+                    fprintf(stderr, "[DUMP] (x=%d, y=%d, z=%d): D_real=%.15e, D_imag=%.15e\n",
+                        x, global_y, z, (double)D[0], (double)D[1]);
+                    fflush(stderr);
+                    }
+                if (rank == 0 && global_y == Nhalf - 1 && x < 3 && z < 3) {
+                        fprintf(stderr, "[DUMP] (x=%d, y=%d, z=%d): D_real=%.15e, D_imag=%.15e\n",
+                            x, global_y, z, (double)D[0], (double)D[1]);
+                        fflush(stderr);
+                    }  
                 #endif
-                D[0] = (real_t)D_real;
-                D[1] = (real_t)D_imag;
-            }
-            
+
+            fftw_complex kernel;
+            fftw_complex phi_NG;
+            fftw_complex NG_rand; //charlie: variable for the "random" numbers produced by the non-gaussian phi(k)
+            #if LOAD_D_FROM_FILE
+                kernel[0] = (real_t)loaded_kernel_real[(int64_t)x + z * N]; //Charlie: this is inside x and z loops
+                kernel[1] = (real_t)loaded_kernel_imag[(int64_t)x + z * N];
+                phi_NG[0] = phi_G[0]+ f_NL*kernel[0]; 
+                phi_NG[1] = phi_G[1]+f_NL*kernel[1]; 
+                if (zeroed_mode) { // Charlie: apply the same DC/Nyquist/k_cutoff mask to the non-Gaussian phi (phi^2 has power outside the sphere)
+                    phi_NG[0] = phi_NG[1] = 0.0;
+                }
+
+                // Charlie: divide loaded D by sqrt(P_primordial(k)), where P_primordial(k)
+                // is read from class_pk_primordial_dimensional.dat via
+                // ps_handle_primordial_dimensional (same file/spline used in the main
+                // P_density/P_primordial ratio above -- not the analytic k^n_s inference).
+                // Uses the same k2_phys/kmag convention as the cgauss branch below
+                // (k2 * fundamental^2), so kmag is in the same physical units.
+                // k=0 (DC mode) is left untouched (P_primordial stays 0.0 there,
+                // which would otherwise divide by zero).
+                NG_rand[0] = NG_rand[1] = 0.0;
+                if (ps_handle != NULL) {
+                    double k2_phys = k2 * fundamental * fundamental;
+                    double kmag = sqrt(k2_phys);
+                    double P_primordial = 0.0;
+                    if (ps_handle_primordial_dimensional != NULL) {
+                        P_primordial = zeldovich_ps_power(ps_handle_primordial_dimensional, kmag);
+                    }
+                    if (P_primordial > 0.0) {
+                        double sqrt_P_primordial = sqrt(P_primordial);
+                        NG_rand[0] = (real_t)(double)phi_NG[0]*((5.0/3.0)/ sqrt_P_primordial); //This is turning phi_non-Gaussian back into random numbers
+                        NG_rand[1] = (real_t)(double)phi_NG[1]*((5.0/3.0)/ sqrt_P_primordial);
+                    }
+                }
+
+                // Charlie: store this mode's divided phi (phi_real, phi_imag) in the slice buffer at
+                // [z*N + x]; the whole slice is written to file after the z-loop (no indices stored).
+                if (divided_buf != NULL) {
+                    divided_buf[2 * ((size_t)z * (size_t)N + (size_t)x)]     = (double)NG_rand[0];
+                    divided_buf[2 * ((size_t)z * (size_t)N + (size_t)x) + 1] = (double)NG_rand[1];
+                }
+
+
+                //Charlie: Creating D from our random numbers (from phi)
+                double D_real, D_imag;
+                if (ps_handle != NULL) {
+                    double k2_phys = k2 * fundamental * fundamental;
+                    double kmag = sqrt(k2_phys);
+                    zeldovich_ps_inputted_ic(ps_handle, kmag, NG_rand[0], NG_rand[1], &D_real, &D_imag);
+                    D[0] = (real_t)D_real; 
+                    D[1] = (real_t)D_imag;
+                    }
+                
+
+                    // Charlie: debug print — check the same handful of modes as they're loaded
+                if (rank == 0 && global_y == 0 && x < 3 && z < 3) {
+                    fprintf(stderr, "[LOAD] (x=%d, y=%d, z=%d): D_real=%.15e, D_imag=%.15e\n",
+                            x, global_y, z, (double)D[0], (double)D[1]);
+                    //fprintf(stderr, "[KERNEL] (x=%d, y=%d, z=%d): kernel_real=%.15e, kernel_imag=%.15e\n",
+                    //        x, global_y, z, (double)kernel[0], (double)kernel[1]);        
+                    fflush(stderr);
+                }
+                if (rank == 0 && global_y == Nhalf - 1 && x < 3 && z < 3) {
+                        fprintf(stderr, "[LOAD] (x=%d, y=%d, z=%d): D_real=%.15e, D_imag=%.15e\n",
+                            x, global_y, z, (double)D[0], (double)D[1]);
+                        fflush(stderr);
+                    }
+            #else    
+            #endif
+
+            fftw_complex noise;
+            #if LOAD_WHITE_NOISE_FROM_FILE
+                noise[0] = (real_t)loaded_noise_real[(int64_t)x + z * N];
+                noise[1] = (real_t)loaded_noise_imag[(int64_t)x + z * N];
+                if (zeroed_mode) { // Charlie: same DC/Nyquist/k_cutoff mask as the Gaussian field
+                    noise[0] = noise[1] = 0.0;
+                }
+
+
+                //Charlie: Creating D from our random numbers (from phi)
+                double D_real, D_imag;
+                if (ps_handle != NULL) {
+                    double k2_phys = k2 * fundamental * fundamental;
+                    double kmag = sqrt(k2_phys);
+                    zeldovich_ps_inputted_ic(ps_handle, kmag, noise[0], noise[1], &D_real, &D_imag);
+                    D[0] = (real_t)D_real; 
+                    D[1] = (real_t)D_imag;
+                    }
+                
+
+                    // Charlie: debug print — check the same handful of modes as they're loaded
+                if (rank == 0 && global_y == 0 && x < 3 && z < 3) {
+                    fprintf(stderr, "[LOAD_WHITE_NOISE] (x=%d, y=%d, z=%d): D_real=%.15e, D_imag=%.15e\n",
+                            x, global_y, z, (double)D[0], (double)D[1]);
+                    //fprintf(stderr, "[KERNEL] (x=%d, y=%d, z=%d): kernel_real=%.15e, kernel_imag=%.15e\n",
+                    //        x, global_y, z, (double)kernel[0], (double)kernel[1]);        
+                    fflush(stderr);
+                }
+            #else    
+            #endif
+
             // ========== STEP 3: Compute F, G, H from D ==========
             fftw_complex F, G, H;
             int use_plt = 0; 
@@ -517,9 +841,10 @@ void generate_hermitian_slice_pair_local(
             #endif  // VERIFY_HERMITIAN_SYMMETRY
             }  // End of else block for !just_density && k2 != 0
 
-            #ifdef DEBUG_RNG_CONSISTENCY
+            #if DEBUG_RNG_CONSISTENCY
             // Per-rank log file to avoid MPI interleaving (incomplete records)
             // Match zeldovich-PLT debug output to compare D, F, G, H
+            // Use #if (not #ifdef): meson always defines the macro as 0 or 1.
             {
             int ppdhalf = N / 2;
             int boundary_coord = ppdhalf - 1;
@@ -556,12 +881,12 @@ void generate_hermitian_slice_pair_local(
                 #endif
                 {
                     if (rng_debug_fp == NULL) {
-                        const char *base = getenv("HERMITIAN_RNG_DEBUG_DIR");
+                        const char *base = getenv("ZD_MPI_RNG_DEBUG_DIR");
                         char path[512];
                         if (base && base[0]) {
-                            snprintf(path, sizeof(path), "%s/hermitian_rng_debug_rank%03d.log", base, rank);
+                            snprintf(path, sizeof(path), "%s/zd_mpi_rng_debug_rank%03d.log", base, rank);
                         } else {
-                            snprintf(path, sizeof(path), "hermitian_rng_debug_rank%03d.log", rank);
+                            snprintf(path, sizeof(path), "zd_mpi_rng_debug_rank%03d.log", rank);
                         }
                         rng_debug_fp = fopen(path, "a");
                     }
@@ -595,13 +920,44 @@ void generate_hermitian_slice_pair_local(
     pt_zloop.Stop(0);
 #endif
 
+//Charlie: added to close the file pointer for dumping the Gaussian density field D
+//Charlie: added to close the file pointer for dumping the Gaussian density field D
+#if DUMP_GAUSSIAN_D
+if (dump_fp != NULL) {
+    if (dump_buf != NULL) {
+        size_t nvals = (size_t)N * (size_t)N;
+        size_t nwritten = fwrite(dump_buf, 2 * sizeof(double), nvals, dump_fp);
+        if (nwritten != nvals) {
+            fprintf(stderr, "ERROR: short write to %s (wrote %zu/%zu complex values)\n",
+                    dump_filename, nwritten, nvals);
+        }
+    }
+    fclose(dump_fp);
+}
+free(dump_buf);
+#endif
+
+#if LOAD_D_FROM_FILE
+if (phi_divided_fp != NULL && divided_buf != NULL) {
+    size_t nvals = (size_t)N * (size_t)N;
+    size_t nwritten = fwrite(divided_buf, 2 * sizeof(double), nvals, phi_divided_fp);
+    if (nwritten != nvals) {
+        fprintf(stderr, "ERROR: short write to phi_divided file (wrote %zu/%zu complex values)\n",
+                nwritten, nvals);
+    }
+}
+free(divided_buf);
+#endif
+
+
+
     // ========== Self-conjugate post-processing ==========
     // Mirror first half to second half (match zeldovich.cpp lines 555-573)
     // Only applies to self-conjugate slices (Y=0 or Y=N/2)
     pt_mirror.Start(0);
     if (y_mirror == global_y) {
         if (global_y == 0 || global_y == Nhalf) {
-            for (int z = 0; z < Nhalf; z++) {
+            for (int z = 0; z < Nhalf; z++) { //Charlie: for loop for z and x 
                 int z_mirror = (z == 0) ? 0 : N - z;
                 // Match zeldovich.cpp: xmax = ppdhalf for z=0, ppd for z>0
                 int x_max = (z == 0 ? Nhalf : N);
@@ -621,11 +977,11 @@ void generate_hermitian_slice_pair_local(
                     // Normal operation and Mode 1: Hermitian symmetry for purely real result
                     // Copy conj(D)+i*conj(F) from conjugate_slices to primary_slices
                     if (x == 0 && z == 0) {
-                        #if defined(VERIFY_HERMITIAN_SYMMETRY) && VERIFY_HERMITIAN_SYMMETRY == 1
+#if defined(VERIFY_HERMITIAN_SYMMETRY) && VERIFY_HERMITIAN_SYMMETRY == 1
                         fprintf(stderr, "[MIRROR-DEBUG] Y=%d: Mode 1 branch executing (VERIFY_HERMITIAN_SYMMETRY=1)\n", global_y);
-                        #else
+#elif DEBUG_PRINTS
                         fprintf(stderr, "[MIRROR-DEBUG] Y=%d: Normal operation branch executing (VERIFY_HERMITIAN_SYMMETRY not defined or != 1,2)\n", global_y);
-                        #endif
+#endif
                         fflush(stderr);
                     }
                     for (int a = 0; a < narray; a++) {
@@ -665,14 +1021,42 @@ void generate_hermitian_slice_pair_local(
     
     t_verify_end = omp_get_wtime();
     
-    // Removed loop over narray!
-    // Apply 2D FFT: batched plan_many_dft (howmany=narray) on primary and conjugate
-    pt_fft.Start(0); // includes mem bandwidth time
-    FFTW_EXECUTE_DFT(plan_2d, primary_slices, primary_slices);
-    if (y_mirror != global_y) {
-        FFTW_EXECUTE_DFT(plan_2d, conjugate_slices, conjugate_slices);
+    // 2D FFT: staged copy — plan_dft_2d on stage_2d, loop over narray
+    for (int a = 0; a < narray; a++) {
+        // plane a starts a * N * N elements after the base.
+        fftw_complex_t *plane = primary_slices + (size_t)a * (size_t)N * (size_t)N;
+
+        // copy to stage_2d
+        pt_fft_copy_in.Start(0);
+        copy_plane_chunked(stage_2d, plane, N);
+        pt_fft_copy_in.Stop(0);
+
+        // execute FFTW_EXECUTE_DFT on stage_2d
+        pt_fft_execute.Start(0);
+        FFTW_EXECUTE_DFT(plan_2d, stage_2d, stage_2d);
+        pt_fft_execute.Stop(0);
+
+        // copy back to primary_slices
+        pt_fft_copy_out.Start(0);
+        copy_plane_chunked(plane, stage_2d, N);
+        pt_fft_copy_out.Stop(0);
     }
-    pt_fft.Stop(0);
+
+    if (y_mirror != global_y) {
+        for (int a = 0; a < narray; a++) {
+            // plane a starts a * N * N elements after the base.
+            fftw_complex_t *plane = conjugate_slices + (size_t)a * (size_t)N * (size_t)N;
+            pt_fft_copy_in.Start(0);
+            copy_plane_chunked(stage_2d, plane, N);
+            pt_fft_copy_in.Stop(0);
+            pt_fft_execute.Start(0);
+            FFTW_EXECUTE_DFT(plan_2d, stage_2d, stage_2d);
+            pt_fft_execute.Stop(0);
+            pt_fft_copy_out.Start(0);
+            copy_plane_chunked(plane, stage_2d, N);
+            pt_fft_copy_out.Stop(0);
+        }
+    }
     
     t_fft_end = omp_get_wtime();
     
@@ -695,7 +1079,8 @@ void generate_hermitian_slice_pair_local(
     // See zeldovich.cpp: Pk.v2rng[y].advance(2 * nskip)
     // Ensures that exactly MAX_PPD * MAX_PPD complex numbers (2 * MAX_PPD * MAX_PPD real numbers)
     // were consumed/skipped for this y-row
-    if (nskip > 0) {
+    // Y=N/2 has no v2rng slot in serial zeldovich (plane zeroed, not drawn).
+    if (nskip > 0 && global_y != Nhalf) {
         if (ps_handle != NULL && params_handle != NULL) {
             int64_t rng_index = global_y;
             zeldovich_ps_advance_rng(ps_handle, params_handle, rng_index, nskip);
@@ -738,17 +1123,33 @@ void generate_hermitian_slice_pair_local(
     // #endif
     
     // Clean up local macros
+    #if LOAD_D_FROM_FILE
+        free(loaded_kernel_real);
+        free(loaded_kernel_imag);
+        if (phi_divided_fp != NULL) {
+            fclose(phi_divided_fp);
+        }
+
+    #endif
+
+    #if LOAD_WHITE_NOISE_FROM_FILE
+        free(loaded_noise_real);
+        free(loaded_noise_imag);
+    #endif
+
     #undef PRIM_SLICE
     #undef CONJ_SLICE
 }
 
-void print_hermitian_gen_timers(int rank) {
+void print_zd_mpi_gen_timers(int rank) {
     double rng_s    = pt_rng_setup.Elapsed();
     double zloop_s  = pt_zloop.Elapsed();
     double mirror_s = pt_mirror.Elapsed();
-    double fft_s    = pt_fft.Elapsed();
+    double fft_ci_s = pt_fft_copy_in.Elapsed();
+    double fft_ex_s = pt_fft_execute.Elapsed();
+    double fft_co_s = pt_fft_copy_out.Elapsed();
     double gen_s    = rng_s + zloop_s + mirror_s;
-    double total    = gen_s + fft_s;
+    double total    = gen_s + fft_ci_s + fft_ex_s + fft_co_s;
     if (rank == 0) {
         fprintf(stdout,
             "  [PTimerWall] Stage 1 sub-phase breakdown (accumulated over all Y-slices):\n"
@@ -756,18 +1157,24 @@ void print_hermitian_gen_timers(int rank) {
             "    Z-loop compute:             %10.6f s  (%5.1f%%)\n"
             "    Mirror (self-conjugate):     %10.6f s  (%5.1f%%)\n"
             "    Generation subtotal:         %10.6f s  (%5.1f%%)\n"
-            "    FFT (plan_many_dft):         %10.6f s  (%5.1f%%)\n"
+            "    2D copy-in (staged):         %10.6f s  (%5.1f%%)\n"
+            "    2D FFT execute (dft_2d):     %10.6f s  (%5.1f%%)\n"
+            "    2D copy-out (staged):        %10.6f s  (%5.1f%%)\n"
             "    Sum:                         %10.6f s\n",
             rng_s,    total > 0 ? 100.0 * rng_s    / total : 0.0,
             zloop_s,  total > 0 ? 100.0 * zloop_s  / total : 0.0,
             mirror_s, total > 0 ? 100.0 * mirror_s / total : 0.0,
             gen_s,    total > 0 ? 100.0 * gen_s    / total : 0.0,
-            fft_s,    total > 0 ? 100.0 * fft_s    / total : 0.0,
+            fft_ci_s, total > 0 ? 100.0 * fft_ci_s / total : 0.0,
+            fft_ex_s, total > 0 ? 100.0 * fft_ex_s / total : 0.0,
+            fft_co_s, total > 0 ? 100.0 * fft_co_s / total : 0.0,
             total);
         fflush(stdout);
     }
     pt_rng_setup.Clear();
     pt_zloop.Clear();
     pt_mirror.Clear();
-    pt_fft.Clear();
+    pt_fft_copy_in.Clear();
+    pt_fft_execute.Clear();
+    pt_fft_copy_out.Clear();
 }

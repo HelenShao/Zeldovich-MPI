@@ -1,6 +1,6 @@
 /*
  * Standalone binary: ./wisdom_rank0 <N> <narray>
- * Run before hermitian_3d_matrix with the same OMP_NUM_THREADS; wisdom path is FFTW_WISDOM_FILENAME (cwd).
+ * Run before Zeldovich_MPI with the same OMP_NUM_THREADS; wisdom path is FFTW_WISDOM_FILENAME (cwd).
  */
 
 #include "../config.h"
@@ -27,7 +27,7 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    const size_t nbytes = (size_t)narray * (size_t)N * (size_t)N * sizeof(fftw_complex_t);
+    const size_t nbytes = (size_t)N * (size_t)N * sizeof(fftw_complex_t);
     fftw_complex_t *plan_buffer = NULL;
     if (posix_memalign((void **)&plan_buffer, ALIGN_BYTES, nbytes) != 0) {
         fprintf(stderr, "%s: posix_memalign failed (%zu bytes)\n", argv[0], nbytes);
@@ -37,7 +37,7 @@ int main(int argc, char **argv)
     fftw_plan_t plan_2d = NULL;
     fftw_plan_t plan_1d = NULL;
 
-    const int rc = wisdom_rank0_plans_and_export(N, narray, plan_buffer, &plan_2d, &plan_1d);
+    const int rc = wisdom_rank0_plans(N, narray, plan_buffer, &plan_2d, &plan_1d, 1);
     if (plan_2d) {
         FFTW_DESTROY_PLAN(plan_2d);
     }

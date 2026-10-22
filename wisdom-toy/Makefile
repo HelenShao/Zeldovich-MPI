@@ -10,6 +10,7 @@
 #   make FFTW_INCLUDES='-I/path' FFTW_LIB_FLAG='-L/path' FFTW_LIBS='$(FFTW_LIB_FLAG) -lfftw3f_omp -lfftw3f -lm'
 
 CXX ?= g++
+MPICXX ?= mpicxx
 CXXFLAGS ?= -O2 -std=c++17 -Wall -Wextra
 
 # OpenMP: match parent (Intel -qopenmp vs GCC -fopenmp) so linking matches libfftw3f_omp.
@@ -52,9 +53,15 @@ ALL_CXXFLAGS := $(CXXFLAGS) $(OPENMP_FLAGS)
 TARGET := wisdom_toy
 SRC := wisdom_toy.cpp
 
+SWEEP := fftw_2d_thread_sweep
+SWEEP_SRC := fftw_2d_thread_sweep.cpp
+
+SWEEP_MPI := fftw_2d_thread_sweep_mpi
+SWEEP_MPI_SRC := fftw_2d_thread_sweep_mpi.cpp
+
 .PHONY: all clean all-with-modules
 
-all: $(TARGET)
+all: $(TARGET) $(SWEEP) $(SWEEP_MPI)
 
 all-with-modules:
 	@chmod +x "$(CURDIR)/build_with_modules.sh" 2>/dev/null || true
@@ -63,5 +70,11 @@ all-with-modules:
 $(TARGET): $(SRC)
 	$(CXX) $(ALL_CXXFLAGS) $(FFTW_INCLUDES) -o $@ $(SRC) $(FFTW_LIBS)
 
+$(SWEEP): $(SWEEP_SRC)
+	$(CXX) $(ALL_CXXFLAGS) $(FFTW_INCLUDES) -o $@ $(SWEEP_SRC) $(FFTW_LIBS)
+
+$(SWEEP_MPI): $(SWEEP_MPI_SRC)
+	$(MPICXX) $(ALL_CXXFLAGS) $(FFTW_INCLUDES) -o $@ $(SWEEP_MPI_SRC) $(FFTW_LIBS)
+
 clean:
-	rm -f $(TARGET)
+	rm -f $(TARGET) $(SWEEP) $(SWEEP_MPI)

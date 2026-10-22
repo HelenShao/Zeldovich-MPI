@@ -1,0 +1,492 @@
+Eisenstein Computer Cluster
+A collection of information on how to use nbody.cfa.harvard.edu and associated machines located in the “Astrophysical Parallel Computing Lab” in room PG-12.
+People
+Contact Misha Rashkovetskyi (mrashkovetskyi@cfa.harvard.edu), Alex Johnson (ajohnson3@g.harvard.edu) or Daniel Eisenstein (deisenste@cfa.harvard.edu) for any questions you have about how to use the machines.
+Machines
+Login node: nbody
+Compute nodes: franklin, hal, charlie, emmy, ted
+Analysis nodes: alan, gosling, marvin, bob
+(Crossed-out machines are down long-term, or dismantled)
+
+The login node serves as an SSH gateway; no computations should be run there.
+The compute nodes are for running heavy-duty N-body simulations.
+The analysis nodes are for running post-simulation analysis tasks, like analyzing halo catalogs.
+
+All machines are connected on a 10 Gb/s network.
+Specifications
+alan and gosling:
+Built in 2016; good for CPU-intensive, RAM-intensive, or disk-intensive analysis tasks
+Two Intel Xeon E5-2630v4 @ 2.2 Ghz
+Each has 10 physical cores, and is hyperthreaded for 20 virtual cores
+128G DDR4-2133 RAM
+Two 60 TB RAID 6 arrays (/mnt/store1 & /mnt/store2)
+Each array composed of twelve 6 TB WD Red Pros
+marvin:
+Built in 2019; good for CPU-intensive, RAM-intensive, or disk-intensive analysis tasks
+Two Intel Xeon Gold 5218 @ 2.3 GHz
+Each with 16 physical cores, hyperthreaded for 32
+256 GB DDR4-2666 RAM
+Two RAID 6 arrays:
+108 TB (/mnt/store1), composed of 8 Seagate IronWolf 18 TB drives
+168 TB (/mnt/store2), composed of 16 Seagate IronWolf 12 TB drives
+One 1 TB NVMe SSD for analysis (/mnt/nvme1)
+System disk is also 1 TB NVMe SSD
+bob (down as of Aug 24, 2023):
+Older analysis/backup machine; good for modest analysis tasks
+Two Intel Xeon E5620 @ 2.40 GHz (4 physical, 8 virtual cores each)
+96 GB DDR3-800 RAM
+28 TB RAID 5 array (/mnt/store)
+Composed of eight 4 TB Seagate NAS drives
+ted and charlie: (charlie is down as of Aug 24, 2023)
+Built 2012.  Good for moderately large sims.
+Intel Core i7-3930K CPU @ 3.20GHz (6 physical, hyperthreading is turned off)
+64 GB DDR3-1333
+15 TB RAID 5 (/mnt/raid)
+charlie: Sixteen 1 TB SAMSUNG SpinPoint F3 RE
+ted: Sixteen 1 TB Seagate Constellation
+1.5 TB RAID 0 (/mnt/ssd)
+Three 512 GB Samsung SSD 850 PRO
+6 TB RAID 0 (/mnt/state_bkup)
+Two 3 TB Western Digital Red
+Four GeForce GTX 690 (two cards, each with 2 GPU chips)
+franklin:
+Built 2016; designed for massive simulations.
+Two Intel Xeon E5-2650 v4 @ 2.20GHz (12 physical cores each)
+256 GB DDR4-2400 RAM
+Two 21 TB RAID 5 arrays (/mnt/hardraid_outer & /mnt/mdraid_outer)
+Outer partition of ten & eight 6 TB WD Red Pros
+“hardraid” = hardware RAID; “mdraid” = software mdadm RAID
+28 TB RAID 5 (/mnt/hardraid_inner)
+Inner partition of ten 6 TB WD Red Pros
+18 TB RAID 5 (/mnt/mdraid_inner)
+Inner partition of eight 6 TB WD Red Pros
+5.6 TB RAID 0 (/mnt/hardraid_ssd)
+Six 1 TB Samsung SSD 850 PRO
+Two GeForce GTX 980 Ti
+hal:
+Built 2017; designed for massive simulations.
+Two Intel Xeon Gold 6132 @ 2.60GHz (14 physical cores each)
+128 GB DDR4-2666 RAM
+21 TB hardware RAID 5 array (/mnt/hardraid_outer)
+Outer partition of eight 6 TB WD Red Pros
+18 TB hardware RAID 5 array (/mnt/hardraid_inner)
+Inner partition of eight 6 TB WD Red Pros
+Two 1 TB NVMe SSDs
+1 TB Samsung EVO SSD (system disk)
+Two GeForce GTX 1080 Ti
+emmy: (now decommissioned due to frequent crashes)
+Built in 2013(?); good for very large simulations
+Two Intel E5-2630 v2 @ 2.60GHz
+128 GB RAM
+4 TB RAID 0 (/mnt/work)
+15 TB RAID 5(?) (/mnt/fast)
+Two GeForce GTX TITANs (both removed now)
+Resource Usage
+As a general guideline, try to limit multithreaded codes to half of the available cores on a machine (e.g. 10 cores for gosling and alan), or possibly fewer if you see that many people are trying to use the machine (you can check what’s running with top).  We don’t have a scheduling/queue system like Odyssey, so we rely on people self-limiting.
+Access
+
+The cluster security is based on routing all traffic through a single node, named nbody, which is fully patched (and behind the CfA firewall).  However, the other machines on the cluster are not as routinely updated and therefore may be more susceptible to viruses and other attacks.  These machines can go out to contact the internet; for example, one might need to pull files from an external data server. 
+
+But the implication of this is that one should never run a web browser on these machines, as surfing the web could bring the machine in contact with hostile attacks.  Please maintain the quarantine!
+Editing Files Remotely
+To edit files on a remote machine (e.g. alan), you can use SSHFS to mount the remote directory on your laptop, then use any editor on your local machine (e.g. Sublime).  First, you’ll want to set up SSH forwarding as described above.  Then, before calling SSHFS for the first time, you have to create an empty directory to serve as an SSHFS mountpoint on your laptop:
+mkdir alan
+Then mount your remote home directory:
+sshfs alan: alan/
+
+Now you can open an editor like Sublime on your laptop and browse to alan/, and you’ll see the files in your alan home directory.  See the Remote Desktop instructions below for a more heavy-weight solution where you actually run the editor remotely.
+Remote Desktop
+For test purposes we currently have a NoMachine server running on gosling. You can connect to it if you need a virtual desktop directly on the Cluster. This can be useful for applications that have graphical user interfaces, but still need the computing capacities of the cluster, e.g. for generating Animations.
+
+To connect, install the NoMachine-Enterprise-Client  or the full NoMachine remote desktop. Once you started one of these, select New choose NX as protocol. If you are plugged into the CfA network you can then specify nbody.cfa.harvard.edu as the host and choose password authentification. Then you choose no proxy and give it a name. You should now be able to connect to nbody and log in with your username and password. Once logged in choose Create new Desktop or Session and then Create virtual Desktop. A new desktop should now appear.
+Useful commands: 
+If you go to the top right corner of the NoMachine window with the mouse cursor you can access the menu and choose Display settings such as resolution, quality and full screen
+You can lock the keyboard to the virtual machine with Ctrl + Alt + k
+To end the session either close NoMachine on your Computer or press Ctrl + Alt + t when the keyboard is locked to the machine. In the latter case choose disconnect from server and then whether you want to suspend or terminate the session. If you suspend it it will continue running on the server and you can reconnect to it later
+
+Jupyter Notebook
+You might want to read Installing Software/Python first.
+
+It’s possible to connect to a Jupyter notebook you start on alan (for example) from your laptop.  On macOS or Linux, you can put the following in your ~/.ssh/config file:
+
+Host alan
+  ProxyCommand ssh nbody.cfa.harvard.edu -W %h:%p
+  LocalForward 12345 localhost:<PUT_YOUR_PORT_NUMBER_HERE>
+
+Replace <PUT_YOUR_PORT_NUMBER_HERE> with a random port number between 2000 and 60000 (try to avoid the default of 8888 to avoid conflicts between users). Also works with ProxyJump instead of ProxyCommand. After doing so, open a new SSH session on alan and start a Jupyter notebook session with
+
+jupyter notebook --port=<PUT_YOUR_PORT_NUMBER_HERE> --no-browser
+
+Then, navigate to localhost:12345 on your laptop, and you should be connected to your notebook running on alan.  You can also set your port number in the Jupyter notebook config file to avoid having to type it each time.
+
+If using MobaXterm on Windows, you can use the Tunneling tab to create a tunnel from your local machine to alan (for example).  Use 12345 as the local port, nbody.cfa.harvard.edu as the gateway server (leave the port unfilled), and alan as the remote server, with the port you selected for your Jupyter notebook server above.
+
+You’ll also need to uncomment and edit the “NotebookApp.ip” option in the Jupyter config file on alan to be ‘*’.  This will allow connections from nbody.  Also, set the “NotebookApp.open_browser” option to read False since you will be opening your browser on your laptop, not alan.
+
+Once you’ve done this and started the MobaXterm tunnel, you can navigate to localhost:12345 in your browser on your laptop to connect to Jupyter running on alan.
+
+You might want to run the jupyter notebook command from within a GNU screen session so that it remains active even when the shell is closed. The next section shows how to do that.
+Persistent Shell Sessions/Long-Running Jobs
+For long-running jobs on the terminal, it’s a good idea to use a “terminal multiplexer” like GNU screen or tmux.  The cluster head node automatically restarts every few days to apply OS security updates, so open SSH sessions will be interrupted at least that often!
+screen/tmux session(s) keep active on any machine (except nbody) after SSH logoff and can be attached again upon a new login. An exception is when the machine is powered off or rebooted, but that is usually rare.
+
+Example screen usage:
+
+# Start a screen:
+$ screen -S myscreenname
+# You are now in a new shell session, a “screen”
+$ ./long_running_script.sh
+[... some output ...]
+# Press Ctrl-a d to detach and return to your old shell
+$ screen -ls  # now back in the old shell, this lists active screens
+$ screen -r myscreenname  # reattach to screen
+
+More on GNU screen here: https://wiki.archlinux.org/index.php/GNU_Screen
+More on tmux: https://wiki.archlinux.org/title/Tmux
+Installing Software/Python
+Users can install a fresh version of Python with scientific libraries to their home directory with Anaconda Python (https://www.anaconda.com/download/success, select Anaconda for Linux 64-bit (x86), or Miniconda, which is smaller, but you might need to install more packages for comfortable work). You can use wget “<url>” to download the file to any of the cluster machines, then run it with sh <filename> and follow the instructions (worth saying yes when the installer asks whether to activate the base environment by default or something like that).
+If you need/want to install additional Python packages, we recommend you first try to conda install them, and then use pip install as a backup when they are not found in conda. It's also convenient to enable Conda-forge, which provides more semi-official conda packages: conda config --add channels conda-forge (https://conda-forge.org/docs/user/introduction/).
+
+If you need a certain library or software package, consider trying to install it in your home directory (as opposed to globally, which requires root privileges and can interfere with other users’ environments).  This is a common task, but the procedure varies slightly from package to package. Google should be able to tell you how to do so for whatever program you’re trying to install.  If that doesn’t work or would be too complicated, one of the Administrators can help.
+Backups (currently not available)
+Nightly backups (currently between 2am and 6am) of all home directories (/home/[username]) and user storage directories (/mnt/store*/[username]) are made to bob. The backup of last night can be found under /mnt/store/backintime/bob/root/[type]/[date]/backup/. If you accidentally delete a file, look for it here. 
+
+Currently we keep two backups, one of the day before and one of the week before.  So you have an additional day to recover the version of the file before deletion and one week to recover an older version before the backup is deleted from bob.
+We do not backup any content of folders that start with “bigsim” or folders that include the word “scratch” (the precise exclude patterns are bigsim*/ and *scratch*/). This is due to space constraints. You can help save backup space by putting temporary files and folders for which a backup is not necessary in a folder named scratch.
+
+We do not recommend relying on bob for critical backups.  For example, it is recommended that you echo your analysis code, writing, and core results to your own computer, and that you use a cloud backup service for that computer.  Please don’t place yourself in a situation in which the loss of computers in our room would cause you a severe problem in your work!
+
+If you need critical backups of data sets larger than a few hundred GB, please talk to Daniel.  We could buy an external drive for mid-scale items or provide a backup with our tape drive for larger items.
+Storage
+Code, scripts, papers, and any other important, light-weight data (~a few GB) may be stored in the home directories.  Heavier data products, such as galaxy catalogs, should be stored under /mnt/store/[username].  Some machines have /mnt/store1 and /mnt/store2; that’s fine, you can use them both.  Use ‘df -h’ to see space available on these arrays.
+
+These arrays are typically hardware or software RAID arrays of hard disks, and have a lot of space (many TB) and can serve a fair bit (at least 1 GB/s) of I/O.
+
+The arrays /mnt/store1 and /mnt/store2 on gosling are particularly large and contain most of our large simulation products (see Available Simulations).  Thus, they are cross-mounted via NFS to the other analysis machines (and some production machines) with the names /mnt/gosling1 and /mnt/gosling2.
+
+If you have large data products in the /mnt/store* directories that do not need to be backed up, please place them in a directory called “scratch”.  The contents of scratch directories are not backed up, which alleviates some pressure from our backup server (see Backups).
+
+As a usage matter, please note that the RAID partitions are typically based on 512 KB stripes, which means that the minimum size of a file is of order 10 MB.  Trying to store lots (i.e,. many thousands) of small files will be very inefficient.  Consider options like tar if this must be done.  
+Available Simulations
+A number of large N-body simulations are available on gosling in “/mnt/store2/bigsims” and “/mnt/store2/bigsim_products”.  “bigsims” contains the raw particle outputs from the simulations, and “bigsim_products” contains derived data products, such as halo catalogs and power spectra.
+
+The “emulator” simulations are several grids of cosmologies of modest resolution and box size, but they still may be useful since they span interesting regions of parameter space.  All individual simulations have a “info/abacus.par” file with all cosmology and code parameters used.  More complete documentation on these sims (and how to use their data products) is available at https://lgarrison.github.io/AbacusCosmos/.  All of the simulations stored there (on Odyssey) are mirrored to “bigsim_products”; please don’t re-download them or make local copies in your user directory.
+Shared Scientific Codes
+/mnt/store1/codes on gosling contains some widely useful scientific scripts and codes
+that are local to our group and not yet publicly available (e.g. Daniel’s 2PCF/3PCF code).  Each of the codes should be a git repository, so users can clone them, make changes, then submit modifications via git pull requests.
+Technical details
+Most users won’t need to know the following technical details about the cluster administration, but they are presented here anyway for posterity (and for the admins).
+Machine ping script (lost)
+Located on nbody: /root/check_server_status.sh
+This script pings the listed machines once, logs the response,
+and send email(s) if the machines are down.
+It is run every hour by cron (use 'crontab -e' as root to change this)
+
+To enable the script to send emails: install postfix, and add the following to /etc/postfix/main.cf:
+relayhost = smtp.cfa.harvard.edu
+
+Then execute “/etc/init.d/postfix reload”.
+Account creation
+First, one should create a text file on nbody named /root/newusers.txt with one line per user in the following format:
+username:password:UID:GID:full name,room number,work phone,home phone,other:home_directory:login_shell
+(largely like a line in /etc/passwd but with an actual unencrypted password in place).
+Note that:
+UID must be vacant on nbody (it is guaranteed to have all the users, unlike some other machines).
+A simple way to achieve this is to take the largest existing UID (ignoring nobody with UID 65534) and add 1 (or more, there is a lot of space).
+Available UIDs can be understood quickly by running /root/largest_UIDs.sh (or /root/largest_UIDs.sh N for seeing N largest user IDs, default N is 2).
+GID can be the same as UID.
+The full name/room/phones/other are optional and may be left blank, but better to leave the commas and enclose the non-empty values in double quotes (see examples in /etc/passwd on nbody if unsure).
+The home directory should be specified as /home/[username]. If left blank it may not be created.
+
+Then one should run /root/newusers.sh [list of machine host names separated by spaces], which
+creates/updates the nbody users with newusers if nbody is among the host names;
+cycles over other machine hostnames provided,
+copying the newusers.txt file there,
+creating/updating users on the machine with newusers,
+executing ~/create_user_dirs.sh on the machine to create additional user directories (besides the home dir) where needed and then
+deleting the file from the machine for safety.
+Note that if nbody is not given as a command-line argument, nbody user(s) will be left untouched. This is to allow addition of user(s) on other machines without resetting their nbody password(s).
+When done with user creation, it is advised to delete the /root/newusers.txt file for safety.
+
+New users should also be given access to this document with read-only privileges.
+
+If you want to check if the user(s) changed their password(s) promptly as you asked them, or if you think you might have accidentally reset passwords for some existing users, you can search /var/log/auth.log for e.g. “password changed” on any machine. Also, passwd USERNAME -S will give you the date of the last password change for any given user.
+
+The user creation process relies on 
+the existence of /root/create_user_dirs.sh on each machine, which knows which directories should be created given a username, and also populates the home directory with default files (which newusers does not do), and
+root SSH access from nbody to all other machines to create users at.
+The latter is a bit not trivial to set up. Without enabling & setting the root password, one cannot simply use ssh-copy-id. Instead, one should copy the public key manually, e.g.
+Log into nbody, as root print (e.g. cat) the contents of the public SSH key, currently /root/.ssh/id_ed25519.pub
+In another terminal, log into the target machine, as root open /root/.ssh/authorized_keys in a command-line editor (e.g. vim), add the line from the previous step to the end of the file (unless it is included already) and save the file;
+Back as root at nbody, check that you can ssh into the target machine; you should get into a root terminal there.
+If the authentication is refused, check reasons specified here. Might also be that the sshd config prohibits root login specifically.
+on hal (or another CentOS/Red Hat machine), executing restorecon -R -v /root/.ssh might help if nothing else does. This one is related to SELinux security contexts, Ubuntu (installed on other machines) should not have such a thing.
+Account creation script (old & lost)
+This consists of two scripts on nbody: “/root/add_local_users.sh” and “run_remote.sh”.
+
+The “add_local_users.sh” script creates local users with the given names and UIDs; the “run_remote.sh” script simply executes the “add_local_users.sh” script on the specified remote machines.  See the documentation in the scripts for usage.
+
+New user UIDs should be incremented by 1 over the last user.  You should check /etc/passwd on nbody for the UID of the last user, because all users may not exist on other machines; nbody is the only place guaranteed to have all users.
+
+Resetting Passwords (scripts lost)
+As with account creation, use the “run_remote.sh” script and adjust the “add_local_users.sh” to select the option to set a random hash password.
+
+Notice that the “run_remote.sh” will fail (and not continue to other machines) if the “add_local_users.sh” script returns an error on a given machine.  Using “exit 0” in the “add_local_users.sh” script usually avoids this.
+Locking Accounts (scripts lost)
+One can lock accounts by using “add_local_users.sh” to invoke “chage -E0 {user}”.  Use “chage -E -1 {user}” to unlock
+Superusers
+We do not set a root password; instead a small number of users are members of group sudo.  Use “sudo su” or “sudo -i”, followed by the user password to get promoted. One adds a new user to the group via adduser <user> sudo.
+On hal, the group is wheel; one adds to this with “usermod -aG wheel <user>”.
+DNS and DHCP config
+We run a “dnsmasq” server on nbody to do DHCP and DNS for the cluster.  The configuration file is “/etc/dnsmasq.conf”.  The configuration is pretty minimal, something like:
+
+domain-needed
+bogus-priv
+interface=enp16s0
+no-hosts
+domain=cfa.harvard.edu
+dhcp-range=10.0.0.10,10.0.0.200,168h
+
+nbody should have the following in /etc/network/interfaces:
+# The primary network interface
+auto enp15s0
+iface enp15s0 inet static
+address 131.142.156.144
+netmask 255.255.248.0
+gateway 131.142.152.1
+dns-nameservers 131.142.21.50
+
+auto enp16s0
+iface enp16s0 inet static
+address 10.0.0.1
+netmask 255.255.255.0
+and the internet connection sharing should be set up according to: https://help.ubuntu.com/community/Internet/ConnectionSharing#Ubuntu_Internet_Gateway_Method_.28iptables.29
+The basic steps are:
+Skip the “ip addr add” command
+Run the iptables commands (substituting the desired interfaces, and using the 10.0.0.0/24 subnet)
+Use iptables-save to write the commands to file
+Edit rc.local to restore the commands on boot
+Edit sysctl.conf to allow forwarding
+
+Backup mechanism
+Backups are hosted on bob (see Backups).  The backups use the program “backintime” installed on bob. The configuration is in /root/.config/backintime/. The nightly backup is launched via cron; use “crontab -e” as root to change this.  The actual crontab file is at /var/spool/cron/crontabs/root if you want to see the commands.  These can be executed as root, using sudo -i (not -s!).  What happens with these commands is that they spawn another process (python3 ….) and immediately return, so it’s probably unwise to launch more than one at a time.  Also, the actual work takes nearly 3 hours for case 1 (the home directories) and most of an hour for cases 2 & 3.
+
+Backintime uses rsync to copy the files. The precise rsync command run can be found in the log files in /root/.local/share/backintime/takesnapshot_[num].log, together with the details of deleted and added files.
+
+Backintime runs the user-callback script in the above config directory to communicate its status and possible errors. Add the e-mail address of the current admin there. The  user-callback script  also mounts the machines to be backed up on bob first. New machines should be added here and to the config file in the same directory. To edit the config file backintime-qt4 --config [path/to/configfile/config] is most convenient as it provides a graphical user interface. You can, however, also edit the config file directly. For possible entries see here.
+
+Mounting directories to bob uses an SSH key that is installed on all root accounts on the cluster; if the key is not present on the target machine, the backup will fail.  To install the key on a new machine:
+As an ordinary user on bob:
+scp /root/.ssh/id_rsa.pub newmachine:
+Then, as root on newmachine:
+cat ~username/id_rsa.pub >> /root/.ssh/authorized_keys
+You can test if this worked by running “ssh newmachine” as root on bob.
+The backup will also fail, with a cryptic “A plugin prevented the backup” error in /root/.local/share/backintime/cronoutN.log, if the mounting attempt in user-callback has failed.  User-callback is being run as a “plugin”, and any errors there don’t get trapped by the python, but just crash the backup.
+Software RAID configuration
+The Linux Software RAID guide at https://raid.wiki.kernel.org/index.php/RAID_setup is an excellent resource and is the source for most of the commands below.  In short:
+Create the RAID device:
+mdadm --create --verbose /dev/md0 --level=5 --raid-devices=3 /dev/sdb /dev/sdc /dev/sdd
+Note that smartctl is often useful in identifying which devices (/dev/sdb, /dev/sdc, etc) are the drives you wish to add to the array.
+Add the array to the persistent configuration file:
+mdadm --detail --scan >> /etc/mdadm/mdadm.conf
+Make a filesystem on top of the new RAID device:
+mkfs -t xfs /dev/md0
+The filesystem type (xfs vs ext4) probably isn’t too important, although ext4 requires more manual tuning to work optimally on top of RAID.  xfs, on the other hand, auto-detects these parameters.  See the link above for how to tune ext4.
+Get the UUID of the new filesystem:
+blkid /dev/md0
+Make a mountpoint:
+mkdir /mnt/raid
+Add an entry for the filesystem to /etc/fstab:
+UUID=[UUID from blkid] /mnt/raid xfs defaults 0 0
+Try to mount the array:
+mount /mnt/raid
+You’ll probably want to use the account creation script to create directories for all users with the appropriate permissions.
+Use df -h to check that the array is mounted and has the expected size.
+Use hdparm -t /dev/md0 to do a speed test (although sometimes the results are actually much slower than real-world performance).
+
+Hardware RAID configuration
+The MegaRAID WebBIOS is accessible by pressing Ctrl-H or Ctrl-R when prompted at boot.  The interface is fairly straightforward, and the best way to set up a new RAID is probably to use the “Configuration Wizard”.  Replacing a drive should be similarly straightforward; once the replacement drive is inserted, select the “unconfigured” drive on the main WebBIOS screen, and there should be an option to add the drive to the degraded array.
+
+The StorCLI utility is useful for monitoring the RAID card from the command line.  It can be downloaded by searching for the RAID card on the Broadcom site and looking under “Management Software”: https://www.broadcom.com/support/download-search
+
+Many useful commands can be found via Google.  A few common ones:
+
+storcli64 /c0 show all
+storcli64 /c0 set alarm=silence
+
+There are several choices to make regarding RAID options.  I usually choose the largest available stripe size (usually ~1 MB), since we’re often writing big, contiguous files.  I haven’t experimented with the cache policy, but on our analysis machines, we do have battery backups that should shut down the machines gracefully, so it should be okay to choose the “unsafe” policy.  This is not true of the compute nodes!
+
+On most (all?) machines, this program is at the path /opt/MegaRAID/storcli/storcli64.
+
+The temperatures of the disks can be gotten, e.g., on marvin, by
+for i in {0..24}; do sudo smartctl -a /dev/sda -d megaraid,$i | grep Celsius; done
+Identifying and replacing bad drives
+To identify failing hard drives in a Linux software raid (i.e. mdraid) array, check the contents of “/proc/mdstat”, which will flag any totally failed drives.  Partially failed drives may not be flagged here; keep reading for other ways to identify the drives.
+
+If the system log is spitting strange disk-related errors, check “/var/log/syslog”, or “dmesg” or “journalctl -xb”.  One of these should have an indication or which device (e.g. /dev/sda) is failing.  Once you have that info, you can use “sudo smartctl -a /dev/sda” to check the hard drive diagnostics and get its serial number.  You can then write down the serial number, shut down, and start pulling hard drives until you find the one with the right serial number.
+
+Identifying bad drives connected to hardware RAID is similar, but you also have to have the “megaraid drive number” from the logs (e.g. “megaraid_disk_16”).  If /dev/sdb is the hardware RAID device and you want to look at drive number 16, use “sudo smartctl -a /dev/sda -d megaraid,16”.  The drive numbers often don’t start at 0, so don’t be surprised if the number is large.
+
+Completely failed drives will also usually be indicated with a red light next to the drive bay.  If the drive is connected to hardware RAID, the MegaRAID WebBIOS interface (the hardware RAID configuration screen; see Hardware RAID) may also offer more information.
+NFS setup
+https://help.ubuntu.com/community/SettingUpNFSHowTo contains most of the information required to set this up.  We’ve put a lot of effort into synchronizing the UIDs across the cluster, so file access permissions should be completely straightforward and transparent.
+Server side
+All steps should be executed as root.
+Install the NFS server:
+apt install nfs-kernel-server
+Add the directories to export to /etc/exports (the * refers to all users):
+/mnt/store1/ *(rw,no_root_squash)
+Might need to restart the NFS server now:
+service nfs-kernel-server restart
+If you only change the /etc/exports on a running NFS server usually a restart is not needed and the update may be achieved by:
+exportfs -ra
+And now the directory should be NFS exported!
+Note: we do not “squash root” on the server side, so commands run as “sudo” on client machines will have root permissions over NFS-mounted files on the server.
+
+DJE 4/4/22: bob was unable to mount /mnt/goslinghome with error “mount.nfs: access denied by server while mounting”.  This got fixed by running ‘exportfs -a’ on gosling.
+Client side
+All steps should be executed as root.
+Install nfs-common:
+apt install nfs-common
+Make the mountpoint, usually in /mnt/:
+mkdir /mnt/mountpoint
+Mount the filesystem:
+mount nfs_server:/mnt/store /mnt/mountpoint
+Test that everything worked:
+ls -la /mnt/mountpoint
+and you should see all the remote files.
+Now add the following line to /etc/fstab to make it persistent across boots:
+nfs_server:/mnt/store /mnt/mountpoint nfs defaults 0 0
+And test that this worked:
+mount -a
+
+Troubleshooting
+MR 3/11/24: if the NFS server power cycles while the client stays on, there may be stall mounts and other troubles.
+On client side, umount -lf /mnt/mountpoint should be helpful (if ls /mnt/mountpoint and/or df hang)
+If can’t mount after that (as detailed above), on the server side, check systemctl status nfs-server, if not running start it: systemctl start nfs-server
+Globus Connect Personal setup
+To transfer files to our machines from external servers available on Globus, follow the instructions below: 
+
+Login into our machine to which you would like to transfer files and test whether globus-cli is installed:
+globus --help
+If this command is not found, follow the instructions listed here and summarized below to install globus-cli.  Note: Tanveer reports that if you receive a PYTHONHOME error, you may need to use system Python instead of Anaconda Python by first deactivating your conda env (conda deactivate).
+To proceed with installation:
+pip install --upgrade --user globus-cli 
+Check that the installation was successful: 
+globus --help
+Following the instructions listed at this link and summarized here, download and unpack the Globus Connect Personal for Linux installer:
+wget https://downloads.globus.org/globus-connect-personal/linux/stable/globusconnectpersonal-latest.tgz
+
+tar xzf globusconnectpersonal-latest.tgz
+cd globusconnectpersonal-x.y.z
+Note: in the line above, replace ‘x.y.z.’ with the version number. Next, set up an endpoint using the name of the machine you would like to transfer file to:
+$ globus endpoint create --personal machine-name-goes-here
+Message:     Endpoint created successfully
+Endpoint ID: b19b3b45-01ae-11e6-a71c-22000bf2d559
+Setup Key:   224532bb-8a4b-4d32-8995-e1fb442be98e
+Copy and paste the setup key generated above into the following command: 
+$ ./globusconnectpersonal -setup 224532bb-8a4b-4d32-8995-e1fb442be98e
+
+Configuration directory: /home/demodoc/.globusonline/lta
+Contacting relay.globusonline.org:2223
+Installing certificate and key
+Creating /home/demodoc/.globusonline/lta/gridmap
+Done!
+
+To transfer and share files using Globus, start Globus Connect Personal as follows:
+./globusconnectpersonal -start &
+
+Your endpoint is now running and fully usable, which you can confirm with a globus ls command using the endpoint’s ID from above.
+Tape backups
+The tape drive is connected with a SAS cable to alan.  The web interface of the tape loader and the drive can be accessed from a browser on the cluster via http://tapedrive. It can be used for standard operations like moving tapes and ejecting tape magazines, but also for all service tasks. The most useful operations can also be evoked from the command line. The main tool to control the tape loader is mtx. The tool for controlling the tape drive is mt.
+The tape loader
+The basic status of the loader is obtained via 
+mtx -f /dev/sg2 status. 
+If a tape is loaded in the drive the loader status of "Element 0" is "Full". If not you can load a tape with 
+mtx -f /dev/sg2 load N 
+where N is the number of the slot you want to take the tape from. If you want to change tapes, unload the current tape with mtx unload first. Make sure that there is a free slot to unload the tape to.
+The tape drive
+The status of the current tape in the drive is obtained via 
+mt -f /dev/nst0 status. 
+A newly loaded tape is usually at file position 0 and block number 0.
+Writing files to tape
+If the tape is not empty, use 
+mt -f /dev/nst0 seod 
+to go to the position after the last valid file on the tape (using eod instead of seod is also possible, but note that there is a command called eof that *writes* a end of file mark at the current position so be careful with that as two eof marks indicate the end of the tape and one eof mark somewhere in the current tar file will corrupt at least that file so do not mix up eod and eof!).
+You can write new files to the current tape with 
+tar -b 256 cf /dev/nst0 FILENAME 
+if the tape is not externally write protected (there is a clap on the back of the tapes. When it is closed the write protection is active). Setting the blocking factor of tar to 256 is used for better write performance. When you want to read the files with tar you will need to specify the same blocking factor. All files have been written with -b 256 so far. There are tools that read data with unspecified block size, but GNU tar seems not to do that by default. As hardware compression is currently active, adding a -z option or other compression to the tar command will only make writing slower, but probably not lead to a smaller file size (the vendor support even expects the effective file size on tape to increase).
+Special attention: Tapes are linear. Do not overwrite files in the middle (or at the beginning of the tape)! It will mess things up and you lose access to all the files after the newly written file. The tar manual puts it like this: “Be fully aware that writing at the wrong position on a tape loses all information past this point and most probably until the end of the tape, and this destroyed information cannot be recovered.”
+Reading files from tape
+To extract the file at the current position use 
+tar -b 256 xf /dev/nst0. 
+To move between files use 
+mt -f /dev/nst0 fsf NUM 
+where NUM=1 is used for going to the first position of the next file. When you have extracted a file with tar -x, tar leaves you on the last position of the extracted file so you need to invoke mt fsf 1 to get to the next file that you can then extract via tar -x. If you use bsf to go back one file, note that the command leaves you at the position before the next file. E.g. if you are at position 0 of file 3, bsf 1 brings you to the last position of file 2, bsf 2 to the last position of file 1. So you need bsf 2 followed by fsf 1 if you want to access file 2. The new version of mt, now installed on alan, also provides the command bsfm that leaves you at the first position of the next file so you only need bsfm 2 to go back one file (bsfm 1 brings you to the beginning of the current file). A list with the content of the tapes used so far can be found here.
+Other infos
+Instead of the non-rewinding tape device /dev/nst0 there is also /dev/st0 which rewinds the tape after every writing operation. If you try to write multiple files by invoking multiple tar commands you will overwrite the first file of the tape instead of concatenating the files. So for the current mode of operation with multiple tars per tape, use nst0.
+None of the mentioned commands requires root rights if the corresponding user is added to the “tape” group (If you add yourself to the group you might need to log out and log in again before it works).
+The Intel utility itdt can be useful for servicing and testing the tape drive. 
+There is an option for tar that can be used to write a large file to multiple tapes. This helps to use space more efficiently, but for the moment we have decided to partition the simulations such that we keep their tars on well defined tapes.
+The performance of the tape backup is not completely satisfactory. We get 90-120 MB/s. LTO6 can potentially do 160MB/s for incompressible data. The writing test of itdt showed that in theory our drive can reach that speed. One could try to use the Intel drivers instead of the custom Linux drivers (unfortunately only Suse and Red Hat are supported so one would need to experiment a bit). Or to turn off hardware compression for our precompressed files and check if that helps.
+For more complex backup tasks one could think about using Bacula
+jwiegand@cfa.harvard.edu has an account on the OverlandStorage Support Site
+
+Installing new network cards
+If you install a new network card, you may need to edit “/etc/network/interfaces” to set the new default card:
+
+# The primary network interface
+auto eth1
+iface eth1 inet dhcp
+
+where “eth1” is the ID of the new network card.
+Battery backups
+The analysis nodes “alan” and “gosling” are attached to battery backups.  The power status is monitored by the APC UPS daemon “apcupsd”, which will gracefully shutdown the machine if the battery backup is getting low enough.  See https://help.ubuntu.com/community/apcupsd for instructions on setting up the monitor.  The machines should also automatically turn on when A/C power is restored; this is set in the BIOS.
+
+The configuration is located in /etc/apcupsd/apcupsd.conf.  The following are probably the only relevant configuration parameters:
+UPSCABLE usb
+UPSTYPE usb
+DEVICE
+POLL 10
+ONBATTERYDELAY 6
+BATTERYLEVEL 10
+MINUTES 3
+TIMEOUT 0
+ANNOY 60
+ANNOYDELAY 30
+
+Non-root users can check the status of the battery:
+$ apcaccess status
+
+Other components on the network:
+Netgear XS712T Smart Switch 10.0.0.239
+
+Operating System Updates
+Nbody is being auto-updating on security updates.  It will say when one logs in, it should say how many updates are available and which are security updates.  That latter number should be 0.
+
+On ubuntu, the package manager is aptitude; interface is ‘apt’.
+
+We also enable security updates on analysis machines: alan, bob, gosling, marvin.  However, some of these will not take effect until the machine is rebooted (and this is not triggered by the update itself).
+
+sudo apt install unattended-upgrades
+https://help.ubuntu.com/lts/serverguide/automatic-updates.html
+
+We are not updating production machines, as we worry about stability on those platforms (e.g., regarding CUDA).
+
+One example of a particularly troublesome & worrying update: once (~2022) Misha decided to upgrade Ubuntu release on marvin (formally to get some GNU Assembler bug fix relevant for Corrfunc) and as a result found both RAIDs refusing to boot, claiming irrevocably broken filesystem (XFS), which couldn’t be repaired. Googling suggested this might be a Linux kernel thing. After rebooting with the old kernel both disks mounted fine, so this was saved in the grub config and the old kernel package was forced to be kept. (/mnt/marvin1 has been reformatted in August 2023, which might have removed this issue for it, but that is far from sure. Anyway, /mnt/marvin2 filesystem has been intact so better not risk it.)
+
+Rebooting the Cluster
+One can log in as root and type “shutdown -t now” or “power off” or “reboot”.
+
+In the case of a power failure, when power is restored, most of the computers auto-boot.  The practical way to stop this is to unplug the computer!
+Items in progress
+We need to revamp the backup system to capture /home and then an opt-in system, e.g., paths that contain the word backup.
+
+We should get StorCLI installed and figure out how to have an automated check (e.g., every 6 hours) of the health of the various arrays.
+
+Make sure that the production machine RAIDs are copied to marvin, so that we could lose/wipe those raids if we wanted to.
+
+Set up JupyterHub?
+
+Set up shared Globus endpoint
+
