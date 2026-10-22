@@ -10,13 +10,18 @@ plain-numpy implementation.
 tests/kernel_regression/build_kernel.sh                 # -> build/kernel_double/src/Kernel_MPI (double precision)
 python3 tests/kernel_regression/run_regression.py       # quick tier, about 1 minute
 meson test -C build/kernel_double kernel_regression_quick   # same quick tier, via meson
-python3 tests/kernel_regression/run_regression.py --tier full   # real dumps in 1rank-run-cosm500/bin_files
+python3 tests/kernel_regression/run_regression.py --tier full   # real dumps in ZD_PNG_DIR (1rank-run-cosm500/png_slices)
 ```
 
 The Python interpreter must have numpy and pyfftw. The default is the interpreter running the script; `--python` overrides it.
 Useful options: `--fnl equil` and `--N 16` (restrict cases, repeatable), `--omp-threads`, `--oversubscribe`,
-`--json results.json`, and `--work-dir`. The default work dir is `build/kernel_regression_work`, where every
+`--json results.json`, and `--work-dir`. The full tier also takes `--full-png-dir`, `--full-ranks` (default NumZRanks),
+`--full-box-size` and `--full-num-z-ranks`. It writes outputs to the work dir, never into the dump directory. The default work dir is `build/kernel_regression_work`, where every
 run's outputs and logs are kept. Exit status is 0 if all checks pass, 1 on any failure, and 77 if the run was skipped.
+
+Inputs are `Phi_gaussian_y.{y}` and outputs are `kernel_y.{y}` (y = 0 … N/2), the same y-keyed names
+`ZD_MPI_generation.c` dumps into and loads from `ZD_PNG_DIR`. Since no rank is in the file name, every rank layout
+reads the same input directory.
 
 ## What is checked
 
@@ -63,5 +68,5 @@ at N=32–64, equil and orthoCMB change by O(1) on non-Nyquist modes, and local 
 `KERNEL_ZERO_NYQUIST=1` removes it, and then M=3N/2 and M=2N agree to round-off.
 
 **This does not affect real runs.** The Zeldovich_MPI dumps already have every Nyquist mode exactly zero
-(checked on `1rank-run-cosm500/bin_files`). There, compat mode and `KERNEL_ZERO_NYQUIST=1` give identical output,
+(checked on the `1rank-run-cosm500` dumps). There, compat mode and `KERNEL_ZERO_NYQUIST=1` give identical output,
 so M=3N/2 is safe for production. It only matters if Φ ever comes from a generator that keeps the Nyquist modes.

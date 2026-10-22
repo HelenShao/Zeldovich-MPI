@@ -9,24 +9,19 @@ Conventions follow kernel_MPI.py exactly: Hermitian completion of the y_primary 
 zero padding to M (frequency n mod N -> n mod M), z = (G + iH) phi packed transform,
 Q(x) = Im(z^2)/2 / M^3 with unnormalized transforms, Q(k=0) = 0, crop back to N, times J.
 
-Writes phi_output_rank{r}_y{y}.bin with the same ownership as the C code.
+Reads Phi_gaussian_y.{y} and writes kernel_y.{y} for y = 0 .. N/2, like the C code.
 """
 import argparse
 import os
-import sys
 
 import numpy as np
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from make_test_phi import rank_pair_range  # noqa: E402
 
-
-def load_phi(bin_dir, N, num_ranks):
+def load_phi(in_dir, N):
     phi = np.zeros((N, N, N), dtype=np.complex128)   # [x, y, z]
-    for r in range(num_ranks):
-        for y in rank_pair_range(r, N // 2 + 1, num_ranks):
-            s = np.fromfile(os.path.join(bin_dir, f"Phi_gaussian_rank{r}_y{y}.bin"), dtype=np.complex128)
-            phi[:, y, :] = s.reshape(N, N).T
+    for y in range(N // 2 + 1):
+        s = np.fromfile(os.path.join(in_dir, f"Phi_gaussian_y.{y}"), dtype=np.complex128)
+        phi[:, y, :] = s.reshape(N, N).T
     Nh = N // 2
     neg = (-np.arange(N)) % N
     # y mirrors
@@ -101,28 +96,26 @@ def kernel_output(phi, L, M, fnl):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--bin-dir", required=True)
+    ap.add_argument("--in-dir", required=True, help="directory holding Phi_gaussian_y.{y}")
     ap.add_argument("--out-dir", required=True)
-    ap.add_argument("--ranks", type=int, required=True)
     ap.add_argument("--box-size", type=float, required=True)
     ap.add_argument("--fnl", required=True, choices=["local", "equil", "orthoCMB", "orthoLSS"])
     ap.add_argument("--M", type=int, help="padded size (default 2N)")
     ap.add_argument("--zero-nyquist", action="store_true", help="zero all kx/ky/kz = N/2 modes (KERNEL_ZERO_NYQUIST=1)")
     args = ap.parse_args()
 
-    s0 = np.fromfile(os.path.join(args.bin_dir, "Phi_gaussian_rank0_y0.bin"), dtype=np.complex128)
+    s0 = np.fromfile(os.path.join(args.in_dir, "Phi_gaussian_y.0"), dtype=np.complex128)
     N = int(round(np.sqrt(s0.size)))
     M = args.M or 2 * N
-    phi = load_phi(args.bin_dir, N, args.ranks)
+    phi = load_phi(args.in_dir, N)
     if args.zero_nyquist:
         phi[N // 2, :, :] = 0
         phi[:, N // 2, :] = 0
         phi[:, :, N // 2] = 0
     out = kernel_output(phi, args.box_size, M, args.fnl)
     os.makedirs(args.out_dir, exist_ok=True)
-    for r in range(args.ranks):
-        for y in rank_pair_range(r, N // 2 + 1, args.ranks):
-            np.ascontiguousarray(out[:, y, :].T).tofile(os.path.join(args.out_dir, f"phi_output_rank{r}_y{y}.bin"))
+    for y in range(N // 2 + 1):
+        np.ascontiguousarray(out[:, y, :].T).tofile(os.path.join(args.out_dir, f"kernel_y.{y}"))
 
 
 if __name__ == "__main__":

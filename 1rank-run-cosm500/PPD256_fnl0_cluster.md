@@ -4,7 +4,7 @@ Compare ordinary Zel'dovich initial conditions (meson branch, no PNG generation)
 
 Use `project1/Zeldovich-PNG-grace` for the PNG side. The `png-port` branch of `Zeldovich-MPI` only has parameter getters. It does not write `Phi_gaussian_y.*` or read `kernel_y.*`.
 
-Pull `my-edits-on-meson` on the cluster. That branch has Grace's C kernel port (`src/kernel`, commit `e0ad77b`) and the y-keyed slice names (`ZD_PNG_DIR/Phi_gaussian_y.{y}`, `kernel_y.{y}`). This note uses the Python kernel and the Zel'dovich dump/load path. Grace's `Kernel_MPI` binary still reads `Phi_gaussian_rank{r}_y{y}.bin`, so do not point it at these slices.
+Pull `my-edits-on-meson` on the cluster. That branch has Grace's C kernel port (`src/kernel`, commit `e0ad77b`) and the y-keyed slice names (`ZD_PNG_DIR/Phi_gaussian_y.{y}`, `kernel_y.{y}`). This note uses the Python kernel and the Zel'dovich dump/load path. Grace's `Kernel_MPI` binary reads and writes the same y-keyed slices, so it can replace the Python kernel in step 2.
 
 Build on a compute node (or a compile node) that has meson, ninja, MPI, single-precision FFTW with OpenMP, and bison 3 or newer. Keep `png_slices/` and both initial-condition directories on a filesystem shared with the node that runs `kernel_MPI.py`.
 
@@ -72,6 +72,17 @@ python3 kernel_MPI.py > kernel_ppd256.log 2>&1
 ```
 
 The script reads `Phi_gaussian_y.0` to get `N`, then writes `png_slices/kernel_y.{y}`. The kernel grid is `512^3`, so give the process a few GB of memory. Confirm `kernel_ppd256.log` prints `N 256` and that `kernel_y.0` through `kernel_y.128` exist.
+
+To use the C kernel instead, build it in double precision and run it on the same parameter file. It reads `ZD_PNG_DIR` from the par2 file and writes `kernel_y.{y}` into that directory. Any rank count works, as long as it is a multiple of `NumZRanks` and at most `N/2 + 1`. It does not have to match the dump or load runs.
+
+```bash
+cd "$REPO_ROOT"
+tests/kernel_regression/build_kernel.sh
+cd "$REPO_ROOT/1rank-run-cosm500"
+mpiexec -n 2 "$REPO_ROOT/build/kernel_double/src/Kernel_MPI" .runtime/param.par2 > kernel_ppd256.log 2>&1
+```
+
+Check the same things: `N=256` in the log and `kernel_y.0` through `kernel_y.128` in `png_slices/`.
 
 ## 3. Load pass (`f_NL = 0`)
 

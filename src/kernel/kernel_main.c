@@ -2,20 +2,20 @@
  * Kernel_MPI: MPI/C port of 1rank-run-cosm500/kernel_MPI.py
  *
  * Reads the Gaussian potential y-slices dumped by Zeldovich_MPI (DUMP_GAUSSIAN_D),
- *     <BIN_DIR>/Phi_gaussian_rank{r}_y{y}.bin
+ *     <PNG_DIR>/Phi_gaussian_y.{y}        y = 0 .. N/2
  * computes the f_NL kernel selected in the par2 file, and writes
- *     <OUT_DIR>/phi_output_rank{r}_y{y}.bin    (default OUT_DIR = <BIN_DIR>/bin_files_output)
- * for the LOAD_D_FROM_FILE run. Must be launched with the same number of ranks and
- * NumZRanks as the Zeldovich_MPI run that wrote the dumps (rank r reads/writes the
- * y_primary slices it generated).
+ *     <OUT_DIR>/kernel_y.{y}              (default OUT_DIR = PNG_DIR)
+ * for the LOAD_D_FROM_FILE run. Files are keyed by y only, so the rank count here need
+ * not match the Zeldovich_MPI dump or load runs.
  *
- * Usage:  mpiexec -n R Kernel_MPI [param.par2] [--bin-dir DIR] [--out-dir DIR]
+ * Usage:  mpiexec -n R Kernel_MPI [param.par2] [--png-dir DIR] [--out-dir DIR]
  *
  * Par2 keys:  BoxSize, NumZRanks, ZD_f_NL_local, ZD_f_NL_equil, ZD_f_NL_orthoCMB,
- *             ZD_f_NL_orthoLSS, optional KernelPadM (padded grid size M)
+ *             ZD_f_NL_orthoLSS, optional ZD_PNG_DIR (default "png_slices"),
+ *             optional KernelPadM (padded grid size M)
  *
  * Environment:
- *   PARAM_FILE, BIN_DIR, OUT_DIR    same meaning as in kernel_MPI.py (CLI args override)
+ *   PARAM_FILE, PNG_DIR, OUT_DIR    override the par2 file / ZD_PNG_DIR / output dir (CLI args override these)
  *   KERNEL_PYTHON_COMPAT=1 (default) default M = 2N, as in kernel_MPI.py
  *                       =0           default M = smallest valid M >= 3N/2 (alias-free, smaller)
  *   KERNEL_PAD_M=<M>                 explicit padded size (overrides KernelPadM and the default)
@@ -53,7 +53,7 @@
 #endif
 
 // ====================================================================================
-// par2 parsing (port of parse_par2 in kernel_MPI.py, numeric values only)
+// par2 parsing (port of parse_par2 in kernel_MPI.py: numeric keys + ZD_PNG_DIR)
 // ====================================================================================
 
 typedef struct {
@@ -62,6 +62,7 @@ typedef struct {
     double fnl[4];       // local, equil, orthoCMB, orthoLSS
     double pad_M;        // KernelPadM, or -1
     int found[7];        // BoxSize, NumZRanks, 4 x f_NL, KernelPadM
+    char png_dir[4096];  // ZD_PNG_DIR, or "png_slices"
 } KernelParams;
 
 static const char *param_keys[7] = {
@@ -83,6 +84,7 @@ static int parse_par2(const char *path, KernelParams *kp)
     if (fp == NULL) return 1;
     memset(kp, 0, sizeof(*kp));
     kp->pad_M = -1.0;
+    snprintf(kp->png_dir, sizeof(kp->png_dir), "png_slices");
 
     char line[4096];
     while (fgets(line, sizeof(line), fp) != NULL) {
@@ -99,6 +101,10 @@ static int parse_par2(const char *path, KernelParams *kp)
             val = strip(val + 1);
         }
 
+        if (strcmp(key, "ZD_PNG_DIR") == 0) {
+            if (val[0] != '\0') snprintf(kp->png_dir, sizeof(kp->png_dir), "%s", val);
+            continue;
+        }
         for (int i = 0; i < 7; i++) {
             if (strcmp(key, param_keys[i]) != 0) continue;
             char *end = NULL;
@@ -146,24 +152,18 @@ int main(int argc, char **argv)
     // Arguments / environment
     // ==================================================================================
     const char *param_file = getenv("PARAM_FILE") ? getenv("PARAM_FILE") : ".runtime/param.par2";
-    const char *bin_dir = getenv("BIN_DIR") ? getenv("BIN_DIR") : "bin_files";
-    const char *out_dir_env = getenv("OUT_DIR");
+    const char *png_dir_arg = getenv("PNG_DIR");
+    const char *out_dir_arg = getenv("OUT_DIR");
     for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "--bin-dir") == 0 && i + 1 < argc) {
-            bin_dir = argv[++i];
+        if (strcmp(argv[i], "--png-dir") == 0 && i + 1 < argc) {
+            png_dir_arg = argv[++i];
         } else if (strcmp(argv[i], "--out-dir") == 0 && i + 1 < argc) {
-            out_dir_env = argv[++i];
+            out_dir_arg = argv[++i];
         } else if (argv[i][0] != '-') {
             param_file = argv[i];
         } else {
             FAIL("unknown argument %s\n", argv[i]);
         }
-    }
-    char out_dir[4096];
-    if (out_dir_env != NULL && out_dir_env[0] != '\0') {
-        snprintf(out_dir, sizeof(out_dir), "%s", out_dir_env);
-    } else {
-        snprintf(out_dir, sizeof(out_dir), "%s/bin_files_output", bin_dir);
     }
 
     const int compat = env_int("KERNEL_PYTHON_COMPAT", 1);
@@ -172,30 +172,30 @@ int main(int argc, char **argv)
     const char *only_term = getenv("KERNEL_ONLY_TERM");
 
     // ==================================================================================
-    // Rank 0: parameters, N, dumped rank count -> broadcast
+    // Rank 0: parameters, slice directories, N -> broadcast
     // ==================================================================================
     KernelParams kp;
     memset(&kp, 0, sizeof(kp));
-    int hdr[3] = {0, -1, -1};   // parse status, N, max dumped rank
+    int hdr[2] = {0, -1};   // parse status, N
     if (world_rank == 0) {
         hdr[0] = parse_par2(param_file, &kp);
-        char path[4096];
-        snprintf(path, sizeof(path), "%s/Phi_gaussian_rank0_y0.bin", bin_dir);
+        if (png_dir_arg != NULL && png_dir_arg[0] != '\0') {
+            snprintf(kp.png_dir, sizeof(kp.png_dir), "%s", png_dir_arg);
+        }
+        char path[4096 + 64];
+        snprintf(path, sizeof(path), "%s/Phi_gaussian_y.0", kp.png_dir);
         hdr[1] = kernel_detect_N(path);
-        hdr[2] = kernel_max_dumped_rank(bin_dir);
     }
-    MPI_Bcast(hdr, 3, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(hdr, 2, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&kp, sizeof(kp), MPI_BYTE, 0, MPI_COMM_WORLD);
 
     if (hdr[0] != 0) FAIL("cannot read parameter file %s\n", param_file);
     if (!kp.found[0] || !kp.found[1]) FAIL("%s must define BoxSize and NumZRanks\n", param_file);
+    const char *png_dir = kp.png_dir;
+    const char *out_dir = (out_dir_arg != NULL && out_dir_arg[0] != '\0') ? out_dir_arg : png_dir;
     const int N = hdr[1];
-    if (N <= 0) FAIL("%s/Phi_gaussian_rank0_y0.bin missing or not N*N complex doubles\n", bin_dir);
+    if (N <= 0) FAIL("%s/Phi_gaussian_y.0 missing or not N*N complex doubles\n", png_dir);
     if (N % 2 != 0) FAIL("N=%d must be even\n", N);
-    if (hdr[2] + 1 != num_ranks) {
-        FAIL("%s holds dumps from %d ranks but Kernel_MPI runs on %d; launch with the same rank count "
-             "as the Zeldovich_MPI run (or clear old dumps)\n", bin_dir, hdr[2] + 1, num_ranks);
-    }
     const int num_z_ranks = (int)kp.num_z_ranks;
     if (num_z_ranks <= 0 || num_ranks % num_z_ranks != 0) {
         FAIL("num_ranks=%d is not divisible by NumZRanks=%d\n", num_ranks, num_z_ranks);
@@ -252,7 +252,7 @@ int main(int argc, char **argv)
         printf("  ranks=%d (size_x=%d x size_z=%d), OMP threads/rank=%d\n",
                num_ranks, size_x, size_z, omp_get_max_threads());
         printf("  batches=%d, compat=%d, zero_nyquist=%d\n", K.num_batches, compat, zero_nyquist);
-        printf("  in:  %s\n  out: %s\n", bin_dir, out_dir);
+        printf("  in:  %s\n  out: %s\n", png_dir, out_dir);
         for (int t = 0; t < num_terms; t++) {
             printf("  term %d: %s  coef=% .17g\n", t, kernel_shape(terms[t].shape)->name, terms[t].coef);
         }
@@ -268,13 +268,13 @@ int main(int argc, char **argv)
     fftw_complex_t **out = (fftw_complex_t**)calloc(K.my_num_pairs > 0 ? K.my_num_pairs : 1, sizeof(*out));
     for (int b = 0; b < K.my_num_pairs; b++) {
         int y_p = kernel_batch_y_p(&K, rank, b);
-        char path[4096];
-        snprintf(path, sizeof(path), "%s/Phi_gaussian_rank%d_y%d.bin", bin_dir, rank, y_p);
+        char path[4096 + 64];
+        snprintf(path, sizeof(path), "%s/Phi_gaussian_y.%d", png_dir, y_p);
         phi[b] = kernel_alloc_complex(slice_elems, "phi slice");
         int err = kernel_read_slice(path, N, phi[b]);
         if (err != 0) {
-            fprintf(stderr, "[Kernel_MPI] ERROR: rank %d cannot read %s (%s); was the dump made with %d ranks?\n",
-                    rank, path, err == 1 ? "missing" : "wrong size", num_ranks);
+            fprintf(stderr, "[Kernel_MPI] ERROR: rank %d cannot read %s (%s)\n",
+                    rank, path, err == 1 ? "missing" : "wrong size");
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
         if (y_p == 0 || y_p == N / 2) kernel_fix_self_conjugate_plane(N, phi[b]);
@@ -312,7 +312,7 @@ int main(int argc, char **argv)
     t_terms = MPI_Wtime() - t_terms;
 
     // ==================================================================================
-    // Write output (rank r writes exactly the y_primary slices it read)
+    // Write output (rank r writes exactly the y_primary slices it read; files keyed by y)
     // ==================================================================================
     if (rank == 0) {
         if (mkdir(out_dir, 0755) != 0 && errno != EEXIST) {
@@ -323,8 +323,8 @@ int main(int argc, char **argv)
     MPI_Barrier(zd_comm_2d);
     for (int b = 0; b < K.my_num_pairs; b++) {
         int y_p = kernel_batch_y_p(&K, rank, b);
-        char path[4096];
-        snprintf(path, sizeof(path), "%s/phi_output_rank%d_y%d.bin", out_dir, rank, y_p);
+        char path[4096 + 64];
+        snprintf(path, sizeof(path), "%s/kernel_y.%d", out_dir, y_p);
         if (kernel_write_slice(path, N, out[b]) != 0) {
             fprintf(stderr, "[Kernel_MPI] ERROR: rank %d cannot write %s\n", rank, path);
             MPI_Abort(MPI_COMM_WORLD, 1);

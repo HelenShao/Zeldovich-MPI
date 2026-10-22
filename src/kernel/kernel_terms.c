@@ -1,6 +1,5 @@
 // ====================================================================================
 // KERNEL TERM TABLES
-// Coefficients follow 1rank-run-cosm500/kernel_MPI.py (same terms, same order).
 // ====================================================================================
 
 #include "kernel_terms.h"

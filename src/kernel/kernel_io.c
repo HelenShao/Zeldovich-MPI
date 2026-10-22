@@ -3,7 +3,6 @@
 // ====================================================================================
 
 #include "kernel_io.h"
-#include <dirent.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,24 +18,6 @@ int kernel_detect_N(const char *path)
     long long N = llround(sqrt((double)n_complex));
     if (N * N != n_complex) return -1;
     return (int)N;
-}
-
-int kernel_max_dumped_rank(const char *dir)
-{
-    DIR *d = opendir(dir);
-    if (d == NULL) return -1;
-    int max_rank = -1;
-    struct dirent *ent;
-    while ((ent = readdir(d)) != NULL) {
-        int r = -1, y = -1;
-        char tail[8] = {0};
-        if (sscanf(ent->d_name, "Phi_gaussian_rank%d_y%d%7s", &r, &y, tail) == 3 &&
-            strcmp(tail, ".bin") == 0 && r > max_rank) {
-            max_rank = r;
-        }
-    }
-    closedir(d);
-    return max_rank;
 }
 
 int kernel_read_slice(const char *path, int N, fftw_complex_t *slice)

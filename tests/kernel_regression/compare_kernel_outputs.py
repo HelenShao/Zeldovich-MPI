@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-"""Compare two directories of phi_output_rank{r}_y{y}.bin kernel outputs.
+"""Compare two directories of kernel_y.{y} kernel outputs.
 
-Slices are matched by y (not by rank file), so outputs from runs with different rank
-counts can be compared. Exit status is 0 if all tolerances pass, 1 otherwise.
+Slices are matched by y, so outputs from runs with different rank counts can be compared. Exit status is 0 if all tolerances pass, 1 otherwise.
 
 Reported metrics (B is the reference):
   rel_l2   ||A - B|| / ||B|| over all slices
@@ -20,26 +19,24 @@ import sys
 
 import numpy as np
 
-_PAT = re.compile(r"phi_output_rank(\d+)_y(\d+)\.bin$")
+_PAT = re.compile(r"kernel_y\.(\d+)$")
 
 
 def load_outputs(directory):
     """Return ({y: (N, N) complex array indexed [z, x]}, N)."""
     slices = {}
-    for path in glob.glob(os.path.join(directory, "phi_output_rank*_y*.bin")):
+    for path in glob.glob(os.path.join(directory, "kernel_y.*")):
         m = _PAT.search(path)
         if not m:
             continue
-        y = int(m.group(2))
-        if y in slices:
-            raise SystemExit(f"{directory}: y={y} written by more than one rank (stale files from another run?)")
+        y = int(m.group(1))
         data = np.fromfile(path, dtype=np.complex128)
         N = int(round(np.sqrt(data.size)))
         if N * N != data.size:
             raise SystemExit(f"{path}: {data.size} values is not N*N")
         slices[y] = data.reshape(N, N)
     if not slices:
-        raise SystemExit(f"no phi_output_rank*_y*.bin files in {directory}")
+        raise SystemExit(f"no kernel_y.* files in {directory}")
     Ns = {s.shape[0] for s in slices.values()}
     if len(Ns) != 1:
         raise SystemExit(f"{directory}: slices of different sizes {sorted(Ns)}")

@@ -13,9 +13,10 @@ Tiers
                     ... and vs compat mode (size of the Nyquist effect)     -> report only
            [pad]    zero-Nyquist C with M = 3N/2 vs M = 2N (alias-free)     -> must pass
                     compat C with M = 3N/2 vs M = 2N                        -> report only
-  full   the real dumps in 1rank-run-cosm500/bin_files (or --full-bin-dir), all four
-         f_NL types, C vs kernel_MPI.py with the dump's rank count. Needs a machine
-         that can hold kernel_MPI.py's (2N)^3 arrays (~100+ GB at N=500).
+  full   the real Phi_gaussian_y.{y} dumps in ZD_PNG_DIR from 1rank-run-cosm500/.runtime/param.par2
+         (or --full-png-dir), all four f_NL types, C vs kernel_MPI.py on --full-ranks ranks
+         (default NumZRanks). Outputs go to the work dir, never into the dump directory.
+         Needs a machine that can hold kernel_MPI.py's (2N)^3 arrays (~100+ GB at N=500).
 
 Python reference outputs are cached in the work directory, keyed by a hash of the
 inputs and of kernel_MPI.py, so they are only recomputed when either changes.
@@ -83,18 +84,18 @@ class Runner:
             raise RuntimeError(f"command failed ({p.returncode}): {' '.join(cmd)}\n--- {log_path} ---\n{tail}")
         return time.perf_counter() - t0
 
-    def run_c(self, bin_dir, par, ranks, out_dir, env_extra=None):
+    def run_c(self, in_dir, par, ranks, out_dir, env_extra=None):
         shutil.rmtree(out_dir, ignore_errors=True)
         os.makedirs(out_dir)
-        cmd = self.mpiexec + ["-n", str(ranks), self.exe, par, "--bin-dir", bin_dir, "--out-dir", out_dir]
+        cmd = self.mpiexec + ["-n", str(ranks), self.exe, par, "--png-dir", in_dir, "--out-dir", out_dir]
         return self.run(cmd, env_extra or {}, out_dir + ".log")
 
-    def run_python_ref(self, bin_dir, par, ranks, out_dir):
-        """kernel_MPI.py writes to $BIN_DIR/bin_files_output; run it on a private copy."""
+    def run_python_ref(self, in_dir, par, ranks, out_dir):
+        """kernel_MPI.py reads and writes in the par2's ZD_PNG_DIR; run it on a private copy."""
         key = hashlib.sha256()
-        for path in sorted(os.listdir(bin_dir)):
-            if path.endswith(".bin"):
-                with open(os.path.join(bin_dir, path), "rb") as f:
+        for path in sorted(os.listdir(in_dir)):
+            if path.startswith("Phi_gaussian_y."):
+                with open(os.path.join(in_dir, path), "rb") as f:
                     key.update(path.encode())
                     key.update(hashlib.sha256(f.read()).digest())
         key.update(open(par, "rb").read())
@@ -107,27 +108,32 @@ class Runner:
         run_dir = out_dir + "_run"
         shutil.rmtree(run_dir, ignore_errors=True)
         os.makedirs(run_dir)
-        for name in os.listdir(bin_dir):
-            if name.startswith("Phi_gaussian_rank") and name.endswith(".bin"):
-                os.symlink(os.path.join(os.path.abspath(bin_dir), name), os.path.join(run_dir, name))
-        env = {"PARAM_FILE": os.path.abspath(par), "BIN_DIR": run_dir, "NUM_RANKS": str(ranks)}
+        for name in os.listdir(in_dir):
+            if name.startswith("Phi_gaussian_y."):
+                os.symlink(os.path.join(os.path.abspath(in_dir), name), os.path.join(run_dir, name))
+        # Same par2 with ZD_PNG_DIR pointed at the private copy
+        run_par = os.path.join(run_dir, "param.par2")
+        with open(par) as src, open(run_par, "w") as dst:
+            for line in src:
+                if line.split("=", 1)[0].strip() != "ZD_PNG_DIR":
+                    dst.write(line)
+            dst.write(f'ZD_PNG_DIR = "{run_dir}"\n')
+        env = {"PARAM_FILE": run_par, "NUM_RANKS": str(ranks)}
         dt = self.run([self.args.python, KERNEL_PY], env, out_dir + ".log", cwd=os.path.dirname(KERNEL_PY))
         shutil.rmtree(out_dir, ignore_errors=True)
-        shutil.move(os.path.join(run_dir, "bin_files_output"), out_dir)
+        os.makedirs(out_dir)
+        for name in os.listdir(run_dir):
+            if name.startswith("kernel_y."):
+                shutil.move(os.path.join(run_dir, name), os.path.join(out_dir, name))
         shutil.rmtree(run_dir)
-        # kernel_MPI.py names its planes phi_py_output_*; the comparer expects the C name.
-        for name in os.listdir(out_dir):
-            if name.startswith("phi_py_output_"):
-                os.rename(os.path.join(out_dir, name),
-                          os.path.join(out_dir, name.replace("phi_py_output_", "phi_output_", 1)))
         with open(stamp, "w") as f:
             f.write(key.hexdigest())
         return dt
 
-    def run_direct_ref(self, bin_dir, ranks, fnl, out_dir, zero_nyquist=False):
+    def run_direct_ref(self, in_dir, fnl, out_dir, zero_nyquist=False):
         shutil.rmtree(out_dir, ignore_errors=True)
-        cmd = [self.args.python, os.path.join(HERE, "reference_direct.py"), "--bin-dir", bin_dir,
-               "--out-dir", out_dir, "--ranks", str(ranks), "--box-size", str(BOX_SIZE), "--fnl", fnl]
+        cmd = [self.args.python, os.path.join(HERE, "reference_direct.py"), "--in-dir", in_dir,
+               "--out-dir", out_dir, "--box-size", str(BOX_SIZE), "--fnl", fnl]
         if zero_nyquist:
             cmd.append("--zero-nyquist")
         return self.run(cmd, {}, out_dir + ".log")
@@ -156,26 +162,28 @@ class Runner:
                     continue
                 log(f"\n=== N={N} f_NL={fnl} ===")
                 c_dirs = {}
+                # Slices are keyed by y only, so every rank layout reads the same inputs
+                in_dir = os.path.join(root, f"N{N}", "inputs")
+                if not os.path.exists(os.path.join(in_dir, f"Phi_gaussian_y.{N // 2}")):
+                    write_inputs(in_dir, N, SEED)
+                os.makedirs(os.path.join(root, f"N{N}", fnl), exist_ok=True)
+                direct_out = os.path.join(root, f"N{N}", fnl, "direct_out")
+                self.run_direct_ref(in_dir, fnl, direct_out)
                 for ranks, nz in layouts:
                     tag = f"N{N}_R{ranks}_nz{nz}"
                     case = os.path.join(root, f"N{N}", fnl, tag)
-                    bin_dir = os.path.join(root, f"N{N}", f"inputs_R{ranks}")
-                    if not os.path.isdir(bin_dir):
-                        write_inputs(bin_dir, N, ranks, SEED)
                     os.makedirs(case, exist_ok=True)
                     par = os.path.join(case, "param.par2")
-                    write_par2(par, BOX_SIZE, nz, fnl)
+                    write_par2(par, BOX_SIZE, nz, fnl, png_dir=in_dir)
 
                     c_out = os.path.join(case, "c_out")
-                    self.run_c(bin_dir, par, ranks, c_out)
-                    c_dirs[(ranks, nz)] = (c_out, bin_dir, par)
+                    self.run_c(in_dir, par, ranks, c_out)
+                    c_dirs[(ranks, nz)] = (c_out, par)
 
                     py_out = os.path.join(case, "py_out")
-                    self.run_python_ref(bin_dir, par, ranks, py_out)
+                    self.run_python_ref(in_dir, par, ranks, py_out)
                     self.check(f"{tag} C vs kernel_MPI.py", "py", c_out, py_out)
 
-                    direct_out = os.path.join(case, "direct_out")
-                    self.run_direct_ref(bin_dir, ranks, fnl, direct_out)
                     self.check(f"{tag} C vs direct numpy", "direct", c_out, direct_out)
 
                 # Rank invariance: every layout vs the first (1 rank)
@@ -187,17 +195,17 @@ class Runner:
                 # Overflow-safe (staged) Alltoallv path, normally only used past INT_MAX offsets
                 lay = layouts[-1]
                 staged_out = c_dirs[lay][0] + "_staged_a2a"
-                self.run_c(c_dirs[lay][1], c_dirs[lay][2], lay[0], staged_out, {"KERNEL_FORCE_STAGED_A2A": "1"})
+                self.run_c(in_dir, c_dirs[lay][1], lay[0], staged_out, {"KERNEL_FORCE_STAGED_A2A": "1"})
                 self.check(f"N{N} R{lay[0]} staged Alltoallv", "ranks", staged_out, c_dirs[lay][0])
 
                 # Nyquist zeroing: C vs the direct reference with the same zeroing (gated),
                 # and the size of the change relative to compat mode (informational)
                 lay = layouts[-1]
-                c_out, bin_dir, par = c_dirs[lay]
+                c_out, par = c_dirs[lay]
                 nyq_out = c_out + "_zero_nyquist"
-                self.run_c(bin_dir, par, lay[0], nyq_out, {"KERNEL_ZERO_NYQUIST": "1"})
-                direct_nyq = os.path.join(os.path.dirname(c_out), "direct_out_zero_nyquist")
-                self.run_direct_ref(bin_dir, lay[0], fnl, direct_nyq, zero_nyquist=True)
+                self.run_c(in_dir, par, lay[0], nyq_out, {"KERNEL_ZERO_NYQUIST": "1"})
+                direct_nyq = direct_out + "_zero_nyquist"
+                self.run_direct_ref(in_dir, fnl, direct_nyq, zero_nyquist=True)
                 self.check(f"N{N} zero-Nyquist C vs direct numpy", "nyq", nyq_out, direct_nyq)
                 self.check(f"N{N} zero-Nyquist vs compat (size)", "nyq", nyq_out, c_out, gate=False)
 
@@ -206,32 +214,31 @@ class Runner:
                 # M-dependent, so that difference is reported but not gated.
                 M32 = choose_3half_M(N)
                 pad_nyq = nyq_out + f"_M{M32}"
-                self.run_c(bin_dir, par, lay[0], pad_nyq, {"KERNEL_ZERO_NYQUIST": "1", "KERNEL_PAD_M": str(M32)})
+                self.run_c(in_dir, par, lay[0], pad_nyq, {"KERNEL_ZERO_NYQUIST": "1", "KERNEL_PAD_M": str(M32)})
                 self.check(f"N{N} zero-Nyq M={M32} vs M={2 * N}", "pad", pad_nyq, nyq_out)
                 pad_out = c_out + f"_M{M32}"
-                self.run_c(bin_dir, par, lay[0], pad_out, {"KERNEL_PAD_M": str(M32)})
+                self.run_c(in_dir, par, lay[0], pad_out, {"KERNEL_PAD_M": str(M32)})
                 self.check(f"N{N} compat M={M32} vs M={2 * N}", "pad", pad_out, c_out, gate=False)
 
     def full(self):
-        bin_dir = os.path.abspath(self.args.full_bin_dir)
-        names = [n for n in os.listdir(bin_dir) if n.startswith("Phi_gaussian_rank") and n.endswith(".bin")]
-        if not names:
-            raise SystemExit(f"no Phi_gaussian_rank*_y*.bin in {bin_dir}")
-        ranks = max(int(n.split("rank")[1].split("_")[0]) for n in names) + 1
+        in_dir = os.path.abspath(self.args.full_png_dir)
+        if not os.path.exists(os.path.join(in_dir, "Phi_gaussian_y.0")):
+            raise SystemExit(f"no Phi_gaussian_y.0 in {in_dir}")
         nz = self.args.full_num_z_ranks
+        ranks = self.args.full_ranks or nz
         root = os.path.join(self.work, "full")
         for fnl in FNL_TYPES:
             if self.args.fnl and fnl not in self.args.fnl:
                 continue
-            log(f"\n=== full: {bin_dir} R={ranks} NumZRanks={nz} f_NL={fnl} ===")
+            log(f"\n=== full: {in_dir} R={ranks} NumZRanks={nz} f_NL={fnl} ===")
             case = os.path.join(root, fnl)
             os.makedirs(case, exist_ok=True)
             par = os.path.join(case, "param.par2")
-            write_par2(par, self.args.full_box_size, nz, fnl)
+            write_par2(par, self.args.full_box_size, nz, fnl, png_dir=in_dir)
             c_out = os.path.join(case, "c_out")
-            dt_c = self.run_c(bin_dir, par, ranks, c_out)
+            dt_c = self.run_c(in_dir, par, ranks, c_out)
             py_out = os.path.join(case, "py_out")
-            dt_py = self.run_python_ref(bin_dir, par, ranks, py_out)
+            dt_py = self.run_python_ref(in_dir, par, ranks, py_out)
             log(f"  C {dt_c:.1f} s, kernel_MPI.py {dt_py:.1f} s (0 = cached)")
             self.check(f"full {fnl} C vs kernel_MPI.py", "py", c_out, py_out)
 
@@ -248,7 +255,10 @@ def main():
     ap.add_argument("--omp-threads", type=int, default=1)
     ap.add_argument("--N", type=int, action="append", help="quick tier: restrict to these N")
     ap.add_argument("--fnl", action="append", choices=FNL_TYPES, help="restrict to these f_NL types")
-    ap.add_argument("--full-bin-dir", default=os.path.join(REPO, "1rank-run-cosm500", "bin_files"))
+    ap.add_argument("--full-png-dir", default=None,
+                    help="full tier: directory of Phi_gaussian_y.{y} (default: ZD_PNG_DIR from "
+                         "1rank-run-cosm500/.runtime/param.par2, else 1rank-run-cosm500/png_slices)")
+    ap.add_argument("--full-ranks", type=int, default=None, help="full tier: MPI ranks (default NumZRanks)")
     ap.add_argument("--full-box-size", type=float, default=None,
                     help="full tier BoxSize (default: read from 1rank-run-cosm500/.runtime/param.par2)")
     ap.add_argument("--full-num-z-ranks", type=int, default=None)
@@ -268,7 +278,7 @@ def main():
 
     if args.tier == "full":
         runtime_par = os.path.join(REPO, "1rank-run-cosm500", ".runtime", "param.par2")
-        if args.full_box_size is None or args.full_num_z_ranks is None:
+        if args.full_box_size is None or args.full_num_z_ranks is None or args.full_png_dir is None:
             sys.path.insert(0, os.path.dirname(KERNEL_PY))
             vals = {}
             if os.path.exists(runtime_par):
@@ -283,6 +293,8 @@ def main():
                 args.full_box_size = float(vals["BoxSize"])
             if args.full_num_z_ranks is None:
                 args.full_num_z_ranks = int(float(vals.get("NumZRanks", 1)))
+            if args.full_png_dir is None:
+                args.full_png_dir = vals.get("ZD_PNG_DIR") or os.path.join(REPO, "1rank-run-cosm500", "png_slices")
 
     os.makedirs(args.work_dir, exist_ok=True)
     log(f"Kernel_MPI regression ({args.tier}): exe={runner.exe}\n  reference={KERNEL_PY}\n  work={runner.work}")

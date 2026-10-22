@@ -4,7 +4,8 @@
 // ====================================================================================
 // KERNEL FILE I/O + Y-SLICE HERMITIAN HELPERS
 // ====================================================================================
-// File format (same as the DUMP_GAUSSIAN_D dump and the LOAD_D_FROM_FILE input):
+// File format (same as the DUMP_GAUSSIAN_D dump ZD_PNG_DIR/Phi_gaussian_y.{y} and the
+// LOAD_D_FROM_FILE input ZD_PNG_DIR/kernel_y.{y}):
 // N*N complex values, interleaved float64 (real, imag), x fastest then z,
 // so element (x, z) is at z*N + x. Slices are held in memory in the same [z][x] order.
 // ====================================================================================
@@ -17,9 +18,6 @@ extern "C" {
 
 // Returns N from the size of a slice file, or -1 if missing / not N*N complex doubles
 int kernel_detect_N(const char *path);
-
-// Highest r among "Phi_gaussian_rank{r}_y{y}.bin" in dir, or -1 if none
-int kernel_max_dumped_rank(const char *dir);
 
 // Reads one N*N slice; returns 0 on success
 int kernel_read_slice(const char *path, int N, fftw_complex_t *slice);

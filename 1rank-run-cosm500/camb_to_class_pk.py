@@ -67,7 +67,7 @@ params = {
 
     # Make sure CLASS tabulates P(k) over (at least) the full CAMB k-range
     'P_k_max_h/Mpc': kmax_hmpc * 1.05,
-    'z_pk': 0,
+    'z_pk': 1,
 }
 
 cosmo = Class()
