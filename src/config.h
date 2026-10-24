@@ -343,6 +343,12 @@ FFTW planner flags for all DFT plans (2D X–Z and 1D Y in fft_setup.c / wisdom_
 #ifndef EXTERNAL_NOISE_FLOAT
 #define EXTERNAL_NOISE_FLOAT 0
 #endif
+// 1 = file is already x-fastest (index = z*N + x), the in-memory y-slice order.
+//     Requires N0 == N. Skip the monofonIC transpose and the signed-k crop.
+// 0 = monofonIC layout, z fastest (default), including the N0 > N crop.
+#ifndef EXTERNAL_NOISE_XFAST
+#define EXTERNAL_NOISE_XFAST 0
+#endif
 
 // 1 = write the input density D of each primary y-slice (after loading/colouring and masking,
 //     before displacement computation and Hermitian mirroring) to DUMP_D_DIR/D_slab_y.<y>,

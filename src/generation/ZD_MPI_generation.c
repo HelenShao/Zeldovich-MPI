@@ -192,8 +192,14 @@ static void load_external_noise_slab(int global_y, int N, double *w_re, double *
     const char *env_dir = getenv("ZD_EXTERNAL_NOISE_DIR");
     const char *noise_dir = (env_dir != NULL && env_dir[0] != '\0') ? env_dir : EXTERNAL_NOISE_DIR;
     if (global_y == 0) {
-        fprintf(stderr, "[external noise] reading %s/%s<y>%s\n", noise_dir, EXTERNAL_NOISE_PREFIX,
-                (env_dir != NULL && env_dir[0] != '\0') ? " (from ZD_EXTERNAL_NOISE_DIR)" : "");
+        fprintf(stderr, "[external noise] reading %s/%s<y>%s%s\n", noise_dir, EXTERNAL_NOISE_PREFIX,
+                (env_dir != NULL && env_dir[0] != '\0') ? " (from ZD_EXTERNAL_NOISE_DIR)" : "",
+#if EXTERNAL_NOISE_XFAST
+                " x-fastest (no transpose)"
+#else
+                " z-fastest (monofonIC transpose)"
+#endif
+                );
     }
     char fname[1024];
     snprintf(fname, sizeof(fname), "%s/%s%d", noise_dir, EXTERNAL_NOISE_PREFIX, global_y);
@@ -232,8 +238,25 @@ static void load_external_noise_slab(int global_y, int N, double *w_re, double *
     }
     fclose(fp);
 
+#if EXTERNAL_NOISE_XFAST
+    // File is already x-fastest (index = z*N + x), matching w[z*N + x]. No transpose.
+    // The signed-k crop assumes z-fastest storage, so N0 must equal N.
+    if (N0 != (int64_t)N) {
+        fprintf(stderr, "ERROR: %s is N0=%ld but EXTERNAL_NOISE_XFAST requires N0 == N=%d\n",
+                fname, (long)N0, N);
+        MPI_Abort(MPI_COMM_WORLD, 1);
+    }
+    for (int z = 0; z < N; z++) {
+        for (int x = 0; x < N; x++) {
+            const int64_t s = 2 * ((int64_t)z * N + x);
+            w_re[(int64_t)z * N + x] = (double)buf[s];
+            w_im[(int64_t)z * N + x] = (double)buf[s + 1];
+        }
+    }
+#else
     // crop the noise slab to the size of the grid: |k_x| < N/2 and |k_z| < N/2
     // The k_y crop is just which file is opened (slab_y.<global_y> with global_y ≤ N/2).
+    // File index sx*N0+sz is z fastest; buffer index z*N+x is x fastest.
     for (int z = 0; z < N; z++) {
         const int kz = (z <= N / 2) ? z : z - N;
         const int64_t sz = (kz >= 0) ? kz : kz + N0;
@@ -245,6 +268,7 @@ static void load_external_noise_slab(int global_y, int N, double *w_re, double *
             w_im[(int64_t)z * N + x] = (double)buf[s + 1];
         }
     }
+#endif
     free(buf);
 }
 #endif
