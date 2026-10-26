@@ -9,9 +9,9 @@
 #include <omp.h>
 
 void setup_fftw_plans_full(int N, int narray, fftw_complex_t *plan_buffer,
-                           fftw_plan_t *plan_2d_out, fftw_plan_t *plan_1d_out)
+                           fftw_plan_t *plan_2d_out, fftw_plan_t *plan_1d_out,
+                           const char *local_wisdom_dir)
 {
-    fftw_complex_t *buf_2d = NULL;
     fftw_complex_t *dummy_1d = NULL;
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -35,58 +35,58 @@ void setup_fftw_plans_full(int N, int narray, fftw_complex_t *plan_buffer,
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
         if (rank == 0) {
+#if DEBUG_PRINTS
             printf("[FFTW-THREADING] %s precision: FFTW threads init (per-plan counts: 2D=OMP_MAX, 1D=1)\n",
                    PRECISION_NAME);
+#endif
         }
         fftw_threads_initialized = 1;
     }
     // ====================================================================================
 
 #ifdef USE_FFTW_WISDOM
-    // Each rank imports the same wisdom file (see wisdom_rank0).
-    fft_wisdom_import_from_file(rank);
-
-#endif
-    
-    // plan_buffer must be provided before setup
-    if (plan_buffer == NULL) {
-        fprintf(stderr, "[ERROR] Failed to provide plan_buffer for 2D batched FFT plan\n");
+    if (fft_wisdom_broadcast_from_rank0(rank, MPI_COMM_WORLD, local_wisdom_dir) != 0) {
+        fprintf(stderr, "[ERROR] Rank %d: failed wisdom broadcast/local import setup\n", rank);
         MPI_Abort(MPI_COMM_WORLD, 1);
     }
-    buf_2d = plan_buffer;
+
+#else
+    (void)local_wisdom_dir;
+#endif
+    
+    // plan_buffer: one N×N complex plane (staged 2D FFT). narray is unused for 2D planning.
+    (void)narray;
+    if (plan_buffer == NULL) {
+        fprintf(stderr, "[ERROR] Failed to provide plan_buffer for 2D FFT plan (need plane w/ PPD^2 complexes)\n");
+        MPI_Abort(MPI_COMM_WORLD, 1);
+    }
 
     {
         int fft_threads_2d = omp_get_max_threads();
         FFTW_PLAN_WITH_NTHREADS(fft_threads_2d);
         if (rank == 0) {
-            printf("[FFTW-THREADING] 2D batched plan: FFTW_PLAN_WITH_NTHREADS(%d)\n", fft_threads_2d);
+#if DEBUG_PRINTS
+            printf("[FFTW-THREADING] 2D single-plane plan (staged): FFTW_PLAN_WITH_NTHREADS(%d)\n",
+                   fft_threads_2d);
             fflush(stdout);
+#endif
         }
     }
-    
-    /* Memory layout for plan_many_dft below: narray contiguous N×N complex planes.
-     * Plane index a (0 <= a < narray) starts at buf_2d + a * N * N.
-     * Within a plane, row-major C order: element (i,j) at buf_2d[a*N*N + i*N + j]. */
-    {
-        int n[2] = { N, N };
-        *plan_2d_out = FFTW_PLAN_MANY_DFT(
-            2,      // 2D transform
-            n,      // each transform is size N×N
-            narray, // number of transforms in the batch
-            buf_2d, NULL, 1, N * N, // input data
-            buf_2d, NULL, 1, N * N, // output data
-            FFT_SIGN, // FFT direction
-            FFTW_MEASURE);
-    }
+
+    /* In-place 2D complex DFT on one contiguous N×N plane (row-major). Execution loops
+     * over narray planes in ZD_MPI_generation.c with copy-in/copy-out. */
+    *plan_2d_out = FFTW_PLAN_DFT_2D(N, N, plan_buffer, plan_buffer, FFT_SIGN, FFTW_PLANNER_FLAGS);
 
     // 1D Y FFT: single FFTW thread (OpenMP parallelizes across pencils; staged buffers in z_streaming)
     FFTW_PLAN_WITH_NTHREADS(1);
     if (rank == 0) {
+#if DEBUG_PRINTS
         printf("[FFTW-THREADING] 1D Y plan: FFTW_PLAN_WITH_NTHREADS(1)\n");
         fflush(stdout);
+#endif
     }
     
-    // Create 1D FFT plan with FFTW_MEASURE
+    // Create 1D FFT plan (planner flags: FFTW_PLANNER_FLAGS in config.h)
     // note: ALIGN_BYTES defined in config.h to be 4096
     if (posix_memalign((void**)&dummy_1d, ALIGN_BYTES, 
                        sizeof(fftw_complex_t) * N) != 0) {
@@ -95,7 +95,7 @@ void setup_fftw_plans_full(int N, int narray, fftw_complex_t *plan_buffer,
     }
     
     *plan_1d_out = FFTW_PLAN_DFT_1D(N, dummy_1d, dummy_1d, 
-                                     FFT_SIGN, FFTW_MEASURE);
+                                     FFT_SIGN, FFTW_PLANNER_FLAGS);
     
     free(dummy_1d);
     
@@ -105,8 +105,5 @@ void setup_fftw_plans_full(int N, int narray, fftw_complex_t *plan_buffer,
         MPI_Abort(MPI_COMM_WORLD, 1);
     }
 
-#ifdef USE_FFTW_WISDOM
-    fft_wisdom_export_rank0(rank);
-#endif
 }
 

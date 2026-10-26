@@ -1,5 +1,5 @@
-#ifndef HERMITIAN_VERIFICATION_H
-#define HERMITIAN_VERIFICATION_H
+#ifndef ZD_MPI_VERIFICATION_H
+#define ZD_MPI_VERIFICATION_H
 
 // ====================================================================================
 // VERIFICATION UTILITIES

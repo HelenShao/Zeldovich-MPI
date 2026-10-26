@@ -1,0 +1,19 @@
+# Minimal HAL makefile for toy 2D FFT sweep binary.
+
+CXX ?= g++
+CXXFLAGS ?= -O3 -std=c++17 -fopenmp
+LDFLAGS ?=
+LDLIBS ?= -lfftw3f_omp -lfftw3f -lm
+
+TARGET := fftw_2d_thread_sweep
+SRC := fftw_2d_thread_sweep.cpp
+
+.PHONY: all clean
+
+all: $(TARGET)
+
+$(TARGET): $(SRC)
+	$(CXX) $(CXXFLAGS) -o $@ $< $(LDFLAGS) $(LDLIBS)
+
+clean:
+	rm -f $(TARGET)

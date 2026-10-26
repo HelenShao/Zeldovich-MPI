@@ -42,7 +42,7 @@ void verify_hermitian_pair(int rank, int y1, int y2, fftw_complex_t *slice1, fft
     if (N > 16) return;
     
     const char *stage = is_after_2d_fft ? "after 2D FFT" : "before 2D FFT";
-    printf("\n[RANK %d] Checking Hermitian pair Y=%d and Y=%d, Array=%d (%s):\n", rank, y1, y2, array_idx, stage);
+    printf("\n[RANK %d] Checking conjugate pair Y=%d and Y=%d, Array=%d (%s):\n", rank, y1, y2, array_idx, stage);
     
     double max_error = 0.0;
     int error_count = 0;
@@ -183,7 +183,7 @@ void verify_pencil_completeness_with_flags(char *y_filled, int pencils_per_rank,
     
     // Global verification: Count missing across all ranks
     int global_missing;
-    MPI_Reduce(&missing_count, &global_missing, 1, MPI_INT, MPI_SUM, 0, comm_2d);
+    MPI_Reduce(&missing_count, &global_missing, 1, MPI_INT, MPI_SUM, 0, zd_comm_2d);
     
     if (rank == 0) {
         if (global_missing > 0) {

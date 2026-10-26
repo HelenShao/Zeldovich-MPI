@@ -38,6 +38,7 @@
 #include <stdint.h>
 #include <assert.h>
 #include <limits.h>  // For INT_MAX
+#include <vector>
 #include <mpi.h>
 #include <omp.h>  // For hybrid MPI+OpenMP within each rank
 #include <fftw3.h>
@@ -46,6 +47,7 @@
 
 // Include PCG RNG and STimer
 #include "pcg-rng/pcg_random.hpp"
+#include <ParseHeader.hh>
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -77,7 +79,7 @@ extern "C" {
 // ====================================================================================
 // Core algorithm modules extracted in Phase 5
 #include "fft/fft_setup.h"
-#include "generation/hermitian_generation.h"
+#include "generation/ZD_MPI_generation.h"
 #include "communication/mpi_exchange.h"
 #include "streaming/z_streaming.h"
 
@@ -103,7 +105,7 @@ extern "C" {
 // ====================================================================================
 // Note: All function prototypes are now in module headers:
 //   - FFT functions: fft/fft_setup.h
-//   - Generation functions: generation/hermitian_generation.h
+//   - Generation functions: generation/ZD_MPI_generation.h
 //   - Communication functions: communication/mpi_exchange.h
 //   - Streaming functions: streaming/z_streaming.h
 //   - Utility functions: utils/*.h
@@ -186,7 +188,7 @@ extern "C" {
 // ====================================================================================
 // Core algorithm modules extracted in Phase 5
 #include "fft/fft_setup.h"
-#include "generation/hermitian_generation.h"
+#include "generation/ZD_MPI_generation.h"
 #include "communication/mpi_exchange.h"
 #include "streaming/z_streaming.h"
 
@@ -244,7 +246,7 @@ extern "C" {
 // ====================================================================================
 // Note: All function prototypes are now in module headers:
 //   - FFT functions: fft/fft_setup.h
-//   - Generation functions: generation/hermitian_generation.h
+//   - Generation functions: generation/ZD_MPI_generation.h
 //   - Communication functions: communication/mpi_exchange.h
 //   - Streaming functions: streaming/z_streaming.h
 //   - Utility functions: utils/*.h
@@ -287,7 +289,7 @@ extern "C" {
 // ====================================================================================
 // The following functions have been extracted to separate modules:
 //   - setup_fftw_plans_full() -> fft/fft_setup.c
-//   - generate_hermitian_slice_pair_local() -> generation/hermitian_generation.c
+//   - generate_zd_mpi_slice_pair_local() -> generation/ZD_MPI_generation.c
 //   - exchange_metadata() -> communication/mpi_exchange.c
 //   - pack_slices_to_send_buffer() -> communication/mpi_exchange.c
 //   - unpack_recv_buffer_to_pencils() -> communication/mpi_exchange.c
@@ -296,8 +298,8 @@ extern "C" {
 // All implementations are available via the module headers included above.
 // ====================================================================================
 
-// NOTE: generate_hermitian_slice_pair_local() is now implemented in 
-// generation/hermitian_generation.c and declared in generation/hermitian_generation.h
+// NOTE: generate_zd_mpi_slice_pair_local() is now implemented in 
+// generation/ZD_MPI_generation.c and declared in generation/ZD_MPI_generation.h
 // The old implementation has been removed to avoid duplicate definitions.
 
 // All verification function implementations have been moved to utils/verification.c
@@ -469,6 +471,51 @@ void x_streaming_unpack(
 // ====================================================================================
 // MAIN FUNCTION
 // ====================================================================================
+
+static int broadcast_parameter_header_bytes(
+    const char *param_file,
+    int rank,
+    MPI_Comm comm,
+    std::vector<char> &header_bytes
+) {
+    uint64_t header_len = 0;
+    if (rank == 0) {
+        HeaderStream hs{fs::path(param_file)};
+        hs.ReadHeader();
+        if (hs.buffer == NULL || hs.bufferlength < 2) {
+            fprintf(stderr, "ERROR: Invalid parameter header read from %s\n", param_file);
+            return 1;
+        }
+        if (hs.bufferlength > static_cast<size_t>(INT_MAX)) {
+            fprintf(stderr, "ERROR: Parameter header too large for MPI_Bcast count: %zu\n", hs.bufferlength);
+            return 1;
+        }
+        header_bytes.assign(hs.buffer, hs.buffer + hs.bufferlength);
+        header_len = static_cast<uint64_t>(hs.bufferlength);
+    }
+
+    MPI_Bcast(&header_len, 1, MPI_UINT64_T, 0, comm);
+    if (header_len < 2) {
+        if (rank == 0) {
+            fprintf(stderr, "ERROR: Broadcast parameter header length is invalid: %llu\n",
+                    static_cast<unsigned long long>(header_len));
+        }
+        return 1;
+    }
+    if (header_len > static_cast<uint64_t>(INT_MAX)) {
+        if (rank == 0) {
+            fprintf(stderr, "ERROR: Broadcast parameter header exceeds MPI_Bcast int count: %llu\n",
+                    static_cast<unsigned long long>(header_len));
+        }
+        return 1;
+    }
+
+    if (rank != 0) {
+        header_bytes.resize(static_cast<size_t>(header_len));
+    }
+    MPI_Bcast(header_bytes.data(), static_cast<int>(header_len), MPI_BYTE, 0, comm);
+    return 0;
+}
 
 int main(int argc, char **argv)
 {
@@ -740,8 +787,17 @@ int main(int argc, char **argv)
         if (rank == 0) {
             printf("[INIT] Loading zeldovich-PLT parameters from: %s\n", param_file);
         }
-        
-        params = zeldovich_params_create(param_file);
+
+        std::vector<char> param_header_bytes;
+        if (broadcast_parameter_header_bytes(param_file, rank, MPI_COMM_WORLD, param_header_bytes) != 0) {
+            MPI_Abort(MPI_COMM_WORLD, 1);
+        }
+
+        params = zeldovich_params_create_from_buffer(
+            param_header_bytes.data(),
+            param_header_bytes.size(),
+            param_file
+        );
         if (!params) {
             if (rank == 0) {
                 fprintf(stderr, "ERROR: Failed to load parameter file: %s\n", param_file);
@@ -861,7 +917,7 @@ int main(int argc, char **argv)
     }
     
     // Create plans using dummy memory (before allocating actual data)
-    setup_fftw_plans_full(N, narray, &plan_2d, &plan_1d_y);
+    setup_fftw_plans_full(N, narray, NULL, &plan_2d, &plan_1d_y, "/dev/shm/Abacus_wisdom");
     
     if (rank == 0 && DEBUG_PRINTS) {
         printf("[SETUP] FFT plans created successfully (2D and 1D)\n");
@@ -959,15 +1015,16 @@ int main(int argc, char **argv)
     
     // V14: Verify grid decomposition (show both core and padded with periodic BC)
     // Calculate grid factors first (needed for get_extended_grid_bounds)
-    int grid_x_verify, grid_z_verify;
-    calculate_grid_factors(num_ranks, &grid_x_verify, &grid_z_verify);
+    // was: int grid_x_verify, grid_z_verify;
+    int size_x_verify, size_z_verify;
+    calculate_grid_factors(num_ranks, &size_x_verify, &size_z_verify);
     
     // Validate Abacus compatibility (if enabled)
 #if ENABLE_ABACUS_VALIDATION
     if (rank == 0) {
-        if (!validate_abacus_compatibility(N, num_ranks, grid_x_verify, grid_z_verify)) {
+        if (!validate_abacus_compatibility(N, num_ranks, size_x_verify, size_z_verify)) {
             fprintf(stderr, "[WARNING] Domain decomposition may not be Abacus-compatible\n");
-            fprintf(stderr, "          Abacus requires: N divisible by grid_x and grid_z (exact division)\n");
+            fprintf(stderr, "          Abacus requires: N divisible by size_x and size_z (exact division)\n");
         }
     }
 #endif
@@ -976,7 +1033,7 @@ int main(int argc, char **argv)
         printf("\n[V14-DEBUG] Grid decomposition verification (PERIODIC BOUNDARIES):\n");
         int num_to_print = (num_ranks < 4) ? num_ranks : 4;
         for (int dest = 0; dest < num_to_print; dest++) {
-            ExtendedGridBounds ext_b = get_extended_grid_bounds(dest, N, num_ranks, grid_x_verify, grid_z_verify);
+            ExtendedGridBounds ext_b = get_extended_grid_bounds(dest, N, num_ranks, size_x_verify, size_z_verify);
             printf("  Rank %d:\n", dest);
             printf("    Core:   X=[%d,%d), Z=[%d,%d), Pencils=%d\n",
                    ext_b.core.x_start, ext_b.core.x_end, 
@@ -1019,20 +1076,21 @@ int main(int argc, char **argv)
     // ========================================================================
     
     // V13: Need to calculate grid factors first to call get_extended_grid_bounds
-    int grid_x, grid_z;
-    calculate_grid_factors(num_ranks, &grid_x, &grid_z);
+    // was: int grid_x, grid_z;
+    int size_x, size_z;
+    calculate_grid_factors(num_ranks, &size_x, &size_z);
     
     // Validate Abacus compatibility (if enabled)
 #if ENABLE_ABACUS_VALIDATION
-    if (rank == 0 && !validate_abacus_compatibility(N, num_ranks, grid_x, grid_z)) {
+    if (rank == 0 && !validate_abacus_compatibility(N, num_ranks, size_x, size_z)) {
         fprintf(stderr, "[WARNING] Domain decomposition may not be Abacus-compatible\n");
-        fprintf(stderr, "          Abacus requires: N divisible by grid_x and grid_z (exact division)\n");
+        fprintf(stderr, "          Abacus requires: N divisible by size_x and size_z (exact division)\n");
     }
 #endif
     
     if (!is_idle_rank) {
         // V13: Get extended bounds with X-padding for Abacus compatibility
-        my_extended_bounds = get_extended_grid_bounds(rank, N, num_ranks, grid_x, grid_z);
+        my_extended_bounds = get_extended_grid_bounds(rank, N, num_ranks, size_x, size_z);
         
         // Use appropriate pencil count (padded if enabled, core otherwise)
 #if USE_X_PADDING
@@ -1342,7 +1400,7 @@ int main(int argc, char **argv)
                 ? &local_y_slices[0 * narray * N * N]
                 : &local_y_slices[1 * narray * N * N];
             
-            generate_hermitian_slice_pair_local(
+            generate_zd_mpi_slice_pair_local(
                 N, y_batch_primary, y_batch_mirror,
                 primary_ptr, conjugate_ptr,
                 narray, plan_2d, rank,
@@ -1353,7 +1411,7 @@ int main(int argc, char **argv)
             
             // DEBUG: Memory guard after generation + 2D FFT
             if (rank < 4 || DEBUG_PRINTS) {
-                fprintf(stderr, "[Rank %d] After generate_hermitian_slice_pair_local (Y=%d): Verifying local_y_slices buffer...\n",
+                fprintf(stderr, "[Rank %d] After generate_zd_mpi_slice_pair_local (Y=%d): Verifying local_y_slices buffer...\n",
                        rank, y_batch_primary);
                 fflush(stderr);
                 
@@ -1981,7 +2039,7 @@ int main(int argc, char **argv)
     // STAGE 7: INVERSE FFT VERIFICATION (DISABLED)
     // ========================================================================
     // NOTE: Inverse FFT code has been moved to:
-    //       hermitian_3d_matrix_mpi_real_inverse_fft.c.archived
+    //       zd_mpi_3d_matrix_mpi_real_inverse_fft.c.archived
     // The forward FFT already produces a purely real result, so inverse
     // FFT verification is not needed for production.
     

@@ -1,6 +1,6 @@
 # zeldovich-PLT Parameter File
 # For N=16 grid with power law power spectrum
-# Usage: ./hermitian_3d_matrix 16 examples/param_N16.par
+# Usage: ./Zeldovich_MPI 16 examples/param_N16.par
 
 BoxSize = 100.0
 CPD = 4                          # Cells per dimension (= N)
@@ -8,7 +8,6 @@ ICFormat = "RVZel"
 InitialConditionsDirectory = "./output"
 InitialRedshift = 99.0
 NP = 4096                          # N^3 = 16^3
-ZD_NumBlock = 2
 ZD_Seed = 4                        # Random seed
 ZD_Pk_scale = 1.0
 ZD_Pk_norm = 8.0                   # Normalization scale (e.g., sigma_8)

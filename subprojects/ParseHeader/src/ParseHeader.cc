@@ -1,0 +1,61 @@
+#include <string>
+#include <iostream>
+#include <stdio.h>
+#include <assert.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <errno.h>
+#include "ParseHeader.hh"
+#include "detail/phDriver.hh"
+
+#include <fmt/base.h>
+#include <fmt/std.h>
+#include <fmt/ostream.h>
+
+ParseHeader::ParseHeader(void) {
+    phdriver = std::make_unique<phDriver>(1,1);
+    phdriver->Debug = false;
+}
+
+void ParseHeader::ReadHeader(HeaderStream &in) {
+    in.ReadHeader();
+    ParseBuffer(in);
+}
+
+void ParseHeader::ParseBuffer(HeaderStream &in) {
+    assert(in.buffer[in.bufferlength-1]==0x0 && in.buffer[in.bufferlength-2]==0x0);
+    phdriver->trace_parsing = false;
+    phdriver->trace_scanning = false;
+    int result = phdriver->parse(in.buffer, in.bufferlength, in.name, 1, 0, false);
+    if(result!=0) {
+        fmt::print(std::cerr, "HS::parseit: there were errors parsing \"{}\" ...exiting.\n", in.name);
+        exit(1);
+    }
+    resize_vectors();
+    phdriver->ResetParser();
+}
+
+void ParseHeader::resize_vectors(void) {
+    // We over-allocated the user's vectors so that ParseHeader could read into the
+    // underlying buffers, C-style. Now we need to resize the vectors to the used length.
+    //
+    // If a vector was NOT present in the header, keep the user's original default size
+    // and preserve their default values.
+    for(auto &v : vectors) {
+        const auto &name = v.first;
+        const auto &binding = v.second;
+
+        SYMENT *sym = phdriver->lookup(name.c_str(), 1);
+        if(sym) {
+            const size_t new_size = (sym->nvals > 0)
+                ? static_cast<size_t>(sym->nvals)
+                : binding.original_size;
+
+            std::visit([new_size](auto&& arg){ arg->resize(new_size); }, binding.vec);
+        } else {
+            fmt::print(std::cerr, "ParseHeader::resize_vectors: symbol \"{}\" not found.\n", name);
+            exit(1);
+        }
+    }
+}
