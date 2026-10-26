@@ -128,7 +128,8 @@ void kernel_pass_init(KernelPass *P, const KernelLayout *K, MPI_Comm comm, doubl
     int64_t plane = (int64_t)M * M;
 
     // 2D plans need an M x M buffer; 1D plan uses a dummy line (staged execution not needed:
-    // every plane/line we execute on is ALIGN_BYTES-aligned or a multiple of 16*M bytes in)
+    // every plane/line we execute on is ALIGN_BYTES-aligned or a multiple of
+    // sizeof(fftw_complex_t)*M bytes in)
     fftw_complex_t *plan_buf = kernel_alloc_complex(plane, "fft plan buffer");
     memset(plan_buf, 0, sizeof(fftw_complex_t) * (size_t)plane);
     setup_fftw_plans_full(M, 1, plan_buf, &P->plan2d_bwd, &P->plan1d_bwd, NULL);
@@ -217,8 +218,8 @@ static void stage_forward(KernelPass *P, const KernelShape *shape)
                         double h = kpow(k, shape->pH);
                         // G*phi + i*H*phi
                         fftw_complex_t *d = &dst[(size_t)pz * M + pad_idx(ix, N, M)];
-                        (*d)[0] = g * vr - h * vi;
-                        (*d)[1] = g * vi + h * vr;
+                        (*d)[0] = (real_t)(g * vr - h * vi);
+                        (*d)[1] = (real_t)(g * vi + h * vr);
                     }
                 }
                 FFTW_EXECUTE_DFT(P->plan2d_bwd, dst, dst);
@@ -305,8 +306,8 @@ static void stage_zslab(KernelPass *P)
 
             // z = g + i h with g, h real  =>  g*h = Im(z^2)/2 ; single 1/M^3 normalization
             for (int y = 0; y < M; y++) {
-                double q = line[y][0] * line[y][1] * inv_M3;
-                line[y][0] = q;
+                double q = (double)line[y][0] * (double)line[y][1] * inv_M3;
+                line[y][0] = (real_t)q;
                 line[y][1] = 0.0;
             }
 
@@ -406,8 +407,8 @@ static void stage_return(KernelPass *P, const KernelShape *shape, double coef)
                 double k = P->kfund * sqrt(kx * kx + ky * ky + kz * kz);
                 double J = shape->cJ * kpow(k, shape->pJ);
                 const fftw_complex_t *q = &row[pad_idx(ix, N, M)];
-                out[(size_t)iz * N + ix][0] += coef * ((*q)[0] * J);
-                out[(size_t)iz * N + ix][1] += coef * ((*q)[1] * J);
+                out[(size_t)iz * N + ix][0] += (real_t)(coef * ((*q)[0] * J));
+                out[(size_t)iz * N + ix][1] += (real_t)(coef * ((*q)[1] * J));
             }
         }
         P->t_fft2d_accum += MPI_Wtime() - t1;

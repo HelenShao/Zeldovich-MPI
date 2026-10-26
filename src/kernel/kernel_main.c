@@ -23,6 +23,9 @@
  *   KERNEL_ONLY_TERM=<A1|C1|...>     debug: run only this shape with coef 1 (output = J*Q)
  *   KERNEL_FORCE_STAGED_A2A=1        test: always use the INT_MAX-safe staged Alltoallv path
  *
+ * Precision follows precision.h (real_t / fftw_complex_t): single by default, double
+ * with -Ddouble_precision=true. Slice files are float64 either way.
+ *
  * Stages per kernel term: see kernel_pass.h.
  */
 
@@ -47,10 +50,6 @@
 #include "kernel_io.h"
 #include "kernel_pass.h"
 #include "kernel_terms.h"
-
-#ifndef USE_DOUBLE_PRECISION
-#error "Kernel_MPI requires double precision: configure meson with -Ddouble_precision=true"
-#endif
 
 // ====================================================================================
 // par2 parsing (port of parse_par2 in kernel_MPI.py: numeric keys + ZD_PNG_DIR)
@@ -251,7 +250,8 @@ int main(int argc, char **argv)
         printf("  N=%d  M=%d (padding %.3fx)  BoxSize=%g\n", N, M, (double)M / N, kp.box_size);
         printf("  ranks=%d (size_x=%d x size_z=%d), OMP threads/rank=%d\n",
                num_ranks, size_x, size_z, omp_get_max_threads());
-        printf("  batches=%d, compat=%d, zero_nyquist=%d\n", K.num_batches, compat, zero_nyquist);
+        printf("  precision=%s, batches=%d, compat=%d, zero_nyquist=%d\n",
+               PRECISION_NAME, K.num_batches, compat, zero_nyquist);
         printf("  in:  %s\n  out: %s\n", png_dir, out_dir);
         for (int t = 0; t < num_terms; t++) {
             printf("  term %d: %s  coef=% .17g\n", t, kernel_shape(terms[t].shape)->name, terms[t].coef);

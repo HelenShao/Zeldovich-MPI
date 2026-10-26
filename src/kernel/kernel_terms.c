@@ -1,10 +1,14 @@
 // ====================================================================================
 // KERNEL TERM TABLES
+
 // ====================================================================================
 
 #include "kernel_terms.h"
 #include <string.h>
 
+// Each shape is {name, pG, pH, pJ, cJ}: G = |k|^pG, H = |k|^pH, J = cJ * |k|^pJ,
+// contributing J(k) * FFT[ IFFT(G*phi) * IFFT(H*phi) ].
+// E.g. C1 = {1, 1, -2, 1/3}: G = k, H = k, J = 1/(3k^2).
 static const KernelShape kernel_shapes[KSHAPE_COUNT] = {
     [KSHAPE_A1] = {"A1",  0,  0,  0, 1.0},
     [KSHAPE_C1] = {"C1",  1,  1, -2, 1.0 / 3.0},

@@ -120,3 +120,5 @@ subprojects/.wraplock
 1rank-run-cosm500/.runtime/
 1rank-run-cosm500/*.log
 1rank-run-cosm500/data/output/
+png_slices/
+test/kernel_regression/
