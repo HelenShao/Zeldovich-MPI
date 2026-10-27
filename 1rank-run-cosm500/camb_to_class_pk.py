@@ -4,7 +4,7 @@ using the same cosmology as the CAMB run in camb_planck15_params.ini, and
 write them out in the same two-column [k, P(k)] format as camb_planck15.dat.
 
 Output files:
-    class_pk_z0.dat         -> k [h/Mpc],  P(k,z=0) [(Mpc/h)^3]   (late-time)
+    class_pk_z1.dat         -> k [h/Mpc],  P(k,z=0) [(Mpc/h)^3]   (late-time)
     class_pk_primordial.dat -> k [h/Mpc],  P_R(k)   [dimensionless] (primordial)
 
 Note on units/interpretation:
@@ -49,7 +49,8 @@ kmin_hmpc, kmax_hmpc = k_hmpc.min(), k_hmpc.max()
 params = {
     'output': 'mPk',
     'non linear': 'none',
-    'gauge': 'Newtonian', # compute perturbations in Newtonian (longitudinal) gauge
+    #'gauge': 'Newtonian', # compute perturbations in Newtonian (longitudinal) gauge
+    'gauge' : 'Synchronous',
 
     'h': 0.6726,
     'omega_b': 0.02222,
@@ -82,12 +83,12 @@ h = cosmo.h()
 #    Convert to the CAMB convention: k in h/Mpc, P(k) in (Mpc/h)^3.
 # ---------------------------------------------------------------------
 k_1mpc = k_hmpc * h
-pk_z0_mpc3 = np.array([cosmo.pk(k, 0.0) for k in k_1mpc])   # Mpc^3
-pk_z0_hmpc3 = pk_z0_mpc3 * h**3                              # (Mpc/h)^3
+pk_z1_mpc3 = np.array([cosmo.pk(k, 1.0) for k in k_1mpc])   # Mpc^3
+pk_z1_hmpc3 = pk_z1_mpc3 * h**3                              # (Mpc/h)^3
 
-late_time_out = np.column_stack([k_hmpc, pk_z0_hmpc3])
+late_time_out = np.column_stack([k_hmpc, pk_z1_hmpc3])
 np.savetxt(
-    "data/class_pk_z0.dat",
+    "data/class_pk_z1.dat",
     late_time_out,
     fmt="%15.8E",
 )
@@ -142,7 +143,7 @@ np.savetxt(
 # delta_prim(k) = sqrt(P_prim(k)/P_late(k,z=0)) * delta_late(k)
 # (shown here just as the rescaling factor sqrt(P_prim/P_late), since
 #  delta_late(k) itself is whatever complex field/realization you have)
-# rescale_factor = np.sqrt(p_prim_volume_hmpc3 / pk_z0_hmpc3)
+# rescale_factor = np.sqrt(p_prim_volume_hmpc3 / pk_z1_hmpc3)
 # np.savetxt(
 #     "/mnt/user-data/outputs/class_pk_prim_over_late_rescale_factor.dat",
 #     np.column_stack([k_hmpc, rescale_factor]),
@@ -153,5 +154,5 @@ cosmo.struct_cleanup()
 cosmo.empty()
 
 print("h =", h)
-print("Wrote class_pk_z0.dat and class_pk_primordial.dat")
+print("Wrote class_pk_z1.dat and class_pk_primordial.dat")
 print("k range:", kmin_hmpc, "to", kmax_hmpc, "h/Mpc")

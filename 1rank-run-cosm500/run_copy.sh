@@ -6,7 +6,7 @@
 #   ./run.sh --no-build   # skip meson compile
 #
 # Set paths before running (or place files under data/):
-#   export PK_FILE=/path/to/class_pk_z0.dat
+#   export PK_FILE=/path/to/class_pk_z1.dat
 #   export PLT_FILE=/path/to/eigmodes128
 #   export PRIMORDIAL_PK_FILE=/path/to/class_pk_primordial_dimensional.dat  # optional
 #   export IC_OUTPUT_DIR=/path/to/output   # default: ./output

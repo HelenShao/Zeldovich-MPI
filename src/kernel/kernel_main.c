@@ -8,7 +8,9 @@
  * for the LOAD_D_FROM_FILE run. Files are keyed by y only, so the rank count here need
  * not match the Zeldovich_MPI dump or load runs.
  *
- * Usage:  mpiexec -n R Kernel_MPI [param.par2] [--png-dir DIR] [--out-dir DIR]
+ * Usage:  mpiexec -n R Kernel_MPI [param.par2] [--png-dir DIR] [--out-dir DIR] [--python-compat]
+ *
+ *   --python-compat                  default M = 2N, as in kernel_MPI.py (same as KERNEL_PYTHON_COMPAT=1)
  *
  * Par2 keys:  BoxSize, NumZRanks, ZD_f_NL_local, ZD_f_NL_equil, ZD_f_NL_orthoCMB,
  *             ZD_f_NL_orthoLSS, optional ZD_PNG_DIR (default "png_slices"),
@@ -16,8 +18,8 @@
  *
  * Environment:
  *   PARAM_FILE, PNG_DIR, OUT_DIR    override the par2 file / ZD_PNG_DIR / output dir (CLI args override these)
- *   KERNEL_PYTHON_COMPAT=1 (default) default M = 2N, as in kernel_MPI.py
- *                       =0           default M = smallest valid M >= 3N/2 (alias-free, smaller)
+ *   KERNEL_PYTHON_COMPAT=0 (default) default M = smallest valid M >= 3N/2 (alias-free, smaller)
+ *                       =1           default M = 2N, as in kernel_MPI.py (or pass --python-compat)
  *   KERNEL_PAD_M=<M>                 explicit padded size (overrides KernelPadM and the default)
  *   KERNEL_ZERO_NYQUIST=1            zero the kx/ky/kz = N/2 modes of phi before the kernels
  *   KERNEL_ONLY_TERM=<A1|C1|...>     debug: run only this shape with coef 1 (output = J*Q)
@@ -153,8 +155,11 @@ int main(int argc, char **argv)
     const char *param_file = getenv("PARAM_FILE") ? getenv("PARAM_FILE") : ".runtime/param.par2";
     const char *png_dir_arg = getenv("PNG_DIR");
     const char *out_dir_arg = getenv("OUT_DIR");
+    int compat = env_int("KERNEL_PYTHON_COMPAT", 0);
     for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "--png-dir") == 0 && i + 1 < argc) {
+        if (strcmp(argv[i], "--python-compat") == 0) {
+            compat = 1;
+        } else if (strcmp(argv[i], "--png-dir") == 0 && i + 1 < argc) {
             png_dir_arg = argv[++i];
         } else if (strcmp(argv[i], "--out-dir") == 0 && i + 1 < argc) {
             out_dir_arg = argv[++i];
@@ -165,7 +170,6 @@ int main(int argc, char **argv)
         }
     }
 
-    const int compat = env_int("KERNEL_PYTHON_COMPAT", 1);
     const int zero_nyquist = env_int("KERNEL_ZERO_NYQUIST", 0);
     const int pad_M_env = env_int("KERNEL_PAD_M", -1);
     const char *only_term = getenv("KERNEL_ONLY_TERM");
@@ -292,9 +296,8 @@ int main(int argc, char **argv)
 
     if (rank == 0) {
         double gb = 1.0e-9 * sizeof(fftw_complex_t);
-        printf("[Memory, rank 0] recv_buffer %.3f GB, q_half %.3f GB, phi+out %.3f GB\n",
-               K.recv_total * gb, (double)(N / 2 + 1) * K.my_pencils * gb,
-               2.0 * K.my_num_pairs * slice_elems * gb);
+        printf("[Memory, rank 0] recv_buffer (also holds q_half) %.3f GB, phi+out %.3f GB\n",
+               K.recv_total * gb, 2.0 * K.my_num_pairs * slice_elems * gb);
         fflush(stdout);
     }
 

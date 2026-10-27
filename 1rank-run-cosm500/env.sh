@@ -18,7 +18,7 @@ fi
 
 export DATA_DIR="${DATA_DIR:-${BUNDLE_DIR}/data}"
 export IC_OUTPUT_DIR="${IC_OUTPUT_DIR:-${BUNDLE_DIR}/output}"
-export PK_FILE="${PK_FILE:-${DATA_DIR}/class_pk_z0.dat}"
+export PK_FILE="${PK_FILE:-${DATA_DIR}/class_pk_z1.dat}"
 export PLT_FILE="${PLT_FILE:-${DATA_DIR}/eigmodes128}"
 
 export NTHREADS_PER_RANK="${NTHREADS_PER_RANK:-${OMP_NUM_THREADS:-1}}"

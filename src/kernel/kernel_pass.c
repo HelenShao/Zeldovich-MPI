@@ -147,8 +147,19 @@ void kernel_pass_init(KernelPass *P, const KernelLayout *K, MPI_Comm comm, doubl
         MPI_Abort(MPI_COMM_WORLD, 1);
     }
 
+    // q_half is written in place over recv_buffer. recv_buffer is [slot][pencil] with N
+    // slots of my_pencils each (every offset in kernel_layout_init is a multiple of
+    // my_pencils), and q_half is [j][pencil] with j < N/2+1 <= N slots. In stage B a pencil
+    // reads all N of its slots into a line before writing its N/2+1 values back, and
+    // different pencils touch disjoint elements, so no unread data is overwritten.
+    // Stage C only reads q_half, and the next term's stage A refills recv_buffer after it.
+    if (K->recv_total != (int64_t)K->N * K->my_pencils) {
+        fprintf(stderr, "[Kernel_MPI] ERROR: recv_total %lld != N * my_pencils %lld\n",
+                (long long)K->recv_total, (long long)K->N * K->my_pencils);
+        MPI_Abort(MPI_COMM_WORLD, 1);
+    }
     P->recv_buffer = kernel_alloc_complex(K->recv_total, "forward recv_buffer");
-    P->q_half = kernel_alloc_complex((int64_t)(K->N / 2 + 1) * K->my_pencils, "q_half");
+    P->q_half = P->recv_buffer;
 }
 
 void kernel_pass_free(KernelPass *P)
@@ -157,8 +168,7 @@ void kernel_pass_free(KernelPass *P)
     FFTW_DESTROY_PLAN(P->plan2d_fwd);
     FFTW_DESTROY_PLAN(P->plan1d_bwd);
     FFTW_DESTROY_PLAN(P->plan1d_fwd);
-    free(P->recv_buffer);
-    free(P->q_half);
+    free(P->recv_buffer);   // q_half aliases it
 }
 
 // ====================================================================================

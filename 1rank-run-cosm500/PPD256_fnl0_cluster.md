@@ -30,11 +30,11 @@ cd "$REPO_ROOT/1rank-run-cosm500"
 
 Leave `BoxSize = 325` and the rest of the cosmology, seed (`ZD_Seed = 12345`), `ZD_Pk_norm = 8`, `ZD_Pk_sigma`, `ZD_k_cutoff = 1`, and `ZD_qPLT = 1` as they are. Both codes must see those same values.
 
-`data/class_pk_z0.dat`, `data/class_pk_primordial_dimensional.dat`, and `data/eigmodes128` are already in this bundle. `env.sh` picks them up if you do not override `PK_FILE` and `PLT_FILE`.
+`data/class_pk_z1.dat`, `data/class_pk_primordial_dimensional.dat`, and `data/eigmodes128` are already in this bundle. `env.sh` picks them up if you do not override `PK_FILE` and `PLT_FILE`.
 
 ## Shared settings for the meson run
 
-Check out the `meson` branch of `Zeldovich-MPI` (no PNG generation). Give it a parameter file with the same box, `NP`, `CPD`, seed, `ZD_Pk_filename` (`class_pk_z0.dat`), PLT file, `ZD_Pk_norm`, `ZD_Pk_sigma`, `ZD_Pk_smooth`, `ZD_k_cutoff`, `ZD_qPLT`, `ZD_Version`, `InitialRedshift`, `ICFormat = RVZel`, and `NumZRanks = 1`.
+Check out the `meson` branch of `Zeldovich-MPI` (no PNG generation). Give it a parameter file with the same box, `NP`, `CPD`, seed, `ZD_Pk_filename` (`class_pk_z1.dat`), PLT file, `ZD_Pk_norm`, `ZD_Pk_sigma`, `ZD_Pk_smooth`, `ZD_k_cutoff`, `ZD_qPLT`, `ZD_Version`, `InitialRedshift`, `ICFormat = RVZel`, and `NumZRanks = 1`.
 
 Omit these lines from the meson file. That branch does not install them, and the parser will abort on an unknown name:
 

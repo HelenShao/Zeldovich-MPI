@@ -10,6 +10,7 @@
 //   Stage B (per z-slab of my pencils):
 //       unpack (zero for padded y rows) -> 1D bwd FFT in y -> Q = Im(z^2)/2/M^3
 //       -> 1D fwd FFT in y -> keep only y_p in [0, N/2] (y crop) in q_half
+//       (q_half lives in recv_buffer: see kernel_pass_init)
 //   Stage C (return exchange, batched over y pairs):
 //       q_half column y_p -> Alltoallv to the y_p owner -> M x M plane -> 2D fwd FFT
 //       -> read the N x N original modes (x,z crop) -> out += coef * J * Q
@@ -32,8 +33,8 @@ typedef struct {
     fftw_complex_t **phi;         // [my_num_pairs] primary slices, N*N [z][x]
     fftw_complex_t **out;         // [my_num_pairs] accumulated output, N*N [z][x]
 
-    fftw_complex_t *recv_buffer;  // K->recv_total
-    fftw_complex_t *q_half;       // [(N/2+1)][my_pencils]
+    fftw_complex_t *recv_buffer;  // K->recv_total = N * my_pencils, [slot][pencil]
+    fftw_complex_t *q_half;       // [(N/2+1)][my_pencils], aliases recv_buffer (not owned)
 
     fftw_plan_t plan2d_bwd, plan2d_fwd;  // M x M in-place
     fftw_plan_t plan1d_bwd, plan1d_fwd;  // length M in-place
