@@ -7,13 +7,13 @@
 # paths from IC_OUTPUT_DIR, PK_FILE, and PLT_FILE (see env.sh / README).
 
 BoxSize = 325.
-NP = 2097152 #N=128
+NP = 16777216 #N=256
 CPD = 243
 InitialConditionsDirectory = "./output"
 InitialRedshift = 49.
 ICFormat = "RVZel"
 ZD_NumBlock = 4
-ZD_Pk_filename = "./data/class_pk_z0.dat"
+ZD_Pk_filename = "./data/class_pk_z1.dat"
 ZD_Pk_primordial_filename = "./data/class_pk_primordial_dimensional.dat"
 ZD_PNG_DIR = "./png_slices"
 ZD_Seed = 12345.
@@ -29,14 +29,12 @@ ZD_Version = 2
 ZD_f_cluster = 1.0
 ZD_Pk_sigma = 0.02086274818611812
 ZD_qPk_fix_to_mean = 0
-ZD_f_NL = 100
-# Charlie: used by the f_NL Phi <-> D conversion; must match the CLASS cosmology
-# (Omega_M = (omega_b + omega_cdm)/h^2 = (0.02222 + 0.1199)/0.6726^2). Defaults are 1.0 and 1.
+ZD_f_NL = 1000000
 Omega_M = 0.3141531891588591
 ZD_n_s = 0.9652
 ZD_qdensity = 1
 
-NumZRanks = 2
+NumZRanks = 1
 
 # Charlie: added to toggle which f_NL to compute
 ZD_f_NL_local = 1
