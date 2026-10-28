@@ -55,6 +55,7 @@ static int wisdom_narray_from_params(ParametersHandle params, int *narray_out)
     return 0;
 }
 
+#ifdef USE_FFTW_WISDOM
 static int wisdom_preflight_from_param_buffer(
     const char *bytes,
     size_t len,
@@ -148,6 +149,7 @@ static int wisdom_preflight_from_param_buffer(
     MPI_Barrier(MPI_COMM_WORLD);
     return 0;
 }
+#endif
 
 int IC_Rank0Wisdom(const char *param_file)
 {
@@ -220,10 +222,13 @@ int IC_ParamBuffer(const char *bytes, size_t len, const char *wisdom_save_dir)
 
     zd_ic_wisdom_save_dir = wisdom_save_dir;
 
+#ifdef USE_FFTW_WISDOM
+    // The preflight's plans reach the other ranks only through the wisdom broadcast.
     const int wis_rc = wisdom_preflight_from_param_buffer(bytes, len, wisdom_save_dir);
     if (wis_rc != 0) {
         return wis_rc;
     }
+#endif
 
     zeldovich_embed_param_header.bytes = bytes;
     zeldovich_embed_param_header.len = len;

@@ -7,6 +7,7 @@ option('debug_prints', type: 'boolean', value: true, description: 'DEBUG_PRINTS=
 option('debug_rng_consistency', type: 'boolean', value: true, description: 'DEBUG_RNG_CONSISTENCY')
 option('debug_rng_skip', type: 'boolean', value: true, description: 'DEBUG_RNG_SKIP=1 when true')
 option('use_fftw_wisdom', type: 'boolean', value: false, description: 'Define USE_FFTW_WISDOM')
+option('fft', type: 'combo', choices: ['fftw', 'mkl', 'auto'], value: 'auto', yield: true, description: 'FFT library: FFTW, oneMKL through its FFTW3 interface (no wisdom, so use_fftw_wisdom is ignored), or auto for MKL when pkg-config finds it. Follows the fft option of a parent project.')
 option('extra_cpp_args', type: 'array', value: [], description: 'Extra compiler defines/flags (e.g. -DMYFLAG)')
 option('enable_asan', type: 'boolean', value: false, description: 'Enable AddressSanitizer')
 option(

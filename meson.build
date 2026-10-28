@@ -53,9 +53,6 @@ if get_option('debug_rng_skip')
 else
   proj_defs += '-DDEBUG_RNG_SKIP=0'
 endif
-if get_option('use_fftw_wisdom')
-  proj_defs += '-DUSE_FFTW_WISDOM'
-endif
 foreach _a : get_option('extra_cpp_args')
   proj_defs += _a
 endforeach
@@ -78,31 +75,54 @@ fmt_dep = dependency(
 mpi_dep = dependency('mpi', language: 'cpp')
 omp_dep = dependency('openmp')
 # =============================================================================
-# Libraries — FFTW (pkg-config; e.g. module load fftw on Aurora)
+# Libraries — FFTW (pkg-config; e.g. module load fftw on Aurora), or oneMKL's FFTW3 interface
 # Threaded plan API (fftwf_init_threads, etc.) lives in libfftw3f_omp — no .pc on Aurora.
 # =============================================================================
-if _double_prec
-  _fftw_base_dep = dependency('fftw3', required: true)
-  _fftw_omp_pc = 'fftw3_omp'
-  _fftw_omp_lib = 'fftw3_omp'
-else
-  _fftw_base_dep = dependency('fftw3f', required: true)
-  _fftw_omp_pc = 'fftw3f_omp'
-  _fftw_omp_lib = 'fftw3f_omp'
+_fft = get_option('fft')
+_mkl_gnu = cxx.get_id() == 'gcc'
+use_mkl_fft = false
+if _fft != 'fftw'
+  # The 2D plan needs MKL's OpenMP threading layer (the sequential layer ignores
+  # FFTW_PLAN_WITH_NTHREADS), built for the compiler's OpenMP runtime.
+  _mkl_dep = dependency(_mkl_gnu ? 'mkl-dynamic-lp64-gomp' : 'mkl-dynamic-lp64-iomp', required: _fft == 'mkl')
+  use_mkl_fft = _mkl_dep.found()
 endif
-_fftw_omp_dep = dependency(_fftw_omp_pc, required: false)
-if _fftw_omp_dep.found()
+if use_mkl_fft
   fftw_dep = declare_dependency(
-    dependencies: [_fftw_base_dep, _fftw_omp_dep],
+    compile_args: ['-I' + (_mkl_dep.get_variable('includedir') / 'fftw')],
+    dependencies: _mkl_dep.partial_dependency(link_args: true),
   )
 else
-  fftw_dep = declare_dependency(
-    dependencies: [_fftw_base_dep],
-    link_args: [
-      '-L' + _fftw_base_dep.get_variable('libdir'),
-      '-l' + _fftw_omp_lib,
-    ],
-  )
+  if _double_prec
+    _fftw_base_dep = dependency('fftw3', required: true)
+    _fftw_omp_pc = 'fftw3_omp'
+    _fftw_omp_lib = 'fftw3_omp'
+  else
+    _fftw_base_dep = dependency('fftw3f', required: true)
+    _fftw_omp_pc = 'fftw3f_omp'
+    _fftw_omp_lib = 'fftw3f_omp'
+  endif
+  _fftw_omp_dep = dependency(_fftw_omp_pc, required: false)
+  if _fftw_omp_dep.found()
+    fftw_dep = declare_dependency(
+      dependencies: [_fftw_base_dep, _fftw_omp_dep],
+    )
+  else
+    fftw_dep = declare_dependency(
+      dependencies: [_fftw_base_dep],
+      link_args: [
+        '-L' + _fftw_base_dep.get_variable('libdir'),
+        '-l' + _fftw_omp_lib,
+      ],
+    )
+  endif
+endif
+if get_option('use_fftw_wisdom')
+  if use_mkl_fft
+    message('use_fftw_wisdom is ignored: oneMKL\'s FFTW3 interface has no wisdom')
+  else
+    add_project_arguments('-DUSE_FFTW_WISDOM', language: ['c', 'cpp'])
+  endif
 endif
 # =============================================================================
 # Include directories (repo layout)
