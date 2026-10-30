@@ -174,6 +174,20 @@ int zeldovich_params_get_CornerModes(ParametersHandle params) {
     return p->CornerModes;
 }
 
+const char* zeldovich_params_get_white_noise_dir(ParametersHandle params) {
+    if (!params) return NULL;
+    ZeldovichParameters* p = static_cast<ZeldovichParameters*>(params);
+    if (p->white_noise_dir.empty()) return NULL;
+    return p->white_noise_dir.c_str();
+}
+
+const char* zeldovich_params_get_white_noise_layout(ParametersHandle params) {
+    if (!params) return NULL;
+    ZeldovichParameters* p = static_cast<ZeldovichParameters*>(params);
+    if (p->white_noise_layout.empty()) return NULL;
+    return p->white_noise_layout.c_str();
+}
+
 // --- PowerSpectrum ---
 
 static const int MAX_TRACKED_OBJECTS = 1024;

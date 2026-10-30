@@ -105,6 +105,14 @@ double zeldovich_params_get_k_cutoff(ParametersHandle params);
 // Returns: 0 = zero modes with k^2 >= k2_cutoff (default), non-zero = keep corner modes
 int zeldovich_params_get_CornerModes(ParametersHandle params);
 
+// Get ZD_WhiteNoiseDirectory
+// Returns: directory of external unit white noise slabs, or NULL if unset (draw from the RNG)
+const char* zeldovich_params_get_white_noise_dir(ParametersHandle params);
+
+// Get ZD_white_noise_layout
+// Returns: "xfast" or "monofonic" (validated in setup()), or NULL if unset
+const char* zeldovich_params_get_white_noise_layout(ParametersHandle params);
+
 // ====================================================================================
 // POWER SPECTRUM INTERFACE
 // ====================================================================================

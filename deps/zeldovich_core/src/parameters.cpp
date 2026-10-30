@@ -52,6 +52,8 @@ void ZeldovichParameters::set_defaults(void) {
     version       = -1;  // All new ICs should use verison 2 (default), but version 1 is
                          // available for backwards compatibility
     CornerModes = 0;     // Legal default (no corner modes)
+    white_noise_dir    = "";  // Legal default: draw the Gaussian field from the RNG
+    white_noise_layout = "";  // Required when white_noise_dir is set
     n_s         = 1;     // Legal default (only used for f_NL)
     Omega_M     = 1.0;   // Legal default (only used for f_NL)
 }
@@ -110,6 +112,8 @@ void ZeldovichParameters::register_vars(void) {
     installscalar("ZD_qPLT_rescale", qPLTrescale, DONT_CARE);
     installscalar("ZD_PLT_target_z", PLT_target_z, DONT_CARE);
     installscalar("ZD_k_cutoff", k_cutoff, DONT_CARE);
+    // Metadata only: zeldovich-MPI never applies ZD_f_NL. It records the f_NL (any shape)
+    // baked into the ZD_WhiteNoiseDirectory noise. Legacy zeldovich-PLT applies it as local f_NL.
     installscalar("ZD_f_NL", f_NL, DONT_CARE);
     installscalar("ZD_n_s", n_s, DONT_CARE);
     installscalar("Omega_M", Omega_M, DONT_CARE);
@@ -117,6 +121,12 @@ void ZeldovichParameters::register_vars(void) {
     installscalar("AllowDirectIO", AllowDirectIO, DONT_CARE);
     installscalar("ZD_Version", version, DONT_CARE);
     installscalar("ZD_CornerModes", CornerModes, DONT_CARE);
+    // Optional. When set, read unit white noise slabs <dir>/<prefix><y>, y = 0..N/2, instead of
+    // drawing from the RNG (ZD_Seed is then unused). Layout "xfast": phi_divided_y.<y>, N x N,
+    // x fastest. Layout "monofonic": output_k_space_slab_y.<y>, N0 x N0 with N0 >= N, z fastest.
+    // Float or double is inferred from the file size.
+    installscalar("ZD_WhiteNoiseDirectory", white_noise_dir, DONT_CARE);
+    installscalar("ZD_white_noise_layout", white_noise_layout, DONT_CARE);
 }
 
 int ZeldovichParameters::setup() {
@@ -206,18 +216,27 @@ int ZeldovichParameters::setup() {
     if (qonemode)
         ZD_ERR("one_mode: {:d}, {:d}, {:d}\n", one_mode[0], one_mode[1], one_mode[2]);
 
+    if (!white_noise_dir.empty()) {
+        if (white_noise_layout != "xfast" && white_noise_layout != "monofonic") {
+            ZD_ERR("ZD_white_noise_layout = \"{:s}\" must be \"xfast\" or \"monofonic\" "
+                   "when ZD_WhiteNoiseDirectory is set\n",
+                   white_noise_layout);
+            exit(1);
+        }
+        if (!fs::is_directory(white_noise_dir)) {
+            ZD_ERR("ZD_WhiteNoiseDirectory = {:s} is not a directory\n", white_noise_dir.string());
+            exit(1);
+        }
+        ZD_ERR("Reading external white noise from {:s} (layout {:s}); ZD_Seed is unused\n",
+               white_noise_dir.string(), white_noise_layout);
+    } else if (!white_noise_layout.empty()) {
+        ZD_ERR("ZD_white_noise_layout is set but ZD_WhiteNoiseDirectory is not\n");
+        exit(1);
+    }
+
     if (f_NL != 0.) {
-        ZD_ERR(
-           "Generating local primordial non-Gaussianity, with parameters:\n"
-           " - ZD_f_NL = {:g}\n"
-           " - ZD_n_s = {:g}\n"
-           " - Omega_M = {:g}\n"
-           " - InitialRedshift = {:g}\n",
-           f_NL,
-           n_s,
-           Omega_M,
-           z_initial
-        );
+        // Metadata only: zeldovich-MPI does not apply f_NL.
+        ZD_ERR("ZD_f_NL = {:g} (metadata: the f_NL baked into the input white noise)\n", f_NL);
     }
 
     return 0;

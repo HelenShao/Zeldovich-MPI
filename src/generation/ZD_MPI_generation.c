@@ -178,31 +178,21 @@ static inline void store_prim_conj(
     #undef _SC
 }
 
-#if LOAD_EXTERNAL_NOISE
+// External unit white noise (ZD_WhiteNoiseDirectory). The file prefix follows the layout.
+static const char *const WHITE_NOISE_PREFIX_XFAST = "phi_divided_y.";
+static const char *const WHITE_NOISE_PREFIX_MONOFONIC = "output_k_space_slab_y.";
+
 // Read the k_y = global_y slab of external unit white noise into w_re/w_im[z*N + x].
-// The file holds an N0 x N0 grid in [x][z] order (z fastest); modes are taken by signed
-// k, so N0 > N crops in k-space. Target Nyquist entries are read but masked later.
-static void load_external_noise_slab(int global_y, int N, double *w_re, double *w_im)
+// Values are raw (re, im) pairs, float or double, inferred from the file size (an N0 x N0
+// grid cannot be both). xfast: N0 == N, index z*N0 + x (x fastest). monofonic: N0 >= N,
+// index x*N0 + z (z fastest); modes are taken by signed k, so N0 > N crops in k-space.
+// Target Nyquist entries are read but masked later.
+static void load_external_noise_slab(const char *noise_dir, int xfast, int global_y, int N,
+                                     double *w_re, double *w_im)
 {
-#if EXTERNAL_NOISE_FLOAT
-    typedef float ext_real_t;
-#else
-    typedef double ext_real_t;
-#endif
-    const char *env_dir = getenv("ZD_EXTERNAL_NOISE_DIR");
-    const char *noise_dir = (env_dir != NULL && env_dir[0] != '\0') ? env_dir : EXTERNAL_NOISE_DIR;
-    if (global_y == 0) {
-        fprintf(stderr, "[external noise] reading %s/%s<y>%s%s\n", noise_dir, EXTERNAL_NOISE_PREFIX,
-                (env_dir != NULL && env_dir[0] != '\0') ? " (from ZD_EXTERNAL_NOISE_DIR)" : "",
-#if EXTERNAL_NOISE_XFAST
-                " x-fastest (no transpose)"
-#else
-                " z-fastest (monofonIC transpose)"
-#endif
-                );
-    }
+    const char *prefix = xfast ? WHITE_NOISE_PREFIX_XFAST : WHITE_NOISE_PREFIX_MONOFONIC;
     char fname[1024];
-    snprintf(fname, sizeof(fname), "%s/%s%d", noise_dir, EXTERNAL_NOISE_PREFIX, global_y);
+    snprintf(fname, sizeof(fname), "%s/%s%d", noise_dir, prefix, global_y);
 
     if (global_y < 0 || global_y > N / 2) {
         fprintf(stderr, "ERROR: external noise requested for y=%d outside [0, N/2=%d]\n", global_y, N / 2);
@@ -218,16 +208,35 @@ static void load_external_noise_slab(int global_y, int N, double *w_re, double *
     const long nbytes = ftell(fp);
     rewind(fp);
 
-    const int64_t ncomplex = (int64_t)nbytes / (int64_t)(2 * sizeof(ext_real_t));
-    const int64_t N0 = (int64_t)llround(sqrt((double)ncomplex));
-    if (N0 * N0 != ncomplex || N0 * N0 * 2 * (int64_t)sizeof(ext_real_t) != (int64_t)nbytes
-        || N0 < N || (N0 % 2) != 0) {
-        fprintf(stderr, "ERROR: %s has %ld bytes: not an even N0 x N0 grid of %s pairs with N0 >= N=%d\n",
-                fname, nbytes, EXTERNAL_NOISE_FLOAT ? "float" : "double", N);
+    // N0 x N0 complex values of 2*real_size bytes; try double, then float.
+    int64_t N0 = 0;
+    int is_float = 0;
+    for (int real_size = (int)sizeof(double); real_size >= (int)sizeof(float); real_size /= 2) {
+        const int64_t ncomplex = (int64_t)nbytes / (2 * real_size);
+        const int64_t n0 = (int64_t)llround(sqrt((double)ncomplex));
+        if (n0 * n0 * 2 * real_size == (int64_t)nbytes && n0 >= N && (n0 % 2) == 0) {
+            N0 = n0;
+            is_float = (real_size == (int)sizeof(float));
+            break;
+        }
+    }
+    if (N0 == 0) {
+        fprintf(stderr, "ERROR: %s has %ld bytes: not an even N0 x N0 grid of float or double pairs with N0 >= N=%d\n",
+                fname, nbytes, N);
         MPI_Abort(MPI_COMM_WORLD, 1);
     }
+    if (xfast && N0 != (int64_t)N) {
+        fprintf(stderr, "ERROR: %s is N0=%ld but ZD_white_noise_layout = \"xfast\" requires N0 == N=%d\n",
+                fname, (long)N0, N);
+        MPI_Abort(MPI_COMM_WORLD, 1);
+    }
+    if (global_y == 0) {
+        fprintf(stderr, "[external noise] reading %s/%s<y>, layout %s, %s, N0=%ld\n", noise_dir, prefix,
+                xfast ? "xfast (x fastest, no transpose)" : "monofonic (z fastest, transpose + crop)",
+                is_float ? "float" : "double", (long)N0);
+    }
 
-    ext_real_t *buf = (ext_real_t *)malloc((size_t)nbytes);
+    void *buf = malloc((size_t)nbytes);
     if (buf == NULL) {
         fprintf(stderr, "ERROR: cannot allocate %ld bytes for %s\n", nbytes, fname);
         MPI_Abort(MPI_COMM_WORLD, 1);
@@ -237,41 +246,29 @@ static void load_external_noise_slab(int global_y, int N, double *w_re, double *
         MPI_Abort(MPI_COMM_WORLD, 1);
     }
     fclose(fp);
+    const float *buf_f = (const float *)buf;
+    const double *buf_d = (const double *)buf;
 
-#if EXTERNAL_NOISE_XFAST
-    // File is already x-fastest (index = z*N + x), matching w[z*N + x]. No transpose.
-    // The signed-k crop assumes z-fastest storage, so N0 must equal N.
-    if (N0 != (int64_t)N) {
-        fprintf(stderr, "ERROR: %s is N0=%ld but EXTERNAL_NOISE_XFAST requires N0 == N=%d\n",
-                fname, (long)N0, N);
-        MPI_Abort(MPI_COMM_WORLD, 1);
-    }
-    for (int z = 0; z < N; z++) {
-        for (int x = 0; x < N; x++) {
-            const int64_t s = 2 * ((int64_t)z * N + x);
-            w_re[(int64_t)z * N + x] = (double)buf[s];
-            w_im[(int64_t)z * N + x] = (double)buf[s + 1];
-        }
-    }
-#else
-    // crop the noise slab to the size of the grid: |k_x| < N/2 and |k_z| < N/2
-    // The k_y crop is just which file is opened (slab_y.<global_y> with global_y ≤ N/2).
-    // File index sx*N0+sz is z fastest; buffer index z*N+x is x fastest.
     for (int z = 0; z < N; z++) {
         const int kz = (z <= N / 2) ? z : z - N;
         const int64_t sz = (kz >= 0) ? kz : kz + N0;
         for (int x = 0; x < N; x++) {
-            const int kx = (x <= N / 2) ? x : x - N;
-            const int64_t sx = (kx >= 0) ? kx : kx + N0;
-            const int64_t s = 2 * (sx * N0 + sz);
-            w_re[(int64_t)z * N + x] = (double)buf[s];
-            w_im[(int64_t)z * N + x] = (double)buf[s + 1];
+            int64_t s;
+            if (xfast) {
+                // File is already x-fastest, matching w[z*N + x]. No transpose.
+                s = 2 * ((int64_t)z * N + x);
+            } else {
+                // Crop to |k_x| < N/2 and |k_z| < N/2; the k_y crop is which file is opened.
+                const int kx = (x <= N / 2) ? x : x - N;
+                const int64_t sx = (kx >= 0) ? kx : kx + N0;
+                s = 2 * (sx * N0 + sz);
+            }
+            w_re[(int64_t)z * N + x] = is_float ? (double)buf_f[s] : buf_d[s];
+            w_im[(int64_t)z * N + x] = is_float ? (double)buf_f[s + 1] : buf_d[s + 1];
         }
     }
-#endif
     free(buf);
 }
-#endif
 
 // ====================================================================================
 // Generates one pair of conjugate Y-slices (primary + mirror) in Fourier space
@@ -395,15 +392,22 @@ void generate_zd_mpi_slice_pair_local(
     t_setup_end = omp_get_wtime();
 #endif
 
-#if LOAD_EXTERNAL_NOISE
-    double *ext_noise_re = (double *)malloc((size_t)N * (size_t)N * sizeof(double));
-    double *ext_noise_im = (double *)malloc((size_t)N * (size_t)N * sizeof(double));
-    if (ext_noise_re == NULL || ext_noise_im == NULL) {
-        fprintf(stderr, "ERROR: cannot allocate external noise buffers (N=%d)\n", N);
-        MPI_Abort(MPI_COMM_WORLD, 1);
+    // ZD_WhiteNoiseDirectory set: replace the RNG draw with external unit white noise.
+    const char *noise_dir = (params_handle != NULL) ? zeldovich_params_get_white_noise_dir(params_handle) : NULL;
+    const int ext_noise = (noise_dir != NULL);
+    double *ext_noise_re = NULL;
+    double *ext_noise_im = NULL;
+    if (ext_noise) {
+        const char *layout = zeldovich_params_get_white_noise_layout(params_handle);
+        ext_noise_re = (double *)malloc((size_t)N * (size_t)N * sizeof(double));
+        ext_noise_im = (double *)malloc((size_t)N * (size_t)N * sizeof(double));
+        if (ext_noise_re == NULL || ext_noise_im == NULL) {
+            fprintf(stderr, "ERROR: cannot allocate external noise buffers (N=%d)\n", N);
+            MPI_Abort(MPI_COMM_WORLD, 1);
+        }
+        load_external_noise_slab(noise_dir, strcmp(layout, "xfast") == 0, global_y, N,
+                                 ext_noise_re, ext_noise_im);
     }
-    load_external_noise_slab(global_y, N, ext_noise_re, ext_noise_im);
-#endif
 
 // validate that amplitude rescaling of D is correct (pk, normalization, etc.)
 #if DUMP_D_SLABS
@@ -551,25 +555,25 @@ void generate_zd_mpi_slice_pair_local(
                 double kmag = sqrt(k2_phys);
                 
                 double D_real, D_imag;
-                #if LOAD_EXTERNAL_NOISE
-                const int64_t ext_idx = (int64_t)z * N + x;
-                zeldovich_ps_scaling(ps_handle, kmag, ext_noise_re[ext_idx], ext_noise_im[ext_idx],
-                                     &D_real, &D_imag);
-                #else
-                int64_t rng_index = global_y;
-                #if VERIFY_RNG_CALLS
-                if (nskip > 0 && local_rng_buf == NULL) {
-                    #pragma omp atomic
-                    total_rng_skips += nskip;
-                }
-                #endif
-                get_cgauss(ps_handle, params_handle, rng_index, kmag, &nskip, local_rng_buf, &D_real, &D_imag);
+                if (ext_noise) {
+                    const int64_t ext_idx = (int64_t)z * N + x;
+                    zeldovich_ps_scaling(ps_handle, kmag, ext_noise_re[ext_idx], ext_noise_im[ext_idx],
+                                         &D_real, &D_imag);
+                } else {
+                    int64_t rng_index = global_y;
+                    #if VERIFY_RNG_CALLS
+                    if (nskip > 0 && local_rng_buf == NULL) {
+                        #pragma omp atomic
+                        total_rng_skips += nskip;
+                    }
+                    #endif
+                    get_cgauss(ps_handle, params_handle, rng_index, kmag, &nskip, local_rng_buf, &D_real, &D_imag);
 
-                #if VERIFY_RNG_CALLS
-                #pragma omp atomic
-                total_rng_calls++;
-                #endif
-                #endif // LOAD_EXTERNAL_NOISE
+                    #if VERIFY_RNG_CALLS
+                    #pragma omp atomic
+                    total_rng_calls++;
+                    #endif
+                }
                 #if DUMP_NOISE_SLABS
                 {
                     const double A = sqrt(zeldovich_ps_power(ps_handle, kmag));
@@ -947,10 +951,8 @@ void generate_zd_mpi_slice_pair_local(
     // }
     // #endif
     
-    #if LOAD_EXTERNAL_NOISE
-        free(ext_noise_re);
-        free(ext_noise_im);
-    #endif
+    free(ext_noise_re);
+    free(ext_noise_im);
 
     #if DUMP_D_SLABS
     {
@@ -978,7 +980,7 @@ void generate_zd_mpi_slice_pair_local(
         std::error_code dump_dir_ec;
         std::filesystem::create_directories(DUMP_NOISE_DIR, dump_dir_ec);
         char dump_fname[1024];
-        snprintf(dump_fname, sizeof(dump_fname), "%s/%s%d", DUMP_NOISE_DIR, EXTERNAL_NOISE_PREFIX, global_y);
+        snprintf(dump_fname, sizeof(dump_fname), "%s/%s%d", DUMP_NOISE_DIR, WHITE_NOISE_PREFIX_MONOFONIC, global_y);
         FILE *dump_fp = fopen(dump_fname, "wb");
         if (dump_fp == NULL) {
             fprintf(stderr, "ERROR: cannot open %s for writing\n", dump_fname);

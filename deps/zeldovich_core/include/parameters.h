@@ -63,7 +63,9 @@ public:
                       // linear theory at PLT_target_z
     double PLT_target_z;  // The target redshift for the PLT rescaling
 
-    double f_NL;     // phi^2(x) prefactor for local primordial non-Gaussianity
+    double f_NL;     // ZD_f_NL. Metadata only in zeldovich-MPI: the f_NL (any shape) already baked
+                     // into the ZD_WhiteNoiseDirectory noise; never applied here. Legacy
+                     // zeldovich-PLT applies it as the local phi^2(x) prefactor.
     double n_s;      // Spectral index of the primordial power (only used for f_NL)
     double Omega_M;  // Omega_M at z=0 (only used for f_NL)
 
@@ -78,6 +80,10 @@ public:
     int version;
 
     int CornerModes;  // fill modes k > k_Ny. Default: 0.
+
+    // External unit white noise, replacing the RNG draw: D = sqrt(P(k)) * w.
+    fs::path white_noise_dir;        // ZD_WhiteNoiseDirectory; "" (default) = draw from the RNG
+    std::string white_noise_layout;  // ZD_white_noise_layout: "xfast" or "monofonic"
 
     int setup();
     // Check against the defaults; complain if something is missing.
