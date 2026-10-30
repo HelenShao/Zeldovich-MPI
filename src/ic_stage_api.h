@@ -23,7 +23,7 @@ int IC_Rank0Wisdom(const char *param_file);
 /**
  * Embedded IC entry (Abacus): rank-0 param header bytes already broadcast by host.
  *
- * Wisdom preflight (before IC driver), rank 0 only:
+ * Wisdom preflight (before IC driver), rank 0 only, when built with USE_FFTW_WISDOM:
  * - Parse params from memory, plan 2D+1D FFTW; optionally write fftw_wisdom.wisdom.
  * - All ranks barrier; wisdom MPI_Bcast happens in setup_fftw_plans_full (driver).
  *
