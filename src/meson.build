@@ -76,9 +76,9 @@ if not get_option('abacus_embed')
     wisdom_inc = include_directories('.', 'fft')
     executable(
       'wisdom_rank0',
-      ['fft/wisdom_rank0.c', 'fft/wisdom_rank0_main.c'],
+      ['fft/fft_wisdom.c', 'fft/wisdom_rank0.c', 'fft/wisdom_rank0_main.c'],
       include_directories: wisdom_inc,
-      dependencies: [fftw_dep, omp_dep],
+      dependencies: [fftw_dep, omp_dep, mpi_dep],
       link_language: 'cpp',
       install: true,
     )

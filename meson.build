@@ -76,7 +76,9 @@ mpi_dep = dependency('mpi', language: 'cpp')
 omp_dep = dependency('openmp')
 # =============================================================================
 # Libraries — FFTW (pkg-config; e.g. module load fftw on Aurora), or oneMKL's FFTW3 interface
-# Threaded plan API (fftwf_init_threads, etc.) lives in libfftw3f_omp — no .pc on Aurora.
+# Threaded plan API lives in libfftw3_omp / libfftw3f_omp. Aurora does not
+# ship fftw3_omp.pc. Search the fftw3 libdir, and do not require that
+# pkg-config variable: a cached dep still says "found" after the prefix is gone.
 # =============================================================================
 _fft = get_option('fft')
 _mkl_gnu = cxx.get_id() == 'gcc'
@@ -95,27 +97,20 @@ if use_mkl_fft
 else
   if _double_prec
     _fftw_base_dep = dependency('fftw3', required: true)
-    _fftw_omp_pc = 'fftw3_omp'
-    _fftw_omp_lib = 'fftw3_omp'
+    _fftw_omp_name = 'fftw3_omp'
   else
     _fftw_base_dep = dependency('fftw3f', required: true)
-    _fftw_omp_pc = 'fftw3f_omp'
-    _fftw_omp_lib = 'fftw3f_omp'
+    _fftw_omp_name = 'fftw3f_omp'
   endif
-  _fftw_omp_dep = dependency(_fftw_omp_pc, required: false)
-  if _fftw_omp_dep.found()
-    fftw_dep = declare_dependency(
-      dependencies: [_fftw_base_dep, _fftw_omp_dep],
-    )
-  else
-    fftw_dep = declare_dependency(
-      dependencies: [_fftw_base_dep],
-      link_args: [
-        '-L' + _fftw_base_dep.get_variable('libdir'),
-        '-l' + _fftw_omp_lib,
-      ],
-    )
-  endif
+  _fftw_libdir = _fftw_base_dep.get_variable(pkgconfig: 'libdir', default_value: '')
+  _fftw_omp_found = cxx.find_library(
+    _fftw_omp_name,
+    dirs: _fftw_libdir == '' ? [] : [_fftw_libdir],
+    required: true,
+  )
+  fftw_dep = declare_dependency(
+    dependencies: [_fftw_base_dep, _fftw_omp_found],
+  )
 endif
 if get_option('use_fftw_wisdom')
   if use_mkl_fft
