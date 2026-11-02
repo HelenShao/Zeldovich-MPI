@@ -90,8 +90,20 @@ if _fft != 'fftw'
   use_mkl_fft = _mkl_dep.found()
 endif
 if use_mkl_fft
+  # libmkl_intel_lp64 needs libmkl_core and the threading layer but does not list them as
+  # NEEDED, and we only call its FFTW3 wrappers. Under --as-needed, lld (Abacus links
+  # multistep with it) drops them and the binary dies at startup with "undefined symbol:
+  # mkl_blas_dgemm". Force them in with one -Wl token, which Meson cannot split or reorder.
+  _mkl_l = []
+  foreach _a : run_command('pkg-config', '--libs', _mkl_gnu ? 'mkl-dynamic-lp64-gomp' : 'mkl-dynamic-lp64-iomp',
+                           check: true).stdout().strip().split()
+    if _a.startswith('-lmkl_')
+      _mkl_l += _a
+    endif
+  endforeach
   fftw_dep = declare_dependency(
     compile_args: ['-I' + (_mkl_dep.get_variable('includedir') / 'fftw')],
+    link_args: ['-Wl,--push-state,--no-as-needed,' + ','.join(_mkl_l) + ',--pop-state'],
     dependencies: _mkl_dep.partial_dependency(link_args: true),
   )
 else
