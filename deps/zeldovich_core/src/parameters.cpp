@@ -54,6 +54,8 @@ void ZeldovichParameters::set_defaults(void) {
     CornerModes = 0;     // Legal default (no corner modes)
     white_noise_dir    = "";  // Legal default: draw the Gaussian field from the RNG
     white_noise_layout = "";  // Required when white_noise_dir is set
+    white_noise_name   = "";  // Legal default: name the files by the f_NL shape and value
+    f_NL_local = f_NL_equil = f_NL_orthoCMB = f_NL_orthoLSS = 0.;  // Legal default: no shape
     n_s         = 1;     // Legal default (only used for f_NL)
     Omega_M     = 1.0;   // Legal default (only used for f_NL)
 }
@@ -112,21 +114,30 @@ void ZeldovichParameters::register_vars(void) {
     installscalar("ZD_qPLT_rescale", qPLTrescale, DONT_CARE);
     installscalar("ZD_PLT_target_z", PLT_target_z, DONT_CARE);
     installscalar("ZD_k_cutoff", k_cutoff, DONT_CARE);
-    // Metadata only: zeldovich-MPI never applies ZD_f_NL. It records the f_NL (any shape)
-    // baked into the ZD_WhiteNoiseDirectory noise. Legacy zeldovich-PLT applies it as local f_NL.
+    // zeldovich-MPI never applies ZD_f_NL. It is the f_NL (any shape) baked into the
+    // ZD_WhiteNoiseDirectory noise and, with the ZD_f_NL_<shape> flags, picks the file name.
+    // Legacy zeldovich-PLT applies it as local f_NL.
     installscalar("ZD_f_NL", f_NL, DONT_CARE);
+    installscalar("ZD_f_NL_local", f_NL_local, DONT_CARE);
+    installscalar("ZD_f_NL_equil", f_NL_equil, DONT_CARE);
+    installscalar("ZD_f_NL_orthoCMB", f_NL_orthoCMB, DONT_CARE);
+    installscalar("ZD_f_NL_orthoLSS", f_NL_orthoLSS, DONT_CARE);
     installscalar("ZD_n_s", n_s, DONT_CARE);
     installscalar("Omega_M", Omega_M, DONT_CARE);
     installscalar("ICFormat", ICFormat, MUST_DEFINE);
     installscalar("AllowDirectIO", AllowDirectIO, DONT_CARE);
     installscalar("ZD_Version", version, DONT_CARE);
     installscalar("ZD_CornerModes", CornerModes, DONT_CARE);
-    // Optional. When set, read unit white noise slabs <dir>/<prefix><y>, y = 0..N/2, instead of
-    // drawing from the RNG (ZD_Seed is then unused). Layout "xfast": phi_divided_y.<y>, N x N,
-    // x fastest. Layout "monofonic": output_k_space_slab_y.<y>, N0 x N0 with N0 >= N, z fastest.
+    // Optional. When set, read unit white noise slabs <dir>/<stem>_y.<y>, y = 0..N/2, instead of
+    // drawing from the RNG (ZD_Seed is then unused). The stem follows the PNG noise generator's
+    // LOAD_WHITE_NOISE_FROM_FILE rules: exactly one nonzero ZD_f_NL_<shape> gives
+    // phi_<shape>_fNL<ZD_f_NL>_divided; otherwise ZD_white_noise_name (absolute, or relative to
+    // the directory); with neither, "monofonic" defaults to output_k_space_slab.
+    // Layout "xfast": N x N, x fastest. Layout "monofonic": N0 x N0 with N0 >= N, z fastest.
     // Float or double is inferred from the file size.
     installscalar("ZD_WhiteNoiseDirectory", white_noise_dir, DONT_CARE);
     installscalar("ZD_white_noise_layout", white_noise_layout, DONT_CARE);
+    installscalar("ZD_white_noise_name", white_noise_name, DONT_CARE);
 }
 
 int ZeldovichParameters::setup() {
@@ -227,16 +238,64 @@ int ZeldovichParameters::setup() {
             ZD_ERR("ZD_WhiteNoiseDirectory = {:s} is not a directory\n", white_noise_dir.string());
             exit(1);
         }
-        ZD_ERR("Reading external white noise from {:s} (layout {:s}); ZD_Seed is unused\n",
-               white_noise_dir.string(), white_noise_layout);
-    } else if (!white_noise_layout.empty()) {
-        ZD_ERR("ZD_white_noise_layout is set but ZD_WhiteNoiseDirectory is not\n");
+
+        // File stem, same rules as the PNG generator's LOAD_WHITE_NOISE_FROM_FILE input.
+        const char *shape_names[4] = {"local", "equil", "orthoCMB", "orthoLSS"};
+        const double shape_on[4]   = {f_NL_local, f_NL_equil, f_NL_orthoCMB, f_NL_orthoLSS};
+        int nshapes = 0, shape = -1;
+        std::string shape_list;
+        for (int s = 0; s < 4; s++) {
+            if (shape_on[s] == 0.) continue;
+            nshapes++;
+            shape = s;
+            shape_list += std::string(" ZD_f_NL_") + shape_names[s];
+        }
+        if (nshapes > 1) {
+            ZD_ERR("Only one f_NL shape may be set for ZD_WhiteNoiseDirectory, but {:d} are nonzero:{:s}\n",
+                   nshapes, shape_list);
+            exit(1);
+        }
+        if (nshapes == 1 && !white_noise_name.empty()) {
+            ZD_ERR("ZD_white_noise_name = \"{:s}\" is only used when all f_NL shapes are 0, but{:s} "
+                   "is set; unset one of them\n", white_noise_name, shape_list);
+            exit(1);
+        }
+        std::string stem;
+        if (nshapes == 1) {
+            // f_NL as the generator writes it: whole numbers as integers (fNL100, fNL1000000),
+            // anything else with %g (fNL-2.5)
+            char fnl_str[64];
+            if (f_NL == std::floor(f_NL) && std::fabs(f_NL) < 1e15)
+                std::snprintf(fnl_str, sizeof(fnl_str), "%.0f", f_NL);
+            else
+                std::snprintf(fnl_str, sizeof(fnl_str), "%g", f_NL);
+            stem = std::string("phi_") + shape_names[shape] + "_fNL" + fnl_str + "_divided";
+        } else if (!white_noise_name.empty()) {
+            stem = white_noise_name;
+        } else if (white_noise_layout == "monofonic") {
+            stem = "output_k_space_slab";
+        } else {
+            ZD_ERR("ZD_white_noise_layout = \"xfast\" needs exactly one nonzero ZD_f_NL_<shape> "
+                   "(local/equil/orthoCMB/orthoLSS) or a ZD_white_noise_name (files <name>_y.<y>)\n");
+            exit(1);
+        }
+        white_noise_stem = fs::path(stem).is_absolute() ? fs::path(stem) : white_noise_dir / stem;
+        const fs::path first = white_noise_stem.string() + "_y.0";
+        if (!fs::exists(first)) {
+            ZD_ERR("No white noise file {:s} (check ZD_f_NL, the ZD_f_NL_<shape> flags, "
+                   "ZD_white_noise_name and ZD_WhiteNoiseDirectory)\n", first.string());
+            exit(1);
+        }
+        ZD_ERR("Reading external white noise {:s}_y.<y> (layout {:s}); ZD_Seed is unused\n",
+               white_noise_stem.string(), white_noise_layout);
+    } else if (!white_noise_layout.empty() || !white_noise_name.empty()) {
+        ZD_ERR("ZD_white_noise_layout / ZD_white_noise_name are set but ZD_WhiteNoiseDirectory is not\n");
         exit(1);
     }
 
     if (f_NL != 0.) {
-        // Metadata only: zeldovich-MPI does not apply f_NL.
-        ZD_ERR("ZD_f_NL = {:g} (metadata: the f_NL baked into the input white noise)\n", f_NL);
+        // Never applied: zeldovich-MPI does not add f_NL.
+        ZD_ERR("ZD_f_NL = {:g} (the f_NL baked into the input white noise; not applied here)\n", f_NL);
     }
 
     return 0;

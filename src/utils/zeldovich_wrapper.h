@@ -113,6 +113,10 @@ const char* zeldovich_params_get_white_noise_dir(ParametersHandle params);
 // Returns: "xfast" or "monofonic" (validated in setup()), or NULL if unset
 const char* zeldovich_params_get_white_noise_layout(ParametersHandle params);
 
+// Get the external white noise file stem resolved by setup() (files are <stem>_y.<y>)
+// Returns: the stem path, or NULL if ZD_WhiteNoiseDirectory is unset
+const char* zeldovich_params_get_white_noise_stem(ParametersHandle params);
+
 // ====================================================================================
 // POWER SPECTRUM INTERFACE
 // ====================================================================================

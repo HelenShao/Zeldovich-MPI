@@ -178,21 +178,19 @@ static inline void store_prim_conj(
     #undef _SC
 }
 
-// External unit white noise (ZD_WhiteNoiseDirectory). The file prefix follows the layout.
-static const char *const WHITE_NOISE_PREFIX_XFAST = "phi_divided_y.";
-static const char *const WHITE_NOISE_PREFIX_MONOFONIC = "output_k_space_slab_y.";
+// External unit white noise (ZD_WhiteNoiseDirectory). The file stem is resolved in
+// ZeldovichParameters::setup().
 
-// Read the k_y = global_y slab of external unit white noise into w_re/w_im[z*N + x].
-// Values are raw (re, im) pairs, float or double, inferred from the file size (an N0 x N0
-// grid cannot be both). xfast: N0 == N, index z*N0 + x (x fastest). monofonic: N0 >= N,
-// index x*N0 + z (z fastest); modes are taken by signed k, so N0 > N crops in k-space.
+// Read the k_y = global_y slab of external unit white noise, <stem>_y.<global_y>, into
+// w_re/w_im[z*N + x]. Values are raw (re, im) pairs, float or double, inferred from the file
+// size (an N0 x N0 grid cannot be both). xfast: N0 == N, index z*N0 + x (x fastest). monofonic:
+// N0 >= N, index x*N0 + z (z fastest); modes are taken by signed k, so N0 > N crops in k-space.
 // Target Nyquist entries are read but masked later.
-static void load_external_noise_slab(const char *noise_dir, int xfast, int global_y, int N,
+static void load_external_noise_slab(const char *stem, int xfast, int global_y, int N,
                                      double *w_re, double *w_im)
 {
-    const char *prefix = xfast ? WHITE_NOISE_PREFIX_XFAST : WHITE_NOISE_PREFIX_MONOFONIC;
     char fname[1024];
-    snprintf(fname, sizeof(fname), "%s/%s%d", noise_dir, prefix, global_y);
+    snprintf(fname, sizeof(fname), "%s_y.%d", stem, global_y);
 
     if (global_y < 0 || global_y > N / 2) {
         fprintf(stderr, "ERROR: external noise requested for y=%d outside [0, N/2=%d]\n", global_y, N / 2);
@@ -231,7 +229,7 @@ static void load_external_noise_slab(const char *noise_dir, int xfast, int globa
         MPI_Abort(MPI_COMM_WORLD, 1);
     }
     if (global_y == 0) {
-        fprintf(stderr, "[external noise] reading %s/%s<y>, layout %s, %s, N0=%ld\n", noise_dir, prefix,
+        fprintf(stderr, "[external noise] reading %s_y.<y>, layout %s, %s, N0=%ld\n", stem,
                 xfast ? "xfast (x fastest, no transpose)" : "monofonic (z fastest, transpose + crop)",
                 is_float ? "float" : "double", (long)N0);
     }
@@ -393,8 +391,8 @@ void generate_zd_mpi_slice_pair_local(
 #endif
 
     // ZD_WhiteNoiseDirectory set: replace the RNG draw with external unit white noise.
-    const char *noise_dir = (params_handle != NULL) ? zeldovich_params_get_white_noise_dir(params_handle) : NULL;
-    const int ext_noise = (noise_dir != NULL);
+    const char *noise_stem = (params_handle != NULL) ? zeldovich_params_get_white_noise_stem(params_handle) : NULL;
+    const int ext_noise = (noise_stem != NULL);
     double *ext_noise_re = NULL;
     double *ext_noise_im = NULL;
     if (ext_noise) {
@@ -405,7 +403,7 @@ void generate_zd_mpi_slice_pair_local(
             fprintf(stderr, "ERROR: cannot allocate external noise buffers (N=%d)\n", N);
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
-        load_external_noise_slab(noise_dir, strcmp(layout, "xfast") == 0, global_y, N,
+        load_external_noise_slab(noise_stem, strcmp(layout, "xfast") == 0, global_y, N,
                                  ext_noise_re, ext_noise_im);
     }
 
@@ -980,7 +978,8 @@ void generate_zd_mpi_slice_pair_local(
         std::error_code dump_dir_ec;
         std::filesystem::create_directories(DUMP_NOISE_DIR, dump_dir_ec);
         char dump_fname[1024];
-        snprintf(dump_fname, sizeof(dump_fname), "%s/%s%d", DUMP_NOISE_DIR, WHITE_NOISE_PREFIX_MONOFONIC, global_y);
+        // monofonic default name, so ZD_white_noise_layout = "monofonic" reads it back as-is
+        snprintf(dump_fname, sizeof(dump_fname), "%s/output_k_space_slab_y.%d", DUMP_NOISE_DIR, global_y);
         FILE *dump_fp = fopen(dump_fname, "wb");
         if (dump_fp == NULL) {
             fprintf(stderr, "ERROR: cannot open %s for writing\n", dump_fname);

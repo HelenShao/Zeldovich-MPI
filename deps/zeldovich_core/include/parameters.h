@@ -63,9 +63,11 @@ public:
                       // linear theory at PLT_target_z
     double PLT_target_z;  // The target redshift for the PLT rescaling
 
-    double f_NL;     // ZD_f_NL. Metadata only in zeldovich-MPI: the f_NL (any shape) already baked
-                     // into the ZD_WhiteNoiseDirectory noise; never applied here. Legacy
-                     // zeldovich-PLT applies it as the local phi^2(x) prefactor.
+    double f_NL;     // ZD_f_NL. Never applied in zeldovich-MPI: the f_NL (any shape) already baked
+                     // into the ZD_WhiteNoiseDirectory noise, also used to pick its file name.
+                     // Legacy zeldovich-PLT applies it as the local phi^2(x) prefactor.
+    double f_NL_local, f_NL_equil, f_NL_orthoCMB, f_NL_orthoLSS;  // ZD_f_NL_<shape>: nonzero = the
+                     // noise carries that shape (selects phi_<shape>_fNL<f_NL>_divided_y.<y>)
     double n_s;      // Spectral index of the primordial power (only used for f_NL)
     double Omega_M;  // Omega_M at z=0 (only used for f_NL)
 
@@ -84,6 +86,8 @@ public:
     // External unit white noise, replacing the RNG draw: D = sqrt(P(k)) * w.
     fs::path white_noise_dir;        // ZD_WhiteNoiseDirectory; "" (default) = draw from the RNG
     std::string white_noise_layout;  // ZD_white_noise_layout: "xfast" or "monofonic"
+    std::string white_noise_name;    // ZD_white_noise_name: read <name>_y.<y> (instead of a shape)
+    fs::path white_noise_stem;       // set by setup(): the files are <white_noise_stem>_y.<y>
 
     int setup();
     // Check against the defaults; complain if something is missing.

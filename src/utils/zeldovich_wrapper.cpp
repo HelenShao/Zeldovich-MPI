@@ -188,6 +188,13 @@ const char* zeldovich_params_get_white_noise_layout(ParametersHandle params) {
     return p->white_noise_layout.c_str();
 }
 
+const char* zeldovich_params_get_white_noise_stem(ParametersHandle params) {
+    if (!params) return NULL;
+    ZeldovichParameters* p = static_cast<ZeldovichParameters*>(params);
+    if (p->white_noise_stem.empty()) return NULL;
+    return p->white_noise_stem.c_str();
+}
+
 // --- PowerSpectrum ---
 
 static const int MAX_TRACKED_OBJECTS = 1024;

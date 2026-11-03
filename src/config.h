@@ -324,8 +324,9 @@ FFTW planner flags for all DFT plans (2D X–Z and 1D Y in fft_setup.c / wisdom_
 // EXTERNAL WHITE NOISE
 // ====================================================================================
 // Runtime, not compile time: set ZD_WhiteNoiseDirectory and ZD_white_noise_layout in the
-// par2 file (see deps/zeldovich_core/src/parameters.cpp). Masked modes (DC, Nyquist,
-// k_cutoff sphere if CornerModes = 0) stay zero.
+// par2 file, and name the files with one ZD_f_NL_<shape> + ZD_f_NL or with ZD_white_noise_name
+// (see deps/zeldovich_core/src/parameters.cpp). Masked modes (DC, Nyquist, k_cutoff sphere if
+// CornerModes = 0) stay zero.
 
 // 1 = write the input density D of each primary y-slice (after loading/colouring and masking,
 //     before displacement computation and Hermitian mirroring) to DUMP_D_DIR/D_slab_y.<y>,
