@@ -12,14 +12,15 @@
 // IMPORT WISDOM FROM FILE
 static void wisdom_import_file(void)
 {
-    const int imported = FFTW_IMPORT_WISDOM_FROM_FILENAME(FFTW_WISDOM_FILENAME);
+    const char *wisdom_file = zd_wisdom_rank0_file();
+    const int imported = FFTW_IMPORT_WISDOM_FROM_FILENAME(wisdom_file);
     if (!imported) {
         FFTW_FORGET_WISDOM();
         printf("[wisdom_rank0] No usable wisdom at '%s' (%s); measuring cold.\n",
-               FFTW_WISDOM_FILENAME, PRECISION_NAME);
+               wisdom_file, PRECISION_NAME);
         fflush(stdout);
     } else {
-        printf("[wisdom_rank0] Imported wisdom from '%s' (%s precision).\n", FFTW_WISDOM_FILENAME,
+        printf("[wisdom_rank0] Imported wisdom from '%s' (%s precision).\n", wisdom_file,
                PRECISION_NAME);
         fflush(stdout);
     }
@@ -28,24 +29,24 @@ static void wisdom_import_file(void)
 // EXPORT WISDOM TO FILE
 static int wisdom_export_file(void)
 {
-    const int ok = FFTW_EXPORT_WISDOM_TO_FILENAME(FFTW_WISDOM_FILENAME);
+    const char *wisdom_file = zd_wisdom_rank0_file();
+    const int ok = FFTW_EXPORT_WISDOM_TO_FILENAME(wisdom_file);
     if (!ok) {
         fprintf(stderr, "[wisdom_rank0] Failed to export wisdom to '%s' (%s precision)\n",
-                FFTW_WISDOM_FILENAME, PRECISION_NAME);
+                wisdom_file, PRECISION_NAME);
         fflush(stderr);
         return -1;
     }
-    printf("[wisdom_rank0] Exported wisdom to '%s' (%s precision)\n", FFTW_WISDOM_FILENAME,
+    printf("[wisdom_rank0] Exported wisdom to '%s' (%s precision)\n", wisdom_file,
            PRECISION_NAME);
     fflush(stdout);
     return 0;
 }
 
-// PLAN AND EXPORT WISDOM
-int wisdom_rank0_plans_and_export(int N, int narray, fftw_complex_t *plan_buffer,
-                                  fftw_plan_t *plan_2d_out, fftw_plan_t *plan_1d_out)
+int wisdom_rank0_plans(int N, int narray, fftw_complex_t *plan_buffer, fftw_plan_t *plan_2d_out,
+                       fftw_plan_t *plan_1d_out, int save_to_file)
 {
-    fftw_complex_t *dummy_1d = NULL; // dummy 1D buffer for 1D FFT plan
+    fftw_complex_t *dummy_1d = NULL;
 
     if (plan_2d_out == NULL || plan_1d_out == NULL) {
         fprintf(stderr, "[wisdom_rank0] output plan pointers must be non-NULL\n");
@@ -73,41 +74,31 @@ int wisdom_rank0_plans_and_export(int N, int narray, fftw_complex_t *plan_buffer
                     PRECISION_NAME);
             return -1;
         }
+#if DEBUG_PRINTS
         printf("[wisdom_rank0] %s precision: FFTW threads init (2D=OMP_MAX, 1D=1; match fft_setup.c)\n",
                PRECISION_NAME);
         fflush(stdout);
+#endif
         fftw_threads_initialized = 1;
     }
 
     wisdom_import_file();
 
-    // 2D plan: use OMP_MAX threads
+    (void)narray;
     FFTW_PLAN_WITH_NTHREADS(omp_get_max_threads());
-    printf("[wisdom_rank0] 2D batched plan: FFTW_PLAN_WITH_NTHREADS(%d)\n", omp_get_max_threads());
+#if DEBUG_PRINTS
+    printf("[wisdom_rank0] 2D single-plane plan: FFTW_PLAN_WITH_NTHREADS(%d)\n", omp_get_max_threads());
     fflush(stdout);
+#endif
 
-    {
-        int n[2] = { N, N };
-        *plan_2d_out = FFTW_PLAN_MANY_DFT(
-            2,
-            n,
-            narray,
-            plan_buffer,
-            NULL,
-            1,
-            N * N,
-            plan_buffer,
-            NULL,
-            1,
-            N * N,
-            FFT_SIGN,
-            FFTW_MEASURE);
-    }
+    *plan_2d_out =
+        FFTW_PLAN_DFT_2D(N, N, plan_buffer, plan_buffer, FFT_SIGN, FFTW_PLANNER_FLAGS);
 
-    // 1D Y FFT: single FFTW thread (OpenMP parallelizes across pencils; staged buffers in z_streaming)
     FFTW_PLAN_WITH_NTHREADS(1);
+#if DEBUG_PRINTS
     printf("[wisdom_rank0] 1D Y plan: FFTW_PLAN_WITH_NTHREADS(1)\n");
     fflush(stdout);
+#endif
 
     if (posix_memalign((void **)&dummy_1d, ALIGN_BYTES, sizeof(fftw_complex_t) * (size_t)N) != 0) {
         fprintf(stderr, "[wisdom_rank0] posix_memalign failed for 1D dummy\n");
@@ -119,7 +110,7 @@ int wisdom_rank0_plans_and_export(int N, int narray, fftw_complex_t *plan_buffer
     }
 
     *plan_1d_out =
-        FFTW_PLAN_DFT_1D(N, dummy_1d, dummy_1d, FFT_SIGN, FFTW_MEASURE);
+        FFTW_PLAN_DFT_1D(N, dummy_1d, dummy_1d, FFT_SIGN, FFTW_PLANNER_FLAGS);
     free(dummy_1d);
 
     if (*plan_2d_out == NULL || *plan_1d_out == NULL) {
@@ -135,7 +126,7 @@ int wisdom_rank0_plans_and_export(int N, int narray, fftw_complex_t *plan_buffer
         return -1;
     }
 
-    if (wisdom_export_file() != 0) {
+    if (save_to_file && wisdom_export_file() != 0) {
         FFTW_DESTROY_PLAN(*plan_2d_out);
         FFTW_DESTROY_PLAN(*plan_1d_out);
         *plan_2d_out = NULL;

@@ -1,6 +1,6 @@
 # zeldovich-PLT Parameter File
 # For N=64 grid with power law power spectrum
-# Usage: ./hermitian_3d_matrix 64 examples/param_N64.par
+# Usage: ./Zeldovich_MPI 64 examples/param_N64.par
 
 BoxSize = 100.0
 CPD = 64                           # Cells per dimension (= N)
@@ -8,7 +8,6 @@ ICFormat = "RV"
 InitialConditionsDirectory = "./output"
 InitialRedshift = 99.0
 NP = 262144                        # N^3 = 64^3
-ZD_NumBlock = 2
 ZD_Seed = 4                        # Random seed
 ZD_Pk_scale = 1.0
 ZD_Pk_norm = 8.0                   # Normalization scale (e.g., sigma_8)

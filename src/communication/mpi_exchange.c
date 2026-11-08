@@ -7,6 +7,83 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include <limits.h>
+
+// ====================================================================================
+//  Alltoallv with int64 counts/displacements
+//  Offsets reach ~4*N^3/num_ranks elements on the receive side (e.g. 6.9e12/R at N=12000),
+//  far beyond INT_MAX, so the int-argument MPI_Alltoallv cannot be used directly.
+// ====================================================================================
+
+int zd_alltoallv_int64(const void *sendbuf, const int64_t *sendcounts, const int64_t *sdispls,
+                       void *recvbuf, const int64_t *recvcounts, const int64_t *rdispls,
+                       MPI_Datatype datatype, int num_ranks, MPI_Comm comm, int force_p2p)
+{
+#if MPI_VERSION >= 4
+    if (!force_p2p) {
+        MPI_Count *sc = (MPI_Count*)malloc(sizeof(MPI_Count) * (size_t)num_ranks);
+        MPI_Count *rc = (MPI_Count*)malloc(sizeof(MPI_Count) * (size_t)num_ranks);
+        MPI_Aint *sd = (MPI_Aint*)malloc(sizeof(MPI_Aint) * (size_t)num_ranks);
+        MPI_Aint *rd = (MPI_Aint*)malloc(sizeof(MPI_Aint) * (size_t)num_ranks);
+        if (sc == NULL || rc == NULL || sd == NULL || rd == NULL) {
+            fprintf(stderr, "[ALLTOALLV] ERROR: failed to allocate count/displacement arrays\n");
+            MPI_Abort(comm, 1);
+        }
+        for (int i = 0; i < num_ranks; i++) {
+            sc[i] = (MPI_Count)sendcounts[i];
+            rc[i] = (MPI_Count)recvcounts[i];
+            sd[i] = (MPI_Aint)sdispls[i];
+            rd[i] = (MPI_Aint)rdispls[i];
+        }
+        int err = MPI_Alltoallv_c(sendbuf, sc, sd, datatype, recvbuf, rc, rd, datatype, comm);
+        free(sc); free(rc); free(sd); free(rd);
+        return err;
+    }
+#else
+    (void)force_p2p;
+#endif
+
+    // Point-to-point fallback: displacements become pointer offsets (int64), and only
+    // each per-peer message count is passed to MPI as an int.
+    for (int i = 0; i < num_ranks; i++) {
+        if (sendcounts[i] > INT_MAX || recvcounts[i] > INT_MAX) {
+            fprintf(stderr, "[ALLTOALLV] ERROR: per-peer count exceeds INT_MAX (peer %d: send %lld, recv %lld); "
+                            "use more ranks or an MPI >= 4 library\n",
+                    i, (long long)sendcounts[i], (long long)recvcounts[i]);
+            MPI_Abort(comm, 1);
+        }
+    }
+
+    MPI_Aint lb = 0, extent = 0;
+    MPI_Type_get_extent(datatype, &lb, &extent);
+    const char *sbase = (const char*)sendbuf;
+    char *rbase = (char*)recvbuf;
+
+    MPI_Request *reqs = (MPI_Request*)malloc(sizeof(MPI_Request) * 2 * (size_t)num_ranks);
+    if (reqs == NULL) {
+        fprintf(stderr, "[ALLTOALLV] ERROR: failed to allocate request array\n");
+        MPI_Abort(comm, 1);
+    }
+    int nreq = 0;
+    int err = MPI_SUCCESS;
+    for (int i = 0; i < num_ranks && err == MPI_SUCCESS; i++) {
+        if (recvcounts[i] > 0) {
+            err = MPI_Irecv(rbase + rdispls[i] * (int64_t)extent, (int)recvcounts[i], datatype,
+                            i, 0, comm, &reqs[nreq++]);
+        }
+    }
+    for (int i = 0; i < num_ranks && err == MPI_SUCCESS; i++) {
+        if (sendcounts[i] > 0) {
+            err = MPI_Isend(sbase + sdispls[i] * (int64_t)extent, (int)sendcounts[i], datatype,
+                            i, 0, comm, &reqs[nreq++]);
+        }
+    }
+    if (err == MPI_SUCCESS) {
+        err = MPI_Waitall(nreq, reqs, MPI_STATUSES_IGNORE);
+    }
+    free(reqs);
+    return err;
+}
 
 // ====================================================================================
 //  Exchange metadata so that each rank knows which Y-slices it is responsible for
@@ -32,7 +109,7 @@ void exchange_metadata(int rank, int num_y_ranks, int N,
     // array containing the number of Y-slices for each rank
     int *all_num_my_slices = (int*)malloc(sizeof(int) * num_y_ranks);
     MPI_Allgather(&num_my_slices, 1, MPI_INT, 
-                  all_num_my_slices, 1, MPI_INT, comm_2d);
+                  all_num_my_slices, 1, MPI_INT, zd_comm_2d);
     
     // Step 2: Share y_global_map using MPI_Allgatherv
     // Calculate displacements and total size
@@ -49,7 +126,7 @@ void exchange_metadata(int rank, int num_y_ranks, int N,
     int *all_y_maps_flat = (int*)malloc(sizeof(int) * total_slices);
     
     MPI_Allgatherv(y_global_map, num_my_slices, MPI_INT,
-                   all_y_maps_flat, recvcounts, displs, MPI_INT, comm_2d);
+                   all_y_maps_flat, recvcounts, displs, MPI_INT, zd_comm_2d);
     
     // Step 3: Rebuild pointer array (allocate separately for each rank to avoid pointer issues)
     int **all_y_global_maps = (int**)malloc(sizeof(int*) * num_y_ranks);
@@ -127,14 +204,14 @@ void exchange_metadata(int rank, int num_y_ranks, int N,
     }
     
     // Broadcast all_num_my_slices
-    MPI_Bcast(all_num_my_slices, num_y_ranks, MPI_INT, 0, comm_2d);
+    MPI_Bcast(all_num_my_slices, num_y_ranks, MPI_INT, 0, zd_comm_2d);
     
     // Broadcast each y_global_map
     for (int i = 0; i < num_y_ranks; i++) {
         if (rank != 0) {
             all_y_global_maps[i] = (int*)malloc(sizeof(int) * all_num_my_slices[i]);
         }
-        MPI_Bcast(all_y_global_maps[i], all_num_my_slices[i], MPI_INT, 0, comm_2d);
+        MPI_Bcast(all_y_global_maps[i], all_num_my_slices[i], MPI_INT, 0, zd_comm_2d);
     }
     
     // Assign outputs to the function args ("return values")
@@ -170,7 +247,7 @@ void pack_slices_to_send_buffer(
     fftw_complex_t *local_y_slices,
     int num_my_slices, int *y_global_map,
     fftw_complex_t *send_buffer, int64_t *sendcounts, int64_t *sdispls,
-    int grid_x, int grid_z, int cpd)
+    int size_x, int size_z, int cpd)
 {
     (void)rank;  // Unused, kept for consistency
     (void)y_global_map;  // Unused currently, kept for future use
@@ -183,13 +260,13 @@ void pack_slices_to_send_buffer(
     int *z_count_arr = (int *)malloc((size_t)num_ranks * sizeof(int));
     if (bounds_arr == NULL || z_count_arr == NULL) {
         fprintf(stderr, "[PACK ERROR] Rank %d: Failed to allocate bounds/z_count arrays\n", rank);
-        MPI_Abort(comm_2d, 1);
+        MPI_Abort(zd_comm_2d, 1);
     }
     
     for (int dest = 0; dest < num_ranks; dest++) {
         sdispls[dest] = offset;
         
-        ExtendedGridBounds ext = get_extended_grid_bounds_CPD_aligned(dest, N, num_ranks, grid_x, grid_z, cpd);
+        ExtendedGridBounds ext = get_extended_grid_bounds_CPD_aligned(dest, N, num_ranks, size_x, size_z, cpd);
 #if USE_X_PADDING
         GridBounds bounds = ext.padded;
 #else
@@ -237,12 +314,12 @@ void pack_slices_to_send_buffer(
                                    array_idx, slice_idx, x, z, local_x, local_z);
         fprintf(stderr, "  pack_idx=%ld, offset=%ld, region_size=%ld, sendcounts[dest]=%ld\n",
                (long)pack_idx, (long)dest_offset, (long)region_size, (long)sendcounts[dest]);
-                            MPI_Abort(comm_2d, 1);
+                            MPI_Abort(zd_comm_2d, 1);
                         }
                         if (pack_idx < 0 || pack_idx >= sendcounts[dest]) {
                             fprintf(stderr, "[PACK ERROR] Rank %d: pack_idx=%ld out of dest region [0, %lld) for dest=%d\n",
                                    rank, (long)pack_idx, (long long)sendcounts[dest], dest);
-                            MPI_Abort(comm_2d, 1);
+                            MPI_Abort(zd_comm_2d, 1);
                         }
 
                         send_buffer[dest_offset + pack_idx][0] = 
@@ -272,7 +349,7 @@ void pack_slices_to_send_buffer(
 
 // ====================================================================================
 //  Unpack recv buffer (different for each rank) into pencils, 
-//  keepin track of global y-indices to maintain correct Hermitian symmetry
+//  keepin track of global y-indices to maintain correct conjugate symmetry
 // ====================================================================================
 
 void unpack_recv_buffer_to_pencils(
@@ -284,7 +361,7 @@ void unpack_recv_buffer_to_pencils(
     (void)recvcounts;  // Unused, kept for future extensibility?
     
     // Note: unpack_recv_buffer_to_pencils is legacy and not called from the current
-    // multi-batch pipeline. If re-enabled, grid_x/grid_z/cpd must be passed and used here.
+    // multi-batch pipeline. If re-enabled, size_x/size_z/cpd must be passed and used here.
     GridBounds my_bounds = get_padded_bounds_simple(rank, N, num_ranks);
     int my_pencils = (my_bounds.x_end - my_bounds.x_start) * (my_bounds.z_end - my_bounds.z_start);
     int z_count = my_bounds.z_end - my_bounds.z_start; // number of z points in my owned chunk

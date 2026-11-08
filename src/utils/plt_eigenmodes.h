@@ -17,6 +17,9 @@ extern "C" {
 //   - Each eigenmode is 4 doubles: vec[3] + val
 int plt_load_eigenmodes(const char *filename);
 
+// Same layout as file on disk; used after MPI bcast (or internally by plt_load_eigenmodes).
+int plt_load_eigenmodes_from_buffer(const void *buf, size_t nbytes);
+
 // Free emode data
 void plt_free_eigenmodes(void);
 

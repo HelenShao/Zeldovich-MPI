@@ -24,6 +24,10 @@ ParseHeader::~ParseHeader(void) {
 
 void ParseHeader::ReadHeader(HeaderStream &in) {
     in.ReadHeader();
+    ParseBuffer(in);
+}
+
+void ParseHeader::ParseBuffer(HeaderStream &in) {
     assert(in.buffer[in.bufferlength-1]==0x0 && in.buffer[in.bufferlength-2]==0x0);
     phdriver->trace_parsing = false;
     phdriver->trace_scanning = false;

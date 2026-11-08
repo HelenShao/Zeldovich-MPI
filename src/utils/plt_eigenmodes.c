@@ -18,69 +18,86 @@ static int64_t eig_vecs_ppd = 0;
 // EIGENMODE FILE LOADING
 // ====================================================================================
 
+int plt_load_eigenmodes_from_buffer(const void *buf, size_t nbytes) {
+    if (!buf || nbytes < sizeof(int32_t)) {
+        fprintf(stderr, "[Error] PLT eigenmode buffer invalid\n");
+        return -1;
+    }
+
+    plt_free_eigenmodes();
+
+    int32_t eig_vecs_ppd_32;
+    memcpy(&eig_vecs_ppd_32, buf, sizeof(eig_vecs_ppd_32));
+    eig_vecs_ppd = (int64_t)eig_vecs_ppd_32;
+
+    int64_t halfppd = eig_vecs_ppd / 2 + 1;
+    size_t nelem = (size_t)eig_vecs_ppd * eig_vecs_ppd * halfppd * 4;
+    size_t payload_bytes = nelem * sizeof(double);
+    size_t expected_size = payload_bytes + sizeof(eig_vecs_ppd_32);
+
+    if (nbytes != expected_size) {
+        fprintf(stderr, "[Error] Eigenmode buffer size %zu did not match expected size %zu "
+                "from eig_vecs_ppd %lld\n",
+                nbytes, expected_size, (long long)eig_vecs_ppd);
+        eig_vecs_ppd = 0;
+        return -1;
+    }
+
+    int ret = posix_memalign((void **)&eig_vecs, 4096, payload_bytes);
+    if (ret != 0) {
+        fprintf(stderr, "[Error] Could not allocate memory for eigenmodes (posix_memalign failed)\n");
+        eig_vecs_ppd = 0;
+        return -1;
+    }
+
+    memcpy(eig_vecs, (const unsigned char *)buf + sizeof(eig_vecs_ppd_32), payload_bytes);
+
+    return 0;
+}
+
 int plt_load_eigenmodes(const char *filename) {
     if (!filename || filename[0] == '\0') {
         fprintf(stderr, "[Error] PLT eigenmode filename is empty\n");
         return -1;
     }
-    
+
     FILE *eigf = fopen(filename, "rb");
     if (!eigf) {
         fprintf(stderr, "[Error] Could not open eigenmode file \"%s\"\n", filename);
         return -1;
     }
-    
-    // Get file size
+
     fseek(eigf, 0, SEEK_END);
     long size = ftell(eigf);
+    if (size < 0) {
+        fprintf(stderr, "[Error] Could not stat eigenmode file \"%s\"\n", filename);
+        fclose(eigf);
+        return -1;
+    }
     fseek(eigf, 0, SEEK_SET);
-    
-    // Read ppd (32-bit int)
-    int32_t eig_vecs_ppd_32;
-    if (fread(&eig_vecs_ppd_32, sizeof(eig_vecs_ppd_32), 1, eigf) != 1) {
-        fprintf(stderr, "[Error] Could not read ppd from eigenmode file \"%s\"\n", filename);
+
+    unsigned char *blob = (unsigned char *)malloc((size_t)size);
+    if (!blob) {
+        fprintf(stderr, "[Error] malloc failed reading eigenmode file \"%s\"\n", filename);
         fclose(eigf);
         return -1;
     }
-    eig_vecs_ppd = (int64_t)eig_vecs_ppd_32;
-    
-    // Calculate expected size
-    int64_t halfppd = eig_vecs_ppd / 2 + 1;
-    size_t nelem = (size_t)eig_vecs_ppd * eig_vecs_ppd * halfppd * 4;
-    size_t nbytes = nelem * sizeof(double);
-    size_t expected_size = nbytes + sizeof(eig_vecs_ppd_32);
-    
-    if ((size_t)size != expected_size) {
-        fprintf(stderr, "[Error] Eigenmode file \"%s\" of size %ld did not match expected size %zu "
-                "from eig_vecs_ppd %lld\n", filename, size, expected_size, (long long)eig_vecs_ppd);
+    if (fread(blob, 1, (size_t)size, eigf) != (size_t)size) {
+        fprintf(stderr, "[Error] Could not read eigenmode file \"%s\"\n", filename);
+        free(blob);
         fclose(eigf);
         return -1;
     }
-    
-    // Allocate memory (aligned to 4096 bytes like zeldovich-PLT)
-    int ret = posix_memalign((void **)&eig_vecs, 4096, nbytes);
-    if (ret != 0) {
-        fprintf(stderr, "[Error] Could not allocate memory for eigenmodes (posix_memalign failed)\n");
-        fclose(eigf);
-        return -1;
-    }
-    
-    // Read eigenmode data
-    if (fread(eig_vecs, sizeof(double), nelem, eigf) != nelem) {
-        fprintf(stderr, "[Error] Could not read eigenmode data from file \"%s\"\n", filename);
-        free(eig_vecs);
-        eig_vecs = NULL;
-        eig_vecs_ppd = 0;
-        fclose(eigf);
-        return -1;
-    }
-    
     fclose(eigf);
-    
-    fprintf(stderr, "[PLT] Loaded eigenmodes from \"%s\" (ppd=%lld, %zu elements)\n",
-            filename, (long long)eig_vecs_ppd, nelem);
-    
-    return 0;
+
+    int rc = plt_load_eigenmodes_from_buffer(blob, (size_t)size);
+    free(blob);
+
+    if (rc == 0) {
+        fprintf(stderr, "[PLT] Loaded eigenmodes from \"%s\"\n", filename);
+    }
+
+    return rc;
 }
 
 void plt_free_eigenmodes(void) {

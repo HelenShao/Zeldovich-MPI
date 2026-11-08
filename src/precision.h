@@ -1,5 +1,5 @@
-#ifndef HERMITIAN_PRECISION_H
-#define HERMITIAN_PRECISION_H
+#ifndef ZD_MPI_PRECISION_H
+#define ZD_MPI_PRECISION_H
 
 // ====================================================================================
 // Default: Single precision (float)

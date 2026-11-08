@@ -476,12 +476,12 @@ namespace yy {
     enum
     {
       yyeof_ = 0,
-      yylast_ = 90,     ///< Last index in yytable_.
-      yynnts_ = 9,  ///< Number of nonterminal symbols.
-      yyfinal_ = 27, ///< Termination state number.
+      yylast_ = 72,     ///< Last index in yytable_.
+      yynnts_ = 11,  ///< Number of nonterminal symbols.
+      yyfinal_ = 29, ///< Termination state number.
       yyterror_ = 1,
       yyerrcode_ = 256,
-      yyntokens_ = 13  ///< Number of tokens.
+      yyntokens_ = 16  ///< Number of tokens.
     };
 
 

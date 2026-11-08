@@ -46,10 +46,9 @@
 #include "output/output_new.h"
 
 // Linking error: makefile builds this executable with UTILS library, which includes mpi_topology.h
-// mpi_topology.h declares MPI_Comm comm_2d - not defined in this executable
-// This executable does not use MPI ->; define a dummy so the linker resolves the symbol
+// mpi_topology.h declares MPI_Comm zd_comm_2d - not defined in this executable
 #include "mpi_topology.h"
-MPI_Comm comm_2d = MPI_COMM_NULL;
+MPI_Comm zd_comm_2d = MPI_COMM_NULL;
 
 // Include grid decomposition utilities
 extern "C" {
@@ -93,9 +92,10 @@ std::vector<BinComplx> ReassembleISlabFromRanks(
     std::fill(full_slab.begin(), full_slab.end(), BinComplx(0.0, 0.0));
 
     // Determine 2D grid factors for domain decomposition
-    int grid_x = 0;
-    int grid_z = 0;
-    calculate_grid_factors(num_ranks, &grid_x, &grid_z);
+    // was: int grid_x = 0; int grid_z = 0;
+    int size_x = 0;
+    int size_z = 0;
+    calculate_grid_factors(num_ranks, &size_x, &size_z);
 
     for (int rank = 0; rank < num_ranks; rank++) {
         // Build filename for this rank and slab
@@ -263,17 +263,17 @@ int main(int argc, char* argv[]) {
     }
     
     // Create Parameters object first to determine narray
-    Parameters* param = nullptr;
+    ZeldovichParameters* param = nullptr;
     if (!param_file.empty() && fs::exists(param_file)) {
         try {
-            param = new Parameters(fs::path(param_file));
+            param = new ZeldovichParameters(fs::path(param_file));
             printf("Loaded parameters from: %s\n", param_file.c_str());
             printf("  ppd: %ld\n", param->ppd);
             printf("  boxsize: %f\n", param->boxsize);
             printf("  separation: %f\n", param->separation);
             
             // Determine narray from parameter file (same logic as main.cpp)
-            // Cast Parameters* to ParametersHandle (void*)
+            // Cast ZeldovichParameters* to ParametersHandle (void*)
             ParametersHandle params_handle = reinterpret_cast<ParametersHandle>(param);
             int qdensity = zeldovich_params_get_qdensity(params_handle);
             if (qdensity == 2) {
@@ -327,7 +327,7 @@ int main(int argc, char* argv[]) {
             fclose(tmp_fp);
             
             try {
-                param = new Parameters(fs::path(tmp_param_file));
+                param = new ZeldovichParameters(fs::path(tmp_param_file));
                 printf("Created minimal parameters (ppd=%ld, boxsize=%f)\n", param->ppd, param->boxsize);
             } catch (const std::exception& e) {
                 fprintf(stderr, "ERROR: Failed to create minimal parameters: %s\n", e.what());
@@ -352,9 +352,10 @@ int main(int argc, char* argv[]) {
     printf("\nProcessing i-slabs...\n");
     
     // Determine grid factors
-    int grid_x, grid_z;
-    calculate_grid_factors(num_ranks, &grid_x, &grid_z);
-    printf("Grid decomposition: %d x %d = %d ranks\n", grid_x, grid_z, num_ranks);
+    // was: int grid_x, grid_z;
+    int size_x, size_z;
+    calculate_grid_factors(num_ranks, &size_x, &size_z);
+    printf("Grid decomposition: size_x=%d x size_z=%d = %d ranks\n", size_x, size_z, num_ranks);
     
     STimer t_reassembly;
     t_reassembly.Start();

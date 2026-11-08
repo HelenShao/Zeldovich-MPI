@@ -1,5 +1,5 @@
-#ifndef HERMITIAN_PRINTING_H
-#define HERMITIAN_PRINTING_H
+#ifndef ZD_MPI_PRINTING_H
+#define ZD_MPI_PRINTING_H
 
 // ====================================================================================
 // PRINTING UTILITIES

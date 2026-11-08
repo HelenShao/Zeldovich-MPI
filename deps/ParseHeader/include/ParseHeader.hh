@@ -2,6 +2,7 @@
 #define __PARSEHEADER_HH__
 
 #include <stdio.h>
+#include <sstream>
 #include <string>
 #include <filesystem>
 #include <vector>
@@ -17,6 +18,7 @@ namespace fs = std::filesystem;
 class HeaderStream {
 public:
     HeaderStream(const fs::path &fn);
+    HeaderStream(const char *in_buffer, size_t in_bufferlength, const fs::path &source_name);
     virtual ~HeaderStream(void);
 
     void OpenForRead(void);
@@ -31,6 +33,8 @@ public:
     char *buffer;
     size_t bufferlength;
     FILE *fp;
+    bool use_memory_buffer;
+    bool owns_buffer;
 
 private:
     void GetHeaderLength(void);
@@ -43,6 +47,7 @@ void WriteHStream(FILE *fp, const std::string &m, const std::string &pre);
 void WriteHStream(FILE *fp, HeaderStream &in);
 void WriteHStream(FILE *fp, HeaderStream &in, const std::string &pre);
 void FinalizeHeader(FILE *fout);
+void FinalizeHeader(std::stringstream &ss);
 
 class phDriver;
 
@@ -64,6 +69,7 @@ public:
     void installvector(const std::string &name, std::vector<T> &var, bool must_define, size_t maxlen = 1024);
 
     void ReadHeader(HeaderStream &in);
+    void ParseBuffer(HeaderStream &in);
 
 private:
     phDriver *phdriver;

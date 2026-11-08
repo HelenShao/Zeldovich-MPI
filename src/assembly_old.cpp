@@ -83,9 +83,10 @@ std::vector<BinComplx> ReassembleISlabFromRanks(
     std::fill(full_slab.begin(), full_slab.end(), BinComplx(0.0, 0.0));
 
     // Determine 2D grid factors for domain decomposition
-    int grid_x = 0;
-    int grid_z = 0;
-    calculate_grid_factors(num_ranks, &grid_x, &grid_z);
+    // was: int grid_x = 0; int grid_z = 0;
+    int size_x = 0;
+    int size_z = 0;
+    calculate_grid_factors(num_ranks, &size_x, &size_z);
 
     for (int rank = 0; rank < num_ranks; rank++) {
         // Build filename for this rank and slab
@@ -244,10 +245,10 @@ int main(int argc, char* argv[]) {
     printf("================================================================================\n\n");
     
     // Create Parameters object
-    Parameters* param = nullptr;
+    ZeldovichParameters* param = nullptr;
     if (!param_file.empty() && fs::exists(param_file)) {
         try {
-            param = new Parameters(fs::path(param_file));
+            param = new ZeldovichParameters(fs::path(param_file));
             printf("Loaded parameters from: %s\n", param_file.c_str());
             printf("  ppd: %ld\n", param->ppd);
             printf("  boxsize: %f\n", param->boxsize);
@@ -302,7 +303,7 @@ int main(int argc, char* argv[]) {
             fclose(tmp_fp);
             
             try {
-                param = new Parameters(fs::path(tmp_param_file));
+                param = new ZeldovichParameters(fs::path(tmp_param_file));
                 printf("Created minimal parameters (ppd=%ld, boxsize=%f)\n", param->ppd, param->boxsize);
             } catch (const std::exception& e) {
                 fprintf(stderr, "ERROR: Failed to create minimal parameters: %s\n", e.what());
@@ -327,9 +328,10 @@ int main(int argc, char* argv[]) {
     printf("\nProcessing i-slabs...\n");
     
     // Determine grid factors
-    int grid_x, grid_z;
-    calculate_grid_factors(num_ranks, &grid_x, &grid_z);
-    printf("Grid decomposition: %d x %d = %d ranks\n", grid_x, grid_z, num_ranks);
+    // was: int grid_x, grid_z;
+    int size_x, size_z;
+    calculate_grid_factors(num_ranks, &size_x, &size_z);
+    printf("Grid decomposition: size_x=%d x size_z=%d = %d ranks\n", size_x, size_z, num_ranks);
     
     // Process each i-slab
     int processed = 0;

@@ -1,8 +1,23 @@
-#ifndef HERMITIAN_CONFIG_H
-#define HERMITIAN_CONFIG_H
+#ifndef ZD_MPI_CONFIG_H
+#define ZD_MPI_CONFIG_H
 
 // Modify flags or override them at compile time using -D flags.
 // Ex. make CFLAGS="-DUSE_DOUBLE_PRECISION -DDEBUG_PRINTS=0"
+
+// Dump Phi_G, or load K and rebuild D. Override with -D on the compile line.
+// Exactly one of the three may be 1. Default is the dump pass (generate y slices).
+#ifndef DUMP_GAUSSIAN_D
+#define DUMP_GAUSSIAN_D 1
+#endif
+#ifndef LOAD_D_FROM_FILE
+#define LOAD_D_FROM_FILE 0
+#endif
+#ifndef LOAD_WHITE_NOISE_FROM_FILE
+#define LOAD_WHITE_NOISE_FROM_FILE 0
+#endif
+
+
+
 
 // Use X-direction padding with periodic boundary conditions
 // 1 = Enable X-padding with periodic wrap-around
@@ -235,6 +250,16 @@
 // FFTW_FORWARD = -1 (real -> Fourier)
 // FFTW_BACKWARD = +1 (Fourier -> real)
 #define FFT_SIGN FFTW_BACKWARD
+
+/*  
+FFTW planner flags for all DFT plans (2D X–Z and 1D Y in fft_setup.c / wisdom_rank0).
+    FFTW_ESTIMATE (fast plan, no timing), FFTW_MEASURE (default: time plans) -> Use this for production runs.
+    FFTW_PATIENT / FFTW_EXHAUSTIVE (slower planning, may yield faster execute).
+    Wisdom is most useful with MEASURE or slower modes.
+*/  
+#ifndef FFTW_PLANNER_FLAGS
+#define FFTW_PLANNER_FLAGS FFTW_MEASURE
+#endif
 
 // # arrays per Y-slice
 #define NARRAY 4
