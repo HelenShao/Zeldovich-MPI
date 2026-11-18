@@ -108,8 +108,8 @@ if not get_option('abacus_embed')
     )
   endif
 
-  # PNG_Combine: white-noise files from Phi_gaussian and the kernels (streaming replacement for the
-  # LOAD_D_FROM_FILE pass; same mask, s(k) and arithmetic). Independent of the dump/load defines.
+  # PNG_Combine: white-noise files from Phi_gaussian and the kernels, plane by plane.
+  # Independent of the DUMP_GAUSSIAN_D / LOAD_WHITE_NOISE_FROM_FILE defines.
   executable(
     'PNG_Combine',
     files('png_combine/png_combine_main.cpp'),

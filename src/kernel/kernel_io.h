@@ -5,7 +5,7 @@
 // KERNEL FILE I/O + Y-SLICE HERMITIAN HELPERS
 // ====================================================================================
 // File format (same as the DUMP_GAUSSIAN_D dump ZD_PNG_DIR/Phi_gaussian_y.{y} and the
-// LOAD_D_FROM_FILE input ZD_PNG_DIR/kernel_y.{y}):
+// PNG_Combine input ZD_PNG_DIR/kernel_<shape>_y.{y}):
 // N*N complex values, interleaved (real, imag), x fastest then z,
 // so element (x, z) is at z*N + x. Slices are held in memory in the same [z][x] order.
 // Files are float32 or float64, told apart by size (see ../utils/png_slice_io.h). Reads accept

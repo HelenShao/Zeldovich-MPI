@@ -1,15 +1,18 @@
 // ====================================================================================
 // PNG_Combine: white-noise files from Phi_gaussian and the f_NL kernels, without the
-// full Zeldovich_MPI machinery. A streaming replacement for the LOAD_D_FROM_FILE pass.
+// full Zeldovich_MPI machinery. A streaming replacement for the LOAD_D_FROM_FILE load pass,
+// which has since been removed from Zeldovich_MPI; PNG_Combine is now the only writer of these files.
 // ====================================================================================
 // For every primary y-plane (y = 0 .. N/2) and every mode (x, z) of that plane:
 //
 //     out = s * phi_G + f_NL * s * K_shape,   s = (5/3) / sqrt(P_prim(|k|)),  s = 0 on masked modes
 //
 // written to {out_dir}/phi_<shape>_fNL<f>_divided_y.<y>. This is the same arithmetic, mask and
-// primordial spline as the load pass in generation/ZD_MPI_generation.c (see the comments marked
-// "same as the load pass"), so the files agree with it bit for bit (up to 1 float32 ulp where the
-// compiler contracts a multiply-add differently). Planes are independent: no FFTs, no exchange.
+// primordial spline as the former load pass (LOAD_D_FROM_FILE in generation/ZD_MPI_generation.c,
+// now removed; see the comments marked "same as the load pass"). Before it was removed, the two
+// gave bit-identical files at N=256 (local/equil/orthoCMB, f_NL = 100 and -2.5). The mask is
+// still the generator's zeroed_mode in ZD_MPI_generation.c, so keep the two in step.
+// Planes are independent: no FFTs, no exchange.
 //
 // Usage:
 //   mpiexec -n R PNG_Combine param.par --set local:10,-10,30,-30 --set equil:150,-150 [--set ...]
@@ -159,14 +162,14 @@ int main(int argc, char **argv)
     if (param_file == NULL) FAIL("usage: PNG_Combine param.par --set <shape>:<f_NL>[,...] [--set ...] [--out-dir DIR] [--overwrite]\n");
     if (sets.empty()) FAIL("no --set given: nothing to write\n");
 
-    // ---------------- parameters (same keys as the load pass) ----------------
+    // ---------------- parameters (same keys as the load pass, now removed) ----------------
     ParametersHandle params = load_params(param_file, rank);
     const int N = (int)zeldovich_params_get_ppd(params);
     const int Nhalf = N / 2;
     const double fundamental = zeldovich_params_get_fundamental(params);
     const double k_cutoff = zeldovich_params_get_k_cutoff(params);
     const int CornerModes = zeldovich_params_get_CornerModes(params);
-    const double k2_cutoff = ((double)Nhalf * (double)Nhalf) / (k_cutoff * k_cutoff);   // same as the load pass
+    const double k2_cutoff = ((double)Nhalf * (double)Nhalf) / (k_cutoff * k_cutoff);   // same as the load pass (removed) and the generator
     const int out_bytes = zeldovich_params_get_png_file_bytes(params);
     const char *png_dir_p = zeldovich_params_get_png_dir(params);
     const std::string in_dir = (png_dir_p != NULL && png_dir_p[0] != '\0') ? png_dir_p : "png_slices";
@@ -245,7 +248,10 @@ int main(int argc, char **argv)
         double t1 = MPI_Wtime();
         t_read += t1 - t0;
 
-        // s and phi_G * s for this plane: same as the load pass (ZD_MPI_generation.c, z-loop)
+        // s and phi_G * s for this plane: same as the load pass (removed; it lived in the
+        // ZD_MPI_generation.c z-loop). The k indices and zeroed_mode mask are still the
+        // generator's. s = 0 on masked modes (phi^2 has power outside the k_cutoff sphere)
+        // and where P_primordial <= 0.
         const int ky = (y > Nhalf) ? y - N : y;
         const int abs_ky = (ky < 0) ? -ky : ky;
         #pragma omp parallel for schedule(static)
@@ -288,7 +294,7 @@ int main(int argc, char **argv)
                 if (o.shape != sh) continue;
                 double t5 = MPI_Wtime();
                 const double f_NL = o.f_NL;
-                // same as the load pass: divided = phiG_scaled + (f_NL * s) * kernel
+                // same as the load pass (removed): divided = phiG_scaled + (f_NL * s) * kernel
                 #pragma omp parallel for schedule(static)
                 for (size_t i = 0; i < nvals; i++) {
                     double fs = f_NL * s[i];

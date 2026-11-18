@@ -7,12 +7,12 @@
  * at a time reusing the same output buffers, and writes
  *     <OUT_DIR>/kernel_<shape>_y.{y}      shape = local, equil, orthoCMB, orthoLSS
  *                                         (default OUT_DIR = PNG_DIR)
- * for the LOAD_D_FROM_FILE run. Files are keyed by y only, so the rank count here need
- * not match the Zeldovich_MPI dump or load runs.
+ * for PNG_Combine. Files are keyed by y only, so the rank count here need not match the
+ * Zeldovich_MPI dump run or PNG_Combine.
  *
- * Usage:  mpiexec -n R Kernel_MPI [param.par] [--png-dir DIR] [--out-dir DIR] [--python-compat]
+ * Usage:  mpiexec -n R Kernel_MPI [param.par] [--png-dir DIR] [--out-dir DIR] [--pad-2N]
  *
- *   --python-compat                  default M = 2N, as in kernel_MPI.py (same as KERNEL_PYTHON_COMPAT=1)
+ *   --pad-2N                         default M = 2N, as in kernel_MPI.py (same as KERNEL_PAD_2N=1)
  *
  * Par keys:   BoxSize, NumZRanks, ZD_f_NL_local, ZD_f_NL_equil, ZD_f_NL_orthoCMB,
  *             ZD_f_NL_orthoLSS, optional ZD_PNG_DIR (default "png_slices"),
@@ -22,8 +22,8 @@
  *
  * Environment:
  *   PARAM_FILE, PNG_DIR, OUT_DIR    override the .par file / ZD_PNG_DIR / output dir (CLI args override these)
- *   KERNEL_PYTHON_COMPAT=0 (default) default M = smallest valid M >= 3N/2 (alias-free, smaller)
- *                       =1           default M = 2N, as in kernel_MPI.py (or pass --python-compat)
+ *   KERNEL_PAD_2N=0 (default)        default M = smallest valid M >= 3N/2 (alias-free, smaller)
+ *                =1                  default M = 2N, as in kernel_MPI.py (or pass --pad-2N)
  *   KERNEL_PAD_M=<M>                 explicit padded size (overrides KernelPadM and the default)
  *   KERNEL_ZERO_NYQUIST=1            zero the kx/ky/kz = N/2 modes of phi before the kernels
  *   KERNEL_ONLY_TERM=<A1|C1|...>     debug: run only this term with coef 1 (output = J*Q),
@@ -89,10 +89,10 @@ int main(int argc, char **argv)
     const char *param_file = getenv("PARAM_FILE") ? getenv("PARAM_FILE") : ".runtime/param.par";
     const char *png_dir_arg = getenv("PNG_DIR");
     const char *out_dir_arg = getenv("OUT_DIR");
-    int compat = env_int("KERNEL_PYTHON_COMPAT", 0);
+    int pad_2N = env_int("KERNEL_PAD_2N", 0);
     for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "--python-compat") == 0) {
-            compat = 1;
+        if (strcmp(argv[i], "--pad-2N") == 0) {
+            pad_2N = 1;
         } else if (strcmp(argv[i], "--png-dir") == 0 && i + 1 < argc) {
             png_dir_arg = argv[++i];
         } else if (strcmp(argv[i], "--out-dir") == 0 && i + 1 < argc) {
@@ -141,7 +141,7 @@ int main(int argc, char **argv)
     }
     if (num_ranks > N / 2 + 1) FAIL("num_ranks=%d > N/2+1=%d\n", num_ranks, N / 2 + 1);
 
-    int M = kernel_choose_pad_M(N, compat);
+    int M = kernel_choose_pad_M(N, pad_2N);
     if (kp.found[6] && kp.pad_M > 0) M = (int)kp.pad_M;
     if (pad_M_env > 0) M = pad_M_env;
     if (M < N || (M % 4) != 0 || ((M - N) % 2) != 0) {
@@ -184,8 +184,8 @@ int main(int argc, char **argv)
         printf("  N=%d  M=%d (padding %.3fx)  BoxSize=%g\n", N, M, (double)M / N, kp.box_size);
         printf("  ranks=%d (size_x=%d x size_z=%d), OMP threads/rank=%d\n",
                num_ranks, size_x, size_z, omp_get_max_threads());
-        printf("  precision=%s, batches=%d, compat=%d, zero_nyquist=%d\n",
-               PRECISION_NAME, K.num_batches, compat, zero_nyquist);
+        printf("  precision=%s, batches=%d, pad_2N=%d, zero_nyquist=%d\n",
+               PRECISION_NAME, K.num_batches, pad_2N, zero_nyquist);
         printf("  in:  %s (Phi_gaussian %s)\n  out: %s (kernels written as %s)\n", png_dir,
                hdr[2] == 4 ? "float32" : "float64", out_dir, out_bytes == 4 ? "float32" : "float64");
         if (debug_term) {

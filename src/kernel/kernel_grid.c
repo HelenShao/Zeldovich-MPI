@@ -9,9 +9,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int kernel_choose_pad_M(int N, int compat_2N)
+int kernel_choose_pad_M(int N, int pad_2N)
 {
-    if (compat_2N) return 2 * N;
+    if (pad_2N) return 2 * N;
     int M = (3 * N + 1) / 2;
     while ((M % 4) != 0 || ((M - N) % 2) != 0) M++;
     return M;

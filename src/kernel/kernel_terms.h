@@ -4,7 +4,7 @@
 // ====================================================================================
 // KERNEL TERM TABLES (f_NL kernels for Kernel_MPI)
 // ====================================================================================
-// Every kernel used by kernel_MPI.py has the form
+// Every kernel has the form
 //     G(k) = |k|^pG,  H(k) = |k|^pH,  J(k) = cJ * |k|^pJ
 // and contributes  coef * J(k) * Q(k),  Q = FFT[ IFFT(G*phi) * IFFT(H*phi) ].
 // Each f_NL type is a list of (shape, coef) terms summed into one output.

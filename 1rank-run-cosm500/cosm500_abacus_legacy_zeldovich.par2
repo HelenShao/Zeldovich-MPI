@@ -39,8 +39,9 @@ ZD_qdensity = 1
 NumZRanks = 1
 
 # Toggle which f_NL to compute
-# Every nonzero shape is computed in one run: Kernel_MPI writes kernel_<shape>_y.{y}, and
-# Zeldovich_MPI (LOAD_D_FROM_FILE) writes phi_<shape>_fNL<ZD_f_NL>_divided_y.{y}, all with amplitude ZD_f_NL
+# Kernel_MPI computes every nonzero shape in one run and writes kernel_<shape>_y.{y}.
+# PNG_Combine ignores these and ZD_f_NL (shapes and amplitudes come from its --set options) and
+# writes phi_<shape>_fNL<f>_divided_y.{y}.
 # Zeldovich_MPI (LOAD_WHITE_NOISE_FROM_FILE) loads phi_<shape>_fNL<ZD_f_NL>_divided_y.{y} from ZD_PNG_DIR,
 # so exactly one shape may be nonzero. To load {name}_y.{y} instead, set all shapes to 0 and set:
 

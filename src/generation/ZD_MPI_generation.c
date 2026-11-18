@@ -186,7 +186,8 @@ static inline void store_prim_conj( //Charlie: this function enforces Hermitian 
 // ====================================================================================
 // Generates one pair of conjugate Y-slices (primary + mirror) in Fourier space
 // Charlie: f_NL shape names, indexed like ZD_f_NL_local/equil/orthoCMB/orthoLSS (f_NL_shape[0..3]).
-// Shared by the LOAD_D_FROM_FILE writer and the LOAD_WHITE_NOISE_FROM_FILE reader so names match.
+// Must match kShapeNames in png_combine/png_combine_main.cpp, which writes the files
+// the LOAD_WHITE_NOISE_FROM_FILE reader opens.
 static const char *fnl_shape_names[4] = {"local", "equil", "orthoCMB", "orthoLSS"};
 
 // ZD_PNG_DIR, default "png_slices"
@@ -201,7 +202,7 @@ static const char *zd_png_dir(ParametersHandle params_handle) {
 
 // f_NL as it appears in white-noise file names (png_format_fnl in utils/png_slice_io.c, also used
 // by PNG_Combine): whole numbers as plain integers (100, 1000000, -5), anything else with %g (0.5).
-// Shared by the LOAD_D_FROM_FILE writer and the LOAD_WHITE_NOISE_FROM_FILE reader.
+// Used by the LOAD_WHITE_NOISE_FROM_FILE reader, so its names match what PNG_Combine writes.
 static void zd_format_fnl(char *buf, size_t len, double f_NL) {
     png_format_fnl(buf, len, f_NL);
 }
@@ -338,12 +339,6 @@ void generate_zd_mpi_slice_pair_local(
         CornerModes = zeldovich_params_get_CornerModes(params_handle);
     }
 
-    // f_NL amplitude, read from ZD_f_NL in the .par file (default 0.0 = Gaussian)
-    double f_NL = 0.0;
-    if (params_handle != NULL) {
-        f_NL = zeldovich_params_get_f_NL(params_handle);
-    }
-    
     // Calculate k2_cutoff: k2_cutoff = (N/2)^2 / (k_cutoff^2)
     // Ex. N=16, k_cutoff=1.0: k2_cutoff = 8^2 / 1.0^2 = 64
     double Nhalf_dbl = (double)Nhalf;
@@ -380,8 +375,11 @@ void generate_zd_mpi_slice_pair_local(
 
     //Charlie: adding a file 
 
-#if (!!DUMP_GAUSSIAN_D + !!LOAD_D_FROM_FILE + !!LOAD_WHITE_NOISE_FROM_FILE) > 1
-#error "Only one of DUMP_GAUSSIAN_D, LOAD_D_FROM_FILE, LOAD_WHITE_NOISE_FROM_FILE may be enabled at a time"
+#if defined(LOAD_D_FROM_FILE) && LOAD_D_FROM_FILE
+#error "LOAD_D_FROM_FILE was removed: build PNG_Combine (src/png_combine) to write phi_<shape>_fNL<f>_divided_y.{y}"
+#endif
+#if (!!DUMP_GAUSSIAN_D + !!LOAD_WHITE_NOISE_FROM_FILE) > 1
+#error "Only one of DUMP_GAUSSIAN_D, LOAD_WHITE_NOISE_FROM_FILE may be enabled at a time"
 #endif
 
 
@@ -408,25 +406,6 @@ if (dump_buf == NULL) {
 }
 
 #endif
-
-#if LOAD_D_FROM_FILE
-    // Charlie: every f_NL shape enabled in the .par (nonzero ZD_f_NL_<shape>) is handled in one run.
-    // The z-loop only stores phi_G * s and s, with s = (5/3)/sqrt(P_primordial(k)) (0 on masked modes).
-    // After the z-loop each shape is done in turn, reusing one buffer:
-    //     kernel_<shape>_y.{y}  ->  (phi_G + f_NL*kernel) * s  ->  phi_<shape>_fNL<f_NL>_divided_y.{y}
-    // where <f_NL> is ZD_f_NL from zd_format_fnl: whole numbers as integers, otherwise %g
-    // (e.g. phi_local_fNL1000000_divided_y.3, phi_equil_fNL-2.5_divided_y.3).
-    // so memory does not grow with the number of shapes. D stays Gaussian in this run.
-    // All buffers: interleaved (real, imag), x fastest, then z, as in the Phi_gaussian dump.
-    size_t nmodes = (size_t)N * (size_t)N;
-    double *phiG_scaled = (double*)malloc(nmodes * 2 * sizeof(double));  // phi_G * s
-    double *ng_scale    = (double*)malloc(nmodes * sizeof(double));      // s
-    double *shape_buf   = (double*)malloc(nmodes * 2 * sizeof(double));  // kernel in, divided phi out
-    if (phiG_scaled == NULL || ng_scale == NULL || shape_buf == NULL) {
-        fprintf(stderr, "ERROR: Could not allocate phi_divided buffers\n");
-    }
-#endif
-
 
 #if LOAD_WHITE_NOISE_FROM_FILE
 
@@ -679,30 +658,6 @@ if (dump_buf == NULL) {
                     }  
                 #endif
 
-            #if LOAD_D_FROM_FILE
-                // Charlie: s = (5/3)/sqrt(P_primordial(k)) turns phi_NG back into random numbers.
-                // P_primordial(k) is read from class_pk_primordial_dimensional.dat via
-                // ps_handle_primordial_dimensional, with the same k2_phys/kmag convention as the
-                // cgauss branch above. s = 0 applies the DC/Nyquist/k_cutoff mask to the
-                // non-Gaussian phi (phi^2 has power outside the sphere) and covers P_primordial <= 0.
-                // The kernel shapes are added after the z-loop.
-                {
-                    double s = 0.0;
-                    if (!zeroed_mode && ps_handle != NULL && ps_handle_primordial_dimensional != NULL) {
-                        double k2_phys = k2 * fundamental * fundamental;
-                        double kmag = sqrt(k2_phys);
-                        double P_primordial = zeldovich_ps_power(ps_handle_primordial_dimensional, kmag);
-                        if (P_primordial > 0.0) s = (5.0/3.0) / sqrt(P_primordial);
-                    }
-                    size_t i = (size_t)z * (size_t)N + (size_t)x;
-                    if (ng_scale != NULL) ng_scale[i] = s;
-                    if (phiG_scaled != NULL) {
-                        phiG_scaled[2 * i]     = (double)phi_G[0] * s;
-                        phiG_scaled[2 * i + 1] = (double)phi_G[1] * s;
-                    }
-                }
-            #endif
-
             fftw_complex noise;
             #if LOAD_WHITE_NOISE_FROM_FILE
                 noise[0] = (real_t)loaded_noise_real[(int64_t)x + z * N];
@@ -928,53 +883,6 @@ if (dump_buf != NULL) {
 }
 free(dump_buf);
 #endif
-
-#if LOAD_D_FROM_FILE
-// Charlie: one f_NL shape at a time, all through shape_buf:
-// divided = (phi_G + f_NL*kernel) * s = phiG_scaled + f_NL * s * kernel
-if (phiG_scaled != NULL && ng_scale != NULL && shape_buf != NULL) {
-    for (int shape = 0; shape < 4; shape++) {
-        if (params_handle == NULL || zeldovich_params_get_f_NL_shape(params_handle, shape) == 0.0) continue;
-
-        char kernel_filename[1024];
-        snprintf(kernel_filename, sizeof(kernel_filename), "%s/kernel_%s_y.%d",
-                 png_dir, fnl_shape_names[shape], global_y);
-        int kerr = png_slice_read_double(kernel_filename, nmodes, shape_buf);
-        if (kerr != 0) {
-            fprintf(stderr, "ERROR: could not read kernel %s (%s); skipping shape %s\n", kernel_filename,
-                    kerr == 1 ? "cannot open" : kerr == 2 ? "size is not N*N complex float32 or float64"
-                                                          : "short read",
-                    fnl_shape_names[shape]);
-            fflush(stderr);
-            continue;
-        }
-
-        #pragma omp parallel for schedule(static)
-        for (size_t i = 0; i < nmodes; i++) {
-            double fs = f_NL * ng_scale[i];
-            shape_buf[2 * i]     = phiG_scaled[2 * i]     + fs * shape_buf[2 * i];
-            shape_buf[2 * i + 1] = phiG_scaled[2 * i + 1] + fs * shape_buf[2 * i + 1];
-        }
-
-        char divided_filename[1024];
-        char fnl_str[64];
-        zd_format_fnl(fnl_str, sizeof(fnl_str), f_NL);
-        snprintf(divided_filename, sizeof(divided_filename), "%s/phi_%s_fNL%s_divided_y.%d",
-                 png_dir, fnl_shape_names[shape], fnl_str, global_y);
-        int werr = png_slice_write_double(divided_filename, nmodes, shape_buf,
-                                          zeldovich_params_get_png_file_bytes(params_handle));
-        if (werr != 0) {
-            fprintf(stderr, "ERROR: could not write %s (error %d)\n", divided_filename, werr);
-            fflush(stderr);
-        }
-    }
-}
-free(phiG_scaled);
-free(ng_scale);
-free(shape_buf);
-#endif
-
-
 
     // ========== Self-conjugate post-processing ==========
     // Mirror first half to second half (match zeldovich.cpp lines 555-573)

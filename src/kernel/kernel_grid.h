@@ -36,7 +36,7 @@ static inline int kfreq(int i, int n) { return i < n / 2 ? i : i - n; }
 static inline int pad_idx(int i, int N, int M) { return i < N / 2 ? i : i + (M - N); }
 
 // Smallest valid padded size >= target: M % 4 == 0 (fft_setup.c) and (M - N) even
-int kernel_choose_pad_M(int N, int compat_2N);
+int kernel_choose_pad_M(int N, int pad_2N);
 
 // Pencil (x,z) bounds of rank dest on the padded grid
 GridBounds kernel_pencil_bounds(int dest, int M, int num_ranks, int size_x, int size_z);

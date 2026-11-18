@@ -4,13 +4,10 @@
 // Modify flags or override them at compile time using -D flags.
 // Ex. make CFLAGS="-DUSE_DOUBLE_PRECISION -DDEBUG_PRINTS=0"
 
-// Dump Phi_G, or load K and rebuild D. Override with -D on the compile line.
-// Exactly one of the three may be 1. Default is the dump pass (generate y slices).
+// Dump Phi_G, or build D from the white-noise files PNG_Combine writes. Override with -D on the
+// compile line. At most one of the two may be 1. Default is the dump pass (generate y slices).
 #ifndef DUMP_GAUSSIAN_D
 #define DUMP_GAUSSIAN_D 1
-#endif
-#ifndef LOAD_D_FROM_FILE
-#define LOAD_D_FROM_FILE 0
 #endif
 #ifndef LOAD_WHITE_NOISE_FROM_FILE
 #define LOAD_WHITE_NOISE_FROM_FILE 0
