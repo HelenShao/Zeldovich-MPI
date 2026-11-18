@@ -24,7 +24,7 @@ void ZeldovichParameters::set_defaults(void) {
     Pk_scale        = 1;       // Legal default
     grid_x          = 0;       // Computed at runtime from MPI size and NumZRanks
     num_z_ranks     = 0;       // Legacy ZD_NumZRanks; optional, unused by zeldovich-MPI grid
-    abacus_num_z_ranks = 0;    // Abacus NumZRanks (MUST_DEFINE in combined par files)
+    abacus_num_z_ranks = 1;    // Abacus NumZRanks; optional, default 1 as in Abacus (1D decomposition)
     qdensity        = 0;       // Legal default
     qascii          = 0;       // Legal default
     qoneslab        = -1;      // Legal default
@@ -91,7 +91,7 @@ void ZeldovichParameters::register_vars(void) {
     installscalar("CPD", cpd, MUST_DEFINE);
     // Legacy name; grid topology uses NumZRanks (abacus_num_z_ranks). Old par files may still set it.
     installscalar("ZD_NumZRanks", num_z_ranks, DONT_CARE);
-    installscalar("NumZRanks", abacus_num_z_ranks, MUST_DEFINE);
+    installscalar("NumZRanks", abacus_num_z_ranks, DONT_CARE);
     installscalar("ZD_qdensity", qdensity, DONT_CARE);
     installscalar("ZD_qoneslab", qoneslab, DONT_CARE);
     installscalar("ZD_Seed", seed, MUST_DEFINE);
@@ -198,6 +198,11 @@ int ZeldovichParameters::setup() {
     assert(!(ppd <= 0));
     assert(!(Pk_scale <= 0.0));
     assert(!(Pk_norm < 0.0));
+
+    if (abacus_num_z_ranks < 1) {
+        ZD_ERR("NumZRanks = {:d} must be >= 1\n", abacus_num_z_ranks);
+        exit(1);
+    }
 
     if ((bool) (Pk_sigma > 0) == (bool) (Pk_sigma_ratio > 0)) {
         ZD_ERR("Must specify exactly one of Pk_sigma or Pk_sigma_ratio!\n");
