@@ -12,7 +12,7 @@
 # FLAMINGO-matched boxes at AuroraFlagship mass resolution (2026-11-17): NP = 2500^3 in FLAMINGO's 1 Gpc box, any FLAMINGO
 # cosmology (Simulations/flamingo_nu_N2500/AbacusAurora_FLAMINGO_<label>_N2500.par2, Cosmologies/FLAMINGO_cosm/flamingo_<label>/),
 # z = 99 (2LPT + PLT) to 0, embedded Zeldovich-MPI reading FLAMINGO's Panphasia noise at N0 = 4096 (GridRes 2500).
-# 16 nodes = the capacity-queue maximum (0.98e9 particles/node; CPD 625, layout 8 x 4 from FLAMINGO.par2 NumZRanks = 4). Estimated ~2.5-3 h
+# 16 nodes = the capacity-queue maximum (0.98e9 particles/node; CPD 567, layout 8 x 4 from FLAMINGO.par2 NumZRanks = 4). Estimated ~2.5-3 h
 # (1800^3 took 7.0 h on 2 nodes = 8.7e-6 node-s per particle); 6 h walltime, halts cleanly 20 min before and resumes on resubmit.
 # Adapted from pbs_flamingo_m9.sh (now in flamingo_1800_local/).
 #   qsub -v SIMNAME=AbacusAurora_FLAMINGO_<label>_N2500 -o $PWD/flamingo_<label>_N2500.pbs.log pbs_flamingo.sh
@@ -21,7 +21,7 @@
 set -o pipefail
 
 CODE=/home/helenshao/abacus-store/9575f04_zmpi-neutrinos   # 9575f04 + zeldovich_mpi neutrinos, LOAD_EXTERNAL_NOISE=1
-AA=/home/helenshao/InitialConditions/AbacusAurora
+AA=${AA:-/home/helenshao/InitialConditions/AbacusAurora-flamingo}   # git worktree of AbacusAurora on branch flamingo-n2500 (the main checkout may be on another branch)
 [[ -n ${SIMNAME:-} ]] || { echo "set SIMNAME with qsub -v SIMNAME=AbacusAurora_FLAMINGO_<label>_N2500" >&2; exit 2; }
 PAR2=$AA/Simulations/flamingo_nu_N2500/$SIMNAME.par2
 PROD=/home/helenshao/InitialConditions/abacus/subprojects/zeldovich_mpi/neutrino_validation/production
@@ -42,6 +42,15 @@ COSM=$(sed -n 's|^#include "\.\./\.\./Cosmologies/\(.*\)/cosm.def"|\1|p' "$PAR2"
 export ABACUS_CHECKPOINT_CONTAINERS=0
 [[ -r $NOISE/output_k_space_slab_y.0 && -r $NOISE/output_k_space_slab_y.2048 && ! -e $NOISE/output_k_space_slab_y.2049 ]] \
     || { echo "N0 = 4096 noise slabs (0..2048) not found under $NOISE" >&2; exit 2; }
+
+# Pre-generated ICs (ExternalICs = 1): check they are there and laid out for this run (4 z-ranks of CPD files each).
+EXTERNAL_ICS=0
+if grep -Eq '^ExternalICs *= *1' "$PAR2"; then
+    EXTERNAL_ICS=1
+    ICDIR=$(sed -n 's|^InitialConditionsDirectory *= *"\(.*\)".*|\1|p' "$PAR2")
+    nz=$(find "$ICDIR" -maxdepth 1 -type d -name "z*" 2>/dev/null | wc -l)
+    (( nz == 4 )) || { echo "ExternalICs = 1 but $ICDIR has $nz z-rank directories (expect 4 for NumZRanks = 4)" >&2; exit 2; }
+fi
 
 RUN=$PROD/${RUNDIR:-${SIMNAME#AbacusAurora_FLAMINGO_}}
 mkdir -p "$RUN"
@@ -75,7 +84,9 @@ t0=$SECONDS
 rc=$?
 echo "=== onesim rc=$rc after $((SECONDS - t0)) s: $(date) ==="
 
-if grep -q "\[external noise\] reading $NOISE/" "sim.$attempt_tag.out"; then
+if (( EXTERNAL_ICS )); then
+    echo "ICs: pre-generated (ExternalICs = 1), read from $ICDIR; no IC generation in this run"
+elif grep -q "\[external noise\] reading $NOISE/" "sim.$attempt_tag.out"; then
     echo "external noise: OK ($(grep -m1 '\[external noise\] reading' "sim.$attempt_tag.out"))"
 elif grep -q "\[external noise\] reading" "sim.$attempt_tag.out"; then
     echo "ERROR: ICs read the WRONG noise: $(grep -m1 '\[external noise\] reading' "sim.$attempt_tag.out")" >&2
